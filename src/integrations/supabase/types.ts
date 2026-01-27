@@ -116,6 +116,86 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_categories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_default: boolean
+          name_arabic: string
+          name_french: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_default?: boolean
+          name_arabic: string
+          name_french: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_default?: boolean
+          name_arabic?: string
+          name_french?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      prayer_content: {
+        Row: {
+          category_id: string
+          content: string
+          content_type: string
+          created_at: string
+          display_order: number
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          content: string
+          content_type: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          content?: string
+          content_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_content_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -386,6 +466,41 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "nourania_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_prayer_progress: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          is_validated: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          is_validated?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          is_validated?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_prayer_progress_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_categories"
             referencedColumns: ["id"]
           },
         ]

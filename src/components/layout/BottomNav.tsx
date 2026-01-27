@@ -11,10 +11,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { icon: Moon, label: 'Ramadan', path: '/ramadan', color: 'text-gold' },
-  { icon: BookOpen, label: 'Alphabet', path: '/alphabet', color: 'text-royal-light' },
-  { icon: Hand, label: 'Invocations', path: '/invocations', color: 'text-gold' },
-  { icon: BookMarked, label: 'Sourates', path: '/sourates', color: 'text-royal-light' },
-  { icon: Sparkles, label: 'Nourania', path: '/nourania', color: 'text-gold' },
+  { icon: Hand, label: 'Prière', path: '/priere', color: 'text-royal-light' },
+  { icon: BookMarked, label: 'Sourates', path: '/sourates', color: 'text-gold' },
+  { icon: Sparkles, label: 'Nourania', path: '/nourania', color: 'text-royal-light' },
+  { icon: BookOpen, label: 'Alphabet', path: '/alphabet', color: 'text-gold' },
 ];
 
 const BottomNav = () => {

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Play, FileText, ExternalLink } from 'lucide-react';
+import { Check, Play, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -9,32 +9,45 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-// Mapping des 17 leçons avec leurs vidéos YouTube
-const NOURANIA_LESSONS = [
-  { lesson: 1, titleAr: 'الدرس الأول - الحروف المفردة', titleFr: 'Leçon 1 - Les lettres isolées', videoId: 'SL5Z8sRV7_o' },
-  { lesson: 2, titleAr: 'الدرس الثاني - الحروف المركبة', titleFr: 'Leçon 2 - Les lettres composées', videoId: 'rLR3VfPKXcU' },
-  { lesson: 3, titleAr: 'الدرس الثالث - الحروف المقطعة', titleFr: 'Leçon 3 - Les lettres disjointes', videoId: 'HPAyEk_O-_Y' },
-  { lesson: 4, titleAr: 'الدرس الرابع - الحروف المتحركة', titleFr: 'Leçon 4 - Les lettres avec voyelles', videoId: 'y6CsYzq0bCs' },
-  { lesson: 5, titleAr: 'الدرس الخامس - التنوين', titleFr: 'Leçon 5 - Le Tanwin', videoId: 'R3dG3Z2fHHg' },
-  { lesson: 6, titleAr: 'الدرس السادس - تدريبات على التنوين', titleFr: 'Leçon 6 - Exercices sur le Tanwin', videoId: 'MkkP3D8z7kI' },
-  { lesson: 7, titleAr: 'الدرس السابع - الألف الصغيرة', titleFr: 'Leçon 7 - Le petit Alif', videoId: '4PyxmO2vO-M' },
-  { lesson: 8, titleAr: 'الدرس الثامن - تطبيقات', titleFr: 'Leçon 8 - Applications', videoId: 'IRSimXTF9-c' },
-  { lesson: 9, titleAr: 'الدرس التاسع - المد', titleFr: 'Leçon 9 - L\'allongement (Madd)', videoId: 'mNYli6aW_v8' },
-  { lesson: 10, titleAr: 'الدرس العاشر - السكون', titleFr: 'Leçon 10 - Le Soukoun', videoId: '9vKvxR0F_RI' },
-  { lesson: 11, titleAr: 'الدرس الحادي عشر - الشدة', titleFr: 'Leçon 11 - La Chadda', videoId: 'DKmzqPHrK6Y' },
-  { lesson: 12, titleAr: 'الدرس الثاني عشر - الشدة والتنوين', titleFr: 'Leçon 12 - Chadda et Tanwin', videoId: 'h0cVtxnXVpM' },
-  { lesson: 13, titleAr: 'الدرس الثالث عشر - اللام الشمسية والقمرية', titleFr: 'Leçon 13 - Lam solaire et lunaire', videoId: 'sxJzLeFZnXk' },
-  { lesson: 14, titleAr: 'الدرس الرابع عشر - تطبيقات', titleFr: 'Leçon 14 - Applications', videoId: 'K5XjVHvfJBE' },
-  { lesson: 15, titleAr: 'الدرس الخامس عشر - قواعد التجويد', titleFr: 'Leçon 15 - Règles du Tajwid', videoId: 'mS2wDPdx-UE' },
-  { lesson: 16, titleAr: 'الدرس السادس عشر - مراجعة شاملة', titleFr: 'Leçon 16 - Révision complète', videoId: 'tZxLhL4bgBw' },
-  { lesson: 17, titleAr: 'الدرس السابع عشر - الامتحان النهائي', titleFr: 'Leçon 17 - Examen final', videoId: 'Y1Xsp4O1EY0' },
-];
+// Page ranges for each lesson in the PDF (approximated from the document structure)
+const LESSON_PAGE_RANGES: Record<number, { start: number; end: number }> = {
+  1: { start: 1, end: 20 },
+  2: { start: 21, end: 40 },
+  3: { start: 41, end: 60 },
+  4: { start: 61, end: 80 },
+  5: { start: 81, end: 100 },
+  6: { start: 101, end: 120 },
+  7: { start: 121, end: 140 },
+  8: { start: 141, end: 160 },
+  9: { start: 161, end: 180 },
+  10: { start: 181, end: 200 },
+  11: { start: 201, end: 220 },
+  12: { start: 221, end: 240 },
+  13: { start: 241, end: 260 },
+  14: { start: 261, end: 280 },
+  15: { start: 281, end: 300 },
+  16: { start: 301, end: 315 },
+  17: { start: 316, end: 328 },
+};
 
 const Nourania = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [expandedLesson, setExpandedLesson] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'video' | 'pdf'>('video');
+
+  // Fetch lessons from database
+  const { data: lessons = [] } = useQuery({
+    queryKey: ['nourania-lessons'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('nourania_lessons')
+        .select('*')
+        .order('lesson_number');
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Fetch user's progress for all lessons
   const { data: userProgress = [] } = useQuery({
@@ -53,30 +66,29 @@ const Nourania = () => {
 
   // Calculate overall progress
   const validatedCount = userProgress.filter(p => p.is_validated).length;
-  const progressPercentage = Math.round((validatedCount / 17) * 100);
+  const totalLessons = lessons.length || 17;
+  const progressPercentage = Math.round((validatedCount / totalLessons) * 100);
 
   // Mutation for validating a lesson
   const validateMutation = useMutation({
-    mutationFn: async (lessonNumber: number) => {
+    mutationFn: async (lessonId: number) => {
       if (!user?.id) throw new Error('Non connecté');
       
-      // Check if progress exists
-      const existingProgress = userProgress.find(p => p.lesson_id === lessonNumber);
+      // Check if progress exists using the actual database lesson_id
+      const existingProgress = userProgress.find(p => p.lesson_id === lessonId);
       
       if (existingProgress) {
-        // Update existing
         const { error } = await supabase
           .from('user_nourania_progress')
           .update({ is_validated: true, updated_at: new Date().toISOString() })
           .eq('id', existingProgress.id);
         if (error) throw error;
       } else {
-        // Create new
         const { error } = await supabase
           .from('user_nourania_progress')
           .insert({
             user_id: user.id,
-            lesson_id: lessonNumber,
+            lesson_id: lessonId,
             is_validated: true,
           });
         if (error) throw error;
@@ -92,8 +104,15 @@ const Nourania = () => {
     },
   });
 
-  const isLessonValidated = (lessonNumber: number) => {
-    return userProgress.some(p => p.lesson_id === lessonNumber && p.is_validated);
+  const isLessonValidated = (lessonId: number) => {
+    return userProgress.some(p => p.lesson_id === lessonId && p.is_validated);
+  };
+
+  // Extract YouTube video ID from URL
+  const getVideoId = (url: string | null) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+    return match ? match[1] : null;
   };
 
   return (
@@ -109,38 +128,23 @@ const Nourania = () => {
         <div className="module-card rounded-2xl p-4 space-y-3 animate-fade-in">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Votre progression</span>
-            <span className="text-sm font-bold text-primary">{validatedCount}/17 leçons</span>
+            <span className="text-sm font-bold text-primary">{validatedCount}/{totalLessons} leçons</span>
           </div>
           <Progress value={progressPercentage} className="h-3" />
           <p className="text-xs text-center text-muted-foreground">{progressPercentage}% complété</p>
         </div>
 
-        {/* PDF Download Button */}
-        <a 
-          href="/pdf/nourania.pdf" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="module-card rounded-2xl p-4 flex items-center gap-4 hover:shadow-elevated transition-shadow animate-fade-in"
-        >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
-            <FileText className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-foreground">Télécharger le PDF complet</h3>
-            <p className="text-sm text-muted-foreground">القاعدة النورانية - Toutes les leçons</p>
-          </div>
-          <ExternalLink className="h-5 w-5 text-muted-foreground" />
-        </a>
-
         {/* Lessons List */}
         <div className="space-y-3">
-          {NOURANIA_LESSONS.map((lesson, index) => {
-            const isValidated = isLessonValidated(lesson.lesson);
-            const isExpanded = expandedLesson === lesson.lesson;
+          {lessons.map((lesson, index) => {
+            const isValidated = isLessonValidated(lesson.id);
+            const isExpanded = expandedLesson === lesson.id;
+            const videoId = getVideoId(lesson.audio_url);
+            const pageRange = LESSON_PAGE_RANGES[lesson.lesson_number] || { start: 1, end: 10 };
 
             return (
               <div
-                key={lesson.lesson}
+                key={lesson.id}
                 className={cn(
                   'module-card rounded-2xl overflow-hidden transition-all duration-300 animate-slide-up',
                   isValidated && 'border-green-500/30 bg-green-50/30 dark:bg-green-950/20',
@@ -149,9 +153,9 @@ const Nourania = () => {
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
                 {/* Lesson Header */}
-                <button
-                  onClick={() => setExpandedLesson(isExpanded ? null : lesson.lesson)}
-                  className="w-full p-4 flex items-center gap-4"
+                <div
+                  onClick={() => setExpandedLesson(isExpanded ? null : lesson.id)}
+                  className="w-full p-4 flex items-center gap-4 cursor-pointer"
                 >
                   {/* Lesson Number */}
                   <div className={cn(
@@ -160,13 +164,13 @@ const Nourania = () => {
                       ? 'bg-green-500 text-white' 
                       : 'bg-gradient-to-br from-primary to-royal-dark text-primary-foreground'
                   )}>
-                    {isValidated ? <Check className="h-5 w-5" /> : lesson.lesson}
+                    {isValidated ? <Check className="h-5 w-5" /> : lesson.lesson_number}
                   </div>
 
                   {/* Title */}
                   <div className="flex-1 text-left min-w-0">
-                    <p className="font-arabic text-lg text-foreground truncate">{lesson.titleAr}</p>
-                    <p className="text-sm text-muted-foreground truncate">{lesson.titleFr}</p>
+                    <p className="font-arabic text-lg text-foreground truncate">{lesson.title_arabic}</p>
+                    <p className="text-sm text-muted-foreground truncate">{lesson.title_french}</p>
                   </div>
 
                   {/* Validation Button */}
@@ -174,10 +178,10 @@ const Nourania = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!isValidated) {
-                        validateMutation.mutate(lesson.lesson);
+                        validateMutation.mutate(lesson.id);
                       }
                     }}
-                    disabled={isValidated}
+                    disabled={isValidated || validateMutation.isPending}
                     size="sm"
                     className={cn(
                       'shrink-0 gap-2',
@@ -189,7 +193,7 @@ const Nourania = () => {
                     <Check className="h-4 w-4" />
                     {isValidated ? 'Validée' : 'Valider'}
                   </Button>
-                </button>
+                </div>
 
                 {/* Expanded Content */}
                 {isExpanded && (
@@ -217,11 +221,11 @@ const Nourania = () => {
                     </div>
 
                     {/* Video Tab */}
-                    {activeTab === 'video' && (
+                    {activeTab === 'video' && videoId && (
                       <div className="aspect-video rounded-xl overflow-hidden bg-foreground/90">
                         <iframe
-                          src={`https://www.youtube.com/embed/${lesson.videoId}`}
-                          title={lesson.titleFr}
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title={lesson.title_french}
                           className="w-full h-full"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
@@ -229,24 +233,19 @@ const Nourania = () => {
                       </div>
                     )}
 
-                    {/* PDF Tab */}
+                    {/* PDF Tab - Embedded PDF viewer with specific pages */}
                     {activeTab === 'pdf' && (
-                      <div className="bg-muted/50 rounded-xl p-4 text-center">
-                        <FileText className="h-12 w-12 text-gold mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Le PDF complet contient toutes les 17 leçons.
-                          <br />Ouvrez le PDF et allez à la leçon {lesson.lesson}.
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground text-center">
+                          Pages {pageRange.start} à {pageRange.end}
                         </p>
-                        <a
-                          href="/pdf/nourania.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button variant="outline" className="gap-2">
-                            <ExternalLink className="h-4 w-4" />
-                            Ouvrir le PDF
-                          </Button>
-                        </a>
+                        <div className="aspect-[3/4] rounded-xl overflow-hidden bg-muted">
+                          <iframe
+                            src={`/pdf/nourania.pdf#page=${pageRange.start}`}
+                            title={`${lesson.title_french} - PDF`}
+                            className="w-full h-full"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

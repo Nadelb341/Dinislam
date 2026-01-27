@@ -66,6 +66,16 @@ const modules: ModuleCard[] = [
     gradient: 'from-gold via-gold-dark to-gold',
     iconColor: 'text-primary',
   },
+  {
+    id: 'priere',
+    icon: Hand,
+    title: 'Prière',
+    titleArabic: 'الصلاة',
+    description: 'Ablutions et prières',
+    path: '/priere',
+    gradient: 'from-royal-dark via-primary to-royal-light',
+    iconColor: 'text-gold',
+  },
 ];
 
 const Index = () => {
