@@ -7,8 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminLoginDialog from '@/components/admin/AdminLoginDialog';
 import WelcomeNameDialog from '@/components/auth/WelcomeNameDialog';
+import { useUserProgress } from '@/hooks/useUserProgress';
 import { cn } from '@/lib/utils';
-
 interface ModuleCard {
   id: string;
   icon: React.ElementType;
@@ -88,6 +88,7 @@ const Index = () => {
   const { user } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const { data: progress } = useUserProgress();
 
   // Fetch user profile to check if name is set
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -212,18 +213,30 @@ const Index = () => {
           {/* Quick Stats */}
           <div className="bg-card rounded-2xl p-4 shadow-card border border-border animate-fade-in">
             <h3 className="font-bold text-foreground mb-3">Votre progression</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gold">0%</div>
-                <p className="text-xs text-muted-foreground">Sourates</p>
+                <div className="text-xl font-bold text-gold">{progress?.ramadan.percentage || 0}%</div>
+                <p className="text-xs text-muted-foreground">Ramadan</p>
               </div>
-              <div className="text-center border-x border-border">
-                <div className="text-2xl font-bold text-primary">0%</div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-primary">{progress?.nourania.percentage || 0}%</div>
                 <p className="text-xs text-muted-foreground">Nourania</p>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gold">0%</div>
-                <p className="text-xs text-muted-foreground">Ramadan</p>
+                <div className="text-xl font-bold text-gold">{progress?.alphabet.percentage || 0}%</div>
+                <p className="text-xs text-muted-foreground">Alphabet</p>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-primary">{progress?.invocations.percentage || 0}%</div>
+                <p className="text-xs text-muted-foreground">Invocations</p>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-gold">{progress?.sourates.percentage || 0}%</div>
+                <p className="text-xs text-muted-foreground">Sourates</p>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-primary">{progress?.prayer.percentage || 0}%</div>
+                <p className="text-xs text-muted-foreground">Prière</p>
               </div>
             </div>
           </div>
