@@ -2,45 +2,30 @@ import { Settings, Home, LogOut } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
 }
-
-const Header = ({ title = 'Dini Bismillah', showBack = false }: HeaderProps) => {
+const Header = ({
+  title = 'Dini Bismillah',
+  showBack = false
+}: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut, isAdmin } = useAuth();
-
+  const {
+    signOut,
+    isAdmin
+  } = useAuth();
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
   };
-
   const isHome = location.pathname === '/';
-
-  return (
-    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary via-primary to-royal-dark shadow-royal safe-top">
+  return <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary via-primary to-royal-dark shadow-royal safe-top">
       <div className="flex items-center justify-between h-14 px-4">
         {/* Left: Settings */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/settings')}
-          className="text-primary-foreground hover:bg-primary-foreground/10"
-        >
+        <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-primary-foreground hover:bg-primary-foreground/10">
           <Settings className="h-5 w-5" />
         </Button>
 
@@ -52,32 +37,17 @@ const Header = ({ title = 'Dini Bismillah', showBack = false }: HeaderProps) => 
           <h1 className="text-lg font-bold text-primary-foreground">
             {title}
           </h1>
-          {isAdmin && (
-            <span className="px-2 py-0.5 text-xs bg-gold text-primary rounded-full font-medium">
-              Admin
-            </span>
-          )}
+          {isAdmin}
         </div>
 
         {/* Right: Home or Logout */}
         <div className="flex items-center gap-1">
-          {!isHome && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-            >
+          {!isHome && <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-primary-foreground hover:bg-primary-foreground/10">
               <Home className="h-5 w-5" />
-            </Button>
-          )}
+            </Button>}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-primary-foreground hover:bg-primary-foreground/10"
-              >
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="h-5 w-5" />
               </Button>
             </AlertDialogTrigger>
@@ -98,8 +68,6 @@ const Header = ({ title = 'Dini Bismillah', showBack = false }: HeaderProps) => 
           </AlertDialog>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
