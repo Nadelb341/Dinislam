@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminLoginDialog from '@/components/admin/AdminLoginDialog';
+import WelcomeNameDialog from '@/components/auth/WelcomeNameDialog';
 import { cn } from '@/lib/utils';
 
 interface ModuleCard {
@@ -84,17 +87,49 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+
+  // Fetch user profile to check if name is set
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Show welcome dialog if user has no name set
+  useEffect(() => {
+    if (!profileLoading && profile !== undefined && user) {
+      const hasName = profile?.full_name && profile.full_name.trim().length > 0;
+      if (!hasName) {
+        setShowWelcomeDialog(true);
+      }
+    }
+  }, [profile, profileLoading, user]);
+
+  const handleWelcomeComplete = () => {
+    setShowWelcomeDialog(false);
+  };
 
   return (
     <>
       <AdminLoginDialog open={showAdminLogin} onOpenChange={setShowAdminLogin} />
+      <WelcomeNameDialog open={showWelcomeDialog} onComplete={handleWelcomeComplete} />
       <AppLayout showBottomNav={false}>
         <div className="p-4 space-y-6">
           {/* Welcome Section */}
           <div className="text-center py-6 animate-fade-in">
             <p className="text-muted-foreground mb-1">Assalamou Alaykoum</p>
             <h2 className="text-2xl font-bold text-foreground">
-              Bienvenue{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ''} !
+              Bienvenue{profile?.full_name ? `, ${profile.full_name}` : ''} !
             </h2>
             <p className="font-arabic text-xl text-gold mt-2">
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
