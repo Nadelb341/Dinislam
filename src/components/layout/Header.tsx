@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, LogOut, Mail } from 'lucide-react';
+import { Home, LogOut, Mail, Shield } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ const Header = ({
             </h1>
           </div>
 
-          {/* Right: Home or Logout */}
+          {/* Right: Home, Admin (if admin), Logout */}
           <div className="flex items-center gap-1">
             {!isHome && (
               <Button 
@@ -82,6 +82,17 @@ const Header = ({
                 className="text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Home className="h-5 w-5" />
+              </Button>
+            )}
+            {/* Admin icon - only visible for admins */}
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/admin')} 
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <Shield className="h-5 w-5" />
               </Button>
             )}
             <AlertDialog>
