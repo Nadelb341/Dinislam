@@ -11,6 +11,7 @@ import AdminStudentDetails from '@/components/admin/AdminStudentDetails';
 import AdminRamadanManager from '@/components/admin/AdminRamadanManager';
 import AdminMessaging from '@/components/admin/AdminMessaging';
 import AdminNouraniaContent from '@/components/admin/AdminNouraniaContent';
+import AdminSourateContent from '@/components/admin/AdminSourateContent';
 import { 
   Users, 
   GraduationCap, 
@@ -25,7 +26,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'nourania' | 'nourania-manage' | 'alphabet' | 'invocations' | 'sourates' | 'prayer' | 'messages';
+type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'nourania' | 'nourania-manage' | 'alphabet' | 'invocations' | 'sourates' | 'sourates-manage' | 'prayer' | 'messages';
 
 const Admin = () => {
   const { isAdmin, loading } = useAuth();
@@ -119,6 +120,19 @@ const Admin = () => {
             ← Retour
           </Button>
           <AdminNouraniaContent />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (currentView === 'sourates-manage') {
+    return (
+      <AppLayout title="Tableau de bord">
+        <div className="p-4">
+          <Button variant="ghost" onClick={handleBack} className="mb-4">
+            ← Retour
+          </Button>
+          <AdminSourateContent />
         </div>
       </AppLayout>
     );
@@ -249,15 +263,26 @@ const Admin = () => {
             onClick={() => setCurrentView('invocations')}
           />
 
-          <AdminModuleCard
-            title="Sourates"
-            icon={BookMarked}
-            value={`${stats?.sourates || 0} sourates`}
-            subtitle="Progression par élève"
-            color="text-primary"
-            bgColor="bg-primary/10"
-            onClick={() => setCurrentView('sourates')}
-          />
+          <div className="space-y-2">
+            <AdminModuleCard
+              title="Sourates"
+              icon={BookMarked}
+              value={`${stats?.sourates || 0} sourates`}
+              subtitle="Progression par élève"
+              color="text-primary"
+              bgColor="bg-primary/10"
+              onClick={() => setCurrentView('sourates')}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setCurrentView('sourates-manage')}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Gérer contenu & débloquer
+            </Button>
+          </div>
 
           <AdminModuleCard
             title="Prière"

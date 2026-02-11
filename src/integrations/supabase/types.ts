@@ -460,6 +460,79 @@ export type Database = {
         }
         Relationships: []
       }
+      sourate_admin_unlocks: {
+        Row: {
+          created_at: string
+          id: string
+          sourate_id: number
+          unlocked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sourate_id: number
+          unlocked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sourate_id?: number
+          unlocked_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourate_admin_unlocks_sourate_id_fkey"
+            columns: ["sourate_id"]
+            isOneToOne: false
+            referencedRelation: "sourates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sourate_content: {
+        Row: {
+          content_type: string
+          created_at: string
+          display_order: number
+          file_name: string
+          file_url: string
+          id: string
+          sourate_id: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          display_order?: number
+          file_name: string
+          file_url: string
+          id?: string
+          sourate_id: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          display_order?: number
+          file_name?: string
+          file_url?: string
+          id?: string
+          sourate_id?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourate_content_sourate_id_fkey"
+            columns: ["sourate_id"]
+            isOneToOne: false
+            referencedRelation: "sourates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sourates: {
         Row: {
           audio_url: string | null
@@ -779,6 +852,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_sourate_progress_sourate_id_fkey"
+            columns: ["sourate_id"]
+            isOneToOne: false
+            referencedRelation: "sourates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_sourate_verse_progress: {
+        Row: {
+          created_at: string
+          id: string
+          is_validated: boolean
+          sourate_id: number
+          updated_at: string
+          user_id: string
+          verse_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_validated?: boolean
+          sourate_id: number
+          updated_at?: string
+          user_id: string
+          verse_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_validated?: boolean
+          sourate_id?: number
+          updated_at?: string
+          user_id?: string
+          verse_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sourate_verse_progress_sourate_id_fkey"
             columns: ["sourate_id"]
             isOneToOne: false
             referencedRelation: "sourates"
