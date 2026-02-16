@@ -54,7 +54,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const registration = await navigator.serviceWorker.ready;
     
     // Check if already subscribed
-    let subscription = await registration.pushManager.getSubscription();
+    let subscription = await (registration as any).pushManager.getSubscription();
     
     if (!subscription) {
       // Create a new subscription with VAPID key
@@ -67,7 +67,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
         subscribeOptions.applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       }
       
-      subscription = await registration.pushManager.subscribe(subscribeOptions);
+      subscription = await (registration as any).pushManager.subscribe(subscribeOptions);
     }
 
     if (subscription) {
@@ -103,7 +103,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 export async function unsubscribeFromPush(userId: string): Promise<boolean> {
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const subscription = await (registration as any).pushManager.getSubscription();
 
     if (subscription) {
       await subscription.unsubscribe();
