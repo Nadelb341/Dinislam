@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket } from 'lucide-react';
+import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -49,9 +49,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   
-  // Quiz form: 4 questions per day
+  // Quiz form: 5 questions per day
   const [questions, setQuestions] = useState<QuestionForm[]>([
-    emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion(),
+    emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion(),
   ]);
 
   // Fetch ramadan settings
@@ -166,7 +166,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-quizzes'] });
-      toast({ title: 'Quiz enregistré avec succès (4 questions)' });
+      toast({ title: 'Quiz enregistré avec succès (5 questions)' });
     },
     onError: () => {
       toast({ title: 'Erreur lors de l\'enregistrement', variant: 'destructive' });
@@ -201,7 +201,46 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-quizzes'] });
       toast({ title: 'Toutes les questions supprimées' });
-      setQuestions([emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion()]);
+      setQuestions([emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion(), emptyQuestion()]);
+    },
+  });
+
+  // Reset calendar mutation - resets all users' progress
+  const resetCalendarMutation = useMutation({
+    mutationFn: async () => {
+      // Delete all quiz responses
+      const { error: respError } = await supabase
+        .from('quiz_responses')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (respError) throw respError;
+
+      // Delete all user ramadan progress
+      const { error: progError } = await supabase
+        .from('user_ramadan_progress')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (progError) throw progError;
+
+      // Reset settings: disable start and clear started_at
+      const { error: settError } = await supabase
+        .from('ramadan_settings')
+        .update({
+          start_enabled: false,
+          started_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', settings?.id);
+      if (settError) throw settError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ramadan-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['ramadan-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['ramadan-quiz-responses'] });
+      toast({ title: '🔄 Calendrier réinitialisé pour tous les utilisateurs' });
+    },
+    onError: () => {
+      toast({ title: 'Erreur lors de la réinitialisation', variant: 'destructive' });
     },
   });
 
@@ -248,7 +287,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     setSelectedDay(dayId);
     const existing = getQuizzesForDay(dayId);
     const newQuestions: QuestionForm[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       if (existing[i]) {
         newQuestions.push({
           question: existing[i].question,
@@ -308,7 +347,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
         </Button>
         <div className="flex-1">
           <h2 className="text-xl font-bold text-foreground">Gestion Ramadan</h2>
-          <p className="text-sm text-muted-foreground">Téléverser vidéos et créer quiz (4 questions/jour)</p>
+          <p className="text-sm text-muted-foreground">Téléverser vidéos et créer quiz (5 questions/jour)</p>
         </div>
       </div>
 
@@ -350,6 +389,44 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
         </CardContent>
       </Card>
 
+      {/* Reset Button */}
+      <Card className="border-orange-300 dark:border-orange-700">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-orange-100 dark:bg-orange-900/30">
+                <RotateCcw className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground">Réinitialiser</p>
+                <p className="text-sm text-muted-foreground">
+                  Remet à zéro la progression de tous les élèves
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => {
+                if (confirm('⚠️ Réinitialiser le calendrier pour TOUS les élèves ? Cette action est irréversible.')) {
+                  resetCalendarMutation.mutate();
+                }
+              }}
+              disabled={resetCalendarMutation.isPending}
+              variant="outline"
+              className="border-orange-400 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+            >
+              {resetCalendarMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Réinitialiser
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Days Grid */}
       <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
         {days.map((day) => {
@@ -362,7 +439,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               onClick={() => handleOpenDay(day.id)}
               className={`
                 aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200
-                ${hasVideo && quizCount >= 4
+                ${hasVideo && quizCount >= 5
                   ? 'bg-gradient-to-br from-green-500 to-green-600 text-white'
                   : hasVideo || quizCount > 0
                   ? 'bg-gradient-to-br from-gold to-gold-dark text-primary'
@@ -384,7 +461,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       <div className="flex gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 rounded bg-gradient-to-br from-green-500 to-green-600" />
-          <span>Complet (vidéo + 4Q)</span>
+          <span>Complet (vidéo + 5Q)</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 rounded bg-gradient-to-br from-gold to-gold-dark" />
@@ -458,12 +535,12 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               </Button>
             </div>
 
-            {/* Quiz Section: 4 Questions */}
+            {/* Quiz Section: 5 Questions */}
             <div className="space-y-4 border-t pt-4">
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <HelpCircle className="h-4 w-4 text-gold" />
-                  Quiz du jour (4 questions)
+                  Quiz du jour (5 questions)
                 </Label>
                 {currentQuizzes.length > 0 && selectedDay && (
                   <Button
@@ -536,7 +613,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                 className="w-full"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {currentQuizzes.length > 0 ? 'Mettre à jour le quiz' : 'Créer le quiz (4 questions)'}
+                {currentQuizzes.length > 0 ? 'Mettre à jour le quiz' : 'Créer le quiz (5 questions)'}
               </Button>
             </div>
           </div>
