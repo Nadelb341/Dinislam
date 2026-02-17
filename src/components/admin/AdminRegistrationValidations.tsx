@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, User, ArrowLeft } from 'lucide-react';
 
-interface PendingUser {
+interface RegistrationUser {
   user_id: string;
   email: string | null;
   full_name: string | null;
   gender: string | null;
   age: number | null;
   created_at: string;
+  is_approved: boolean;
 }
 
 const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
@@ -21,17 +22,17 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const { data: pendingUsers, isLoading } = useQuery({
-    queryKey: ['admin-pending-registrations'],
+  const { data: allUsers, isLoading } = useQuery({
+    queryKey: ['admin-all-registrations'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, email, full_name, gender, age, created_at')
-        .eq('is_approved', false)
+        .select('user_id, email, full_name, gender, age, created_at, is_approved')
+        .order('is_approved', { ascending: true })
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return (data || []) as PendingUser[];
+      return (data || []) as RegistrationUser[];
     },
   });
 
@@ -50,7 +51,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         description: "L'élève peut maintenant accéder à l'application.",
       });
 
-      queryClient.invalidateQueries({ queryKey: ['admin-pending-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-all-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-registrations-count'] });
     } catch (err) {
       console.error(err);
@@ -65,17 +66,104 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
 
   const handleReject = async (userId: string) => {
     setProcessingId(userId);
-    try {
-      // We don't delete the user, just keep is_approved = false
-      // Admin can choose to approve later
-      toast({
-        title: 'Inscription refusée',
-        description: "L'élève ne pourra pas accéder à l'application.",
-      });
-    } catch (err) {
-      console.error(err);
-    }
+    toast({
+      title: 'Inscription refusée',
+      description: "L'élève ne pourra pas accéder à l'application.",
+    });
     setProcessingId(null);
+  };
+
+  const pendingUsers = allUsers?.filter(u => !u.is_approved) || [];
+  const approvedUsers = allUsers?.filter(u => u.is_approved) || [];
+
+  const renderUserCard = (user: RegistrationUser) => {
+    const isApproved = user.is_approved;
+
+    return (
+      <Card
+        key={user.user_id}
+        className={
+          isApproved
+            ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/10 opacity-70'
+            : 'border-orange-200 dark:border-orange-800'
+        }
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                isApproved
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-orange-100 dark:bg-orange-900/30'
+              }`}>
+                <User className={`h-5 w-5 ${
+                  isApproved
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-orange-600 dark:text-orange-400'
+                }`} />
+              </div>
+              <div className="min-w-0">
+                <p className={`font-medium truncate ${
+                  isApproved
+                    ? 'text-red-500 dark:text-red-400 line-through'
+                    : 'text-foreground'
+                }`}>
+                  {user.full_name || 'Sans nom'}
+                </p>
+                <p className={`text-sm truncate ${
+                  isApproved
+                    ? 'text-red-400/70 dark:text-red-500/70 line-through'
+                    : 'text-muted-foreground'
+                }`}>{user.email}</p>
+                <div className="flex gap-2 mt-1 flex-wrap">
+                  {user.gender && (
+                    <Badge variant="outline" className="text-xs">
+                      {user.gender === 'garcon' ? '👦 Garçon' : '👧 Fille'}
+                    </Badge>
+                  )}
+                  {user.age && (
+                    <Badge variant="outline" className="text-xs">
+                      {user.age} ans
+                    </Badge>
+                  )}
+                  {isApproved && (
+                    <Badge className="bg-green-600 text-white text-xs">
+                      ✅ Validé
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+            {!isApproved && (
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-red-300 text-red-600 hover:bg-red-50"
+                  onClick={() => handleReject(user.user_id)}
+                  disabled={processingId === user.user_id}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleApprove(user.user_id)}
+                  disabled={processingId === user.user_id}
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -95,73 +183,37 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
             </Card>
           ))}
         </div>
-      ) : pendingUsers && pendingUsers.length > 0 ? (
+      ) : (
         <div className="space-y-3">
-          {pendingUsers.map((user) => (
-            <Card key={user.user_id} className="border-orange-200 dark:border-orange-800">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                      <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {user.full_name || 'Sans nom'}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      <div className="flex gap-2 mt-1 flex-wrap">
-                        {user.gender && (
-                          <Badge variant="outline" className="text-xs">
-                            {user.gender === 'garcon' ? '👦 Garçon' : '👧 Fille'}
-                          </Badge>
-                        )}
-                        {user.age && (
-                          <Badge variant="outline" className="text-xs">
-                            {user.age} ans
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-red-300 text-red-600 hover:bg-red-50"
-                      onClick={() => handleReject(user.user_id)}
-                      disabled={processingId === user.user_id}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleApprove(user.user_id)}
-                      disabled={processingId === user.user_id}
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+          {pendingUsers.length > 0 && (
+            <>
+              <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                En attente ({pendingUsers.length})
+              </p>
+              {pendingUsers.map(renderUserCard)}
+            </>
+          )}
+
+          {pendingUsers.length === 0 && (
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+              <CardContent className="p-6 text-center">
+                <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-green-700 dark:text-green-300 font-medium">
+                  Aucune inscription en attente
+                </p>
               </CardContent>
             </Card>
-          ))}
+          )}
+
+          {approvedUsers.length > 0 && (
+            <>
+              <p className="text-sm font-semibold text-muted-foreground mt-4">
+                Historique des validations ({approvedUsers.length})
+              </p>
+              {approvedUsers.map(renderUserCard)}
+            </>
+          )}
         </div>
-      ) : (
-        <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
-          <CardContent className="p-6 text-center">
-            <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-green-700 dark:text-green-300 font-medium">
-              Aucune inscription en attente
-            </p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
