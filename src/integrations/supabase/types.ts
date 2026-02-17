@@ -202,6 +202,44 @@ export type Database = {
         }
         Relationships: []
       }
+      nourania_validation_requests: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nourania_validation_requests_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "nourania_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prayer_categories: {
         Row: {
           created_at: string

@@ -14,6 +14,7 @@ import AdminNouraniaContent from '@/components/admin/AdminNouraniaContent';
 import AdminSourateContent from '@/components/admin/AdminSourateContent';
 import AdminSourateValidations from '@/components/admin/AdminSourateValidations';
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
+import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
 import { 
   Users, 
   GraduationCap, 
@@ -31,13 +32,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'nourania' | 'nourania-manage' | 'alphabet' | 'invocations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'messages';
+type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'invocations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'messages';
 
 const Admin = () => {
   const { isAdmin, loading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingRegistrations, setPendingRegistrations] = useState(0);
+  const [pendingNourania, setPendingNourania] = useState(0);
 
   // Fetch pending validation count
   const { data: pendingValidations } = useQuery({
@@ -65,6 +67,19 @@ const Admin = () => {
     },
   });
 
+  // Fetch pending nourania validation count
+  const { data: pendingNouraniaCount } = useQuery({
+    queryKey: ['admin-pending-nourania-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('nourania_validation_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   useEffect(() => {
     setPendingCount(pendingValidations || 0);
   }, [pendingValidations]);
@@ -72,6 +87,10 @@ const Admin = () => {
   useEffect(() => {
     setPendingRegistrations(pendingRegCount || 0);
   }, [pendingRegCount]);
+
+  useEffect(() => {
+    setPendingNourania(pendingNouraniaCount || 0);
+  }, [pendingNouraniaCount]);
 
   // Realtime subscription for pending count updates
   useEffect(() => {
@@ -98,6 +117,17 @@ const Admin = () => {
           .select('*', { count: 'exact', head: true })
           .eq('is_approved', false);
         setPendingRegistrations(count || 0);
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'nourania_validation_requests',
+      }, async () => {
+        const { count } = await supabase
+          .from('nourania_validation_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        setPendingNourania(count || 0);
       })
       .subscribe();
 
@@ -220,6 +250,16 @@ const Admin = () => {
     );
   }
 
+  if (currentView === 'nourania-validations') {
+    return (
+      <AppLayout title="Tableau de bord">
+        <div className="p-4">
+          <AdminNouraniaValidations onBack={handleBack} />
+        </div>
+      </AppLayout>
+    );
+  }
+
   if (currentView === 'registration-validations') {
     return (
       <AppLayout title="Tableau de bord">
@@ -333,6 +373,45 @@ const Admin = () => {
             {pendingRegistrations > 0 && (
               <Badge className="bg-red-500 text-white hover:bg-red-600 text-lg px-3 py-1 animate-pulse">
                 {pendingRegistrations}
+              </Badge>
+            )}
+          </div>
+        </button>
+
+        {/* Nourania validation card */}
+        <button
+          onClick={() => setCurrentView('nourania-validations')}
+          className={`w-full rounded-2xl p-4 shadow-card border transition-all duration-300 ${
+            pendingNourania > 0
+              ? 'bg-red-500/10 border-red-300 dark:border-red-700 hover:bg-red-500/20'
+              : 'bg-green-500/10 border-green-300 dark:border-green-700 hover:bg-green-500/20'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                pendingNourania > 0 ? 'bg-red-500/20' : 'bg-green-500/20'
+              }`}>
+                <Sparkles className={`h-6 w-6 ${
+                  pendingNourania > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                }`} />
+              </div>
+              <div className="text-left">
+                <p className={`font-bold text-base ${
+                  pendingNourania > 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'
+                }`}>
+                  Validation Nourania
+                </p>
+                <p className={`text-sm ${
+                  pendingNourania > 0 ? 'text-red-600/70 dark:text-red-400/70' : 'text-green-600/70 dark:text-green-400/70'
+                }`}>
+                  {pendingNourania > 0 ? 'Leçon(s) à valider' : 'Aucune validation en attente'}
+                </p>
+              </div>
+            </div>
+            {pendingNourania > 0 && (
+              <Badge className="bg-red-500 text-white hover:bg-red-600 text-lg px-3 py-1 animate-pulse">
+                {pendingNourania}
               </Badge>
             )}
           </div>
