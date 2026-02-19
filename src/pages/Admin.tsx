@@ -25,7 +25,7 @@ import AdminDynamicCardContent from '@/components/admin/AdminDynamicCardContent'
 import AdminRamadanQuizTracking from '@/components/admin/AdminRamadanQuizTracking';
 import AdminHomework from '@/components/admin/AdminHomework';
 import AdminAttendance from '@/components/admin/AdminAttendance';
-import AdminModules from '@/components/admin/AdminModules';
+
 import AdminOnlineUsers from '@/components/admin/AdminOnlineUsers';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { 
@@ -379,7 +379,7 @@ const Admin = () => {
   if (currentView === 'messages') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminMessaging /></div></AppLayout>;
   if (currentView === 'homework') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminHomework onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'attendance') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAttendance onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'modules') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminModules onBack={handleBack} /></div></AppLayout>;
+  
   if (currentView === 'dynamic-card-content' && selectedDynamicCard) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminDynamicCardContent card={selectedDynamicCard} onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'allah-names-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAllahNamesManager onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'generic-module-manage' && genericModuleManage) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={genericModuleManage.moduleId} moduleTitle={genericModuleManage.moduleTitle} onBack={handleBack} /></div></AppLayout>;
@@ -609,9 +609,6 @@ const Admin = () => {
                           }
                         }}>
                           <Settings className="h-4 w-4 mr-2" /> Gérer les cartes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setCurrentView('modules')}>
-                          <Pencil className="h-4 w-4 mr-2" /> Modifier le module
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
