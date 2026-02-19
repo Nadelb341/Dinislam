@@ -59,7 +59,7 @@ interface DayVideo {
 interface QuestionForm {
   question: string;
   options: string[];
-  correctOption: number;
+  correctOptions: number[];
   explanation: string;
   existingId?: string;
 }
@@ -67,7 +67,7 @@ interface QuestionForm {
 const emptyQuestion = (): QuestionForm => ({
   question: '',
   options: ['', '', '', ''],
-  correctOption: 0,
+  correctOptions: [],
   explanation: '',
 });
 
@@ -135,20 +135,25 @@ const SortableQuestionCard = ({
         {qf.options.map((opt, optIdx) => (
           <div key={optIdx} className="flex items-center gap-2">
             <input
-              type="radio"
-              name={`correct-q${qIdx}`}
-              checked={qf.correctOption === optIdx}
-              onChange={() => updateQuestion(qIdx, 'correctOption', optIdx)}
+              type="checkbox"
+              checked={qf.correctOptions.includes(optIdx)}
+              onChange={() => {
+                const newCorrect = qf.correctOptions.includes(optIdx)
+                  ? qf.correctOptions.filter(i => i !== optIdx)
+                  : [...qf.correctOptions, optIdx];
+                updateQuestion(qIdx, 'correctOptions', newCorrect);
+              }}
               className="h-3.5 w-3.5 accent-green-500"
             />
             <Input
               value={opt}
               onChange={(e) => updateQuestionOption(qIdx, optIdx, e.target.value)}
               placeholder={`Option ${optIdx + 1}`}
-              className={`h-8 text-sm ${qf.correctOption === optIdx ? 'border-green-500' : ''}`}
+              className={`h-8 text-sm ${qf.correctOptions.includes(optIdx) ? 'border-green-500' : ''}`}
             />
           </div>
         ))}
+        <p className="text-xs text-muted-foreground mt-1">Cochez toutes les bonnes réponses</p>
       </div>
       <div className="pt-2 border-t">
         <Label className="text-xs text-muted-foreground">📝 Explication / Correction</Label>
@@ -322,7 +327,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             .update({
               question: qf.question,
               options: qf.options as unknown as string,
-              correct_option: qf.correctOption,
+              correct_option: qf.correctOptions[0] ?? 0,
+              correct_options: qf.correctOptions,
               explanation: qf.explanation || null,
               question_order: i,
             })
@@ -335,7 +341,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               day_id: dayId,
               question: qf.question,
               options: qf.options as unknown as string,
-              correct_option: qf.correctOption,
+              correct_option: qf.correctOptions[0] ?? 0,
+              correct_options: qf.correctOptions,
               explanation: qf.explanation || null,
               question_order: i,
             });
@@ -454,7 +461,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       setQuestions(existing.map(q => ({
         question: q.question,
         options: q.options,
-        correctOption: q.correct_option ?? 0,
+        correctOptions: (q as any).correct_options?.length > 0 
+          ? (q as any).correct_options 
+          : (q.correct_option !== null ? [q.correct_option] : []),
         explanation: q.explanation || '',
         existingId: q.id,
       })));

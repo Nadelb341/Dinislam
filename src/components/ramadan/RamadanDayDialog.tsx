@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Check, ChevronRight, SkipForward, RotateCcw, Pause, Play, Star, Trophy } from 'lucide-react';
@@ -14,6 +14,7 @@ interface Quiz {
   question: string;
   options: string[];
   correct_option: number | null;
+  correct_options?: number[];
   explanation?: string | null;
   question_order?: number;
 }
@@ -59,7 +60,7 @@ const RamadanDayDialog = ({
   const [step, setStep] = useState<Step>('video');
   const [currentVideoIdx, setCurrentVideoIdx] = useState(0);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [attemptCount, setAttemptCount] = useState(0); // 0 = not attempted, 1 = first attempt done, 2 = second attempt done
   const [answerResult, setAnswerResult] = useState<'correct' | 'wrong-first' | 'wrong-final' | 'correct-second' | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -91,7 +92,7 @@ const RamadanDayDialog = ({
     setStep('video');
     setCurrentVideoIdx(0);
     setCurrentQuestionIdx(0);
-    setSelectedAnswer(null);
+    setSelectedAnswers([]);
     setAttemptCount(0);
     setAnswerResult(null);
     setShowExplanation(false);
@@ -186,22 +187,43 @@ const RamadanDayDialog = ({
     } else {
       // Move to next question
       setCurrentQuestionIdx(prev => prev + 1);
-      setSelectedAnswer(null);
+      setSelectedAnswers([]);
       setAttemptCount(0);
       setAnswerResult(null);
       setShowExplanation(false);
     }
   };
 
-  const handleValidateAnswer = () => {
-    if (selectedAnswer === null || !currentQuiz) return;
+  const getCorrectOptionsForQuiz = (quiz: Quiz): number[] => {
+    if (quiz.correct_options && quiz.correct_options.length > 0) return quiz.correct_options;
+    if (quiz.correct_option !== null && quiz.correct_option !== undefined) return [quiz.correct_option];
+    return [];
+  };
 
-    const isCorrect = selectedAnswer === currentQuiz.correct_option;
+  const isMultipleChoice = (quiz: Quiz): boolean => {
+    return getCorrectOptionsForQuiz(quiz).length > 1;
+  };
+
+  const handleToggleAnswer = (optIdx: number) => {
+    if (showExplanation || answerResult === 'wrong-first') return;
+    setSelectedAnswers(prev => 
+      prev.includes(optIdx) ? prev.filter(i => i !== optIdx) : [...prev, optIdx]
+    );
+  };
+
+  const handleValidateAnswer = () => {
+    if (selectedAnswers.length === 0 || !currentQuiz) return;
+
+    const correctOpts = getCorrectOptionsForQuiz(currentQuiz);
+    const isCorrect = correctOpts.length === selectedAnswers.length && 
+      correctOpts.every(o => selectedAnswers.includes(o));
     const currentAttempt = attemptCount + 1;
     setAttemptCount(currentAttempt);
 
+    // Save the first selected option for the response record (legacy compat)
+    const primarySelected = selectedAnswers[0];
+
     if (isCorrect) {
-      // Correct answer
       if (currentAttempt === 1) {
         setAnswerResult('correct');
         setCorrectCount(prev => prev + 1);
@@ -210,36 +232,24 @@ const RamadanDayDialog = ({
         setCorrectCount(prev => prev + 1);
         setAllFirstAttempt(false);
       }
-      onSaveQuizResponse(currentQuiz.id, selectedAnswer, currentAttempt, true);
+      onSaveQuizResponse(currentQuiz.id, primarySelected, currentAttempt, true);
       setShowExplanation(true);
-
-      // Auto-advance after 4 seconds
-      autoAdvanceTimerRef.current = setTimeout(() => {
-        advanceToNextQuestion();
-      }, 4000);
+      autoAdvanceTimerRef.current = setTimeout(() => advanceToNextQuestion(), 4000);
     } else {
-      // Wrong answer
       if (currentAttempt === 1) {
-        // First wrong attempt - allow retry
         setAnswerResult('wrong-first');
-        onSaveQuizResponse(currentQuiz.id, selectedAnswer, 1, false);
-        // Reset selection for second attempt after a moment
+        onSaveQuizResponse(currentQuiz.id, primarySelected, 1, false);
         setTimeout(() => {
-          setSelectedAnswer(null);
+          setSelectedAnswers([]);
           setAnswerResult(null);
         }, 1500);
       } else {
-        // Second wrong attempt - show correct answer and explanation
         setAnswerResult('wrong-final');
         setWrongCount(prev => prev + 1);
         setAllFirstAttempt(false);
-        onSaveQuizResponse(currentQuiz.id, selectedAnswer, 2, false);
+        onSaveQuizResponse(currentQuiz.id, primarySelected, 2, false);
         setShowExplanation(true);
-
-        // Auto-advance after 4 seconds
-        autoAdvanceTimerRef.current = setTimeout(() => {
-          advanceToNextQuestion();
-        }, 4000);
+        autoAdvanceTimerRef.current = setTimeout(() => advanceToNextQuestion(), 4000);
       }
     }
   };
@@ -450,37 +460,36 @@ const RamadanDayDialog = ({
                       </div>
                     )}
 
-                    <RadioGroup
-                      value={selectedAnswer !== null ? selectedAnswer.toString() : ''}
-                      onValueChange={(val) => {
-                        if (!showExplanation && answerResult !== 'wrong-first') {
-                          setSelectedAnswer(parseInt(val));
-                        }
-                      }}
-                    >
+                    {isMultipleChoice(currentQuiz) && !showExplanation && answerResult !== 'wrong-first' && (
+                      <p className="text-xs text-muted-foreground italic mb-1">Plusieurs réponses possibles</p>
+                    )}
+                    <div className="space-y-2">
                       {currentQuiz.options.map((option, optIdx) => {
-                        const isCorrectOption = optIdx === currentQuiz.correct_option;
+                        const correctOpts = getCorrectOptionsForQuiz(currentQuiz);
+                        const isCorrectOption = correctOpts.includes(optIdx);
+                        const isSelected = selectedAnswers.includes(optIdx);
                         const showCorrect = showExplanation && isCorrectOption;
-                        const showWrong = showExplanation && selectedAnswer === optIdx && !isCorrectOption;
-                        const showWrongFinal = answerResult === 'wrong-final' && selectedAnswer === optIdx && !isCorrectOption;
+                        const showWrong = showExplanation && isSelected && !isCorrectOption;
+                        const showWrongFinal = answerResult === 'wrong-final' && isSelected && !isCorrectOption;
 
                         return (
                           <div
                             key={optIdx}
+                            onClick={() => handleToggleAnswer(optIdx)}
                             className={cn(
-                              'flex items-center space-x-3 p-2.5 rounded-lg border transition-colors',
+                              'flex items-center space-x-3 p-2.5 rounded-lg border transition-colors cursor-pointer',
                               showCorrect && 'border-green-500 bg-green-50 dark:bg-green-900/20',
                               (showWrong || showWrongFinal) && 'border-destructive bg-destructive/10',
-                              !showExplanation && answerResult !== 'wrong-first' && 'hover:bg-muted/50'
+                              !showExplanation && answerResult !== 'wrong-first' && 'hover:bg-muted/50',
+                              !showExplanation && !answerResult && isSelected && 'border-primary bg-primary/5'
                             )}
                           >
-                            <RadioGroupItem
-                              value={optIdx.toString()}
-                              id={`q${currentQuestionIdx}-opt${optIdx}`}
+                            <Checkbox
+                              checked={isSelected}
                               disabled={showExplanation || answerResult === 'wrong-first'}
+                              className="pointer-events-none"
                             />
                             <Label
-                              htmlFor={`q${currentQuestionIdx}-opt${optIdx}`}
                               className={cn(
                                 'flex-1 cursor-pointer text-sm',
                                 showCorrect && 'text-green-700 dark:text-green-400 font-medium',
@@ -493,7 +502,7 @@ const RamadanDayDialog = ({
                           </div>
                         );
                       })}
-                    </RadioGroup>
+                    </div>
                   </div>
 
                   {/* Explanation block */}
@@ -538,7 +547,7 @@ const RamadanDayDialog = ({
                   {!showExplanation && answerResult !== 'wrong-first' && (
                     <Button
                       onClick={handleValidateAnswer}
-                      disabled={selectedAnswer === null}
+                      disabled={selectedAnswers.length === 0}
                       className="w-full bg-gradient-to-r from-primary to-royal-dark"
                     >
                       <Check className="h-4 w-4 mr-2" />

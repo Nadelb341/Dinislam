@@ -880,6 +880,7 @@ export type Database = {
       ramadan_quizzes: {
         Row: {
           correct_option: number | null
+          correct_options: number[] | null
           created_at: string
           day_id: number
           explanation: string | null
@@ -890,6 +891,7 @@ export type Database = {
         }
         Insert: {
           correct_option?: number | null
+          correct_options?: number[] | null
           created_at?: string
           day_id: number
           explanation?: string | null
@@ -900,6 +902,7 @@ export type Database = {
         }
         Update: {
           correct_option?: number | null
+          correct_options?: number[] | null
           created_at?: string
           day_id?: number
           explanation?: string | null
