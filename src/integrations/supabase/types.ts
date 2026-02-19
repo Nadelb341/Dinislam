@@ -350,7 +350,9 @@ export type Database = {
           content_arabic: string | null
           content_french: string | null
           created_at: string
+          display_order: number
           id: number
+          image_url: string | null
           title_arabic: string
           title_french: string
         }
@@ -360,7 +362,9 @@ export type Database = {
           content_arabic?: string | null
           content_french?: string | null
           created_at?: string
+          display_order?: number
           id?: number
+          image_url?: string | null
           title_arabic: string
           title_french: string
         }
@@ -370,7 +374,9 @@ export type Database = {
           content_arabic?: string | null
           content_french?: string | null
           created_at?: string
+          display_order?: number
           id?: number
+          image_url?: string | null
           title_arabic?: string
           title_french?: string
         }

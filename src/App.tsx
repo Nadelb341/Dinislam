@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Sourates from "./pages/Sourates";
+import Invocations from "./pages/Invocations";
 import Nourania from "./pages/Nourania";
 import Priere from "./pages/Priere";
 import Ramadan from "./pages/Ramadan";
@@ -53,7 +54,7 @@ const AppRoutes = () => {
       <Route path="/sourates" element={<ProtectedRoute><Sourates /></ProtectedRoute>} />
       <Route path="/ramadan" element={<ProtectedRoute><Ramadan /></ProtectedRoute>} />
       <Route path="/alphabet" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      <Route path="/invocations" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+      <Route path="/invocations" element={<ProtectedRoute><Invocations /></ProtectedRoute>} />
       <Route path="/nourania" element={<ProtectedRoute><Nourania /></ProtectedRoute>} />
       <Route path="/priere" element={<ProtectedRoute><Priere /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
