@@ -14,6 +14,7 @@ import AdminNouraniaContent from '@/components/admin/AdminNouraniaContent';
 import AdminSourateContent from '@/components/admin/AdminSourateContent';
 import AdminAlphabetContent from '@/components/admin/AdminAlphabetContent';
 import AdminInvocationContent from '@/components/admin/AdminInvocationContent';
+import AdminInvocationManager from '@/components/admin/AdminInvocationManager';
 import AdminSourateValidations from '@/components/admin/AdminSourateValidations';
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
 import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
@@ -352,7 +353,7 @@ const Admin = () => {
   if (currentView === 'nourania-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminNouraniaContent /></div></AppLayout>;
   if (currentView === 'sourates-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminSourateContent /></div></AppLayout>;
   if (currentView === 'alphabet-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminAlphabetContent /></div></AppLayout>;
-  if (currentView === 'invocations-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminInvocationContent /></div></AppLayout>;
+  if (currentView === 'invocations-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminInvocationManager onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'sourates-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminSourateValidations onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'nourania-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminNouraniaValidations onBack={handleBack} /></div></AppLayout>;
   if (currentView === 'registration-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminRegistrationValidations onBack={handleBack} /></div></AppLayout>;
