@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,8 @@ const Nourania = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { fireSuccess } = useConfetti();
+  const [searchParams] = useSearchParams();
+  const lessonParam = searchParams.get('lesson');
   const [expandedLesson, setExpandedLesson] = useState<number | null>(null);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; lessonNumber: number; lessonId: number } | null>(null);
 
@@ -110,6 +113,23 @@ const Nourania = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, lessons, queryClient, fireSuccess]);
+
+  // Auto-expand lesson from URL param (e.g., ?lesson=5)
+  useEffect(() => {
+    if (lessonParam && lessons.length > 0) {
+      const lessonNum = parseInt(lessonParam, 10);
+      if (!isNaN(lessonNum)) {
+        const lesson = lessons.find(l => l.lesson_number === lessonNum);
+        if (lesson) {
+          setExpandedLesson(lesson.id);
+          // Scroll to the lesson after a brief delay
+          setTimeout(() => {
+            document.getElementById(`lesson-${lesson.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }
+      }
+    }
+  }, [lessonParam, lessons]);
 
   const validatedCount = userProgress.filter(p => p.is_validated).length;
   const totalLessons = lessons.length || 17;
@@ -237,6 +257,7 @@ const Nourania = () => {
 
             return (
               <div
+                id={`lesson-${lesson.id}`}
                 key={lesson.id}
                 className={cn(
                   'module-card rounded-2xl overflow-hidden transition-all duration-300 animate-slide-up',

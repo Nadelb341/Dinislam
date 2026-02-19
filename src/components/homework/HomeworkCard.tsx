@@ -24,6 +24,20 @@ const HomeworkCard = () => {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile-name', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: assignments, isLoading } = useQuery({
     queryKey: ['my-homework', user?.id],
     queryFn: async () => {
@@ -62,6 +76,21 @@ const HomeworkCard = () => {
         .eq('id', assignmentId)
         .eq('user_id', user?.id);
       if (error) throw error;
+
+      // Notify admin via push notification
+      const assignment = assignments?.find(a => a.id === assignmentId);
+      const subjectLabel = assignment ? (SUBJECTS[assignment.subject]?.label || assignment.subject) : '';
+      try {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            title: '✅ Devoir terminé',
+            body: `${profile?.full_name || 'Un élève'} a terminé : ${assignment?.title || ''} (${subjectLabel})`,
+            type: 'admin',
+          },
+        });
+      } catch (e) {
+        console.error('Push notification error:', e);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-homework'] });
@@ -97,6 +126,21 @@ const HomeworkCard = () => {
 
       queryClient.invalidateQueries({ queryKey: ['my-homework-submissions'] });
       toast.success('Fichier déposé avec succès ! 📎');
+
+      // Notify admin
+      const assignment = assignments?.find(a => a.id === assignmentId);
+      const subjectLabel = assignment ? (SUBJECTS[assignment.subject]?.label || assignment.subject) : '';
+      try {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            title: '📎 Nouveau fichier rendu',
+            body: `${profile?.full_name || 'Un élève'} a déposé un fichier pour : ${assignment?.title || ''} (${subjectLabel})`,
+            type: 'admin',
+          },
+        });
+      } catch (e) {
+        console.error('Push notification error:', e);
+      }
     } catch (err: any) {
       toast.error('Erreur: ' + err.message);
     } finally {
@@ -112,7 +156,10 @@ const HomeworkCard = () => {
   const goToLesson = (subject: string, lessonRef?: string | null) => {
     const subjectInfo = SUBJECTS[subject];
     if (!subjectInfo) return;
-    navigate(subjectInfo.path);
+    const path = lessonRef
+      ? `${subjectInfo.path}?lesson=${encodeURIComponent(lessonRef)}`
+      : subjectInfo.path;
+    navigate(path);
   };
 
   return (
