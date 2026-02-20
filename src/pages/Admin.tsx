@@ -586,59 +586,6 @@ const Admin = () => {
           </SortableContext>
         </DndContext>
 
-        {/* Learning modules section (99 Noms, Grammaire, Vocabulaire, etc.) */}
-        <div className="mt-6">
-          <h2 className="text-xl font-bold text-foreground mb-2">Modules pédagogiques</h2>
-          <p className="text-sm text-muted-foreground mb-4">Gérer les cartes, médias et ordre d'affichage de chaque module</p>
-          <div className="space-y-3">
-            {learningModules?.filter(m => !m.is_builtin).map((mod) => {
-              const isAllahNames = mod.title === "99 Noms d'Allah";
-              return (
-                <AdminModuleCard
-                  key={mod.id}
-                  title={mod.title}
-                  icon={Book}
-                  value={mod.is_active ? 'Actif' : 'Masqué'}
-                  subtitle={mod.title_arabic || ''}
-                  color="text-violet-600 dark:text-violet-400"
-                  bgColor="bg-violet-100 dark:bg-violet-900/30"
-                  cardBgColor="bg-violet-50/50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800"
-                  onClick={() => {
-                    if (isAllahNames) {
-                      setCurrentView('allah-names-manage');
-                    } else {
-                      setGenericModuleManage({ moduleId: mod.id, moduleTitle: mod.title });
-                      setCurrentView('generic-module-manage');
-                    }
-                  }}
-                  actionButton={
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => {
-                          if (isAllahNames) {
-                            setCurrentView('allah-names-manage');
-                          } else {
-                            setGenericModuleManage({ moduleId: mod.id, moduleTitle: mod.title });
-                            setCurrentView('generic-module-manage');
-                          }
-                        }}>
-                          <Settings className="h-4 w-4 mr-2" /> Gérer les cartes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setModuleToDelete(mod.id); setDeleteModuleOpen(true); }}>
-                          <Trash2 className="h-4 w-4 mr-2" /> Supprimer le module
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  }
-                />
-              );
-            })}
-          </div>
-        </div>
-
         {/* Floating add button for dashboard announcement cards */}
         <button
           onClick={() => { setEditingCard(null); setCardDialogOpen(true); }}
