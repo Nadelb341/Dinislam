@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Check, Plus, Play, FileText, Type, Trash2, 
-  Droplets, Waves, Sunrise, Sun, CloudSun, Sunset, Moon, BookOpen, Hand
+  Droplets, Waves, Sunrise, Sun, CloudSun, Sunset, Moon, BookOpen, Hand,
+  Navigation, MapPin, ChevronDown, Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,9 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { usePrayerTimesCity, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
+import SunArcDisplay from '@/components/prayer/SunArcDisplay';
+import QiblaCompass from '@/components/prayer/QiblaCompass';
 
 // Icon mapping
 const iconMap: Record<string, React.ElementType> = {
@@ -44,6 +48,11 @@ const Priere = () => {
   const [newContent, setNewContent] = useState({ type: 'text', title: '', content: '' });
   const [selectedCategoryForContent, setSelectedCategoryForContent] = useState<string | null>(null);
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
+  const [showQibla, setShowQibla] = useState(false);
+  const [showCitySelector, setShowCitySelector] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<CityOption>(CITIES[0]); // Montpellier by default
+
+  const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity);
 
   // Fetch categories from database
   const { data: categories = [] } = useQuery({
@@ -86,18 +95,15 @@ const Priere = () => {
     enabled: !!user?.id,
   });
 
-  // Calculate progress
   const validatedCount = userProgress.filter(p => p.is_validated).length;
   const totalCategories = categories.length;
   const progressPercentage = totalCategories > 0 ? Math.round((validatedCount / totalCategories) * 100) : 0;
 
-  // Mutation for adding a category
   const addCategoryMutation = useMutation({
     mutationFn: async () => {
       const maxOrder = categories.length > 0 
         ? Math.max(...categories.map(c => c.display_order)) 
         : 0;
-      
       const { error } = await supabase
         .from('prayer_categories')
         .insert({
@@ -115,22 +121,16 @@ const Priere = () => {
       setNewCategoryName({ arabic: '', french: '' });
       toast.success('Catégorie ajoutée !');
     },
-    onError: (error) => {
-      toast.error('Erreur lors de l\'ajout');
-      console.error(error);
-    },
+    onError: () => toast.error('Erreur lors de l\'ajout'),
   });
 
-  // Mutation for adding content
   const addContentMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCategoryForContent) throw new Error('Aucune catégorie sélectionnée');
-      
       const categoryContent = allContent.filter(c => c.category_id === selectedCategoryForContent);
       const maxOrder = categoryContent.length > 0 
         ? Math.max(...categoryContent.map(c => c.display_order)) 
         : 0;
-      
       const { error } = await supabase
         .from('prayer_content')
         .insert({
@@ -149,13 +149,9 @@ const Priere = () => {
       setSelectedCategoryForContent(null);
       toast.success('Contenu ajouté !');
     },
-    onError: (error) => {
-      toast.error('Erreur lors de l\'ajout');
-      console.error(error);
-    },
+    onError: () => toast.error('Erreur lors de l\'ajout'),
   });
 
-  // Mutation for deleting content
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
       const { error } = await supabase
@@ -170,13 +166,10 @@ const Priere = () => {
     },
   });
 
-  // Mutation for validating a category
   const validateMutation = useMutation({
     mutationFn: async (categoryId: string) => {
       if (!user?.id) throw new Error('Non connecté');
-      
       const existingProgress = userProgress.find(p => p.category_id === categoryId);
-      
       if (existingProgress) {
         const { error } = await supabase
           .from('user_prayer_progress')
@@ -186,11 +179,7 @@ const Priere = () => {
       } else {
         const { error } = await supabase
           .from('user_prayer_progress')
-          .insert({
-            user_id: user.id,
-            category_id: categoryId,
-            is_validated: true,
-          });
+          .insert({ user_id: user.id, category_id: categoryId, is_validated: true });
         if (error) throw error;
       }
     },
@@ -198,23 +187,18 @@ const Priere = () => {
       queryClient.invalidateQueries({ queryKey: ['prayer-progress'] });
       toast.success('Catégorie validée !');
     },
-    onError: (error) => {
-      toast.error('Erreur lors de la validation');
-      console.error(error);
-    },
+    onError: () => toast.error('Erreur lors de la validation'),
   });
 
-  const isCategoryValidated = (categoryId: string) => {
-    return userProgress.some(p => p.category_id === categoryId && p.is_validated);
-  };
+  const isCategoryValidated = (categoryId: string) =>
+    userProgress.some(p => p.category_id === categoryId && p.is_validated);
 
-  const getCategoryContent = (categoryId: string) => {
-    return allContent.filter(c => c.category_id === categoryId);
-  };
+  const getCategoryContent = (categoryId: string) =>
+    allContent.filter(c => c.category_id === categoryId);
 
-  const getIcon = (iconName: string) => {
-    return iconMap[iconName] || Hand;
-  };
+  const getIcon = (iconName: string) => iconMap[iconName] || Hand;
+
+  const nextPrayer = prayerTimes ? getNextPrayer() : null;
 
   return (
     <AppLayout>
@@ -223,6 +207,88 @@ const Priere = () => {
         <div className="text-center space-y-2 animate-fade-in">
           <h1 className="text-2xl font-bold text-foreground">الصلاة</h1>
           <p className="text-muted-foreground">La Prière - Apprentissage complet</p>
+        </div>
+
+        {/* ── PRAYER TIMES SECTION ── */}
+        <div className="space-y-3 animate-fade-in">
+          {/* City selector + Qibla button */}
+          <div className="flex items-center gap-2">
+            {/* City Selector */}
+            <div className="flex-1 relative">
+              <button
+                onClick={() => setShowCitySelector(!showCitySelector)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <MapPin className="h-4 w-4 text-green-600 shrink-0" />
+                <span className="flex-1 text-left font-medium">{selectedCity.label}</span>
+                <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showCitySelector && 'rotate-180')} />
+              </button>
+
+              {showCitySelector && (
+                <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated max-h-56 overflow-y-auto">
+                  {CITIES.map((city) => (
+                    <button
+                      key={city.label}
+                      onClick={() => { setSelectedCity(city); setShowCitySelector(false); }}
+                      className={cn(
+                        'w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors flex items-center gap-2',
+                        selectedCity.label === city.label && 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 font-medium'
+                      )}
+                    >
+                      <span className="flex-1">{city.label}</span>
+                      <span className="text-xs text-muted-foreground">{city.country}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Qibla Button */}
+            <Button
+              onClick={() => setShowQibla(true)}
+              className="gap-2 bg-green-700 hover:bg-green-800 text-white shrink-0"
+            >
+              <Navigation className="h-4 w-4" />
+              Qibla
+            </Button>
+          </div>
+
+          {/* Prayer times card */}
+          {prayerLoading ? (
+            <div className="rounded-2xl bg-slate-800 h-40 flex items-center justify-center">
+              <div className="flex items-center gap-2 text-slate-400">
+                <Clock className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Chargement des horaires...</span>
+              </div>
+            </div>
+          ) : prayerError ? (
+            <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-4 text-center text-sm text-destructive">
+              {prayerError}
+            </div>
+          ) : prayerTimes ? (
+            <SunArcDisplay prayerTimes={prayerTimes} cityLabel={`${selectedCity.label}, ${selectedCity.country}`} />
+          ) : null}
+
+          {/* Next prayer banner */}
+          {nextPrayer && (
+            <div className="rounded-xl bg-green-700 text-white p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-green-200">Prochaine prière</p>
+                <p className="font-bold text-lg">{nextPrayer.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono font-bold text-xl">{nextPrayer.time}</p>
+                <p className="text-xs text-green-200 font-arabic">{nextPrayer.arabic}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Apprentissage</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
         {/* Admin Actions */}
@@ -258,7 +324,7 @@ const Priere = () => {
                       placeholder="Nom de la catégorie"
                     />
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => addCategoryMutation.mutate()}
                     disabled={!newCategoryName.arabic || !newCategoryName.french || addCategoryMutation.isPending}
                     className="w-full"
@@ -299,12 +365,10 @@ const Priere = () => {
                 )}
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
-                {/* Category Header */}
                 <div
                   onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
                   className="w-full p-4 flex items-center gap-4 cursor-pointer"
                 >
-                  {/* Icon */}
                   <div className={cn(
                     'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
                     isValidated 
@@ -314,19 +378,15 @@ const Priere = () => {
                     {isValidated ? <Check className="h-6 w-6" /> : <IconComponent className="h-6 w-6 text-primary" />}
                   </div>
 
-                  {/* Title */}
                   <div className="flex-1 text-left min-w-0">
                     <p className="font-arabic text-lg text-foreground truncate">{category.name_arabic}</p>
                     <p className="text-sm text-muted-foreground truncate">{category.name_french}</p>
                   </div>
 
-                  {/* Validation Button */}
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isValidated) {
-                        validateMutation.mutate(category.id);
-                      }
+                      if (!isValidated) validateMutation.mutate(category.id);
                     }}
                     disabled={isValidated || validateMutation.isPending}
                     size="sm"
@@ -342,10 +402,8 @@ const Priere = () => {
                   </Button>
                 </div>
 
-                {/* Expanded Content */}
                 {isExpanded && (
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
-                    {/* Admin: Add Content Button */}
                     {isAdmin && (
                       <Dialog open={showAddContent && selectedCategoryForContent === category.id} onOpenChange={(open) => {
                         setShowAddContent(open);
@@ -368,9 +426,7 @@ const Priere = () => {
                                 value={newContent.type}
                                 onValueChange={(value) => setNewContent(prev => ({ ...prev, type: value }))}
                               >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="text">Texte</SelectItem>
                                   <SelectItem value="video">Vidéo YouTube</SelectItem>
@@ -406,7 +462,7 @@ const Priere = () => {
                                 />
                               )}
                             </div>
-                            <Button 
+                            <Button
                               onClick={() => addContentMutation.mutate()}
                               disabled={!newContent.title || !newContent.content || addContentMutation.isPending}
                               className="w-full"
@@ -418,7 +474,6 @@ const Priere = () => {
                       </Dialog>
                     )}
 
-                    {/* Display Content */}
                     {content.length > 0 ? (
                       <div className="space-y-3">
                         {content.map((item) => (
@@ -441,11 +496,9 @@ const Priere = () => {
                                 </Button>
                               )}
                             </div>
-                            
                             {item.content_type === 'text' && (
                               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.content}</p>
                             )}
-                            
                             {item.content_type === 'video' && (
                               <div className="aspect-video rounded-lg overflow-hidden mt-2">
                                 <iframe
@@ -457,14 +510,9 @@ const Priere = () => {
                                 />
                               </div>
                             )}
-                            
                             {item.content_type === 'pdf' && (
                               <div className="aspect-[3/4] rounded-lg overflow-hidden mt-2">
-                                <iframe
-                                  src={item.content}
-                                  title={item.title}
-                                  className="w-full h-full"
-                                />
+                                <iframe src={item.content} title={item.title} className="w-full h-full" />
                               </div>
                             )}
                           </div>
@@ -483,6 +531,12 @@ const Priere = () => {
           })}
         </div>
       </div>
+
+      {/* Qibla Compass Drawer */}
+      {showQibla && (
+        <QiblaCompass city={selectedCity} onClose={() => setShowQibla(false)} />
+      )}
+
       <ConfirmDeleteDialog
         open={!!deleteContentId}
         onOpenChange={(open) => !open && setDeleteContentId(null)}
