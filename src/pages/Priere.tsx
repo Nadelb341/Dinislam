@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Check, Plus, Play, FileText, Type, Trash2, 
@@ -32,6 +32,12 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { usePrayerTimesCity, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
 import SunArcDisplay from '@/components/prayer/SunArcDisplay';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
+import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
+
+function getTodayKey(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 // Icon mapping
 const iconMap: Record<string, React.ElementType> = {
@@ -93,6 +99,66 @@ const Priere = () => {
       return data || [];
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch daily prayers (last 30 days for calendar)
+  const { data: dailyPrayers = [] } = useQuery({
+    queryKey: ['user-daily-prayers', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const fromDate = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`;
+      const { data, error } = await supabase
+        .from('user_daily_prayers')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', fromDate)
+        .eq('is_checked', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Today's checked prayers
+  const todayKey = getTodayKey();
+  const todayChecked = dailyPrayers
+    .filter(p => p.date === todayKey)
+    .map(p => p.prayer_name);
+
+  // Build calendar data (group by date → count)
+  const calendarData = useMemo(() => {
+    const map: Record<string, number> = {};
+    dailyPrayers.forEach(p => {
+      map[p.date] = (map[p.date] || 0) + 1;
+    });
+    return Object.entries(map).map(([date, count]) => ({ date, count }));
+  }, [dailyPrayers]);
+
+  const toggleDailyPrayerMutation = useMutation({
+    mutationFn: async (prayerName: string) => {
+      if (!user?.id) throw new Error('Non connecté');
+      const existing = dailyPrayers.find(p => p.date === todayKey && p.prayer_name === prayerName);
+      if (existing) {
+        // Toggle off → delete
+        const { error } = await supabase
+          .from('user_daily_prayers')
+          .delete()
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        // Toggle on → insert
+        const { error } = await supabase
+          .from('user_daily_prayers')
+          .insert({ user_id: user.id, date: todayKey, prayer_name: prayerName, is_checked: true });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-daily-prayers', user?.id] });
+    },
+    onError: () => toast.error('Erreur lors de la mise à jour'),
   });
 
   const validatedCount = userProgress.filter(p => p.is_validated).length;
@@ -266,23 +332,31 @@ const Priere = () => {
               {prayerError}
             </div>
           ) : prayerTimes ? (
-            <SunArcDisplay prayerTimes={prayerTimes} cityLabel={`${selectedCity.label}, ${selectedCity.country}`} />
+            <SunArcDisplay
+              prayerTimes={prayerTimes}
+              cityLabel={`${selectedCity.label}, ${selectedCity.country}`}
+              checkedPrayers={todayChecked}
+              onTogglePrayer={(name) => toggleDailyPrayerMutation.mutate(name)}
+            />
           ) : null}
-
-          {/* Next prayer banner */}
-          {nextPrayer && (
-            <div className="rounded-xl bg-green-700 text-white p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-green-200">Prochaine prière</p>
-                <p className="font-bold text-lg">{nextPrayer.name}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-mono font-bold text-xl">{nextPrayer.time}</p>
-                <p className="text-xs text-green-200 font-arabic">{nextPrayer.arabic}</p>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Weekly Calendar */}
+        <PrayerWeeklyCalendar prayerData={calendarData} />
+
+        {/* Next prayer banner */}
+        {nextPrayer && (
+          <div className="rounded-xl bg-green-700 text-white p-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-green-200">Prochaine prière</p>
+              <p className="font-bold text-lg">{nextPrayer.name}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono font-bold text-xl">{nextPrayer.time}</p>
+              <p className="text-xs text-green-200 font-arabic">{nextPrayer.arabic}</p>
+            </div>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="flex items-center gap-3">

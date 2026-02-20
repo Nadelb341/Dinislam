@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import { PrayerTimesData } from '@/hooks/usePrayerTimesCity';
+import { cn } from '@/lib/utils';
 
 interface SunArcDisplayProps {
   prayerTimes: PrayerTimesData;
   cityLabel: string;
+  checkedPrayers: string[];
+  onTogglePrayer: (prayerName: string) => void;
 }
 
-const SunArcDisplay = ({ prayerTimes, cityLabel }: SunArcDisplayProps) => {
+const SunArcDisplay = ({ prayerTimes, cityLabel, checkedPrayers, onTogglePrayer }: SunArcDisplayProps) => {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -64,12 +68,12 @@ const SunArcDisplay = ({ prayerTimes, cityLabel }: SunArcDisplayProps) => {
     d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
   const prayers = [
-    { name: 'Sobh', time: prayerTimes.fajr, date: prayerTimes.fajrDate },
-    { name: 'Lever', time: prayerTimes.sunrise, date: prayerTimes.sunriseDate },
-    { name: 'Dohr', time: prayerTimes.dhuhr, date: prayerTimes.dhuhrDate },
-    { name: 'Asr', time: prayerTimes.asr, date: prayerTimes.asrDate },
-    { name: 'Maghreb', time: prayerTimes.maghrib, date: prayerTimes.maghribDate },
-    { name: 'Icha', time: prayerTimes.isha, date: prayerTimes.ishaDate },
+    { name: 'Sobh', time: prayerTimes.fajr, date: prayerTimes.fajrDate, checkKey: 'sobh' },
+    { name: 'Lever', time: prayerTimes.sunrise, date: prayerTimes.sunriseDate, checkKey: null },
+    { name: 'Dohr', time: prayerTimes.dhuhr, date: prayerTimes.dhuhrDate, checkKey: 'dhuhr' },
+    { name: 'Asr', time: prayerTimes.asr, date: prayerTimes.asrDate, checkKey: 'asr' },
+    { name: 'Maghreb', time: prayerTimes.maghrib, date: prayerTimes.maghribDate, checkKey: 'maghrib' },
+    { name: 'Icha', time: prayerTimes.isha, date: prayerTimes.ishaDate, checkKey: 'isha' },
   ];
 
   const currentTimeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -177,6 +181,9 @@ const SunArcDisplay = ({ prayerTimes, cityLabel }: SunArcDisplayProps) => {
           const pMin = toMinutes(p.date);
           const isPast = nowMin > pMin;
           const isCurrent = prayers[i + 1] ? nowMin >= pMin && nowMin < toMinutes(prayers[i + 1].date) : false;
+          // Only the 5 actual prayers have a checkbox key (not Lever du soleil)
+          const checkKey = p.checkKey;
+          const isChecked = checkKey ? checkedPrayers.includes(checkKey) : false;
 
           return (
             <div
@@ -188,12 +195,27 @@ const SunArcDisplay = ({ prayerTimes, cityLabel }: SunArcDisplayProps) => {
               <span className={`text-sm ${isCurrent ? 'text-green-300 font-bold' : 'text-slate-200'}`}>
                 {p.name}
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className={`font-mono tabular-nums ${isCurrent ? 'text-green-300 font-bold text-base' : 'text-slate-200 text-sm'}`}>
                   {p.time}
                 </span>
                 {isCurrent && (
                   <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                )}
+                {/* Checkbox for the 5 prayers */}
+                {checkKey && (
+                  <button
+                    onClick={() => onTogglePrayer(checkKey)}
+                    className={cn(
+                      'w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0',
+                      isChecked
+                        ? 'bg-green-500 border-green-500'
+                        : 'border-slate-500 hover:border-green-400'
+                    )}
+                    aria-label={`Marquer ${p.name} comme effectuée`}
+                  >
+                    {isChecked && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+                  </button>
                 )}
               </div>
             </div>

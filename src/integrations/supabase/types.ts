@@ -1288,6 +1288,36 @@ export type Database = {
           },
         ]
       }
+      user_daily_prayers: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_checked: boolean
+          prayer_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          is_checked?: boolean
+          prayer_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_checked?: boolean
+          prayer_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_invocation_progress: {
         Row: {
           created_at: string
