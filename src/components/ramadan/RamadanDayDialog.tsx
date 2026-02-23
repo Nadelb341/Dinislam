@@ -72,6 +72,8 @@ const RamadanDayDialog = ({
   const [answeredCount, setAnsweredCount] = useState(0);
   const [allFirstAttempt, setAllFirstAttempt] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [countdownProgress, setCountdownProgress] = useState(100);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const quizRef = useRef<HTMLDivElement>(null);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,7 +148,9 @@ const RamadanDayDialog = ({
     setAnsweredCount(0);
     setAllFirstAttempt(true);
     setIsPlaying(false);
+    setCountdownProgress(100);
     if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
   };
 
   // Sort quizzes by question_order
@@ -167,6 +171,7 @@ const RamadanDayDialog = ({
   useEffect(() => {
     return () => {
       if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
   }, []);
 
@@ -312,6 +317,7 @@ const RamadanDayDialog = ({
       }
       onSaveQuizResponse(currentQuiz.id, primarySelected, currentAttempt, true);
       setShowExplanation(true);
+      startCountdown();
       autoAdvanceTimerRef.current = setTimeout(() => advanceToNextQuestion(), 10000);
     } else {
       playBoing();
@@ -328,13 +334,29 @@ const RamadanDayDialog = ({
         setAllFirstAttempt(false);
         onSaveQuizResponse(currentQuiz.id, primarySelected, 2, false);
         setShowExplanation(true);
+        startCountdown();
         autoAdvanceTimerRef.current = setTimeout(() => advanceToNextQuestion(), 10000);
       }
     }
   };
 
+  const startCountdown = () => {
+    setCountdownProgress(100);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    const startTime = Date.now();
+    countdownIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 100 - (elapsed / 10000) * 100);
+      setCountdownProgress(remaining);
+      if (remaining <= 0 && countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    }, 100);
+  };
+
   const handleContinue = () => {
     if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     advanceToNextQuestion();
   };
 
@@ -701,6 +723,17 @@ const RamadanDayDialog = ({
                           <p className="text-sm text-blue-700 dark:text-blue-300">{currentQuiz.explanation}</p>
                         </div>
                       )}
+
+                      {/* Countdown progress bar */}
+                      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-royal-dark rounded-full transition-all duration-100 ease-linear"
+                          style={{ width: `${countdownProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        ⏳ Question suivante dans {Math.ceil(countdownProgress / 10)}s
+                      </p>
 
                       {/* Continue button */}
                       <Button

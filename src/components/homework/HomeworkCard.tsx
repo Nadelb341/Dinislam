@@ -261,6 +261,9 @@ const HomeworkCard = () => {
                     {assignment.description && (
                       <p className="text-xs text-muted-foreground mt-0.5">{assignment.description}</p>
                     )}
+                    {assignment.audio_url && (
+                      <audio src={assignment.audio_url} controls className="w-full h-8 mt-1" />
+                    )}
                   </div>
                 </div>
 
