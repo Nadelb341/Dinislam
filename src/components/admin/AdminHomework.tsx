@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, BookOpen, Sparkles, Hand, BookMarked, Moon, CheckCircle2, Clock, FileText, Video, Music } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, BookOpen, Sparkles, Hand, BookMarked, Moon, CheckCircle2, Clock, FileText, Video, Music, Mic, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +33,14 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   const [newDescription, setNewDescription] = useState('');
   const [newLessonRef, setNewLessonRef] = useState('');
 
+  // Audio recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   // Fetch all students
   const { data: students } = useQuery({
     queryKey: ['admin-homework-students'],
@@ -80,6 +88,70 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     enabled: !!selectedUserId && !!assignments?.length,
   });
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      setRecordingTime(0);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        if (timerRef.current) clearInterval(timerRef.current);
+
+        setIsUploadingAudio(true);
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const audioFile = new File([audioBlob], `admin_audio_${Date.now()}.webm`, { type: 'audio/webm' });
+          const filePath = `admin/${Date.now()}.webm`;
+          const { error: uploadError } = await supabase.storage
+            .from('homework-submissions')
+            .upload(filePath, audioFile);
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('homework-submissions')
+            .getPublicUrl(filePath);
+
+          setAudioUrl(publicUrl);
+          toast.success('Audio enregistré ✅');
+        } catch (err: any) {
+          toast.error('Erreur upload audio: ' + err.message);
+        } finally {
+          setIsUploadingAudio(false);
+        }
+
+        setIsRecording(false);
+        setRecordingTime(0);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      toast.error("Impossible d'accéder au microphone");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   const addAssignment = useMutation({
     mutationFn: async () => {
       if (!selectedUserId || !newSubject || !newTitle || !user) return;
@@ -89,6 +161,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         title: newTitle,
         description: newDescription || null,
         lesson_reference: newLessonRef || null,
+        audio_url: audioUrl || null,
         created_by: user.id,
       });
       if (error) throw error;
@@ -99,6 +172,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       setNewDescription('');
       setNewLessonRef('');
       setNewSubject('');
+      setAudioUrl(null);
       toast.success('Devoir ajouté');
     },
     onError: (err: any) => toast.error(err.message),
@@ -193,6 +267,49 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 value={newLessonRef}
                 onChange={e => setNewLessonRef(e.target.value)}
               />
+
+              {/* Audio recording for admin */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">🎙️ Audio (optionnel) :</p>
+                {isRecording ? (
+                  <Button
+                    variant="destructive"
+                    className="w-full justify-center gap-2"
+                    onClick={stopRecording}
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                    Arrêter l'enregistrement
+                    <span className="ml-2 font-mono text-xs">{formatTime(recordingTime)}</span>
+                  </Button>
+                ) : isUploadingAudio ? (
+                  <Button disabled className="w-full justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Upload en cours...
+                  </Button>
+                ) : audioUrl ? (
+                  <div className="space-y-1">
+                    <audio src={audioUrl} controls className="w-full h-8" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-destructive"
+                      onClick={() => setAudioUrl(null)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" /> Supprimer l'audio
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-center gap-2"
+                    onClick={startRecording}
+                  >
+                    <Mic className="h-4 w-4 text-red-500" />
+                    Enregistrer un audio
+                  </Button>
+                )}
+              </div>
+
               <Button
                 onClick={() => addAssignment.mutate()}
                 disabled={!newSubject || !newTitle || addAssignment.isPending}
@@ -252,6 +369,12 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                   )}
                   {assignment.lesson_reference && (
                     <p className="text-xs text-primary">📌 Réf: Leçon {assignment.lesson_reference}</p>
+                  )}
+                  {assignment.audio_url && (
+                    <div className="mt-1">
+                      <p className="text-xs font-semibold text-foreground mb-1">🎙️ Audio :</p>
+                      <audio src={assignment.audio_url} controls className="w-full h-8" />
+                    </div>
                   )}
                   {/* Submissions */}
                   {assignmentSubmissions.length > 0 && (

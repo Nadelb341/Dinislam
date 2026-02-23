@@ -257,6 +257,7 @@ export type Database = {
       }
       homework_assignments: {
         Row: {
+          audio_url: string | null
           completed_at: string | null
           created_at: string
           created_by: string
@@ -270,6 +271,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audio_url?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
@@ -283,6 +285,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audio_url?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
