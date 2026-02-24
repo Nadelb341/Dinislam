@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronRight, SkipForward, RotateCcw, Pause, Play, Star, Trophy } from 'lucide-react';
+import { Check, ChevronRight, SkipForward, RotateCcw, Pause, Play, Star, Trophy, Eye, Download, Printer, FileText, Image, Film, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConfetti } from '@/hooks/useConfetti';
 
@@ -26,6 +26,16 @@ interface DayVideo {
   display_order: number;
 }
 
+interface DayActivity {
+  id: string;
+  day_id: number;
+  type: string;
+  file_url: string;
+  file_name: string;
+  file_type: string | null;
+  order_index: number | null;
+}
+
 interface RamadanDayDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,6 +44,7 @@ interface RamadanDayDialogProps {
   videoUrl: string | null;
   videos: DayVideo[];
   quizzes: Quiz[];
+  activities?: DayActivity[];
   quizCompleted: boolean;
   videoWatched: boolean;
   maxErrors?: number;
@@ -52,6 +63,7 @@ const RamadanDayDialog = ({
   videoUrl,
   videos,
   quizzes,
+  activities = [],
   quizCompleted,
   videoWatched,
   maxErrors = 3,
@@ -360,6 +372,73 @@ const RamadanDayDialog = ({
     advanceToNextQuestion();
   };
 
+  const renderActivities = () => {
+    if (activities.length === 0) return null;
+    const docs = activities.filter(a => a.type === 'document');
+    const vids = activities.filter(a => a.type === 'video');
+    const auds = activities.filter(a => a.type === 'audio');
+
+    return (
+      <div className="mt-4 space-y-3 text-left">
+        <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          Activité du jour
+        </h4>
+        {docs.map(doc => (
+          <div key={doc.id} className="p-3 rounded-lg border bg-card space-y-2">
+            <div className="flex items-center gap-2">
+              {doc.file_type?.includes('image') ? <Image className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+              <span className="text-sm font-medium truncate flex-1">{doc.file_name}</span>
+            </div>
+            {doc.file_type?.includes('image') && (
+              <img src={doc.file_url} alt={doc.file_name} className="w-full rounded-lg" />
+            )}
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" asChild>
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                  <Eye className="h-3 w-3 mr-1" /> Voir
+                </a>
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <a href={doc.file_url} download={doc.file_name}>
+                  <Download className="h-3 w-3 mr-1" /> Télécharger
+                </a>
+              </Button>
+              {doc.file_type?.includes('pdf') && (
+                <Button size="sm" variant="outline" onClick={() => {
+                  const w = window.open(doc.file_url);
+                  if (w) setTimeout(() => w.print(), 1000);
+                }}>
+                  <Printer className="h-3 w-3 mr-1" /> Imprimer
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+        {vids.map(vid => (
+          <div key={vid.id} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Film className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium truncate">{vid.file_name}</span>
+            </div>
+            <div className="aspect-video rounded-xl overflow-hidden bg-black">
+              <video src={vid.file_url} controls className="w-full h-full" />
+            </div>
+          </div>
+        ))}
+        {auds.map(aud => (
+          <div key={aud.id} className="p-3 rounded-lg border bg-card space-y-2">
+            <div className="flex items-center gap-2">
+              <Music className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium truncate flex-1">{aud.file_name}</span>
+            </div>
+            <audio src={aud.file_url} controls className="w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (!open) return null;
 
   return (
@@ -438,6 +517,7 @@ const RamadanDayDialog = ({
                   <Star key={i} className="h-5 w-5 text-gold fill-gold" />
                 ))}
               </div>
+              {renderActivities()}
             </div>
           ) : step === 'video' ? (
             /* Video step — Playlist */
@@ -563,6 +643,7 @@ const RamadanDayDialog = ({
                   Refaire le quiz (entraînement)
                 </Button>
               )}
+              {renderActivities()}
             </div>
           ) : (
             /* Quiz step — one question at a time with second chance */

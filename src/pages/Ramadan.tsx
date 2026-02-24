@@ -39,6 +39,16 @@ interface Quiz {
   question_order: number;
 }
 
+interface DayActivity {
+  id: string;
+  day_id: number;
+  type: string;
+  file_url: string;
+  file_name: string;
+  file_type: string | null;
+  order_index: number | null;
+}
+
 interface UserProgress {
   id: string;
   day_id: number;
@@ -103,6 +113,18 @@ const Ramadan = () => {
     },
   });
 
+  const { data: dayActivities = [] } = useQuery({
+    queryKey: ['ramadan-day-activities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ramadan_day_activities')
+        .select('*')
+        .order('order_index');
+      if (error) throw error;
+      return data as DayActivity[];
+    },
+  });
+
   const { data: userProgress = [] } = useQuery({
     queryKey: ['ramadan-progress', user?.id],
     queryFn: async () => {
@@ -129,6 +151,7 @@ const Ramadan = () => {
   const progressPercentage = Math.round((completedDays / 30) * 100);
   const getDayProgress = (dayId: number) => userProgress.find(p => p.day_id === dayId);
   const getVideosForDay = (dayId: number) => dayVideos.filter(v => v.day_id === dayId);
+  const getActivitiesForDay = (dayId: number) => dayActivities.filter(a => a.day_id === dayId);
   const getQuizzesForDay = (dayId: number) => quizzes.filter(q => q.day_id === dayId);
 
   const getDayUnlockTime = (dayNumber: number): Date | null => {
@@ -379,6 +402,7 @@ const Ramadan = () => {
             videoUrl={openDay.video_url}
             videos={getVideosForDay(openDay.id)}
             quizzes={getQuizzesForDay(openDay.id)}
+            activities={getActivitiesForDay(openDay.id)}
             quizCompleted={!!getDayProgress(openDay.id)?.quiz_completed}
             videoWatched={!!getDayProgress(openDay.id)?.video_watched}
             maxErrors={(settings as any)?.max_errors ?? 3}
