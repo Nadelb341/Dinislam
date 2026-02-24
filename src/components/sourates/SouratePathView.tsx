@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Lock } from 'lucide-react';
+import { Lock, Check, Gift } from 'lucide-react';
 import charGirlReading from '@/assets/char-girl-reading.png';
 import charBoyPraying from '@/assets/char-boy-praying.png';
 import charBoyChapelet from '@/assets/char-boy-chapelet.png';
@@ -21,6 +21,22 @@ const CHARACTER_IMAGES = [
   { src: charBoySalaam, alt: 'Garçon qui salue' },
 ];
 
+// Layout constants
+const TOTAL_WIDTH = 320;
+const LEFT_X = 52;
+const CENTER_X = 160;
+const RIGHT_X = 268;
+const ROW_HEIGHT = 115;
+const TOP_OFFSET = 50;
+const ITEMS_PER_ROW = 3;
+const CURVE_BULGE = 42;
+const STAR_SIZE = 58;
+const RIBBON_WIDTH = 13;
+const CHARACTER_EVERY_N_TURNS = 3; // show a character every N U-turns
+
+// Milestones at these sourate numbers
+const MILESTONE_NUMBERS = new Set([110, 100, 90, 80, 70, 60, 50, 40, 30, 20, 10]);
+
 interface SouratePathViewProps {
   sourates: Array<{
     number: number;
@@ -35,96 +51,6 @@ interface SouratePathViewProps {
   onSourateClick: (sourate: any) => void;
 }
 
-const ITEMS_PER_ROW = 5;
-const WAVE_OFFSETS = [0, -10, -16, -10, 0];
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-const getStarColors = (sourateNum: number, isValidated: boolean): { fill: string; stroke: string; strokeWidth: number } => {
-  if (isValidated) {
-    return { fill: 'hsl(142, 70%, 45%)', stroke: 'hsl(35, 80%, 50%)', strokeWidth: 3 };
-  }
-  if (sourateNum === 1) {
-    return { fill: 'hsl(140, 40%, 85%)', stroke: 'hsl(140, 30%, 70%)', strokeWidth: 1.5 };
-  }
-
-  let t: number;
-  if (sourateNum >= 78) {
-    t = (114 - sourateNum) / (114 - 78);
-  } else {
-    t = (77 - sourateNum) / (77 - 2);
-  }
-
-  const h = lerp(140, 35, t);
-  const s = lerp(40, 70, t);
-  const l = lerp(85, 72, t);
-  const strokeL = lerp(70, 55, t);
-
-  return {
-    fill: `hsl(${h}, ${s}%, ${l}%)`,
-    stroke: `hsl(${h}, ${s}%, ${strokeL}%)`,
-    strokeWidth: 1.5,
-  };
-};
-
-const StarBadge = ({
-  number,
-  isValidated,
-  isAccessible,
-  fill,
-  stroke,
-  strokeWidth,
-  nameFrench,
-  onClick,
-}: {
-  number: number;
-  isValidated: boolean;
-  isAccessible: boolean;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  nameFrench: string;
-  onClick: () => void;
-}) => {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'relative flex flex-col items-center transition-all duration-200',
-        isAccessible && !isValidated && 'hover:scale-110',
-        !isAccessible && 'cursor-not-allowed opacity-80'
-      )}
-      disabled={!isAccessible}
-      style={{ width: 52 }}
-    >
-      <div className="relative w-11 h-11 flex items-center justify-center">
-        <svg viewBox="0 0 48 48" className="w-full h-full drop-shadow-md">
-          <path
-            d="M24 2 L29.5 17.5 L46 17.5 L33 27.5 L37.5 44 L24 34 L10.5 44 L15 27.5 L2 17.5 L18.5 17.5 Z"
-            fill={fill}
-            stroke={stroke}
-            strokeWidth={strokeWidth}
-          />
-        </svg>
-        <span className={cn(
-          'absolute inset-0 flex items-center justify-center font-bold text-[9px] leading-none pt-0.5',
-          isValidated ? 'text-white' : 'text-foreground/80'
-        )}>
-          {number}
-        </span>
-        {!isAccessible && (
-          <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-white shadow flex items-center justify-center">
-            <Lock className="h-2 w-2 text-muted-foreground" />
-          </div>
-        )}
-      </div>
-      <span className="text-[7px] text-muted-foreground text-center leading-tight mt-0.5 w-full truncate">
-        {nameFrench}
-      </span>
-    </button>
-  );
-};
-
 const SouratePathView = ({
   sourates,
   dbSourates,
@@ -132,80 +58,249 @@ const SouratePathView = ({
   isSourateAccessible,
   onSourateClick,
 }: SouratePathViewProps) => {
-  const rows: typeof sourates[] = [];
-  for (let i = 0; i < sourates.length; i += ITEMS_PER_ROW) {
-    rows.push(sourates.slice(i, i + ITEMS_PER_ROW));
-  }
+  const currentRef = useRef<HTMLDivElement>(null);
 
-  let characterIndex = 0;
+  const getNodeState = (sourateNum: number) => {
+    const dbId = dbSourates.get(sourateNum);
+    const progress = dbId ? sourateProgress.get(dbId) : undefined;
+    const accessible = isSourateAccessible(sourateNum);
+    const isValidated = !!progress?.is_validated;
+    return { isValidated, accessible };
+  };
+
+  // Node positions
+  const nodes = useMemo(() => {
+    return sourates.map((sourate, i) => {
+      const row = Math.floor(i / ITEMS_PER_ROW);
+      const col = i % ITEMS_PER_ROW;
+      const isLTR = row % 2 === 0;
+      const xArr = [LEFT_X, CENTER_X, RIGHT_X];
+      const x = isLTR ? xArr[col] : xArr[2 - col];
+      const y = TOP_OFFSET + row * ROW_HEIGHT;
+      return { x, y, sourate, index: i };
+    });
+  }, [sourates]);
+
+  // SVG path segments
+  const segments = useMemo(() => {
+    const segs: { d: string; toIndex: number }[] = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const from = nodes[i];
+      const to = nodes[i + 1];
+      const fromRow = Math.floor(i / ITEMS_PER_ROW);
+      const toRow = Math.floor((i + 1) / ITEMS_PER_ROW);
+
+      let d: string;
+      if (fromRow === toRow) {
+        d = `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+      } else {
+        // U-turn
+        const isRightTurn = fromRow % 2 === 0;
+        const bulgeX = isRightTurn ? RIGHT_X + CURVE_BULGE : LEFT_X - CURVE_BULGE;
+        d = `M ${from.x} ${from.y} C ${bulgeX} ${from.y + ROW_HEIGHT * 0.4}, ${bulgeX} ${to.y - ROW_HEIGHT * 0.4}, ${to.x} ${to.y}`;
+      }
+      segs.push({ d, toIndex: i + 1 });
+    }
+    return segs;
+  }, [nodes]);
+
+  // Current (first accessible, non-validated)
+  const currentIndex = useMemo(() => {
+    for (let i = 0; i < sourates.length; i++) {
+      const { isValidated, accessible } = getNodeState(sourates[i].number);
+      if (accessible && !isValidated) return i;
+    }
+    return 0;
+  }, [sourates, dbSourates, sourateProgress, isSourateAccessible]);
+
+  // Auto-scroll to current
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      currentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
+
+  const totalRows = Math.ceil(sourates.length / ITEMS_PER_ROW);
+  const totalHeight = TOP_OFFSET + totalRows * ROW_HEIGHT + 60;
+
+  // Characters in U-turn hollows
+  const characters = useMemo(() => {
+    const chars: { x: number; y: number; img: typeof CHARACTER_IMAGES[0] }[] = [];
+    let charIdx = 0;
+    for (let row = 0; row < totalRows - 1; row++) {
+      if (row % CHARACTER_EVERY_N_TURNS !== CHARACTER_EVERY_N_TURNS - 1) continue;
+      const isRightTurn = row % 2 === 0;
+      // Character sits in the OPPOSITE side of the curve (the hollow)
+      const x = isRightTurn ? 8 : TOTAL_WIDTH - 56;
+      const y = TOP_OFFSET + row * ROW_HEIGHT + ROW_HEIGHT * 0.5;
+      chars.push({ x, y, img: CHARACTER_IMAGES[charIdx % CHARACTER_IMAGES.length] });
+      charIdx++;
+    }
+    return chars;
+  }, [totalRows]);
+
+  const getSegmentColor = (toIndex: number) => {
+    const { isValidated, accessible } = getNodeState(sourates[toIndex].number);
+    if (isValidated) return 'hsl(142, 70%, 45%)';
+    if (accessible) return 'hsl(40, 80%, 55%)';
+    return 'hsl(220, 10%, 85%)';
+  };
+
+  const getStarFill = (isValidated: boolean, accessible: boolean) => {
+    if (isValidated) return 'hsl(142, 70%, 45%)';
+    if (accessible) return 'hsl(40, 80%, 55%)';
+    return 'hsl(220, 10%, 85%)';
+  };
+
+  const getStarStroke = (isValidated: boolean, accessible: boolean, isCurrent: boolean) => {
+    if (isValidated) return 'hsl(35, 80%, 50%)';
+    if (isCurrent) return 'hsl(35, 90%, 55%)';
+    if (accessible) return 'hsl(35, 70%, 60%)';
+    return 'hsl(220, 10%, 75%)';
+  };
 
   return (
-    <div className="space-y-1 py-4">
-      {rows.map((row, rowIndex) => {
-        const isRightToLeft = rowIndex % 2 === 0;
-        const orderedRow = isRightToLeft ? [...row] : [...row].reverse();
-        const showCharacter = rowIndex < rows.length - 1;
-        const charImg = CHARACTER_IMAGES[characterIndex % CHARACTER_IMAGES.length];
-        const charOnRight = isRightToLeft;
+    <div className="relative w-full flex justify-center overflow-x-hidden">
+      {/* Glow animation style */}
+      <style>{`
+        @keyframes star-glow {
+          0%, 100% { filter: drop-shadow(0 0 4px hsl(40, 80%, 55%)); transform: scale(1); }
+          50% { filter: drop-shadow(0 0 12px hsl(40, 90%, 60%)); transform: scale(1.06); }
+        }
+        .star-current { animation: star-glow 2s ease-in-out infinite; }
+      `}</style>
 
-        if (showCharacter) characterIndex++;
+      <div className="relative" style={{ width: TOTAL_WIDTH, minHeight: totalHeight }}>
+        {/* SVG layer: ribbon + decorations */}
+        <svg
+          className="absolute inset-0 pointer-events-none"
+          width={TOTAL_WIDTH}
+          height={totalHeight}
+          viewBox={`0 0 ${TOTAL_WIDTH} ${totalHeight}`}
+          fill="none"
+        >
+          {/* Ribbon shadow layer */}
+          {segments.map((seg, i) => (
+            <path
+              key={`shadow-${i}`}
+              d={seg.d}
+              stroke="hsl(0, 0%, 0%)"
+              strokeWidth={RIBBON_WIDTH + 3}
+              strokeLinecap="round"
+              fill="none"
+              opacity={0.06}
+            />
+          ))}
+          {/* Ribbon main */}
+          {segments.map((seg, i) => (
+            <path
+              key={`ribbon-${i}`}
+              d={seg.d}
+              stroke={getSegmentColor(seg.toIndex)}
+              strokeWidth={RIBBON_WIDTH}
+              strokeLinecap="round"
+              fill="none"
+              opacity={0.55}
+            />
+          ))}
+        </svg>
 
-        return (
-          <div key={rowIndex}>
-            {/* Stars row with wave offsets */}
-            <div
-              className={cn(
-                'flex items-start gap-0.5 px-1',
-                isRightToLeft ? 'justify-end' : 'justify-start'
-              )}
-            >
-              {orderedRow.map((sourate, itemIndex) => {
-                const dbId = dbSourates.get(sourate.number);
-                const progress = dbId ? sourateProgress.get(dbId) : undefined;
-                const accessible = isSourateAccessible(sourate.number);
-                const isValidated = !!progress?.is_validated;
-                const { fill, stroke, strokeWidth } = getStarColors(sourate.number, isValidated);
-
-                // Wave offset: alternate direction per row
-                const waveDir = rowIndex % 2 === 0 ? 1 : -1;
-                const offsetY = WAVE_OFFSETS[itemIndex] * waveDir;
-
-                return (
-                  <div
-                    key={sourate.number}
-                    style={{ transform: `translateY(${offsetY}px)` }}
-                  >
-                    <StarBadge
-                      number={sourate.number}
-                      isValidated={isValidated}
-                      isAccessible={accessible}
-                      fill={fill}
-                      stroke={stroke}
-                      strokeWidth={strokeWidth}
-                      nameFrench={sourate.name_french}
-                      onClick={() => onSourateClick(sourate)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Character at turn */}
-            {showCharacter && (
-              <div className={cn(
-                'flex py-0.5',
-                charOnRight ? 'justify-start pl-4' : 'justify-end pr-4'
-              )}>
-                <img
-                  src={charImg.src}
-                  alt={charImg.alt}
-                  className="w-11 h-11 object-contain"
-                />
-              </div>
-            )}
+        {/* Characters */}
+        {characters.map((char, i) => (
+          <div
+            key={`char-${i}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: char.x,
+              top: char.y - 24,
+              width: 48,
+              height: 48,
+            }}
+          >
+            <img
+              src={char.img.src}
+              alt={char.img.alt}
+              className="w-full h-full object-contain opacity-90"
+            />
           </div>
-        );
-      })}
+        ))}
+
+        {/* Star nodes */}
+        {nodes.map((node, i) => {
+          const { isValidated, accessible } = getNodeState(node.sourate.number);
+          const isCurrent = i === currentIndex;
+          const isMilestone = MILESTONE_NUMBERS.has(node.sourate.number);
+
+          return (
+            <div
+              key={node.sourate.number}
+              ref={isCurrent ? currentRef : undefined}
+              className="absolute flex flex-col items-center"
+              style={{
+                left: node.x - STAR_SIZE / 2,
+                top: node.y - STAR_SIZE / 2,
+                width: STAR_SIZE,
+              }}
+            >
+              {/* Milestone badge */}
+              {isMilestone && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <div className={cn(
+                    'w-6 h-6 rounded-md flex items-center justify-center shadow-sm',
+                    isValidated
+                      ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
+                      : 'bg-gradient-to-br from-gray-200 to-gray-300'
+                  )}>
+                    <Gift className={cn('w-3.5 h-3.5', isValidated ? 'text-white' : 'text-gray-400')} />
+                  </div>
+                </div>
+              )}
+
+              {/* Star button */}
+              <button
+                onClick={() => onSourateClick(node.sourate)}
+                disabled={!accessible}
+                className={cn(
+                  'relative flex items-center justify-center transition-transform duration-200',
+                  accessible && !isValidated && 'hover:scale-110',
+                  isCurrent && 'star-current',
+                  !accessible && 'cursor-not-allowed'
+                )}
+                style={{ width: STAR_SIZE, height: STAR_SIZE }}
+              >
+                <svg viewBox="0 0 48 48" className="w-full h-full drop-shadow-md">
+                  <path
+                    d="M24 2 L29.5 17.5 L46 17.5 L33 27.5 L37.5 44 L24 34 L10.5 44 L15 27.5 L2 17.5 L18.5 17.5 Z"
+                    fill={getStarFill(isValidated, accessible)}
+                    stroke={getStarStroke(isValidated, accessible, isCurrent)}
+                    strokeWidth={isValidated || isCurrent ? 3 : 1.5}
+                  />
+                </svg>
+
+                {/* Star content */}
+                <span className={cn(
+                  'absolute inset-0 flex items-center justify-center font-bold leading-none pt-0.5',
+                  isValidated ? 'text-white' : accessible ? 'text-white text-[11px]' : 'text-gray-400'
+                )}>
+                  {isValidated ? (
+                    <Check className="w-5 h-5" strokeWidth={3} />
+                  ) : !accessible ? (
+                    <Lock className="w-3.5 h-3.5" />
+                  ) : (
+                    node.sourate.number
+                  )}
+                </span>
+              </button>
+
+              {/* Sourate name */}
+              <span className="text-[7px] text-muted-foreground text-center leading-tight mt-0.5 w-16 truncate">
+                {node.sourate.name_french}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
