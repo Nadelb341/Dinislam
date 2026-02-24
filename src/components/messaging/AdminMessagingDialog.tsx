@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MailOpen, Send, User, ArrowLeft, Search, Trash2, Pencil, Music, X, Check } from 'lucide-react';
+import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+
 
 interface UserMessage {
   id: string;
@@ -51,9 +51,6 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
   const [replyMessage, setReplyMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<UserMessage | null>(null);
-  const [editingMsg, setEditingMsg] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,35 +160,6 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     finally { setIsSending(false); }
   };
 
-  const handleDeleteMessage = async (msg: UserMessage) => {
-    try {
-      const { error } = await supabase.from('user_messages').update({ deleted_at: new Date().toISOString() }).eq('id', msg.id);
-      if (error) throw error;
-      toast({ title: 'Supprimé ✓' }); refetchMessages(); refetch();
-    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
-    setDeleteTarget(null);
-  };
-
-  const handleEditMessage = async (msgId: string) => {
-    if (!editText.trim()) return;
-    try {
-      const { error } = await supabase.from('user_messages').update({ message: editText.trim() }).eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Modifié ✓' }); setEditingMsg(null); setEditText(''); refetchMessages();
-    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
-  };
-
-  const handleReplaceAudio = async (msgId: string, file: File) => {
-    try {
-      const fileName = `admin/${Date.now()}_${file.name}`;
-      const { error: ue } = await supabase.storage.from('messages-audio').upload(fileName, file);
-      if (ue) throw ue;
-      const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);
-      const { error } = await supabase.from('user_messages').update({ audio_url: urlData.publicUrl }).eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Audio remplacé ✓' }); refetchMessages();
-    } catch { toast({ title: 'Erreur', variant: 'destructive' }); }
-  };
 
   const handleClose = () => {
     setSelectedConversation(null);
@@ -238,30 +206,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                         ? msg.message_type === 'audio' ? '' : 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}>
-                      {/* Admin controls */}
-                      {msg.message_type !== 'audio' && (
-                        <div className="absolute -top-2 right-0 hidden group-hover:flex gap-0.5 bg-background border rounded-md shadow-sm p-0.5 z-10">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingMsg(msg.id); setEditText(msg.message); }}>
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setDeleteTarget(msg)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {editingMsg === msg.id ? (
-                        <div className="space-y-2">
-                          <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={2} className="resize-none text-foreground" />
-                          <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="ghost" onClick={() => setEditingMsg(null)}><X className="h-3 w-3" /></Button>
-                            <Button size="sm" onClick={() => handleEditMessage(msg.id)}><Check className="h-3 w-3" /></Button>
-                          </div>
-                        </div>
-                      ) : msg.message_type === 'audio' && msg.audio_url ? (
-                        <AudioPlayer audioUrl={msg.audio_url} compact canManage={true}
-                          onReplace={(file) => handleReplaceAudio(msg.id, file)}
-                          onDelete={() => setDeleteTarget(msg)} />
+                      {msg.message_type === 'audio' && msg.audio_url ? (
+                        <AudioPlayer audioUrl={msg.audio_url} compact />
                       ) : (
                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                       )}
@@ -333,13 +279,6 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
           </div>
         )}
 
-        <ConfirmDeleteDialog
-          open={!!deleteTarget}
-          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-          onConfirm={() => deleteTarget && handleDeleteMessage(deleteTarget)}
-          title="Supprimer ce message ?"
-          description="Cette action est irréversible. Le message sera supprimé pour les deux parties."
-        />
       </DialogContent>
     </Dialog>
   );

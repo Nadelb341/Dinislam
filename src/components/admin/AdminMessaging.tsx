@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Mail, MailOpen, Send, User, ArrowLeft, Search, Trash2, Pencil, Music, X, Check } from 'lucide-react';
+import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+
 
 interface UserMessage {
   id: string;
@@ -44,9 +44,6 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
   const [replyMessage, setReplyMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<UserMessage | null>(null);
-  const [editingMsg, setEditingMsg] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
@@ -169,53 +166,6 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
     } finally { setIsSending(false); }
   };
 
-  // Delete message (soft delete)
-  const handleDeleteMessage = async (msg: UserMessage) => {
-    try {
-      const { error } = await supabase.from('user_messages')
-        .update({ deleted_at: new Date().toISOString() }).eq('id', msg.id);
-      if (error) throw error;
-      toast({ title: msg.message_type === 'audio' ? 'Audio supprimé ✓' : 'Message supprimé ✓' });
-      refetchMessages(); refetch();
-    } catch (error) {
-      console.error(error);
-      toast({ title: 'Erreur', variant: 'destructive' });
-    }
-    setDeleteTarget(null);
-  };
-
-  // Edit text message
-  const handleEditMessage = async (msgId: string) => {
-    if (!editText.trim()) return;
-    try {
-      const { error } = await supabase.from('user_messages')
-        .update({ message: editText.trim() }).eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Message modifié ✓' });
-      setEditingMsg(null); setEditText('');
-      refetchMessages();
-    } catch (error) {
-      console.error(error);
-      toast({ title: 'Erreur', variant: 'destructive' });
-    }
-  };
-
-  // Replace audio (admin can replace any)
-  const handleReplaceAudio = async (msgId: string, file: File) => {
-    try {
-      const fileName = `admin/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);
-      const { error } = await supabase.from('user_messages').update({ audio_url: urlData.publicUrl }).eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Audio remplacé ✓' });
-      refetchMessages();
-    } catch (error) {
-      console.error(error);
-      toast({ title: 'Erreur', variant: 'destructive' });
-    }
-  };
 
   const filteredConversations = conversations.filter(c => {
     if (!searchQuery) return true;
@@ -264,33 +214,10 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
                       ? 'bg-emerald-500/20 border border-emerald-500/50'
                       : 'bg-orange-500/20 border border-orange-500/50'
                 }`}>
-                  {/* Admin controls on messages */}
-                  {msg.message_type !== 'audio' && (
-                    <div className="absolute -top-2 right-0 hidden group-hover:flex gap-1 bg-background border rounded-md shadow-sm p-0.5">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingMsg(msg.id); setEditText(msg.message); }}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setDeleteTarget(msg)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-
-                  {editingMsg === msg.id ? (
-                    <div className="space-y-2">
-                      <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={2} className="resize-none text-foreground" />
-                      <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => setEditingMsg(null)}><X className="h-3 w-3" /></Button>
-                        <Button size="sm" onClick={() => handleEditMessage(msg.id)}><Check className="h-3 w-3" /></Button>
-                      </div>
-                    </div>
-                  ) : msg.message_type === 'audio' && msg.audio_url ? (
+                  {msg.message_type === 'audio' && msg.audio_url ? (
                     <AudioPlayer
                       audioUrl={msg.audio_url}
                       compact
-                      canManage={true}
-                      onReplace={(file) => handleReplaceAudio(msg.id, file)}
-                      onDelete={() => setDeleteTarget(msg)}
                     />
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
@@ -320,13 +247,6 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
           </div>
         </div>
 
-        <ConfirmDeleteDialog
-          open={!!deleteTarget}
-          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-          onConfirm={() => deleteTarget && handleDeleteMessage(deleteTarget)}
-          title={deleteTarget?.message_type === 'audio' ? 'Supprimer ce message audio ?' : 'Supprimer ce message ?'}
-          description="Cette action est irréversible. Le message sera supprimé pour les deux parties."
-        />
       </div>
     );
   }
