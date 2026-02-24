@@ -31,6 +31,7 @@ interface RamadanDayDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dayNumber: number;
+  dayId: number;
   theme: string | null;
   videoUrl: string | null;
   videos: DayVideo[];
@@ -49,6 +50,7 @@ const RamadanDayDialog = ({
   open,
   onOpenChange,
   dayNumber,
+  dayId,
   theme,
   videoUrl,
   videos,
