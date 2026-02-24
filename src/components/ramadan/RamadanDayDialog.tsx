@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, ChevronRight, SkipForward, RotateCcw, Pause, Play, Star, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConfetti } from '@/hooks/useConfetti';
+import RamadanActivitySection from '@/components/ramadan/RamadanActivitySection';
 
 interface Quiz {
   id: string;
@@ -30,6 +31,7 @@ interface RamadanDayDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dayNumber: number;
+  dayId: number;
   theme: string | null;
   videoUrl: string | null;
   videos: DayVideo[];
@@ -48,6 +50,7 @@ const RamadanDayDialog = ({
   open,
   onOpenChange,
   dayNumber,
+  dayId,
   theme,
   videoUrl,
   videos,
@@ -563,6 +566,7 @@ const RamadanDayDialog = ({
                   Refaire le quiz (entraînement)
                 </Button>
               )}
+              <RamadanActivitySection dayId={dayId} />
             </div>
           ) : (
             /* Quiz step — one question at a time with second chance */
