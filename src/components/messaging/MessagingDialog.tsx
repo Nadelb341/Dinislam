@@ -201,36 +201,6 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
     }
   };
 
-  const handleReplaceAudio = async (msgId: string, file: File) => {
-    if (!user) return;
-    try {
-      const fileName = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);
-      const { error } = await supabase.from('user_messages').update({ audio_url: urlData.publicUrl }).eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Audio remplacé ✓' });
-      refetch();
-    } catch (error) {
-      console.error('Error replacing audio:', error);
-      toast({ title: 'Erreur', description: 'Impossible de remplacer l\'audio', variant: 'destructive' });
-    }
-  };
-
-  const handleDeleteAudio = async (msgId: string) => {
-    try {
-      const { error } = await supabase.from('user_messages')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', msgId);
-      if (error) throw error;
-      toast({ title: 'Audio supprimé ✓' });
-      refetch();
-    } catch (error) {
-      console.error('Error deleting audio:', error);
-      toast({ title: 'Erreur', description: 'Impossible de supprimer l\'audio', variant: 'destructive' });
-    }
-  };
 
   const handleClose = () => {
     if (isRecording && recognitionRef.current) recognitionRef.current.stop();

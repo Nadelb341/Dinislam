@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+
 
 interface UserMessage {
   id: string;
