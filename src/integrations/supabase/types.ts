@@ -809,6 +809,80 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_card_content: {
+        Row: {
+          card_id: string
+          content_type: string
+          created_at: string
+          display_order: number
+          file_name: string
+          file_url: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          card_id: string
+          content_type: string
+          created_at?: string
+          display_order?: number
+          file_name: string
+          file_url: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          card_id?: string
+          content_type?: string
+          created_at?: string
+          display_order?: number
+          file_name?: string
+          file_url?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_card_content_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prayer_cards: {
+        Row: {
+          created_at: string
+          display_order: number
+          group_key: string
+          id: string
+          image_url: string | null
+          title: string
+          title_arabic: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          group_key: string
+          id?: string
+          image_url?: string | null
+          title: string
+          title_arabic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          group_key?: string
+          id?: string
+          image_url?: string | null
+          title?: string
+          title_arabic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prayer_categories: {
         Row: {
           created_at: string

@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
 import { PrayerTimesData } from '@/hooks/usePrayerTimesCity';
 import { cn } from '@/lib/utils';
+
+const StarIcon = ({ filled, className }: { filled: boolean; className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </svg>
+);
 
 interface SunArcDisplayProps {
   prayerTimes: PrayerTimesData;
@@ -206,15 +211,16 @@ const SunArcDisplay = ({ prayerTimes, cityLabel, checkedPrayers, onTogglePrayer 
                 {checkKey && (
                   <button
                     onClick={() => onTogglePrayer(checkKey)}
-                    className={cn(
-                      'w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shrink-0',
-                      isChecked
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-slate-500 hover:border-green-400'
-                    )}
+                    className="w-8 h-8 flex items-center justify-center transition-all shrink-0"
                     aria-label={`Marquer ${p.name} comme effectuée`}
                   >
-                    {isChecked && <Check className="h-4 w-4 text-white" strokeWidth={3} />}
+                    <StarIcon
+                      filled={isChecked}
+                      className={cn(
+                        'w-6 h-6 transition-colors',
+                        isChecked ? 'text-amber-400' : 'text-slate-500 hover:text-amber-300'
+                      )}
+                    />
                   </button>
                 )}
               </div>
