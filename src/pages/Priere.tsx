@@ -33,6 +33,7 @@ import { usePrayerTimesCity, CITIES, CityOption } from '@/hooks/usePrayerTimesCi
 import SunArcDisplay from '@/components/prayer/SunArcDisplay';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
+import PrayerModuleCards from '@/components/prayer/PrayerModuleCards';
 
 function getTodayKey(): string {
   const d = new Date();
