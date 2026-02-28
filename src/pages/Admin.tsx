@@ -107,6 +107,7 @@ const SortableCard = ({ id, children }: { id: string; children: React.ReactNode 
 const Admin = () => {
   const { isAdmin, loading } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingRegistrations, setPendingRegistrations] = useState(0);
