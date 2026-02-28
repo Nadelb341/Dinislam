@@ -20,6 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Line, ComposedChart, Cell, LabelList
 } from 'recharts';
+import { registerServiceWorker, requestNotificationPermission, subscribeToPush } from '@/lib/notifications';
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {
   if (ok === null) return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
