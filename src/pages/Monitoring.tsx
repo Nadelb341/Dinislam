@@ -395,15 +395,33 @@ const Monitoring = () => {
 
             {activityChart.length > 0 && (
               <div>
-                <p className="text-sm font-medium mb-2">Connexions (7 derniers jours)</p>
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={activityChart}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                <p className="text-sm font-medium mb-2">📈 Connexions des 7 derniers jours</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <ComposedChart data={activityChart}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis dataKey="day" fontSize={12} />
                     <YAxis fontSize={12} allowDecimals={false} />
-                    <Tooltip />
-                    <Bar dataKey="connexions" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null;
+                        return (
+                          <div className="bg-background border rounded-lg px-3 py-2 shadow-lg text-sm">
+                            <p className="font-medium">{label} : {payload[0].value} connexions</p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="connexions" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="connexions" position="top" fontSize={11} fontWeight="bold" />
+                      {activityChart.map((entry, index) => {
+                        const max = Math.max(...activityChart.map(e => e.connexions), 1);
+                        const ratio = entry.connexions / max;
+                        const hue = 210 + ratio * 30; // blue to gold-ish
+                        return <Cell key={index} fill={`hsl(${hue}, 70%, ${50 - ratio * 15}%)`} />;
+                      })}
+                    </Bar>
+                    <Line type="monotone" dataKey="connexions" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             )}
