@@ -33,6 +33,30 @@ const Settings = () => {
   const [maghribReminder, setMaghribReminder] = useState(true);
   const [ishaReminder, setIshaReminder] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [testingSend, setTestingSend] = useState(false);
+
+  const handleTestPush = async () => {
+    setTestingSend(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          title: '🧪 Test notification',
+          body: 'Si tu vois ceci, les notifications push fonctionnent !',
+          type: 'admin',
+        },
+      });
+      if (error) throw error;
+      if (data?.sent > 0) {
+        toast({ title: `✅ Notification envoyée ! (${data.sent}/${data.total})` });
+      } else {
+        toast({ title: '⚠️ Aucun abonnement trouvé', description: `Total: ${data?.total || 0}, Expirés: ${data?.expired || 0}`, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: '❌ Erreur', description: err?.message || String(err), variant: 'destructive' });
+    } finally {
+      setTestingSend(false);
+    }
+  };
 
   useEffect(() => {
     loadPreferences();
