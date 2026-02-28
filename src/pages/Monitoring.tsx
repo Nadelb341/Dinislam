@@ -12,12 +12,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import {
   Activity, Bell, Database, AlertTriangle, Trash2, Send,
   RefreshCw, CheckCircle, XCircle, Users, MessageSquare,
-  BarChart3, Clock, Loader2
+  BarChart3, Clock, Loader2, UserCheck, ClipboardCheck, Sparkles, Hand
 } from 'lucide-react';
 import { format, subDays, startOfWeek, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Line, ComposedChart, Cell, LabelList
 } from 'recharts';
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {

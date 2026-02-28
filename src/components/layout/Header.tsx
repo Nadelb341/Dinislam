@@ -104,6 +104,17 @@ const Header = ({
         <MessagingDialog open={showMessaging} onOpenChange={setShowMessaging} onMessagesRead={clearNewMessageFlag} />
       )}
 
+      {isAdmin && (
+        <AdminCommandModal
+          open={showAdminModal}
+          onOpenChange={setShowAdminModal}
+          pendingRegistrations={pendingCounts.registrations}
+          pendingSourates={pendingCounts.sourates}
+          pendingNourania={pendingCounts.nourania}
+          pendingInvocations={pendingCounts.invocations}
+        />
+      )}
+
       <NewMessageNotification onOpenMessages={handleOpenMessaging} />
     </>
   );
