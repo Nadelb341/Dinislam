@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, Star, Moon } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Star, Moon, CalendarIcon } from 'lucide-react';
 
 const Auth = () => {
   const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
@@ -22,7 +22,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupGender, setSignupGender] = useState('');
-  const [signupAge, setSignupAge] = useState('');
+  const [signupDob, setSignupDob] = useState(''); // JJ/MM/AAAA
   const [resetEmail, setResetEmail] = useState('');
 
   if (authLoading) {
@@ -61,6 +61,40 @@ const Auth = () => {
     setLoading(false);
   };
 
+  // Parse JJ/MM/AAAA to YYYY-MM-DD
+  const parseDobToISO = (dob: string): string | null => {
+    const match = dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+    const [, day, month, year] = match;
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (isNaN(d.getTime())) return null;
+    if (d.getDate() !== parseInt(day) || d.getMonth() !== parseInt(month) - 1) return null;
+    return `${year}-${month}-${day}`;
+  };
+
+  // Calculate age from DOB string (JJ/MM/AAAA)
+  const calculateAge = (dob: string): number | null => {
+    const iso = parseDobToISO(dob);
+    if (!iso) return null;
+    const birth = new Date(iso);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  // Auto-format DOB input
+  const handleDobChange = (value: string) => {
+    // Remove non-digits
+    const digits = value.replace(/\D/g, '');
+    let formatted = '';
+    if (digits.length <= 2) formatted = digits;
+    else if (digits.length <= 4) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+    else formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4, 8);
+    setSignupDob(formatted);
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -75,7 +109,22 @@ const Auth = () => {
       return;
     }
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupGender, signupAge ? parseInt(signupAge) : undefined);
+    let dobISO: string | undefined;
+    if (signupDob) {
+      const parsed = parseDobToISO(signupDob);
+      if (!parsed) {
+        toast({
+          title: "Date invalide",
+          description: "Veuillez entrer une date au format JJ/MM/AAAA",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      dobISO = parsed;
+    }
+
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupGender, dobISO);
 
     if (error) {
       toast({
@@ -115,6 +164,8 @@ const Auth = () => {
 
     setLoading(false);
   };
+
+  const computedAge = signupDob ? calculateAge(signupDob) : null;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-primary via-royal-dark to-primary pattern-islamic relative overflow-hidden">
@@ -286,20 +337,25 @@ const Auth = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-age">Âge</Label>
+                    <Label htmlFor="signup-dob">Date de naissance</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="signup-age"
-                        type="number"
-                        min={3}
-                        max={99}
-                        placeholder="Ex: 7"
-                        value={signupAge}
-                        onChange={(e) => setSignupAge(e.target.value)}
+                        id="signup-dob"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="JJ/MM/AAAA"
+                        value={signupDob}
+                        onChange={(e) => handleDobChange(e.target.value)}
                         className="pl-10"
+                        maxLength={10}
                       />
                     </div>
+                    {computedAge !== null && computedAge >= 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Âge : <span className="font-semibold">{computedAge} ans</span>
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>

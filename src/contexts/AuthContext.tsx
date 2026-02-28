@@ -8,7 +8,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isApproved: boolean | null;
-  signUp: (email: string, password: string, fullName?: string, gender?: string, age?: number) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -116,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string, gender?: string, age?: number) => {
+  const signUp = async (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -126,20 +126,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             full_name: fullName,
             gender,
-            age,
+            date_of_birth: dateOfBirth,
           },
         },
       });
       
       if (error) throw error;
 
-      // Update profile with gender and age after signup
+      // Update profile with gender and date_of_birth after signup
       // The trigger creates the profile, we update it
       const { data: { user: newUser } } = await supabase.auth.getUser();
       if (newUser) {
+        const updateData: any = { full_name: fullName, gender };
+        if (dateOfBirth) {
+          updateData.date_of_birth = dateOfBirth;
+          updateData.dob_set_by_user = true;
+        }
         await supabase
           .from('profiles')
-          .update({ full_name: fullName, gender, age })
+          .update(updateData)
           .eq('user_id', newUser.id);
         // Send push notification to admin about new registration
         supabase.functions.invoke('send-push-notification', {

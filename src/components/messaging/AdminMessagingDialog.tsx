@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music } from 'lucide-react';
+import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -53,6 +53,31 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
   const [searchQuery, setSearchQuery] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+
+  // New message dialog state
+  const [newMsgOpen, setNewMsgOpen] = useState(false);
+  const [newMsgSearch, setNewMsgSearch] = useState('');
+  const [newMsgSelectedUser, setNewMsgSelectedUser] = useState<{ user_id: string; full_name: string | null; email: string | null } | null>(null);
+  const [newMsgText, setNewMsgText] = useState('');
+  const [newMsgSending, setNewMsgSending] = useState(false);
+
+  // Fetch all profiles for new message dialog
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['admin-all-profiles-messaging'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .eq('is_approved', true)
+        .order('full_name');
+      if (error) return [];
+      // Exclude admins
+      const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      const adminIds = new Set((adminRoles || []).map(r => r.user_id));
+      return (data || []).filter(p => !adminIds.has(p.user_id));
+    },
+    enabled: newMsgOpen,
+  });
 
   // Fetch conversations
   const { data: conversations = [], refetch } = useQuery({
@@ -160,12 +185,53 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     finally { setIsSending(false); }
   };
 
-
   const handleClose = () => {
     setSelectedConversation(null);
     setSearchQuery('');
     setReplyMessage('');
     onOpenChange(false);
+  };
+
+  // New message: send
+  const handleSendNewMessage = async () => {
+    if (!newMsgSelectedUser || !newMsgText.trim()) return;
+    setNewMsgSending(true);
+    try {
+      // Check if conversation already exists
+      const existingConv = conversations.find(c => c.user_id === newMsgSelectedUser.user_id);
+
+      const { error } = await supabase.from('user_messages').insert({
+        user_id: newMsgSelectedUser.user_id,
+        message: newMsgText.trim(),
+        sender_type: 'admin',
+        message_type: 'text',
+      });
+      if (error) throw error;
+
+      // Close new message dialog and open the conversation
+      setNewMsgOpen(false);
+      setNewMsgText('');
+      setNewMsgSelectedUser(null);
+      setNewMsgSearch('');
+
+      await refetch();
+
+      // Open the conversation
+      const conv: Conversation = existingConv || {
+        user_id: newMsgSelectedUser.user_id,
+        profile: { full_name: newMsgSelectedUser.full_name, email: newMsgSelectedUser.email },
+        lastMessage: newMsgText.trim(),
+        lastMessageDate: new Date().toISOString(),
+        unreadCount: 0,
+      };
+      setSelectedConversation(conv);
+
+      toast({ title: 'Message envoyé ✓' });
+    } catch {
+      toast({ title: 'Erreur', variant: 'destructive' });
+    } finally {
+      setNewMsgSending(false);
+    }
   };
 
   const filtered = conversations.filter(c => {
@@ -174,114 +240,205 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     return c.profile.full_name?.toLowerCase().includes(q) || c.profile.email?.toLowerCase().includes(q);
   });
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg h-[75vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            {selectedConversation ? (
-              <>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedConversation(null)}>
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <User className="h-5 w-5" />
-                {selectedConversation.profile.full_name || 'Élève'}
-              </>
-            ) : (
-              <><Mail className="h-5 w-5" /> Messagerie Admin</>
-            )}
-          </DialogTitle>
-          <DialogDescription className="sr-only">Gestion des messages</DialogDescription>
-        </DialogHeader>
+  const filteredNewMsgProfiles = allProfiles.filter(p => {
+    if (!newMsgSearch) return true;
+    const q = newMsgSearch.toLowerCase();
+    return p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q);
+  });
 
-        {selectedConversation ? (
-          /* === Conversation thread === */
-          <div className="flex-1 flex flex-col overflow-hidden px-4">
-            <div className="flex-1 overflow-y-auto pr-1" ref={scrollRef}>
-              <div className="space-y-3 py-2">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-lg group relative ${msg.message_type === 'audio' ? 'w-full' : 'p-3'} ${
-                      msg.sender_type === 'admin'
-                        ? msg.message_type === 'audio' ? '' : 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}>
-                      {msg.message_type === 'audio' && msg.audio_url ? (
-                        <AudioPlayer audioUrl={msg.audio_url} compact />
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                      )}
-                      <p className={`text-xs mt-1 ${msg.message_type === 'audio' ? 'px-3 pb-1' : ''} ${
-                        msg.sender_type === 'admin' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+  return (
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-lg h-[75vh] flex flex-col p-0">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              {selectedConversation ? (
+                <>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedConversation(null)}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <User className="h-5 w-5" />
+                  {selectedConversation.profile.full_name || 'Élève'}
+                </>
+              ) : (
+                <>
+                  <Mail className="h-5 w-5" /> Messagerie Admin
+                  <div className="ml-auto">
+                    <Button size="sm" variant="outline" onClick={() => setNewMsgOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" /> Nouveau
+                    </Button>
+                  </div>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="sr-only">Gestion des messages</DialogDescription>
+          </DialogHeader>
+
+          {selectedConversation ? (
+            /* === Conversation thread === */
+            <div className="flex-1 flex flex-col overflow-hidden px-4">
+              <div className="flex-1 overflow-y-auto pr-1" ref={scrollRef}>
+                <div className="space-y-3 py-2">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-lg group relative ${msg.message_type === 'audio' ? 'w-full' : 'p-3'} ${
+                        msg.sender_type === 'admin'
+                          ? msg.message_type === 'audio' ? '' : 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
                       }`}>
-                        {format(new Date(msg.created_at), 'dd MMM à HH:mm', { locale: fr })}
-                      </p>
+                        {msg.message_type === 'audio' && msg.audio_url ? (
+                          <AudioPlayer audioUrl={msg.audio_url} compact />
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                        )}
+                        <p className={`text-xs mt-1 ${msg.message_type === 'audio' ? 'px-3 pb-1' : ''} ${
+                          msg.sender_type === 'admin' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                        }`}>
+                          {format(new Date(msg.created_at), 'dd MMM à HH:mm', { locale: fr })}
+                        </p>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reply */}
+              <div className="space-y-2 py-3 border-t">
+                <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
+                <Textarea value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => audioInputRef.current?.click()} disabled={isSending}>
+                    <Music className="h-4 w-4 mr-1" /> Audio
+                  </Button>
+                  <Button size="sm" className="flex-1" onClick={handleSendReply} disabled={!replyMessage.trim() || isSending}>
+                    <Send className="h-4 w-4 mr-2" /> Envoyer
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* === User list === */
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher un élève..." className="pl-9" />
+              </div>
+
+              <div className="space-y-2">
+                {filtered.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Mail className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">{searchQuery ? 'Aucun résultat' : 'Aucun message'}</p>
+                  </div>
+                ) : filtered.map((conv) => (
+                  <div
+                    key={conv.user_id}
+                    onClick={() => setSelectedConversation(conv)}
+                    className={`p-3 rounded-lg cursor-pointer transition-all hover:shadow-sm flex items-start gap-3 ${
+                      conv.unreadCount > 0 ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-muted/50 border border-transparent hover:border-border'
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      conv.unreadCount > 0 ? 'bg-orange-500/20' : 'bg-primary/10'
+                    }`}>
+                      <User className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{conv.profile.full_name || 'Élève'}</p>
+                        {conv.unreadCount > 0 && <Badge className="bg-orange-500 text-[10px] h-5">{conv.unreadCount}</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground flex-shrink-0">
+                      {format(new Date(conv.lastMessageDate), 'dd/MM', { locale: fr })}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {/* Reply */}
-            <div className="space-y-2 py-3 border-t">
-              <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
-              <Textarea value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => audioInputRef.current?.click()} disabled={isSending}>
-                  <Music className="h-4 w-4 mr-1" /> Audio
-                </Button>
-                <Button size="sm" className="flex-1" onClick={handleSendReply} disabled={!replyMessage.trim() || isSending}>
-                  <Send className="h-4 w-4 mr-2" /> Envoyer
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* === User list === */
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher un élève..." className="pl-9" />
-            </div>
-
+      {/* New Message Dialog */}
+      <Dialog open={newMsgOpen} onOpenChange={setNewMsgOpen}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>✉️ Nouveau message</DialogTitle>
+            <DialogDescription>Sélectionnez un élève et écrivez votre message</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Student search */}
             <div className="space-y-2">
-              {filtered.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <Mail className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">{searchQuery ? 'Aucun résultat' : 'Aucun message'}</p>
+              <Label className="text-sm font-semibold">Élève</Label>
+              {newMsgSelectedUser ? (
+                <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                  <User className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium flex-1">{newMsgSelectedUser.full_name || newMsgSelectedUser.email}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setNewMsgSelectedUser(null)} className="h-6 px-2 text-xs">
+                    Changer
+                  </Button>
                 </div>
-              ) : filtered.map((conv) => (
-                <div
-                  key={conv.user_id}
-                  onClick={() => setSelectedConversation(conv)}
-                  className={`p-3 rounded-lg cursor-pointer transition-all hover:shadow-sm flex items-start gap-3 ${
-                    conv.unreadCount > 0 ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-muted/50 border border-transparent hover:border-border'
-                  }`}
-                >
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    conv.unreadCount > 0 ? 'bg-orange-500/20' : 'bg-primary/10'
-                  }`}>
-                    <User className="h-4 w-4" />
+              ) : (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={newMsgSearch}
+                      onChange={(e) => setNewMsgSearch(e.target.value)}
+                      placeholder="Rechercher un élève..."
+                      className="pl-9"
+                    />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate">{conv.profile.full_name || 'Élève'}</p>
-                      {conv.unreadCount > 0 && <Badge className="bg-orange-500 text-[10px] h-5">{conv.unreadCount}</Badge>}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+                  <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                    {filteredNewMsgProfiles.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-3">Aucun élève trouvé</p>
+                    ) : filteredNewMsgProfiles.map((p) => (
+                      <div
+                        key={p.user_id}
+                        onClick={() => { setNewMsgSelectedUser(p); setNewMsgSearch(''); }}
+                        className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <User className="h-4 w-4 text-primary" />
+                        <div>
+                          <p className="text-sm font-medium">{p.full_name || 'Élève'}</p>
+                          <p className="text-xs text-muted-foreground">{p.email}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-[10px] text-muted-foreground flex-shrink-0">
-                    {format(new Date(conv.lastMessageDate), 'dd/MM', { locale: fr })}
-                  </p>
-                </div>
-              ))}
+                </>
+              )}
             </div>
-          </div>
-        )}
 
-      </DialogContent>
-    </Dialog>
+            {/* Message */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Message</Label>
+              <Textarea
+                value={newMsgText}
+                onChange={(e) => setNewMsgText(e.target.value)}
+                placeholder="Écrivez votre message..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            <Button
+              onClick={handleSendNewMessage}
+              disabled={!newMsgSelectedUser || !newMsgText.trim() || newMsgSending}
+              className="w-full"
+            >
+              <Send className="h-4 w-4 mr-2" /> Envoyer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
+
+// Need Label import
+import { Label } from '@/components/ui/label';
 
 export default AdminMessagingDialog;

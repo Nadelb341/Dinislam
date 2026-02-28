@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Settings, Loader2, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Loader2, LogOut, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,18 +23,85 @@ const UserSettingsDialog = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleOpen = () => {
+  // DOB state
+  const [dobDisplay, setDobDisplay] = useState(''); // JJ/MM/AAAA
+  const [dobSetByUser, setDobSetByUser] = useState(false);
+  const [loadingDob, setLoadingDob] = useState(false);
+
+  const handleOpen = async () => {
     const currentName = user?.user_metadata?.full_name || '';
     setNewName(currentName);
     setNewPassword('');
     setConfirmPassword('');
     setOpen(true);
+
+    // Load DOB from profile
+    if (user) {
+      setLoadingDob(true);
+      const { data } = await supabase
+        .from('profiles')
+        .select('date_of_birth, dob_set_by_user')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setDobSetByUser(data.dob_set_by_user || false);
+        if (data.date_of_birth) {
+          // Convert YYYY-MM-DD to JJ/MM/AAAA
+          const [y, m, d] = data.date_of_birth.split('-');
+          setDobDisplay(`${d}/${m}/${y}`);
+        } else {
+          setDobDisplay('');
+        }
+      }
+      setLoadingDob(false);
+    }
+  };
+
+  const handleDobChange = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    let formatted = '';
+    if (digits.length <= 2) formatted = digits;
+    else if (digits.length <= 4) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+    else formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4, 8);
+    setDobDisplay(formatted);
+  };
+
+  const parseDobToISO = (dob: string): string | null => {
+    const match = dob.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match) return null;
+    const [, day, month, year] = match;
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (isNaN(d.getTime()) || d.getDate() !== parseInt(day) || d.getMonth() !== parseInt(month) - 1) return null;
+    return `${year}-${month}-${day}`;
+  };
+
+  const calculateAge = (dob: string): number | null => {
+    const iso = parseDobToISO(dob);
+    if (!iso) return null;
+    const birth = new Date(iso);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
   };
 
   const handleSaveName = async () => {
     if (!newName.trim() || !user) return;
     setSavingName(true);
     try {
+      // Also save DOB if it's set and not yet locked
+      const updateData: any = { full_name: newName.trim() };
+      
+      if (dobDisplay && !dobSetByUser) {
+        const iso = parseDobToISO(dobDisplay);
+        if (iso) {
+          updateData.date_of_birth = iso;
+          updateData.dob_set_by_user = true;
+          setDobSetByUser(true);
+        }
+      }
+
       const { error: authError } = await supabase.auth.updateUser({
         data: { full_name: newName.trim() },
       });
@@ -42,13 +109,13 @@ const UserSettingsDialog = () => {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ full_name: newName.trim() })
+        .update(updateData)
         .eq('user_id', user.id);
       if (profileError) throw profileError;
 
-      toast.success('Nom mis à jour ✓');
+      toast.success('Profil mis à jour ✓');
     } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la mise à jour du nom');
+      toast.error(err.message || 'Erreur lors de la mise à jour');
     } finally {
       setSavingName(false);
     }
@@ -83,6 +150,9 @@ const UserSettingsDialog = () => {
     navigate('/auth');
   };
 
+  const computedAge = dobDisplay ? calculateAge(dobDisplay) : null;
+  const isDobLocked = dobSetByUser;
+
   return (
     <>
       <Button
@@ -102,7 +172,7 @@ const UserSettingsDialog = () => {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Change name */}
+            {/* Change name + DOB */}
             <div className="space-y-2">
               <Label htmlFor="settings-name" className="font-semibold">Changer le nom</Label>
               <Input
@@ -111,6 +181,32 @@ const UserSettingsDialog = () => {
                 onChange={e => setNewName(e.target.value)}
                 placeholder="Votre nom"
               />
+
+              {/* Date of birth */}
+              <Label htmlFor="settings-dob" className="font-semibold">Date de naissance</Label>
+              <div className="relative">
+                <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="settings-dob"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="JJ/MM/AAAA"
+                  value={dobDisplay}
+                  onChange={(e) => handleDobChange(e.target.value)}
+                  className="pl-10"
+                  maxLength={10}
+                  disabled={isDobLocked}
+                />
+              </div>
+              {isDobLocked && (
+                <p className="text-xs text-muted-foreground italic">(modifiable par le professeur)</p>
+              )}
+              {computedAge !== null && computedAge >= 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Âge : <span className="font-semibold">{computedAge} ans</span>
+                </p>
+              )}
+
               <Button
                 onClick={handleSaveName}
                 disabled={savingName || !newName.trim()}
