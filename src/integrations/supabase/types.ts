@@ -968,6 +968,8 @@ export type Database = {
           age: number | null
           avatar_url: string | null
           created_at: string
+          date_of_birth: string | null
+          dob_set_by_user: boolean
           email: string | null
           full_name: string | null
           gender: string | null
@@ -981,6 +983,8 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          dob_set_by_user?: boolean
           email?: string | null
           full_name?: string | null
           gender?: string | null
@@ -994,6 +998,8 @@ export type Database = {
           age?: number | null
           avatar_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          dob_set_by_user?: boolean
           email?: string | null
           full_name?: string | null
           gender?: string | null
