@@ -148,6 +148,36 @@ export type Database = {
         }
         Relationships: []
       }
+      app_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          is_read: boolean
+          level: string
+          message: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          level?: string
+          message: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          level?: string
+          message?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       attendance_records: {
         Row: {
           created_at: string
@@ -630,6 +660,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_history: {
+        Row: {
+          body: string
+          created_at: string
+          expired_cleaned: number
+          failed_sends: number
+          id: string
+          sent_by: string | null
+          successful_sends: number
+          title: string
+          total_recipients: number
+          type: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          expired_cleaned?: number
+          failed_sends?: number
+          id?: string
+          sent_by?: string | null
+          successful_sends?: number
+          title: string
+          total_recipients?: number
+          type?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          expired_cleaned?: number
+          failed_sends?: number
+          id?: string
+          sent_by?: string | null
+          successful_sends?: number
+          title?: string
+          total_recipients?: number
+          type?: string
+        }
+        Relationships: []
       }
       notification_preferences: {
         Row: {
