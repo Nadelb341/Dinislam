@@ -690,17 +690,20 @@ const RamadanDayDialog = ({
                   {totalVideos > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>Vidéo {currentVideoIdx + 1} / {totalVideos}</span>
-                      <div className="flex gap-1">
-                        {playlist.map((_, idx) => (
+                      <div className="flex items-center gap-1">
+                        {playlist.map((v, idx) => (
                           <div
                             key={idx}
                             className={cn(
-                              'w-2 h-2 rounded-full transition-colors',
-                              idx < currentVideoIdx ? 'bg-green-500' :
+                              'w-2 h-2 rounded-full transition-colors relative',
+                              watchedVideoIds.has(v.id) ? 'bg-green-500' :
                               idx === currentVideoIdx ? 'bg-gold' : 'bg-muted'
                             )}
                           />
                         ))}
+                        <span className="ml-1 text-xs">
+                          {watchedCount}/{totalVideos} ✅
+                        </span>
                       </div>
                     </div>
                   )}
@@ -715,6 +718,7 @@ const RamadanDayDialog = ({
                       onEnded={handleVideoEnded}
                       onPlay={handleVideoPlay}
                       onPause={handleVideoPause}
+                      onTimeUpdate={handleTimeUpdate}
                     />
                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => handleSeek(-10)}>
@@ -740,9 +744,20 @@ const RamadanDayDialog = ({
                           Vidéo suivante
                         </Button>
                       )}
-                      <Button onClick={handleSkipToQuiz} variant="outline" className="flex-1">
-                        <ChevronRight className="h-4 w-4 mr-2" />
-                        Passer au quiz
+                      <Button
+                        onClick={handleSkipToQuiz}
+                        variant="outline"
+                        className={cn(
+                          'flex-1 transition-all',
+                          allVideosWatched
+                            ? 'bg-gold/10 border-gold text-gold hover:bg-gold/20'
+                            : 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        {allVideosWatched
+                          ? <><Star className="h-4 w-4 mr-2 fill-current" />Passer au quiz 🌟</>
+                          : <><Lock className="h-4 w-4 mr-2" />Passer au quiz</>
+                        }
                       </Button>
                     </div>
                     {activities.length > 0 && (
