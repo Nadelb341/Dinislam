@@ -76,11 +76,11 @@ const Header = ({
             )}
             {/* Admin: shield icon with dynamic badge, navigates directly to /admin */}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
+              <Button variant="ghost" size="icon" onClick={() => setShowAdminModal(true)} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
                 <Shield className="h-5 w-5" />
-                {adminPendingCount > 0 ? (
+                {pendingCounts.total > 0 ? (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
-                    {adminPendingCount > 9 ? '9+' : adminPendingCount}
+                    {pendingCounts.total > 9 ? '9+' : pendingCounts.total}
                   </Badge>
                 ) : (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-primary flex items-center justify-center">
