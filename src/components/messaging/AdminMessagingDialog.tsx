@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music, Plus, Users } from 'lucide-react';
+import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music, Plus, Users, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,9 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
   const [groupMsgText, setGroupMsgText] = useState('');
   const [groupMsgPush, setGroupMsgPush] = useState(true);
   const [groupMsgSending, setGroupMsgSending] = useState(false);
+  const [groupMsgMode, setGroupMsgMode] = useState<'all' | 'select' | 'top3'>('all');
+  const [groupMsgSelected, setGroupMsgSelected] = useState<Set<string>>(new Set());
+  const [groupMsgSearch, setGroupMsgSearch] = useState('');
 
   // Fetch all profiles for new message / group message dialog
   const { data: allProfiles = [] } = useQuery({
@@ -74,16 +77,25 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email')
+        .select('user_id, full_name, email, avatar_url')
         .eq('is_approved', true)
         .order('full_name');
       if (error) return [];
-      // Exclude admins
       const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       const adminIds = new Set((adminRoles || []).map(r => r.user_id));
       return (data || []).filter(p => !adminIds.has(p.user_id));
     },
     enabled: newMsgOpen || groupMsgOpen,
+  });
+
+  // Fetch top 3 ranking for group mode
+  const { data: top3UserIds = [] } = useQuery({
+    queryKey: ['admin-top3-ranking'],
+    queryFn: async () => {
+      const { data } = await supabase.from('student_ranking').select('user_id').order('total_points', { ascending: false }).limit(3);
+      return (data || []).map(r => r.user_id);
+    },
+    enabled: groupMsgOpen && groupMsgMode === 'top3',
   });
 
   // Fetch conversations
@@ -241,13 +253,22 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     }
   };
 
-  // Group message: send to all students
+  // Group message: compute target profiles based on mode
+  const getGroupTargets = () => {
+    if (groupMsgMode === 'all') return allProfiles;
+    if (groupMsgMode === 'top3') return allProfiles.filter(p => top3UserIds.includes(p.user_id));
+    if (groupMsgMode === 'select') return allProfiles.filter(p => groupMsgSelected.has(p.user_id));
+    return [];
+  };
+
+  const groupTargetCount = getGroupTargets().length;
+
   const handleSendGroupMessage = async () => {
-    if (!groupMsgText.trim() || allProfiles.length === 0) return;
+    const targets = getGroupTargets();
+    if (!groupMsgText.trim() || targets.length === 0) return;
     setGroupMsgSending(true);
     try {
-      // Insert a message for each student
-      const inserts = allProfiles.map(p => ({
+      const inserts = targets.map(p => ({
         user_id: p.user_id,
         message: groupMsgText.trim(),
         sender_type: 'admin' as const,
@@ -257,35 +278,44 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       const { error } = await supabase.from('user_messages').insert(inserts);
       if (error) throw error;
 
-      const studentCount = allProfiles.length;
-
-      // Send push notification if checked
       if (groupMsgPush) {
         try {
-          await supabase.functions.invoke('send-push-notification', {
-            body: {
-              title: '📢 Nouveau message du professeur',
-              body: groupMsgText.trim().substring(0, 200),
-              type: 'all',
-            },
-          });
-        } catch (e) {
-          console.error('Push notification error:', e);
-        }
+          if (groupMsgMode === 'all') {
+            await supabase.functions.invoke('send-push-notification', {
+              body: { title: '📢 Nouveau message du professeur', body: groupMsgText.trim().substring(0, 200), type: 'all' },
+            });
+          } else {
+            // Send to specific user IDs
+            for (const t of targets) {
+              await supabase.functions.invoke('send-push-notification', {
+                body: { title: '📢 Nouveau message du professeur', body: groupMsgText.trim().substring(0, 200), type: 'user', userId: t.user_id },
+              });
+            }
+          }
+        } catch (e) { console.error('Push notification error:', e); }
       }
 
       setGroupMsgOpen(false);
       setGroupMsgText('');
       setGroupMsgPush(true);
+      setGroupMsgMode('all');
+      setGroupMsgSelected(new Set());
+      setGroupMsgSearch('');
       refetch();
 
-      toast({ title: `✅ Message envoyé à ${studentCount} élèves !` });
+      toast({ title: `✅ Message envoyé à ${targets.length} élève${targets.length > 1 ? 's' : ''} !` });
     } catch {
       toast({ title: 'Erreur', description: "Impossible d'envoyer le message groupé", variant: 'destructive' });
     } finally {
       setGroupMsgSending(false);
     }
   };
+
+  const filteredGroupProfiles = allProfiles.filter(p => {
+    if (!groupMsgSearch) return true;
+    const q = groupMsgSearch.toLowerCase();
+    return p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q);
+  });
 
   const filtered = conversations.filter(c => {
     if (!searchQuery) return true;
@@ -493,17 +523,113 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
 
       {/* Group Message Dialog */}
       <Dialog open={groupMsgOpen} onOpenChange={setGroupMsgOpen}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>👥 Message à tous les élèves</DialogTitle>
-            <DialogDescription>Ce message sera envoyé à {allProfiles.length} élève{allProfiles.length > 1 ? 's' : ''}</DialogDescription>
+            <DialogTitle>👥 Message groupé</DialogTitle>
+            <DialogDescription>Choisissez les destinataires et écrivez votre message</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Mode selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Destinataires</Label>
+              <div className="space-y-2">
+                {[
+                  { value: 'all' as const, label: '👥 Tous les élèves', desc: `${allProfiles.length} élève${allProfiles.length > 1 ? 's' : ''}` },
+                  { value: 'select' as const, label: '🎯 Sélectionner des élèves', desc: 'Choisir manuellement' },
+                  { value: 'top3' as const, label: '🏆 Top classement', desc: 'Les 3 premiers' },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => { setGroupMsgMode(opt.value); if (opt.value !== 'select') setGroupMsgSelected(new Set()); }}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all ${
+                      groupMsgMode === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      groupMsgMode === opt.value ? 'border-primary' : 'border-muted-foreground'
+                    }`}>
+                      {groupMsgMode === opt.value && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Student selection list */}
+            {groupMsgMode === 'select' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">{groupMsgSelected.size} sélectionné{groupMsgSelected.size > 1 ? 's' : ''}</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      if (groupMsgSelected.size === allProfiles.length) {
+                        setGroupMsgSelected(new Set());
+                      } else {
+                        setGroupMsgSelected(new Set(allProfiles.map(p => p.user_id)));
+                      }
+                    }}
+                  >
+                    {groupMsgSelected.size === allProfiles.length ? 'Désélectionner' : 'Tout sélectionner'}
+                  </Button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input value={groupMsgSearch} onChange={(e) => setGroupMsgSearch(e.target.value)} placeholder="Rechercher..." className="pl-9" />
+                </div>
+                <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                  {filteredGroupProfiles.map(p => (
+                    <div
+                      key={p.user_id}
+                      onClick={() => {
+                        const next = new Set(groupMsgSelected);
+                        next.has(p.user_id) ? next.delete(p.user_id) : next.add(p.user_id);
+                        setGroupMsgSelected(next);
+                      }}
+                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                    >
+                      <Checkbox checked={groupMsgSelected.has(p.user_id)} />
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-3 w-3" />
+                        </div>
+                      )}
+                      <span className="text-sm">{p.full_name || 'Élève'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top 3 preview */}
+            {groupMsgMode === 'top3' && top3UserIds.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold">🏆 Top 3</Label>
+                <div className="border rounded-lg divide-y">
+                  {allProfiles.filter(p => top3UserIds.includes(p.user_id)).map((p, i) => (
+                    <div key={p.user_id} className="flex items-center gap-2 p-2">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm font-medium">#{i + 1}</span>
+                      <span className="text-sm">{p.full_name || 'Élève'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Textarea
               value={groupMsgText}
               onChange={(e) => setGroupMsgText(e.target.value)}
               placeholder="Votre message..."
-              rows={4}
+              rows={3}
               className="resize-none"
             />
             <div className="flex items-center space-x-2">
@@ -518,10 +644,10 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
             </div>
             <Button
               onClick={handleSendGroupMessage}
-              disabled={!groupMsgText.trim() || groupMsgSending}
+              disabled={!groupMsgText.trim() || groupTargetCount === 0 || groupMsgSending}
               className="w-full"
             >
-              {groupMsgSending ? 'Envoi en cours...' : 'Envoyer à tous 📢'}
+              {groupMsgSending ? 'Envoi en cours...' : `Envoyer à ${groupTargetCount} élève${groupTargetCount > 1 ? 's' : ''} 📢`}
             </Button>
           </div>
         </DialogContent>
