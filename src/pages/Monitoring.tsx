@@ -56,10 +56,11 @@ const Monitoring = () => {
   const [osStatus, setOsStatus] = useState<{ permission: string; subscribed: boolean; userId: string | null }>({ permission: '...', subscribed: false, userId: null });
   const [testResult, setTestResult] = useState<{ status: number; body: string } | null>(null);
 
-  // Section 3: Activity
+   // Section 3: Activity
   const [onlineCount, setOnlineCount] = useState(0);
   const [recentActions, setRecentActions] = useState<any[]>([]);
   const [activityChart, setActivityChart] = useState<any[]>([]);
+  const [showOnlineModal, setShowOnlineModal] = useState(false);
 
   // Section 4: DB Health
   const [dbStats, setDbStats] = useState({
