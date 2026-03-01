@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { requestOneSignalPermission, isOneSignalReady } from '@/lib/notifications';
+import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -42,14 +43,23 @@ const Index = () => {
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({ id, is_active, title }: { id: string; is_active: boolean; title?: string }) => {
       const { error } = await supabase.from('learning_modules').update({ is_active }).eq('id', id);
       if (error) throw error;
+      return { is_active, title };
     },
-    onSuccess: (_, { is_active }) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
-      toast.success(is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
+      toast.success(result.is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
+      
+      if (result.is_active && result.title) {
+        sendPushNotification({
+          title: '🌟 Nouvelle activité disponible !',
+          body: `Salam ! Le module ${result.title} est maintenant disponible sur Dini Bismillah !`,
+          type: 'broadcast',
+        });
+      }
     },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   });
