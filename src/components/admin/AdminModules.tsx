@@ -335,7 +335,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
                               }}>
                                 <Image className="h-4 w-4 mr-2" /> Importer une image
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active })}>
+                              <DropdownMenuItem onClick={() => toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title })}>
                                 {mod.is_active ? <><EyeOff className="h-4 w-4 mr-2" /> Masquer</> : <><Eye className="h-4 w-4 mr-2" /> Afficher</>}
                               </DropdownMenuItem>
                               {!mod.is_builtin && (
