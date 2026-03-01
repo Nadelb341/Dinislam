@@ -24,6 +24,19 @@
 
     <!-- OneSignal SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "c3387e75-7457-4db6-bbe1-541307fc5bea",
+          safari_web_id: "web.onesignal.auto.c3387e75-7457-4db6-bbe1-541307fc5bea",
+          notifyButton: { enable: false },
+          allowLocalhostAsSecureOrigin: true,
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+        });
+        console.log('[OneSignal] Initialized from index.html');
+      });
+    </script>
 
     <!-- Open Graph -->
     <meta property="og:title" content="Dini Bismillah" />

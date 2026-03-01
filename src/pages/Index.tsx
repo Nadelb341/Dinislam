@@ -81,9 +81,26 @@ const Index = () => {
   }, [profile, profileLoading, user]);
 
   // Check notification permission and show banner if "default"
+  // Also auto optIn if user is logged in
   useEffect(() => {
-    if (user && 'Notification' in window && Notification.permission === 'default') {
-      setShowNotifBanner(true);
+    if (user && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        setShowNotifBanner(true);
+      }
+      // Auto optIn if permission already granted
+      if (Notification.permission === 'granted') {
+        (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+        (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
+          try {
+            if (OneSignal.User?.PushSubscription && !OneSignal.User.PushSubscription.optedIn) {
+              await OneSignal.User.PushSubscription.optIn();
+              console.log('[OneSignal] Auto opted-in on Index load');
+            }
+          } catch (e: any) {
+            console.error('[OneSignal] Auto optIn error:', e.message);
+          }
+        });
+      }
     }
   }, [user]);
 

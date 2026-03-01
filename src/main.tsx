@@ -2,17 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Initialize OneSignal
-(window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
-(window as any).OneSignalDeferred.push(async function(OneSignal: any) {
-  await OneSignal.init({
-    appId: "c3387e75-7457-4db6-bbe1-541307fc5bea",
-    safari_web_id: "web.onesignal.auto.c3387e75-7457-4db6-bbe1-541307fc5bea",
-    notifyButton: { enable: false },
-    allowLocalhostAsSecureOrigin: true,
-  });
-  console.log('[OneSignal] Initialized');
-});
+// OneSignal is now initialized in index.html (before any JS loads)
 
 // Register Service Worker for PWA caching/auto-update (separate from OneSignal)
 if ('serviceWorker' in navigator) {

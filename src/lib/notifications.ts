@@ -1,68 +1,75 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// OneSignal helper: get the OneSignal SDK instance
-function getOneSignal(): any {
-  return (window as any).OneSignal;
-}
-
-/** Check if OneSignal is loaded and initialized */
+/** Check if OneSignal SDK is available */
 export function isOneSignalReady(): boolean {
-  const os = getOneSignal();
-  return !!os;
+  return typeof window !== 'undefined' && (window as any).OneSignal !== undefined;
 }
 
-/** Login user to OneSignal (set external_id) */
+/** Login user to OneSignal (set external_id) + auto optIn */
 export async function oneSignalLogin(userId: string) {
-  const os = getOneSignal();
-  if (!os) {
-    console.warn('[OneSignal] SDK not loaded');
-    return;
-  }
-  try {
-    await os.login(userId);
-    console.log('[OneSignal] User logged in:', userId);
-  } catch (e: any) {
-    console.error('[OneSignal] Login error:', e.message);
-  }
+  (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+  (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
+    try {
+      await OneSignal.login(userId);
+      console.log('[OneSignal] User logged in:', userId);
+      // Auto opt-in to push
+      if (OneSignal.User?.PushSubscription) {
+        await OneSignal.User.PushSubscription.optIn();
+        console.log('[OneSignal] User opted in to push');
+      }
+    } catch (e: any) {
+      console.error('[OneSignal] Login/optIn error:', e.message);
+    }
+  });
 }
 
 /** Logout user from OneSignal */
 export async function oneSignalLogout() {
-  const os = getOneSignal();
-  if (!os) return;
-  try {
-    await os.logout();
-    console.log('[OneSignal] User logged out');
-  } catch (e: any) {
-    console.error('[OneSignal] Logout error:', e.message);
-  }
+  (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+  (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
+    try {
+      await OneSignal.logout();
+      console.log('[OneSignal] User logged out');
+    } catch (e: any) {
+      console.error('[OneSignal] Logout error:', e.message);
+    }
+  });
 }
 
 /** Prompt user for notification permission via OneSignal */
 export async function requestOneSignalPermission(): Promise<boolean> {
-  const os = getOneSignal();
-  if (!os) return false;
-  try {
-    const permission = await os.Notifications.requestPermission();
-    console.log('[OneSignal] Permission result:', permission);
-    return permission;
-  } catch (e: any) {
-    console.error('[OneSignal] Permission error:', e.message);
-    return false;
-  }
+  return new Promise((resolve) => {
+    (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+    (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
+      try {
+        const permission = await OneSignal.Notifications.requestPermission();
+        console.log('[OneSignal] Permission result:', permission);
+        if (permission) {
+          await OneSignal.User.PushSubscription.optIn();
+        }
+        resolve(!!permission);
+      } catch (e: any) {
+        console.error('[OneSignal] Permission error:', e.message);
+        resolve(false);
+      }
+    });
+  });
 }
 
-/** Get OneSignal subscription status */
+/** Get OneSignal subscription status (synchronous snapshot) */
 export function getOneSignalStatus(): { permission: string; subscribed: boolean; userId: string | null } {
-  const os = getOneSignal();
-  if (!os) return { permission: 'unknown', subscribed: false, userId: null };
+  if (!isOneSignalReady()) {
+    return { permission: 'sdk_not_loaded', subscribed: false, userId: null };
+  }
+  const os = (window as any).OneSignal;
   try {
-    const permission = os.Notifications?.permission ? 'granted' : (os.Notifications?.permissionNative || 'default');
+    const permNative = os.Notifications?.permissionNative || 'default';
+    const permission = os.Notifications?.permission ? 'granted' : permNative;
     const subscribed = os.User?.PushSubscription?.optedIn || false;
     const userId = os.User?.externalId || null;
     return { permission, subscribed, userId };
   } catch {
-    return { permission: 'unknown', subscribed: false, userId: null };
+    return { permission: 'error', subscribed: false, userId: null };
   }
 }
 
