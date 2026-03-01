@@ -71,7 +71,7 @@ const Index = () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('full_name, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) throw error;
@@ -90,29 +90,48 @@ const Index = () => {
     }
   }, [profile, profileLoading, user]);
 
-  // Check notification permission and show banner if "default"
-  // Also auto optIn if user is logged in
+  // Check notification permission and show banner with smart logic
   useEffect(() => {
-    if (user && 'Notification' in window) {
+    if (user && 'Notification' in window && profile) {
+      const dismissed = (profile as any).notification_prompt_dismissed;
+      const laterCount = (profile as any).notification_prompt_later_count || 0;
+      const laterAt = (profile as any).notification_prompt_later_at;
+
+      // Never show if accepted or if permission already granted
+      if (dismissed === 'accepted' || Notification.permission === 'granted') {
+        setShowNotifBanner(false);
+        // Auto optIn if permission already granted
+        if (Notification.permission === 'granted') {
+          (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
+          (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
+            try {
+              if (OneSignal.User?.PushSubscription && !OneSignal.User.PushSubscription.optedIn) {
+                await OneSignal.User.PushSubscription.optIn();
+              }
+            } catch (e: any) {
+              console.error('[OneSignal] Auto optIn error:', e.message);
+            }
+          });
+        }
+        return;
+      }
+
+      // If clicked "later" 3+ times, wait 7 days
+      if (laterCount >= 3 && laterAt) {
+        const sevenDaysLater = new Date(laterAt);
+        sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+        if (new Date() < sevenDaysLater) {
+          setShowNotifBanner(false);
+          return;
+        }
+      }
+
+      // Show banner if permission is default
       if (Notification.permission === 'default') {
         setShowNotifBanner(true);
       }
-      // Auto optIn if permission already granted
-      if (Notification.permission === 'granted') {
-        (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
-        (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
-          try {
-            if (OneSignal.User?.PushSubscription && !OneSignal.User.PushSubscription.optedIn) {
-              await OneSignal.User.PushSubscription.optIn();
-              console.log('[OneSignal] Auto opted-in on Index load');
-            }
-          } catch (e: any) {
-            console.error('[OneSignal] Auto optIn error:', e.message);
-          }
-        });
-      }
     }
-  }, [user]);
+  }, [user, profile]);
 
   const handleActivateNotifications = async () => {
     if (!user) return;
@@ -121,6 +140,9 @@ const Index = () => {
       const granted = await requestOneSignalPermission();
       if (granted) {
         toast.success('Notifications activées !');
+        // Mark as accepted in DB
+        await supabase.from('profiles').update({ notification_prompt_dismissed: 'accepted' }).eq('user_id', user.id);
+        queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
       } else {
         toast.info('Permission refusée');
       }
@@ -129,6 +151,18 @@ const Index = () => {
       toast.error('Erreur : ' + e.message);
     }
     setActivatingNotif(false);
+  };
+
+  const handleDismissNotifBanner = async () => {
+    if (!user) return;
+    setShowNotifBanner(false);
+    const laterCount = ((profile as any)?.notification_prompt_later_count || 0) + 1;
+    await supabase.from('profiles').update({
+      notification_prompt_dismissed: 'later',
+      notification_prompt_later_count: laterCount,
+      notification_prompt_later_at: new Date().toISOString(),
+    }).eq('user_id', user.id);
+    queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
   };
 
   const handleWelcomeComplete = () => {
