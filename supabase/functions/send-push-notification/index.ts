@@ -37,6 +37,14 @@ serve(async (req) => {
     const body: NotificationPayload = await req.json();
     const { title, body: notifBody, url, type, userId } = body;
 
+    // Health-check: just confirm the edge function is alive, don't send anything
+    if (type === 'health-check') {
+      return new Response(
+        JSON.stringify({ success: true, healthCheck: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!title || !notifBody) {
       return new Response(
         JSON.stringify({ error: 'Title and body are required' }),
