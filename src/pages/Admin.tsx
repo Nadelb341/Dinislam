@@ -80,7 +80,7 @@ interface CardItem {
   dynamicCard?: any;
 }
 
-// Sortable wrapper component
+// Sortable wrapper component for grid layout
 const SortableCard = ({ id, children }: { id: string; children: React.ReactNode }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -90,16 +90,16 @@ const SortableCard = ({ id, children }: { id: string; children: React.ReactNode 
     position: 'relative' as const,
   };
   return (
-    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1">
+    <div ref={setNodeRef} style={style} className="relative">
       <button
         {...attributes}
         {...listeners}
-        className="flex items-center px-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        className="absolute -top-1 -left-1 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-muted/80 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
         aria-label="Déplacer"
       >
-        <GripVertical className="h-5 w-5" />
+        <GripVertical className="h-3 w-3" />
       </button>
-      <div className="flex-1 min-w-0">{children}</div>
+      {children}
     </div>
   );
 };
