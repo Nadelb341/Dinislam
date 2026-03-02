@@ -47,8 +47,11 @@ serve(async (req) => {
       const sendTime = notif.send_time?.substring(0, 5);
       if (!sendTime) continue;
 
-      // Simple time comparison - the cron should run at the right time
-      // We just process all active notifications for today
+      const [sendHour, sendMinute] = sendTime.split(':').map(Number);
+      const [currHour, currMinute] = currentTime.split(':').map(Number);
+      const sendTotal = sendHour * 60 + sendMinute;
+      const currTotal = currHour * 60 + currMinute;
+      if (Math.abs(sendTotal - currTotal) > 5) continue;
 
       // Determine recipients
       let targetAliases: string[] | null = null;
