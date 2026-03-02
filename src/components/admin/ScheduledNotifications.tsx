@@ -205,6 +205,9 @@ const ScheduledNotifications = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
+          ⚠️ Ne créez des notifications de test que si vous êtes prêt à les recevoir. Supprimez-les après le test.
+        </div>
         {isLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : notifications.length === 0 ? (
