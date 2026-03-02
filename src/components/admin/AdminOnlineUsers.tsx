@@ -6,7 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Circle } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
