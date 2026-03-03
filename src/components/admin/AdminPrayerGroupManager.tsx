@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 const GROUPS = [
   { key: 'petits', label: 'Petits', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
@@ -82,7 +82,7 @@ const AdminPrayerGroupManager = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="max-h-[60vh]">
+        <div className="max-h-[400px] overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
           <div className="space-y-2">
             {students.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Aucun élève</p>
@@ -151,7 +151,7 @@ const AdminPrayerGroupManager = () => {
               })
             )}
           </div>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

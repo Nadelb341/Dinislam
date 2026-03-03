@@ -1,5 +1,5 @@
 // Service Worker for Push Notifications and Auto-Update
-const CACHE_NAME = 'dini-bismillah-v3';
+const CACHE_NAME = 'dini-bismillah-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -61,31 +61,26 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push notification handler - iOS Safari compatible
-self.addEventListener('push', (event) => {
-  let data = {};
+// Push notification handler (VAPID Web Push)
+self.addEventListener('push', function(event) {
+  if (!event.data) return;
+  
+  let payload;
   try {
-    data = event.data ? event.data.json() : {};
-  } catch (e) {
-    // If JSON parsing fails, try text
-    try {
-      data = { body: event.data ? event.data.text() : 'Nouvelle notification' };
-    } catch (_) {
-      data = { body: 'Nouvelle notification' };
-    }
+    payload = event.data.json();
+  } catch {
+    payload = { title: 'Dini Bismillah', body: event.data.text() };
   }
 
-  const title = data.title || 'Dini Bismillah';
+  const title = payload.title || 'Dini Bismillah';
   const options = {
-    body: data.body || 'Nouvelle notification',
-    icon: data.icon || '/icon-192.png',
-    badge: data.badge || '/icon-192.png',
-    tag: data.tag || 'dini-bismillah',
-    renotify: data.renotify !== undefined ? data.renotify : true,
-    vibrate: [200, 100, 200],
-    data: {
-      url: data.url || '/',
-    },
+    body: payload.body || '',
+    icon: payload.icon || '/icon-192.png',
+    badge: payload.badge || '/icon-192.png',
+    tag: payload.tag || 'dini-bismillah',
+    data: payload.data || {},
+    vibrate: payload.vibrate || [200, 100, 200],
+    requireInteraction: false
   };
 
   event.waitUntil(
@@ -94,22 +89,9 @@ self.addEventListener('push', (event) => {
 });
 
 // Notification click handler
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/';
-
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let i = 0; i < windowClients.length; i++) {
-        const client = windowClients[i];
-        if (client.url.includes(urlToOpen) && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
+    clients.openWindow('https://dini-ramadan-learn.lovable.app')
   );
 });

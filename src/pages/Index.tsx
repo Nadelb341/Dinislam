@@ -11,7 +11,7 @@ import { useUserProgress } from '@/hooks/useUserProgress';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { requestOneSignalPermission, isOneSignalReady } from '@/lib/notifications';
+import { useWebPush } from '@/hooks/useWebPush';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import {
@@ -97,22 +97,8 @@ const Index = () => {
       const laterCount = (profile as any).notification_prompt_later_count || 0;
       const laterAt = (profile as any).notification_prompt_later_at;
 
-      // Never show if accepted or if permission already granted
       if (dismissed === 'accepted' || Notification.permission === 'granted') {
         setShowNotifBanner(false);
-        // Auto optIn if permission already granted
-        if (Notification.permission === 'granted') {
-          (window as any).OneSignalDeferred = (window as any).OneSignalDeferred || [];
-          (window as any).OneSignalDeferred.push(async function(OneSignal: any) {
-            try {
-              if (OneSignal.User?.PushSubscription && !OneSignal.User.PushSubscription.optedIn) {
-                await OneSignal.User.PushSubscription.optIn();
-              }
-            } catch (e: any) {
-              console.error('[OneSignal] Auto optIn error:', e.message);
-            }
-          });
-        }
         return;
       }
 
@@ -137,10 +123,9 @@ const Index = () => {
     if (!user) return;
     setActivatingNotif(true);
     try {
-      const granted = await requestOneSignalPermission();
-      if (granted) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
         toast.success('Notifications activées !');
-        // Mark as accepted in DB
         await supabase.from('profiles').update({ notification_prompt_dismissed: 'accepted' }).eq('user_id', user.id);
         queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
       } else {

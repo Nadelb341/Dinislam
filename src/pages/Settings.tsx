@@ -11,10 +11,10 @@ import { Bell, Moon, Clock, User, Shield, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import {
-  requestOneSignalPermission,
   getNotificationPreferences,
   updateNotificationPreferences,
 } from '@/lib/notifications';
+import { useWebPush } from '@/hooks/useWebPush';
 
 const Settings = () => {
   const { user, isAdmin } = useAuth();
@@ -89,8 +89,8 @@ const Settings = () => {
   const handleEnableNotifications = async () => {
     if (!user) return;
     try {
-      const granted = await requestOneSignalPermission();
-      if (granted) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
         setNotificationsEnabled(true);
         toast({ title: 'Notifications activées avec succès' });
       } else {
@@ -113,7 +113,6 @@ const Settings = () => {
   const handleDisableNotifications = async () => {
     if (!user) return;
     try {
-      // OneSignal handles unsubscription internally
       setNotificationsEnabled(false);
       toast({ title: 'Notifications désactivées' });
     } catch (error) {

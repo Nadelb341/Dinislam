@@ -24,7 +24,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Line, ComposedChart, Cell, LabelList
 } from 'recharts';
-import { getOneSignalStatus } from '@/lib/notifications';
+
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {
   if (ok === null) return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
@@ -54,8 +54,8 @@ const Monitoring = () => {
   const [broadcasting, setBroadcasting] = useState(false);
   const [notifHistory, setNotifHistory] = useState<any[]>([]);
 
-  // OneSignal status
-  const [osStatus, setOsStatus] = useState<{ permission: string; subscribed: boolean; userId: string | null }>({ permission: '...', subscribed: false, userId: null });
+  // Push status
+  const [pushStatus, setPushStatus] = useState<{ permission: string; subscribed: boolean }>({ permission: '...', subscribed: false });
   const [testResult, setTestResult] = useState<{ status: number; body: string } | null>(null);
 
    // Section 3: Activity
@@ -101,18 +101,19 @@ const Monitoring = () => {
       setStatus(s => ({ ...s, sw: false }));
     }
 
-    // Push (OneSignal)
-    const osState = getOneSignalStatus();
-    setOsStatus(osState);
-    setStatus(s => ({ ...s, push: osState.subscribed }));
+    // Push status
+    const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+    const sub = perm === 'granted';
+    setPushStatus({ permission: perm, subscribed: sub });
+    setStatus(s => ({ ...s, push: sub }));
 
     setLastRefresh(new Date());
   }, []);
 
   const loadPushData = useCallback(async () => {
-    // OneSignal status
-    const osState = getOneSignalStatus();
-    setOsStatus(osState);
+    // Push status
+    const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+    setPushStatus({ permission: perm, subscribed: perm === 'granted' });
 
     const { data: hist } = await supabase.from('notification_history').select('*').order('created_at', { ascending: false }).limit(10);
     setNotifHistory(hist || []);
@@ -340,32 +341,28 @@ const Monitoring = () => {
           </DialogContent>
         </Dialog>
 
-        {/* SECTION 2: Push Notifications (OneSignal) */}
+        {/* SECTION 2: Push Notifications (VAPID) */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" /> Notifications Push (OneSignal)
+              <Bell className="h-5 w-5 text-primary" /> Notifications Push (VAPID)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
-              <p className="text-sm font-bold">📡 Statut OneSignal</p>
+              <p className="text-sm font-bold">📡 Statut Push</p>
               <div className="grid grid-cols-1 gap-1 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Connecté :</span>
-                  <span className={osStatus.subscribed ? 'text-emerald-600' : 'text-destructive'}>
-                    {osStatus.subscribed ? '✅ Oui' : '❌ Non'}
+                  <span className={pushStatus.subscribed ? 'text-emerald-600' : 'text-destructive'}>
+                    {pushStatus.subscribed ? '✅ Oui' : '❌ Non'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Permission :</span>
-                  <span className={osStatus.permission === 'granted' ? 'text-emerald-600' : 'text-orange-600'}>
-                    {osStatus.permission}
+                  <span className={pushStatus.permission === 'granted' ? 'text-emerald-600' : 'text-orange-600'}>
+                    {pushStatus.permission}
                   </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">External ID :</span>
-                  <span className="truncate ml-2">{osStatus.userId || '(non identifié)'}</span>
                 </div>
               </div>
             </div>
@@ -511,7 +508,7 @@ const Monitoring = () => {
               { label: 'Connexion Base de données', ok: status.supabase },
               { label: 'Fonctions backend', ok: status.edgeFn },
               { label: 'Service Worker PWA', ok: status.sw },
-              { label: 'OneSignal Push', ok: status.push },
+              { label: 'Push VAPID', ok: status.push },
             ].map(s => (
               <div key={s.label} className="flex items-center justify-between py-1">
                 <span className="text-sm">{s.label}</span>

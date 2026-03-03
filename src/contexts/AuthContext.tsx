@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { oneSignalLogin, oneSignalLogout } from '@/lib/notifications';
+
 
 interface AuthContextType {
   user: User | null;
@@ -72,12 +72,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsAdmin(adminStatus);
             setIsApproved(adminStatus ? true : approvalStatus);
           }, 0);
-          // OneSignal: identify user
-          oneSignalLogin(session.user.id);
+          // VAPID push: subscription handled by useWebPush hook
         } else {
           setIsAdmin(false);
           setIsApproved(null);
-          oneSignalLogout();
         }
         
         setLoading(false);
@@ -96,8 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAdmin(adminStatus);
         setIsApproved(adminStatus ? true : approvalStatus);
         await (supabase as any).from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
-        // OneSignal: identify user
-        oneSignalLogin(session.user.id);
+        // VAPID push: subscription handled by useWebPush hook
       }
       
       setLoading(false);
@@ -140,7 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    oneSignalLogout();
     await supabase.auth.signOut();
     setIsAdmin(false);
     setIsApproved(null);
