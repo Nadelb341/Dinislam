@@ -341,32 +341,28 @@ const Monitoring = () => {
           </DialogContent>
         </Dialog>
 
-        {/* SECTION 2: Push Notifications (OneSignal) */}
+        {/* SECTION 2: Push Notifications (VAPID) */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" /> Notifications Push (OneSignal)
+              <Bell className="h-5 w-5 text-primary" /> Notifications Push (VAPID)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
-              <p className="text-sm font-bold">📡 Statut OneSignal</p>
+              <p className="text-sm font-bold">📡 Statut Push</p>
               <div className="grid grid-cols-1 gap-1 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Connecté :</span>
-                  <span className={osStatus.subscribed ? 'text-emerald-600' : 'text-destructive'}>
-                    {osStatus.subscribed ? '✅ Oui' : '❌ Non'}
+                  <span className={pushStatus.subscribed ? 'text-emerald-600' : 'text-destructive'}>
+                    {pushStatus.subscribed ? '✅ Oui' : '❌ Non'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Permission :</span>
-                  <span className={osStatus.permission === 'granted' ? 'text-emerald-600' : 'text-orange-600'}>
-                    {osStatus.permission}
+                  <span className={pushStatus.permission === 'granted' ? 'text-emerald-600' : 'text-orange-600'}>
+                    {pushStatus.permission}
                   </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">External ID :</span>
-                  <span className="truncate ml-2">{osStatus.userId || '(non identifié)'}</span>
                 </div>
               </div>
             </div>

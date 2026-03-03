@@ -89,8 +89,8 @@ const Settings = () => {
   const handleEnableNotifications = async () => {
     if (!user) return;
     try {
-      const granted = await requestOneSignalPermission();
-      if (granted) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
         setNotificationsEnabled(true);
         toast({ title: 'Notifications activées avec succès' });
       } else {
@@ -113,7 +113,6 @@ const Settings = () => {
   const handleDisableNotifications = async () => {
     if (!user) return;
     try {
-      // OneSignal handles unsubscription internally
       setNotificationsEnabled(false);
       toast({ title: 'Notifications désactivées' });
     } catch (error) {
