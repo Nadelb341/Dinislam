@@ -86,7 +86,6 @@ const Settings = () => {
     }
   };
 
-  const { isSubscribed, isSupported, isLoading: pushLoading, error: pushError, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = useWebPush();
 
   const handleEnableNotifications = async () => {
     if (!user) return;
