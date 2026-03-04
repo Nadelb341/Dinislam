@@ -31,6 +31,7 @@ const Settings = () => {
   const [ishaReminder, setIshaReminder] = useState(true);
   const [loading, setLoading] = useState(true);
   const [testingSend, setTestingSend] = useState(false);
+  const { isSubscribed, isSupported, isLoading: pushLoading, error: pushError, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = useWebPush();
 
   const handleTestPush = async () => {
     setTestingSend(true);
@@ -57,15 +58,15 @@ const Settings = () => {
 
   useEffect(() => {
     loadPreferences();
-  }, [user]);
+  }, [user, isSubscribed]);
 
   const loadPreferences = async () => {
     if (!user) return;
 
     try {
-      // Check if notifications are supported and permission granted
+      // Sync notification state with actual push subscription
       if ('Notification' in window) {
-        setNotificationsEnabled(Notification.permission === 'granted');
+        setNotificationsEnabled(Notification.permission === 'granted' && isSubscribed);
       }
 
       // Load preferences from database
@@ -86,25 +87,26 @@ const Settings = () => {
     }
   };
 
+
   const handleEnableNotifications = async () => {
     if (!user) return;
     try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
+      const success = await pushSubscribe();
+      if (success) {
         setNotificationsEnabled(true);
-        toast({ title: 'Notifications activées avec succès' });
+        toast({ title: '✅ Notifications activées !' });
       } else {
         toast({
-          title: 'Permission refusée',
-          description: 'Veuillez autoriser les notifications dans les paramètres de votre navigateur',
+          title: 'Échec activation',
+          description: pushError || 'Vérifiez les permissions du navigateur',
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error enabling notifications:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'activer les notifications',
+        description: error?.message || 'Impossible d\'activer les notifications',
         variant: 'destructive',
       });
     }
@@ -113,6 +115,7 @@ const Settings = () => {
   const handleDisableNotifications = async () => {
     if (!user) return;
     try {
+      await pushUnsubscribe();
       setNotificationsEnabled(false);
       toast({ title: 'Notifications désactivées' });
     } catch (error) {
