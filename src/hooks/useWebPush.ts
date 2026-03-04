@@ -149,7 +149,7 @@ export function useWebPush() {
       console.log('[WebPush] SW ready, scope:', registration.scope);
       
       // Unsubscribe any existing subscription first to avoid conflicts
-      const existingSub = await registration.pushManager.getSubscription();
+      const existingSub = await (registration as any).pushManager.getSubscription();
       if (existingSub) {
         console.log('[WebPush] Removing existing subscription first...');
         await existingSub.unsubscribe();
@@ -157,7 +157,7 @@ export function useWebPush() {
 
       const keyArray = urlBase64ToUint8Array(vapidKey);
       console.log('[WebPush] Calling pushManager.subscribe()...');
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: keyArray
       });
