@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users,
 };
@@ -184,6 +185,8 @@ const Index = () => {
               </div>
             </div>
           )}
+          {/* Push Auto-Subscribe Banner */}
+          <PushAutoSubscribe />
           <div className="text-center py-6 animate-fade-in">
             <div className="flex items-center justify-center gap-2 mb-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
