@@ -67,9 +67,10 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
   const [groupMsgText, setGroupMsgText] = useState('');
   const [groupMsgPush, setGroupMsgPush] = useState(true);
   const [groupMsgSending, setGroupMsgSending] = useState(false);
-  const [groupMsgMode, setGroupMsgMode] = useState<'all' | 'select' | 'top3'>('all');
+  const [groupMsgMode, setGroupMsgMode] = useState<'all' | 'select' | 'top3' | 'groups'>('all');
   const [groupMsgSelected, setGroupMsgSelected] = useState<Set<string>>(new Set());
   const [groupMsgSearch, setGroupMsgSearch] = useState('');
+  const [groupMsgSelectedGroups, setGroupMsgSelectedGroups] = useState<Set<string>>(new Set());
 
   // Fetch all profiles for new message / group message dialog
   const { data: allProfiles = [] } = useQuery({
@@ -86,6 +87,20 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       return (data || []).filter(p => !adminIds.has(p.user_id));
     },
     enabled: newMsgOpen || groupMsgOpen,
+  });
+
+  // Fetch student groups
+  const { data: studentGroups = [] } = useQuery({
+    queryKey: ['student-groups-messaging'],
+    queryFn: async () => {
+      const { data: groups } = await (supabase as any).from('student_groups').select('*').order('display_order');
+      const { data: members } = await (supabase as any).from('student_group_members').select('group_id, user_id');
+      return (groups || []).map((g: any) => ({
+        ...g,
+        memberIds: (members || []).filter((m: any) => m.group_id === g.id).map((m: any) => m.user_id),
+      }));
+    },
+    enabled: groupMsgOpen,
   });
 
   // Fetch top 3 ranking for group mode
@@ -258,6 +273,15 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     if (groupMsgMode === 'all') return allProfiles;
     if (groupMsgMode === 'top3') return allProfiles.filter(p => top3UserIds.includes(p.user_id));
     if (groupMsgMode === 'select') return allProfiles.filter(p => groupMsgSelected.has(p.user_id));
+    if (groupMsgMode === 'groups') {
+      const memberIds = new Set<string>();
+      for (const g of studentGroups) {
+        if (groupMsgSelectedGroups.has(g.id)) {
+          for (const uid of g.memberIds) memberIds.add(uid);
+        }
+      }
+      return allProfiles.filter(p => memberIds.has(p.user_id));
+    }
     return [];
   };
 
@@ -300,6 +324,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       setGroupMsgPush(true);
       setGroupMsgMode('all');
       setGroupMsgSelected(new Set());
+      setGroupMsgSelectedGroups(new Set());
       setGroupMsgSearch('');
       refetch();
 
@@ -537,10 +562,11 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                   { value: 'all' as const, label: '👥 Tous les élèves', desc: `${allProfiles.length} élève${allProfiles.length > 1 ? 's' : ''}` },
                   { value: 'select' as const, label: '🎯 Sélectionner des élèves', desc: 'Choisir manuellement' },
                   { value: 'top3' as const, label: '🏆 Top classement', desc: 'Les 3 premiers' },
+                  { value: 'groups' as const, label: '📂 Sélectionner des groupes', desc: `${studentGroups.length} groupe${studentGroups.length > 1 ? 's' : ''}` },
                 ].map(opt => (
                   <div
                     key={opt.value}
-                    onClick={() => { setGroupMsgMode(opt.value); if (opt.value !== 'select') setGroupMsgSelected(new Set()); }}
+                    onClick={() => { setGroupMsgMode(opt.value); if (opt.value !== 'select') setGroupMsgSelected(new Set()); if (opt.value !== 'groups') setGroupMsgSelectedGroups(new Set()); }}
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all ${
                       groupMsgMode === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                     }`}
@@ -622,6 +648,37 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Groups selection */}
+            {groupMsgMode === 'groups' && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">📂 Groupes ({groupMsgSelectedGroups.size} sélectionné{groupMsgSelectedGroups.size > 1 ? 's' : ''})</Label>
+                {studentGroups.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-3">Aucun groupe créé. Allez dans Élèves pour en créer.</p>
+                ) : (
+                  <div className="border rounded-lg divide-y">
+                    {studentGroups.map((g: any) => (
+                      <div
+                        key={g.id}
+                        onClick={() => {
+                          const next = new Set(groupMsgSelectedGroups);
+                          next.has(g.id) ? next.delete(g.id) : next.add(g.id);
+                          setGroupMsgSelectedGroups(next);
+                        }}
+                        className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <Checkbox checked={groupMsgSelectedGroups.has(g.id)} />
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${g.color}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{g.name}</p>
+                          <p className="text-xs text-muted-foreground">{g.memberIds.length} élève{g.memberIds.length > 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
