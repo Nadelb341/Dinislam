@@ -160,17 +160,20 @@ const Ramadan = () => {
   const ramadanStart = new Date('2026-03-01');
   const currentRamadanDay = Math.floor((now.getTime() - ramadanStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-  const isDateLocked = (day: RamadanDay): boolean => {
-    // If globally unlocked by admin, not locked
+  const isFutureDay = (day: RamadanDay): boolean => {
     if (day.is_unlocked) return false;
-    // If per-student exception exists, not locked
     if (dayExceptions.some(e => e.day_id === day.id)) return false;
-    // Future days: locked
-    if (day.day_number > currentRamadanDay) return true;
-    // Too old days: locked (more than 3 days back)
-    if (day.day_number < currentRamadanDay - 3) return true;
-    // Within 4-day window: accessible
-    return false;
+    return day.day_number > currentRamadanDay;
+  };
+
+  const isOldLocked = (day: RamadanDay): boolean => {
+    if (day.is_unlocked) return false;
+    if (dayExceptions.some(e => e.day_id === day.id)) return false;
+    return day.day_number < currentRamadanDay - 3;
+  };
+
+  const isDateLocked = (day: RamadanDay): boolean => {
+    return isFutureDay(day) || isOldLocked(day);
   };
 
   const getDayUnlockTime = (dayNumber: number): Date | null => {
@@ -240,8 +243,15 @@ const Ramadan = () => {
   });
 
   const handleDayClick = (day: RamadanDay) => {
-    // Check date-based lock first
-    if (isDateLocked(day)) {
+    // Check future days first
+    if (isFutureDay(day)) {
+      toast.info('Ce jour n\'est pas encore disponible 🔒', {
+        style: { textAlign: 'center', display: 'flex', justifyContent: 'center' },
+      });
+      return;
+    }
+    // Check old locked days
+    if (isOldLocked(day)) {
       toast.info('Ce jour est verrouillé. Tu peux demander à ton professeur de le rouvrir pour toi. 🔓', {
         style: { textAlign: 'center', display: 'flex', justifyContent: 'center' },
       });
