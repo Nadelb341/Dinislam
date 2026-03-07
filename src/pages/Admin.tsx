@@ -515,7 +515,7 @@ const Admin = () => {
         {/* Sortable cards area - 3 col grid (2 col on small screens) */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-            <div className="grid grid-cols-2 min-[400px]:grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {orderedCards.map((item) => {
                if (item.type === 'static') {
                   const card = STATIC_CARDS.find(c => c.key === item.key);
