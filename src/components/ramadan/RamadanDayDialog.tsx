@@ -708,32 +708,34 @@ const RamadanDayDialog = ({
                     </div>
                   )}
 
-                  <div className="aspect-video rounded-xl overflow-hidden bg-black relative group">
+                  <div className="aspect-video rounded-xl overflow-hidden bg-black">
                     <video
                       ref={videoRef}
                       key={currentVideo.id}
                       src={currentVideo.video_url}
-                      className="w-full h-full"
-                      autoPlay={currentVideoIdx === 0}
+                      controls
+                      playsInline
+                      controlsList="nodownload"
+                      style={{ width: '100%', height: '100%' }}
                       onEnded={handleVideoEnded}
                       onPlay={handleVideoPlay}
                       onPause={handleVideoPause}
                       onTimeUpdate={handleTimeUpdate}
+                      onLoadedMetadata={() => {
+                        const vid = videoRef.current;
+                        if (!vid) return;
+                        const isTablet = window.innerWidth >= 768;
+                        if (isTablet && (vid as any).webkitEnterFullscreen) {
+                          (vid as any).webkitEnterFullscreen();
+                        } else if (vid.requestFullscreen) {
+                          vid.requestFullscreen().catch(() => {});
+                        } else if ((vid as any).webkitRequestFullscreen) {
+                          (vid as any).webkitRequestFullscreen();
+                        } else if ((vid as any).webkitEnterFullscreen) {
+                          (vid as any).webkitEnterFullscreen();
+                        }
+                      }}
                     />
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => handleSeek(-10)}>
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-white hover:bg-white/20" onClick={handlePlayPause}>
-                        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" fill="currentColor" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => handleSeek(10)}>
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                      <span className="text-white text-xs ml-1">
-                        {currentVideoIdx < totalVideos - 1 ? `Vidéo ${currentVideoIdx + 1}/${totalVideos}` : 'Dernière vidéo'}
-                      </span>
-                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
