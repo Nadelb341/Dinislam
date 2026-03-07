@@ -23,7 +23,7 @@ const Priere = () => {
   const queryClient = useQueryClient();
   const [showQibla, setShowQibla] = useState(false);
   const [showCitySelector, setShowCitySelector] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<CityOption>(CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<CityOption>(PRIORITY_CITIES[0]);
 
   const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity);
 
