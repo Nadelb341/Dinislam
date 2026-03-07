@@ -18,6 +18,7 @@ interface RamadanDay {
   theme: string | null;
   video_url: string | null;
   pdf_url: string | null;
+  is_unlocked: boolean;
 }
 
 interface DayVideo {
@@ -86,8 +87,20 @@ const Ramadan = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from('ramadan_days').select('*').order('day_number');
       if (error) throw error;
-      return data as RamadanDay[];
+      return (data as any[]).map(d => ({ ...d, is_unlocked: d.is_unlocked ?? false })) as RamadanDay[];
     },
+  });
+
+  // Fetch per-student day exceptions
+  const { data: dayExceptions = [] } = useQuery({
+    queryKey: ['ramadan-day-exceptions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*').eq('user_id', user.id).eq('is_unlocked', true);
+      if (error) throw error;
+      return data as { id: string; user_id: string; day_id: number; is_unlocked: boolean }[];
+    },
+    enabled: !!user?.id,
   });
 
   const { data: quizzes = [] } = useQuery({
@@ -142,6 +155,20 @@ const Ramadan = () => {
   const getDayProgress = (dayId: number) => userProgress.find(p => p.day_id === dayId);
   const getVideosForDay = (dayId: number) => dayVideos.filter(v => v.day_id === dayId);
   const getQuizzesForDay = (dayId: number) => quizzes.filter(q => q.day_id === dayId);
+
+  // Date-based auto-lock: Ramadan starts March 1, 2026
+  const ramadanStart = new Date('2026-03-01');
+  const currentRamadanDay = Math.floor((now.getTime() - ramadanStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const isDateLocked = (day: RamadanDay): boolean => {
+    // If globally unlocked by admin, not locked
+    if (day.is_unlocked) return false;
+    // If per-student exception exists, not locked
+    if (dayExceptions.some(e => e.day_id === day.id)) return false;
+    // Auto-lock: only last 3 days + current day are accessible (4 days window)
+    if (day.day_number < currentRamadanDay - 3) return true;
+    return false;
+  };
 
   const getDayUnlockTime = (dayNumber: number): Date | null => {
     if (!settings?.started_at) return null;
@@ -210,6 +237,14 @@ const Ramadan = () => {
   });
 
   const handleDayClick = (day: RamadanDay) => {
+    // Check date-based lock first
+    if (isDateLocked(day)) {
+      toast.info('Ce jour est verrouillé. Tu peux demander à ton professeur de le rouvrir pour toi. 🔓', {
+        style: { textAlign: 'center', display: 'flex', justifyContent: 'center' },
+      });
+      return;
+    }
+
     const isUnlocked = isDayUnlocked(day.day_number);
     const hasContent = dayHasContent(day);
     const waiting = isWaitingForTime(day.day_number);
@@ -307,9 +342,11 @@ const Ramadan = () => {
             const hasContent = dayHasContent(day);
             const waiting = isWaitingForTime(day.day_number);
             const notStarted = day.day_number === 1 && !settings?.start_enabled;
-            const isLocked = notStarted || (!isUnlocked && !waiting);
+            const dateLocked = isDateLocked(day);
+            const isLocked = dateLocked || notStarted || (!isUnlocked && !waiting);
 
             const getDayBg = (dayNum: number) => {
+              if (dateLocked && !isCompleted) return 'bg-muted text-muted-foreground opacity-40 cursor-not-allowed';
               if (isCompleted) return 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md hover:scale-105 cursor-pointer';
               if (waiting) return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white cursor-wait';
               if (dayNum <= 10) return 'bg-[hsl(140,40%,88%)] text-[hsl(140,30%,35%)]';
@@ -324,9 +361,9 @@ const Ramadan = () => {
                 className={cn(
                   'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
                   getDayBg(day.day_number),
-                  !isCompleted && !waiting && !isUnlocked && 'cursor-not-allowed',
-                  !isCompleted && !waiting && isUnlocked && !hasContent && 'opacity-60',
-                  !isCompleted && !waiting && isUnlocked && hasContent && 'hover:scale-105'
+                  !dateLocked && !isCompleted && !waiting && !isUnlocked && 'cursor-not-allowed',
+                  !dateLocked && !isCompleted && !waiting && isUnlocked && !hasContent && 'opacity-60',
+                  !dateLocked && !isCompleted && !waiting && isUnlocked && hasContent && 'hover:scale-105'
                 )}
               >
                 {/* Lock badge top-right */}
@@ -342,6 +379,11 @@ const Ramadan = () => {
 
                 {isCompleted ? (
                   <Check className="h-4 w-4" />
+                ) : dateLocked ? (
+                  <>
+                    <span className="text-base">🔒</span>
+                    <span className="text-[10px]">{day.day_number}</span>
+                  </>
                 ) : (
                   <>
                     {/* Moon + star icon */}

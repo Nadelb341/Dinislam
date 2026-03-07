@@ -8,13 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image } from 'lucide-react';
+import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import {
   DndContext,
@@ -258,13 +260,37 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     },
   });
 
+  // Fetch profiles for student picker
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['admin-profiles-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('user_id, full_name, email').eq('is_approved', true).order('full_name');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch day exceptions
+  const { data: dayExceptions = [] } = useQuery({
+    queryKey: ['admin-ramadan-day-exceptions'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*');
+      if (error) throw error;
+      return data as { id: string; user_id: string; day_id: number; is_unlocked: boolean; created_at: string }[];
+    },
+  });
+
+  const [selectedStudentForException, setSelectedStudentForException] = useState<string>('');
+
   const getQuizzesForDay = (dayId: number) => quizzes.filter(q => q.day_id === dayId).sort((a, b) => a.question_order - b.question_order);
   const getVideosForDay = (dayId: number) => dayVideos.filter(v => v.day_id === dayId);
   const getActivitiesForDay = (dayId: number) => dayActivities.filter(a => a.day_id === dayId);
+  const getExceptionsForDay = (dayId: number) => dayExceptions.filter(e => e.day_id === dayId && e.is_unlocked);
   const currentDayData = days.find(d => d.id === selectedDay);
   const currentQuizzes = selectedDay ? getQuizzesForDay(selectedDay) : [];
   const currentVideos = selectedDay ? getVideosForDay(selectedDay) : [];
   const currentActivities = selectedDay ? getActivitiesForDay(selectedDay) : [];
+  const currentExceptions = selectedDay ? getExceptionsForDay(selectedDay) : [];
 
   // Upload video mutation (multi-video)
   const uploadVideoMutation = useMutation({
@@ -499,7 +525,45 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     },
   });
 
-  // Reset calendar mutation
+  // Toggle is_unlocked on a day (global unlock)
+  const toggleDayUnlockMutation = useMutation({
+    mutationFn: async ({ dayId, isUnlocked }: { dayId: number; isUnlocked: boolean }) => {
+      const { error } = await (supabase as any).from('ramadan_days').update({ is_unlocked: isUnlocked }).eq('id', dayId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-days-manager'] });
+      queryClient.invalidateQueries({ queryKey: ['ramadan-days'] });
+      toast({ title: 'Statut de verrouillage mis à jour' });
+    },
+  });
+
+  // Add per-student exception
+  const addExceptionMutation = useMutation({
+    mutationFn: async ({ userId, dayId }: { userId: string; dayId: number }) => {
+      const { error } = await (supabase as any).from('ramadan_day_exceptions').upsert({ user_id: userId, day_id: dayId, is_unlocked: true }, { onConflict: 'user_id,day_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-exceptions'] });
+      toast({ title: 'Jour déverrouillé pour cet élève' });
+      setSelectedStudentForException('');
+    },
+  });
+
+  // Delete exception
+  const deleteExceptionMutation = useMutation({
+    mutationFn: async (exceptionId: string) => {
+      const { error } = await (supabase as any).from('ramadan_day_exceptions').delete().eq('id', exceptionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-exceptions'] });
+      toast({ title: 'Exception supprimée' });
+    },
+  });
+
+
   const resetCalendarMutation = useMutation({
     mutationFn: async () => {
       const { error: respError } = await supabase
@@ -829,7 +893,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           const hasQuiz = quizCount > 0;
           const isComplete = hasVideo && hasQuiz;
           const isPartial = hasVideo || hasQuiz;
-          const isLocked = !settings?.start_enabled;
+          const isGloballyUnlocked = (day as any).is_unlocked;
+          const hasExceptions = getExceptionsForDay(day.id).length > 0;
 
           return (
             <button
@@ -847,9 +912,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               `}
             >
               <span className="text-lg font-bold leading-none">{day.day_number}</span>
-              {isLocked && (
-                <span className="absolute top-1 left-1 text-[10px]">🔒</span>
-              )}
+              <span className="absolute top-1 left-1 text-[10px]">
+                {isGloballyUnlocked ? '🔓' : hasExceptions ? '🔑' : '🔒'}
+              </span>
               <span className="absolute bottom-1 right-1 text-[10px] opacity-50">✏️</span>
             </button>
           );
@@ -857,7 +922,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="w-3.5 h-3.5 rounded border-2 border-green-500 bg-green-500/15" />
           <span>Complet</span>
@@ -869,6 +934,15 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
         <div className="flex items-center gap-1.5">
           <div className="w-3.5 h-3.5 rounded border-2 border-border bg-muted/50" />
           <span>Vide</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>🔒</span><span>Verrouillé</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>🔓</span><span>Déverrouillé</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span>🔑</span><span>Exceptions</span>
         </div>
       </div>
 
@@ -885,6 +959,80 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Unlock Section */}
+            <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  {(currentDayData as any)?.is_unlocked ? <Unlock className="h-4 w-4 text-green-500" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                  Déverrouillage global
+                </Label>
+                <Switch
+                  checked={(currentDayData as any)?.is_unlocked ?? false}
+                  onCheckedChange={(checked) => {
+                    if (selectedDay) toggleDayUnlockMutation.mutate({ dayId: selectedDay, isUnlocked: checked });
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {(currentDayData as any)?.is_unlocked
+                  ? '🔓 Ce jour est déverrouillé pour tous les élèves'
+                  : '🔒 Verrouillage automatique actif (fenêtre de 4 jours)'}
+              </p>
+
+              {/* Per-student exceptions */}
+              <div className="border-t pt-3 space-y-2">
+                <Label className="text-xs font-semibold">🔑 Déverrouiller pour un élève spécifique</Label>
+                <div className="flex gap-2">
+                  <Select value={selectedStudentForException} onValueChange={setSelectedStudentForException}>
+                    <SelectTrigger className="flex-1 h-8 text-xs">
+                      <SelectValue placeholder="Sélectionner un élève..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles
+                        .filter(p => !currentExceptions.some(e => e.user_id === p.user_id))
+                        .map(p => (
+                          <SelectItem key={p.user_id} value={p.user_id} className="text-xs">
+                            {p.full_name || p.email || 'Sans nom'}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={!selectedStudentForException || !selectedDay || addExceptionMutation.isPending}
+                    onClick={() => {
+                      if (selectedStudentForException && selectedDay) {
+                        addExceptionMutation.mutate({ userId: selectedStudentForException, dayId: selectedDay });
+                      }
+                    }}
+                  >
+                    {addExceptionMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Unlock className="h-3 w-3" />}
+                  </Button>
+                </div>
+                {currentExceptions.length > 0 && (
+                  <div className="space-y-1">
+                    {currentExceptions.map(exc => {
+                      const profile = profiles.find(p => p.user_id === exc.user_id);
+                      return (
+                        <div key={exc.id} className="flex items-center justify-between p-1.5 rounded bg-green-500/10 text-xs">
+                          <span className="truncate">{profile?.full_name || profile?.email || exc.user_id}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 text-destructive"
+                            onClick={() => deleteExceptionMutation.mutate(exc.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Theme Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">🏷️ Titre / Thématique du jour</Label>
