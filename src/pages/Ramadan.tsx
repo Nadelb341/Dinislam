@@ -165,8 +165,11 @@ const Ramadan = () => {
     if (day.is_unlocked) return false;
     // If per-student exception exists, not locked
     if (dayExceptions.some(e => e.day_id === day.id)) return false;
-    // Auto-lock: only last 3 days + current day are accessible (4 days window)
+    // Future days: locked
+    if (day.day_number > currentRamadanDay) return true;
+    // Too old days: locked (more than 3 days back)
     if (day.day_number < currentRamadanDay - 3) return true;
+    // Within 4-day window: accessible
     return false;
   };
 
