@@ -341,6 +341,12 @@ const Monitoring = () => {
           </DialogContent>
         </Dialog>
 
+        {/* SECTION 2.5: Scheduled Notifications */}
+        <ScheduledNotifications />
+
+        {/* SECTION: Age/Class Management */}
+        <AdminPrayerGroupManager />
+
         {/* SECTION 2: Push Notifications (VAPID) */}
         <Card>
           <CardHeader className="pb-3">
@@ -415,12 +421,6 @@ const Monitoring = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* SECTION 2.5: Scheduled Notifications */}
-        <ScheduledNotifications />
-
-        {/* SECTION: Age/Class Management */}
-        <AdminPrayerGroupManager />
 
         {/* SECTION 3: Validations en attente */}
         <Card>
