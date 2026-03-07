@@ -95,6 +95,9 @@ const AdminCommandModal = ({
           <Button variant="outline" onClick={() => { onOpenChange(false); navigate('/monitoring'); }} className="w-full">
             <BarChart3 className="h-4 w-4 mr-2" /> 📊 Monitoring →
           </Button>
+          <Button variant="outline" onClick={() => { onOpenChange(false); navigate('/admin?section=global-stats'); }} className="w-full">
+            📊 Statistiques globales →
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
