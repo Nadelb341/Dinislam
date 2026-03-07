@@ -342,9 +342,11 @@ const Ramadan = () => {
             const hasContent = dayHasContent(day);
             const waiting = isWaitingForTime(day.day_number);
             const notStarted = day.day_number === 1 && !settings?.start_enabled;
-            const isLocked = notStarted || (!isUnlocked && !waiting);
+            const dateLocked = isDateLocked(day);
+            const isLocked = dateLocked || notStarted || (!isUnlocked && !waiting);
 
             const getDayBg = (dayNum: number) => {
+              if (dateLocked && !isCompleted) return 'bg-muted text-muted-foreground opacity-40 cursor-not-allowed';
               if (isCompleted) return 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md hover:scale-105 cursor-pointer';
               if (waiting) return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white cursor-wait';
               if (dayNum <= 10) return 'bg-[hsl(140,40%,88%)] text-[hsl(140,30%,35%)]';
@@ -359,9 +361,9 @@ const Ramadan = () => {
                 className={cn(
                   'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
                   getDayBg(day.day_number),
-                  !isCompleted && !waiting && !isUnlocked && 'cursor-not-allowed',
-                  !isCompleted && !waiting && isUnlocked && !hasContent && 'opacity-60',
-                  !isCompleted && !waiting && isUnlocked && hasContent && 'hover:scale-105'
+                  !dateLocked && !isCompleted && !waiting && !isUnlocked && 'cursor-not-allowed',
+                  !dateLocked && !isCompleted && !waiting && isUnlocked && !hasContent && 'opacity-60',
+                  !dateLocked && !isCompleted && !waiting && isUnlocked && hasContent && 'hover:scale-105'
                 )}
               >
                 {/* Lock badge top-right */}
@@ -377,6 +379,11 @@ const Ramadan = () => {
 
                 {isCompleted ? (
                   <Check className="h-4 w-4" />
+                ) : dateLocked ? (
+                  <>
+                    <span className="text-base">🔒</span>
+                    <span className="text-[10px]">{day.day_number}</span>
+                  </>
                 ) : (
                   <>
                     {/* Moon + star icon */}
