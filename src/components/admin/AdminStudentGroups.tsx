@@ -139,10 +139,7 @@ const AdminStudentGroups = () => {
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('tous');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('tous');
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor)
-  );
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Fetch groups with members
   const { data: groups = [] } = useQuery({
