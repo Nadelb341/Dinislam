@@ -15,22 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Pencil, Trash2, Users, Search, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  DndContext,
-  closestCenter,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  KeyboardSensor,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  rectSortingStrategy,
-  arrayMove,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 const GROUP_COLORS = [
   { value: 'bg-blue-500', label: 'Bleu', preview: 'bg-blue-500' },
@@ -67,44 +51,37 @@ const getAgeGroup = (dateOfBirth: string | null): string => {
   return 'adultes';
 };
 
-// Sortable group card component
-const SortableGroupCard = ({
+// Group card component with native HTML5 drag & drop
+const DraggableGroupCard = ({
   group,
   onEdit,
   onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragging,
 }: {
   group: StudentGroup;
   onEdit: (group: StudentGroup) => void;
   onDelete: (groupId: string) => void;
+  onDragStart: (id: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (id: string) => void;
+  isDragging: boolean;
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: group.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : undefined,
-  };
-
   return (
-    <Card ref={setNodeRef} style={style} className="transition-shadow">
+    <Card
+      draggable
+      onDragStart={() => onDragStart(group.id)}
+      onDragOver={onDragOver}
+      onDrop={() => onDrop(group.id)}
+      className="transition-shadow"
+      style={{ opacity: isDragging ? 0.5 : 1 }}
+    >
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-1">
           <div className="flex items-start gap-2 min-w-0 flex-1">
-            <button
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing touch-none mt-0.5"
-            >
-              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-            </button>
+            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 cursor-grab" />
             <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${group.color}`} />
             <span className="text-sm font-bold leading-tight break-words">{group.name}</span>
           </div>
@@ -162,10 +139,7 @@ const AdminStudentGroups = () => {
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('tous');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('tous');
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor)
-  );
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Fetch groups with members
   const { data: groups = [] } = useQuery({
@@ -269,20 +243,22 @@ const AdminStudentGroups = () => {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    if (!groups || groups.length === 0) return;
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  const handleDragStart = (id: string) => setDraggedId(id);
 
-    const oldIndex = groups.findIndex(g => g.id === active.id);
-    const newIndex = groups.findIndex(g => g.id === over.id);
-    const reordered = arrayMove(groups, oldIndex, newIndex);
+  const handleDrop = async (targetId: string) => {
+    if (!draggedId || draggedId === targetId || !groups || groups.length === 0) return;
+    const oldIndex = groups.findIndex(g => g.id === draggedId);
+    const newIndex = groups.findIndex(g => g.id === targetId);
+    if (oldIndex === -1 || newIndex === -1) return;
 
-    // Optimistic update
-    const updated = reordered.map((g: StudentGroup, i: number) => ({ ...g, display_order: i }));
+    const newGroups = [...groups];
+    const [moved] = newGroups.splice(oldIndex, 1);
+    newGroups.splice(newIndex, 0, moved);
+
+    const updated = newGroups.map((g, i) => ({ ...g, display_order: i }));
     queryClient.setQueryData(['student-groups'], updated);
+    setDraggedId(null);
 
-    // Persist to DB
     await Promise.all(
       updated.map((g) =>
         (supabase as any)
@@ -340,27 +316,20 @@ const AdminStudentGroups = () => {
       {(!groups || groups.length === 0) ? (
         <p className="text-sm text-muted-foreground text-center py-4">Aucun groupe créé</p>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={(groups || []).map(g => g.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              {(groups || []).map((group) => (
-                <SortableGroupCard
-                  key={group.id}
-                  group={group}
-                  onEdit={openEdit}
-                  onDelete={handleDeleteGroup}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="grid grid-cols-2 gap-3">
+          {(groups || []).map((group) => (
+            <DraggableGroupCard
+              key={group.id}
+              group={group}
+              onEdit={openEdit}
+              onDelete={handleDeleteGroup}
+              onDragStart={handleDragStart}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              isDragging={draggedId === group.id}
+            />
+          ))}
+        </div>
       )}
 
       {/* Create/Edit Dialog */}
