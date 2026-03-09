@@ -362,13 +362,42 @@ const Ramadan = () => {
             const dateLocked = isDateLocked(day);
             const isLocked = dateLocked || notStarted || (!isUnlocked && !waiting);
 
-            const getDayBg = (dayNum: number) => {
-              if (dateLocked && !isCompleted) return 'bg-muted text-muted-foreground opacity-40 cursor-not-allowed';
-              if (isCompleted) return 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md hover:scale-105 cursor-pointer';
-              if (waiting) return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white cursor-wait';
-              if (dayNum <= 10) return 'bg-[hsl(140,40%,88%)] text-[hsl(140,30%,35%)]';
-              if (dayNum <= 20) return 'bg-gradient-to-br from-[hsl(140,40%,88%)] to-[hsl(50,60%,85%)] text-[hsl(45,40%,30%)]';
-              return 'bg-gradient-to-br from-[hsl(50,60%,85%)] to-[hsl(35,70%,75%)] text-[hsl(30,50%,25%)]';
+            // Determine if this is the current Ramadan day
+            const isCurrentDay = day.day_number === currentRamadanDay;
+            // Is it before 16h for the current day?
+            const isCurrentDayBeforeUnlock = isCurrentDay && waiting;
+            // Is it current day and unlocked (after 16h)?
+            const isCurrentDayUnlocked = isCurrentDay && !waiting && isUnlocked;
+            // Accessible window days (J-1, J-2, J-3) but not current day
+            const isAccessibleWindow = !isCurrentDay && !dateLocked && !isCompleted && (isUnlocked || waiting);
+            // Old locked day (before J-3)
+            const isOldLockedDay = isOldLocked(day);
+            // Future locked day
+            const isFutureLockedDay = isFutureDay(day);
+
+            const getDayClasses = () => {
+              // Completed: green background with checkmark
+              if (isCompleted) {
+                return 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md hover:scale-105 cursor-pointer';
+              }
+              // Current day (J): ORANGE background
+              if (isCurrentDay) {
+                if (isCurrentDayBeforeUnlock) {
+                  return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white cursor-wait';
+                }
+                // Current day unlocked (after 16h)
+                return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md hover:scale-105 cursor-pointer';
+              }
+              // Accessible window (J-1, J-2, J-3): light green/white
+              if (isAccessibleWindow) {
+                return 'bg-[hsl(140,40%,92%)] text-[hsl(140,30%,30%)] hover:scale-105 cursor-pointer';
+              }
+              // Old locked or future locked: gray with lock
+              if (isOldLockedDay || isFutureLockedDay) {
+                return 'bg-muted text-muted-foreground opacity-40 cursor-not-allowed';
+              }
+              // Default fallback
+              return 'bg-muted text-muted-foreground cursor-not-allowed';
             };
 
             return (
@@ -377,38 +406,33 @@ const Ramadan = () => {
                 onClick={() => handleDayClick(day)}
                 className={cn(
                   'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
-                  getDayBg(day.day_number),
-                  !dateLocked && !isCompleted && !waiting && !isUnlocked && 'cursor-not-allowed',
-                  !dateLocked && !isCompleted && !waiting && isUnlocked && !hasContent && 'opacity-60',
-                  !dateLocked && !isCompleted && !waiting && isUnlocked && hasContent && 'hover:scale-105'
+                  getDayClasses()
                 )}
               >
-                {/* Lock badge top-right */}
-                {(isLocked || waiting) && !isCompleted && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-white shadow flex items-center justify-center">
-                    {waiting ? (
-                      <Clock className="h-2.5 w-2.5 text-orange-500" />
-                    ) : (
-                      <Lock className="h-2.5 w-2.5 text-muted-foreground" />
-                    )}
-                  </div>
-                )}
-
+                {/* Completed day: checkmark + day number */}
                 {isCompleted ? (
-                  <Check className="h-4 w-4" />
-                ) : dateLocked ? (
                   <>
-                    <span className="text-base">🔒</span>
+                    <Check className="h-4 w-4" />
                     <span className="text-[10px]">{day.day_number}</span>
+                  </>
+                ) : isCurrentDay ? (
+                  <>
+                    {/* Current day: show number prominently */}
+                    <span className="text-lg font-bold">{day.day_number}</span>
+                    {isCurrentDayBeforeUnlock && (
+                      <Clock className="h-3 w-3 mt-0.5 opacity-80" />
+                    )}
+                  </>
+                ) : isOldLockedDay || isFutureLockedDay ? (
+                  <>
+                    {/* Locked days: lock emoji + number in gray */}
+                    <span className="text-sm">🔒</span>
+                    <span className="text-[10px] text-gray-500">{day.day_number}</span>
                   </>
                 ) : (
                   <>
-                    {/* Moon + star icon */}
-                    <svg viewBox="0 0 24 24" className="h-4 w-4 mb-0.5 opacity-70" fill="currentColor">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.82 0 3.53-.5 5-1.35-2.99-1.73-5-4.95-5-8.65s2.01-6.92 5-8.65C15.53 2.5 13.82 2 12 2z" opacity="0.8"/>
-                      <path d="M17 7l.62 1.38L19 9l-1.38.62L17 11l-.62-1.38L15 9l1.38-.62L17 7z" opacity="0.9"/>
-                    </svg>
-                    <span className="text-[10px]">{day.day_number}</span>
+                    {/* Accessible window days: just the number */}
+                    <span className="text-lg font-bold">{day.day_number}</span>
                   </>
                 )}
               </button>
