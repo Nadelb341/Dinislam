@@ -359,7 +359,7 @@ Clique sur n'importe quel module pour commencer !
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputText)}
                     placeholder={userAge >= 12 ? "Pose-moi une question..." : "Dis-moi quelque chose..."}
-                    className="flex-1 px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="flex-1 px-3 py-2 text-sm border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-background text-foreground"
                   />
                   <Button
                     onClick={() => handleSendMessage(inputText)}
