@@ -100,7 +100,13 @@ const StarMascot = () => {
 
   // Save position to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('starMascot-position', JSON.stringify(position));
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('starMascot-position', JSON.stringify(position));
+      }
+    } catch (error) {
+      console.warn('Failed to save mascot position:', error);
+    }
   }, [position]);
 
   // Welcome message when opening
