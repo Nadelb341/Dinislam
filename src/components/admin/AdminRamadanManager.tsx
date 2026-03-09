@@ -932,13 +932,17 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               {/* Day content */}
               {isComplete ? (
                 <>
-                  <Check className="h-5 w-5" />
+                  <Check className="h-4 w-4" />
                   <span className="text-[10px] mt-0.5">{day.day_number}</span>
+                  <span className="text-[7px] opacity-80 leading-none mt-0.5">{videoCount}V + {quizCount}Q</span>
                 </>
               ) : (
                 <>
                   <span className="text-sm">🌙</span>
                   <span className="text-[11px] font-bold">{day.day_number}</span>
+                  {isPartial && (
+                    <span className="text-[7px] opacity-80 leading-none mt-0.5">{videoCount}V + {quizCount}Q</span>
+                  )}
                 </>
               )}
 
