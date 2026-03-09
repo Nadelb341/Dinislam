@@ -28,6 +28,7 @@ const AppLayout = ({
         {children}
       </main>
       {showBottomNav && <BottomNav />}
+      <StarMascot />
     </div>
   );
 };
