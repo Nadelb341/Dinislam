@@ -109,6 +109,19 @@ const Classement = () => {
     },
   });
 
+  // For non-admin: find the user's group and auto-filter
+  const userGroupId = useMemo(() => {
+    if (isAdmin || !user) return null;
+    const membership = groupMembers.find(m => m.user_id === user.id);
+    return membership?.group_id || null;
+  }, [isAdmin, user, groupMembers]);
+
+  // Effective filter: admin uses manual filter, student uses their group
+  const effectiveFilter = useMemo(() => {
+    if (isAdmin) return groupFilter;
+    return userGroupId || 'global';
+  }, [isAdmin, groupFilter, userGroupId]);
+
   const { data: pointSettings = [] } = useQuery({
     queryKey: ['point-settings'],
     queryFn: async () => {
@@ -166,13 +179,13 @@ const Classement = () => {
     },
   });
 
-  // Filter and re-rank based on group filter
+  // Filter and re-rank based on effective filter
   const rankings = useMemo(() => {
     if (!allRankings) return undefined;
     let filtered = allRankings;
-    if (groupFilter !== 'global') {
+    if (effectiveFilter !== 'global') {
       const membersInGroup = groupMembers
-        .filter(m => m.group_id === groupFilter)
+        .filter(m => m.group_id === effectiveFilter)
         .map(m => m.user_id);
       filtered = allRankings.filter(e => membersInGroup.includes(e.user_id));
     }
@@ -186,7 +199,7 @@ const Classement = () => {
       }
       return { ...entry, rank: currentRank };
     });
-  }, [allRankings, groupFilter, groupMembers]);
+  }, [allRankings, effectiveFilter, groupMembers]);
 
   const myProfile = allRankings?.find(r => r.user_id === user?.id);
   const myInFilter = rankings?.find(r => r.user_id === user?.id);
