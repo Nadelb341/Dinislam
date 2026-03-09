@@ -350,7 +350,7 @@ const AdminStudentGroups = () => {
             strategy={rectSortingStrategy}
           >
             <div className="grid grid-cols-2 gap-3">
-              {groups.map((group) => (
+              {(groups || []).map((group) => (
                 <SortableGroupCard
                   key={group.id}
                   group={group}
