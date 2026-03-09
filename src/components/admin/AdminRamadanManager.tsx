@@ -1099,7 +1099,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             </div>
 
             {/* Videos Section */}
-            <div className="space-y-3">
+            <div className="space-y-3" ref={videoSectionRef}>
               <Label className="flex items-center gap-2 text-base font-semibold">
                 <Video className="h-4 w-4 text-primary" />
                 Vidéos du jour ({currentVideos.length})
