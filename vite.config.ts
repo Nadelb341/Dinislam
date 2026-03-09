@@ -17,10 +17,18 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "@radix-ui/react-tooltip", "@tanstack/react-query"],
+    dedupe: [
+      "react", 
+      "react-dom",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-slot",
+      "@tanstack/react-query",
+    ],
   },
   optimizeDeps: {
-    include: ["react", "react-dom"],
+    include: ["react", "react-dom", "@radix-ui/react-tooltip"],
     force: true,
   },
 }));
