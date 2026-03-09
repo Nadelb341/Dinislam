@@ -27,7 +27,7 @@ const StarMascot = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { progress } = useUserProgress();
+  const { data: progress } = useUserProgress();
   
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
