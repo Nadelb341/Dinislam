@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Play, Moon, Star, Lock, Clock } from 'lucide-react';
+import { Check, Play, Moon, Star, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -384,16 +384,20 @@ const Ramadan = () => {
               if (isCurrentDay) {
                 return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md hover:scale-105 cursor-pointer';
               }
-              // Accessible window (J-1, J-2, J-3): very light green
+              // Accessible window (J-1, J-2, J-3): light green
               if (isAccessibleWindow) {
-                return 'bg-[hsl(140,40%,92%)] text-[hsl(140,30%,30%)] hover:scale-105 cursor-pointer';
+                return 'bg-green-200 text-green-800 hover:scale-105 cursor-pointer';
               }
-              // Old locked or future locked: beige/cream
-              if (isOldLockedDay || isFutureLockedDay) {
-                return 'bg-[hsl(40,30%,92%)] text-[hsl(30,20%,50%)] cursor-not-allowed';
+              // Future locked: light gray
+              if (isFutureLockedDay) {
+                return 'bg-gray-200 text-gray-500 cursor-not-allowed';
+              }
+              // Old locked: light gray
+              if (isOldLockedDay) {
+                return 'bg-gray-200 text-gray-500 cursor-not-allowed';
               }
               // Default fallback
-              return 'bg-muted text-muted-foreground cursor-not-allowed';
+              return 'bg-gray-200 text-gray-500 cursor-not-allowed';
             };
 
             return (
@@ -416,10 +420,7 @@ const Ramadan = () => {
                     <span className="text-[10px] mt-0.5">{day.day_number}</span>
                   </>
                 ) : (
-                  <>
-                    <span className="text-sm">🌙</span>
-                    <span className="text-[11px] font-bold">{day.day_number}</span>
-                  </>
+                  <span className="text-base font-bold">{day.day_number}</span>
                 )}
               </button>
             );
@@ -437,13 +438,13 @@ const Ramadan = () => {
             <span>En attente</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[hsl(40,30%,92%)] flex items-center justify-center">
-              <Lock className="h-2 w-2 text-[hsl(30,20%,50%)]" />
+            <div className="w-4 h-4 rounded bg-gray-200 relative">
+              <span className="absolute -top-0.5 -right-0.5 text-[6px]">🔒</span>
             </div>
             <span>Verrouillé</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[hsl(140,40%,92%)]" />
+            <div className="w-4 h-4 rounded bg-green-200" />
             <span>Disponible</span>
           </div>
         </div>
