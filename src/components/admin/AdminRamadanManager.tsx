@@ -328,6 +328,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-days-manager'] });
+      queryClient.refetchQueries({ queryKey: ['admin-ramadan-day-videos'] });
       toast({ title: 'Vidéo téléversée avec succès' });
       setUploading(false);
     },
