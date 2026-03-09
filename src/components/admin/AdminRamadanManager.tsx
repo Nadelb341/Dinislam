@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -175,8 +175,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoSectionRef = useRef<HTMLDivElement>(null);
+  const quizSectionRef = useRef<HTMLDivElement>(null);
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [scrollToSection, setScrollToSection] = useState<'video' | 'quiz' | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingActivity, setUploadingActivity] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'quiz' | 'allQuizzes' | 'video' | 'activity'; id?: string; dayId?: number } | null>(null);
@@ -653,8 +656,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     e.target.value = '';
   };
 
-  const handleOpenDay = (dayId: number) => {
+  const handleOpenDay = (dayId: number, section?: 'video' | 'quiz') => {
     setSelectedDay(dayId);
+    setScrollToSection(section || null);
     const day = days.find(d => d.id === dayId);
     setThemeInput(day?.theme || '');
     const existing = getQuizzesForDay(dayId);
@@ -672,6 +676,18 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       setQuestions([emptyQuestion()]);
     }
   };
+
+  // Scroll to section after dialog opens
+  useEffect(() => {
+    if (selectedDay && scrollToSection) {
+      const timer = setTimeout(() => {
+        const ref = scrollToSection === 'video' ? videoSectionRef : quizSectionRef;
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setScrollToSection(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDay, scrollToSection]);
 
   const updateQuestion = (idx: number, field: keyof QuestionForm, value: unknown) => {
     setQuestions(prev => {
@@ -885,7 +901,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
       {/* Days Grid - Calendar style */}
       <h3 className="text-lg font-semibold text-foreground">📅 Les 30 jours</h3>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
         {days.map((day) => {
           const videoCount = getVideosForDay(day.id).length;
           const hasVideo = videoCount > 0 || !!day.video_url;
@@ -896,43 +912,68 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           const isGloballyUnlocked = (day as any).is_unlocked;
           const hasExceptions = getExceptionsForDay(day.id).length > 0;
 
+          const getDayBg = () => {
+            if (isComplete) return 'bg-gradient-to-br from-green-600 to-green-700 text-white';
+            if (isPartial) return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white';
+            return 'bg-[hsl(40,30%,92%)] text-[hsl(30,20%,50%)]';
+          };
+
           return (
-            <button
+            <div
               key={day.id}
+              className={`relative aspect-square rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-pointer hover:scale-105 ${getDayBg()}`}
               onClick={() => handleOpenDay(day.id)}
-              className={`
-                relative aspect-square rounded-xl flex flex-col items-center justify-center
-                transition-all duration-200 border-2
-                ${isComplete
-                  ? 'bg-green-500/15 border-green-500 text-green-700 dark:text-green-400'
-                  : isPartial
-                  ? 'bg-amber-500/15 border-amber-400 text-amber-700 dark:text-amber-400'
-                  : 'bg-muted/50 border-border text-muted-foreground hover:border-muted-foreground/40'
-                }
-              `}
             >
-              <span className="text-lg font-bold leading-none">{day.day_number}</span>
-              <span className="absolute top-1 left-1 text-[10px]">
+              {/* Lock/unlock indicator top-left */}
+              <span className="absolute top-0.5 left-0.5 text-[8px]">
                 {isGloballyUnlocked ? '🔓' : hasExceptions ? '🔑' : '🔒'}
               </span>
-              <span className="absolute bottom-1 right-1 text-[10px] opacity-50">✏️</span>
-            </button>
+
+              {/* Day content */}
+              {isComplete ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  <span className="text-[10px] mt-0.5">{day.day_number}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm">🌙</span>
+                  <span className="text-[11px] font-bold">{day.day_number}</span>
+                </>
+              )}
+
+              {/* Admin action icons */}
+              <button
+                className="absolute bottom-0.5 left-0.5 text-[10px] hover:scale-125 transition-transform z-10"
+                onClick={(e) => { e.stopPropagation(); handleOpenDay(day.id, 'video'); }}
+                title="Gérer les vidéos"
+              >
+                🎬
+              </button>
+              <button
+                className="absolute bottom-0.5 right-0.5 text-[10px] hover:scale-125 transition-transform z-10"
+                onClick={(e) => { e.stopPropagation(); handleOpenDay(day.id, 'quiz'); }}
+                title="Gérer le quiz"
+              >
+                ✏️
+              </button>
+            </div>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3.5 h-3.5 rounded border-2 border-green-500 bg-green-500/15" />
+      <div className="flex flex-wrap gap-3 justify-center text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded bg-gradient-to-br from-green-600 to-green-700" />
           <span>Complet</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3.5 h-3.5 rounded border-2 border-amber-400 bg-amber-500/15" />
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded bg-gradient-to-br from-orange-400 to-orange-500" />
           <span>Partiel</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3.5 h-3.5 rounded border-2 border-border bg-muted/50" />
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded bg-[hsl(40,30%,92%)]" />
           <span>Vide</span>
         </div>
         <div className="flex items-center gap-1">
@@ -1058,7 +1099,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             </div>
 
             {/* Videos Section */}
-            <div className="space-y-3">
+            <div className="space-y-3" ref={videoSectionRef}>
               <Label className="flex items-center gap-2 text-base font-semibold">
                 <Video className="h-4 w-4 text-primary" />
                 Vidéos du jour ({currentVideos.length})
@@ -1119,7 +1160,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             </div>
 
             {/* Quiz Section: Unlimited with DnD */}
-            <div className="space-y-4 border-t pt-4">
+            <div className="space-y-4 border-t pt-4" ref={quizSectionRef}>
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 text-base font-semibold">
                   <HelpCircle className="h-4 w-4 text-gold" />
