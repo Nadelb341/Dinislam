@@ -346,7 +346,7 @@ const AdminStudentGroups = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={groups.map(g => g.id)}
+            items={(groups || []).map(g => g.id)}
             strategy={rectSortingStrategy}
           >
             <div className="grid grid-cols-2 gap-3">
