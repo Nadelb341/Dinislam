@@ -187,6 +187,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const activityInputRef = useRef<HTMLInputElement>(null);
   const [themeInput, setThemeInput] = useState('');
   const [savingTheme, setSavingTheme] = useState(false);
+  const [youtubeLink, setYoutubeLink] = useState('');
 
   // Unlimited questions
   const [questions, setQuestions] = useState<QuestionForm[]>([emptyQuestion()]);
