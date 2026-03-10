@@ -1124,7 +1124,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                         <p className="text-xs font-medium text-muted-foreground">Vidéo {idx + 1}</p>
                         <p className="text-xs truncate">{video.file_name || 'Vidéo téléversée'}</p>
                       </div>
-                      <video src={video.video_url} className="h-10 w-16 rounded object-cover bg-black flex-shrink-0" />
+                      {video.video_url.includes('youtube.com/embed') ? (
+                        <div className="h-10 w-16 rounded bg-red-600 flex items-center justify-center flex-shrink-0 text-white text-[8px] font-bold">YT</div>
+                      ) : (
+                        <video src={video.video_url} className="h-10 w-16 rounded object-cover bg-black flex-shrink-0" />
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
