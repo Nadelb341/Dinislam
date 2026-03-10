@@ -354,6 +354,45 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     },
   });
 
+  // Add YouTube link mutation
+  const convertYoutubeToEmbed = (url: string): string | null => {
+    let videoId: string | null = null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/,
+      /(?:youtu\.be\/)([a-zA-Z0-9_-]+)/,
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/,
+      /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/,
+    ];
+    for (const p of patterns) {
+      const match = url.match(p);
+      if (match) { videoId = match[1]; break; }
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  };
+
+  const addYoutubeLinkMutation = useMutation({
+    mutationFn: async ({ dayId, url }: { dayId: number; url: string }) => {
+      const embedUrl = convertYoutubeToEmbed(url);
+      if (!embedUrl) throw new Error('Lien YouTube invalide');
+      const existingVideos = getVideosForDay(dayId);
+      const { error } = await supabase.from('ramadan_day_videos').insert({
+        day_id: dayId,
+        video_url: embedUrl,
+        file_name: `YouTube: ${embedUrl.split('/embed/')[1]}`,
+        display_order: existingVideos.length,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
+      toast({ title: 'Lien YouTube ajouté avec succès' });
+      setYoutubeLink('');
+    },
+    onError: (error) => {
+      toast({ title: error.message || 'Lien YouTube invalide', variant: 'destructive' });
+    },
+  });
+
   // Save theme mutation
   const saveThemeMutation = useMutation({
     mutationFn: async ({ dayId, theme }: { dayId: number; theme: string }) => {

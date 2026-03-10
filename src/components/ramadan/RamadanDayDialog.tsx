@@ -709,33 +709,44 @@ const RamadanDayDialog = ({
                   )}
 
                   <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                    <video
-                      ref={videoRef}
-                      key={currentVideo.id}
-                      src={currentVideo.video_url}
-                      controls
-                      playsInline
-                      controlsList="nodownload"
-                      style={{ width: '100%', height: '100%' }}
-                      onEnded={handleVideoEnded}
-                      onPlay={handleVideoPlay}
-                      onPause={handleVideoPause}
-                      onTimeUpdate={handleTimeUpdate}
-                      onLoadedMetadata={() => {
-                        const vid = videoRef.current;
-                        if (!vid) return;
-                        const isTablet = window.innerWidth >= 768;
-                        if (isTablet && (vid as any).webkitEnterFullscreen) {
-                          (vid as any).webkitEnterFullscreen();
-                        } else if (vid.requestFullscreen) {
-                          vid.requestFullscreen().catch(() => {});
-                        } else if ((vid as any).webkitRequestFullscreen) {
-                          (vid as any).webkitRequestFullscreen();
-                        } else if ((vid as any).webkitEnterFullscreen) {
-                          (vid as any).webkitEnterFullscreen();
-                        }
-                      }}
-                    />
+                    {currentVideo.video_url.includes('youtube.com/embed') ? (
+                      <iframe
+                        key={currentVideo.id}
+                        src={currentVideo.video_url}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                        style={{ border: 'none' }}
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        key={currentVideo.id}
+                        src={currentVideo.video_url}
+                        controls
+                        playsInline
+                        controlsList="nodownload"
+                        style={{ width: '100%', height: '100%' }}
+                        onEnded={handleVideoEnded}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                        onTimeUpdate={handleTimeUpdate}
+                        onLoadedMetadata={() => {
+                          const vid = videoRef.current;
+                          if (!vid) return;
+                          const isTablet = window.innerWidth >= 768;
+                          if (isTablet && (vid as any).webkitEnterFullscreen) {
+                            (vid as any).webkitEnterFullscreen();
+                          } else if (vid.requestFullscreen) {
+                            vid.requestFullscreen().catch(() => {});
+                          } else if ((vid as any).webkitRequestFullscreen) {
+                            (vid as any).webkitRequestFullscreen();
+                          } else if ((vid as any).webkitEnterFullscreen) {
+                            (vid as any).webkitEnterFullscreen();
+                          }
+                        }}
+                      />
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2">
