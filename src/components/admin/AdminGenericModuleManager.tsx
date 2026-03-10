@@ -15,10 +15,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  GripVertical, Plus, Pencil, Trash2, Upload, Loader2,
-  ArrowLeft, Video, FileText, Volume2, Image as ImageIcon, File,
+  GripVertical, Plus, Pencil, Trash2, Loader2,
+  ArrowLeft, Image as ImageIcon,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import ContentUploadTabs from './ContentUploadTabs';
+import ContentItemCard, { ContentType } from './ContentItemCard';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core';
@@ -166,33 +168,26 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
-  const handleUploadContent = useCallback(async (cardId: string, files: FileList) => {
+  const handleUploadContent = useCallback(async (cardId: string, file: File, contentType: string) => {
     if (!user?.id) { toast.error('Non connecté'); return; }
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
       const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const ext = file.name.split('.').pop();
-        const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-        let content_type = 'document';
-        if (file.type.startsWith('video/')) content_type = 'video';
-        else if (file.type.startsWith('audio/')) content_type = 'audio';
-        else if (file.type === 'application/pdf') content_type = 'pdf';
-        else if (file.type.startsWith('image/')) content_type = 'image';
-        const { error: insErr } = await supabase.from('module_card_content').insert({
-          card_id: cardId, content_type, file_url: urlData.publicUrl,
-          file_name: file.name, display_order: existingCount + i, uploaded_by: user.id,
-        });
-        if (insErr) throw insErr;
-      }
+      const ext = file.name.split('.').pop();
+      const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
+      const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;
+      const { error: insErr } = await supabase.from('module_card_content').insert({
+        card_id: cardId, content_type: contentType, file_url: urlData.publicUrl,
+        file_name: defaultTitle, display_order: existingCount, uploaded_by: user.id,
+      });
+      if (insErr) throw insErr;
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
-      toast.success(`${files.length} fichier(s) téléversé(s) ✅`);
+      toast.success('Contenu ajouté ✅');
     } catch (e: any) {
       toast.error(e.message || 'Erreur upload');
     } finally {
@@ -200,6 +195,34 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       setUploadingCardId(null);
     }
   }, [user, contents, queryClient, moduleId]);
+
+  const handleAddYoutubeContent = useCallback(async (cardId: string, embedUrl: string) => {
+    if (!user?.id) return;
+    setIsUploading(true);
+    setUploadingCardId(cardId);
+    try {
+      const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
+      const { error } = await supabase.from('module_card_content').insert({
+        card_id: cardId, content_type: 'youtube', file_url: embedUrl,
+        file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
+      queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
+      toast.success('Lien YouTube ajouté ✅');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setIsUploading(false); setUploadingCardId(null); }
+  }, [user, contents, queryClient, moduleId]);
+
+  const updateContentTitleMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const { error } = await supabase.from('module_card_content').update({ file_name: title }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
+    },
+  });
 
   const handleUploadImage = useCallback(async (cardId: string, file: File) => {
     setIsUploadingImage(true);
@@ -245,14 +268,10 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setFormOpen(true);
   };
 
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case 'video': return <Video className="h-3.5 w-3.5" />;
-      case 'audio': return <Volume2 className="h-3.5 w-3.5" />;
-      case 'pdf': return <FileText className="h-3.5 w-3.5 text-red-500" />;
-      case 'image': return <ImageIcon className="h-3.5 w-3.5 text-blue-500" />;
-      default: return <File className="h-3.5 w-3.5" />;
-    }
+  const mapContentType = (type: string): ContentType => {
+    if (type === 'youtube') return 'youtube';
+    if (type === 'audio') return 'audio';
+    return 'fichier';
   };
 
   return (
@@ -316,18 +335,6 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
                           {/* Actions */}
                           <div className="flex gap-1 shrink-0">
-                            <div className="relative">
-                              <input
-                                type="file" multiple
-                                accept="video/*,audio/*,application/pdf,image/*"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                onChange={(e) => { if (e.target.files?.length) handleUploadContent(card.id, e.target.files); e.target.value = ''; }}
-                                disabled={isThisUploading}
-                              />
-                              <Button variant="outline" size="sm" disabled={isThisUploading} className="pointer-events-none h-8 px-2">
-                                {isThisUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                              </Button>
-                            </div>
                             <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(card)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -341,19 +348,28 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         {cardContents.length > 0 && (
                           <div className="ml-14 space-y-1">
                             {cardContents.map((content: any) => (
-                              <div key={content.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  {getContentIcon(content.content_type)}
-                                  <span className="text-xs truncate">{content.file_name}</span>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive shrink-0"
-                                  onClick={() => setDeleteContentId(content.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              <ContentItemCard
+                                key={content.id}
+                                id={content.id}
+                                title={content.file_name}
+                                contentType={mapContentType(content.content_type)}
+                                url={content.file_url}
+                                onDelete={(id) => setDeleteContentId(id)}
+                                onUpdateTitle={(id, title) => updateContentTitleMutation.mutate({ id, title })}
+                              />
                             ))}
                           </div>
                         )}
+
+                        {/* Upload tabs */}
+                        <div className="ml-14">
+                          <ContentUploadTabs
+                            onUploadFile={(file) => handleUploadContent(card.id, file, 'fichier')}
+                            onAddYoutubeLink={(url) => handleAddYoutubeContent(card.id, url)}
+                            onUploadAudio={(file) => handleUploadContent(card.id, file, 'audio')}
+                            isUploading={isThisUploading}
+                          />
+                        </div>
                       </CardContent>
                     </Card>
                   </SortableItem>
