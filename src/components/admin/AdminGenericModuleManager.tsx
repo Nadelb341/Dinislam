@@ -168,33 +168,26 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
-  const handleUploadContent = useCallback(async (cardId: string, files: FileList) => {
+  const handleUploadContent = useCallback(async (cardId: string, file: File, contentType: string) => {
     if (!user?.id) { toast.error('Non connecté'); return; }
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
       const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const ext = file.name.split('.').pop();
-        const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
-        if (upErr) throw upErr;
-        const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-        let content_type = 'document';
-        if (file.type.startsWith('video/')) content_type = 'video';
-        else if (file.type.startsWith('audio/')) content_type = 'audio';
-        else if (file.type === 'application/pdf') content_type = 'pdf';
-        else if (file.type.startsWith('image/')) content_type = 'image';
-        const { error: insErr } = await supabase.from('module_card_content').insert({
-          card_id: cardId, content_type, file_url: urlData.publicUrl,
-          file_name: file.name, display_order: existingCount + i, uploaded_by: user.id,
-        });
-        if (insErr) throw insErr;
-      }
+      const ext = file.name.split('.').pop();
+      const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
+      const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;
+      const { error: insErr } = await supabase.from('module_card_content').insert({
+        card_id: cardId, content_type: contentType, file_url: urlData.publicUrl,
+        file_name: defaultTitle, display_order: existingCount, uploaded_by: user.id,
+      });
+      if (insErr) throw insErr;
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
-      toast.success(`${files.length} fichier(s) téléversé(s) ✅`);
+      toast.success('Contenu ajouté ✅');
     } catch (e: any) {
       toast.error(e.message || 'Erreur upload');
     } finally {
@@ -202,6 +195,34 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       setUploadingCardId(null);
     }
   }, [user, contents, queryClient, moduleId]);
+
+  const handleAddYoutubeContent = useCallback(async (cardId: string, embedUrl: string) => {
+    if (!user?.id) return;
+    setIsUploading(true);
+    setUploadingCardId(cardId);
+    try {
+      const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
+      const { error } = await supabase.from('module_card_content').insert({
+        card_id: cardId, content_type: 'youtube', file_url: embedUrl,
+        file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
+      queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
+      toast.success('Lien YouTube ajouté ✅');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setIsUploading(false); setUploadingCardId(null); }
+  }, [user, contents, queryClient, moduleId]);
+
+  const updateContentTitleMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const { error } = await supabase.from('module_card_content').update({ file_name: title }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
+    },
+  });
 
   const handleUploadImage = useCallback(async (cardId: string, file: File) => {
     setIsUploadingImage(true);
