@@ -307,7 +307,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Upload video mutation (multi-video)
   const uploadVideoMutation = useMutation({
-    mutationFn: async ({ dayId, file }: { dayId: number; file: File }) => {
+    mutationFn: async ({ dayId, file }: { dayId: string; file: File }) => {
       setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `day-${dayId}-${Date.now()}.${fileExt}`;
