@@ -167,7 +167,7 @@ const Nourania = () => {
 
       if (existing) throw new Error('Demande déjà envoyée');
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('nourania_validation_requests')
         .insert({ user_id: user.id, lesson_id: lessonId });
       if (error) throw error;
