@@ -1213,6 +1213,7 @@ export type Database = {
           is_approved: boolean | null
           last_seen: string | null
           notification_prompt_dismissed: boolean | null
+          notification_prompt_later_at: string | null
           notification_prompt_later_count: number | null
           phone: string | null
           points: number | null
@@ -1234,6 +1235,7 @@ export type Database = {
           is_approved?: boolean | null
           last_seen?: string | null
           notification_prompt_dismissed?: boolean | null
+          notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
@@ -1255,6 +1257,7 @@ export type Database = {
           is_approved?: boolean | null
           last_seen?: string | null
           notification_prompt_dismissed?: boolean | null
+          notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
