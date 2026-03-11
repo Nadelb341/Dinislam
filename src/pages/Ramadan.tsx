@@ -13,7 +13,7 @@ import RamadanDayDialog from '@/components/ramadan/RamadanDayDialog';
 import FastingTracker from '@/components/ramadan/FastingTracker';
 
 interface RamadanDay {
-  id: number;
+  id: string;
   day_number: number;
   theme: string | null;
   video_url: string | null;
@@ -23,7 +23,7 @@ interface RamadanDay {
 
 interface DayVideo {
   id: string;
-  day_id: number;
+  day_id: string;
   video_url: string;
   file_name: string | null;
   display_order: number;
@@ -31,7 +31,7 @@ interface DayVideo {
 
 interface Quiz {
   id: string;
-  day_id: number;
+  day_id: string;
   question: string;
   options: string[];
   correct_option: number | null;
@@ -42,7 +42,7 @@ interface Quiz {
 
 interface UserProgress {
   id: string;
-  day_id: number;
+  day_id: string;
   video_watched: boolean;
   quiz_completed: boolean;
   pdf_read: boolean;
