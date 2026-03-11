@@ -112,7 +112,7 @@ const Ramadan = () => {
         ...q,
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
         correct_options: Array.isArray((q as any).correct_options) ? (q as any).correct_options : [],
-      })) as Quiz[];
+      })) as unknown as Quiz[];
     },
   });
 
