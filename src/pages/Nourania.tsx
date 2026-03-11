@@ -19,8 +19,8 @@ const Nourania = () => {
   const { fireSuccess } = useConfetti();
   const [searchParams] = useSearchParams();
   const lessonParam = searchParams.get('lesson');
-  const [expandedLesson, setExpandedLesson] = useState<number | null>(null);
-  const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; lessonNumber: number; lessonId: number } | null>(null);
+  const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
+  const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; lessonNumber: number; lessonId: string } | null>(null);
 
   // Fetch lessons
   const { data: lessons = [] } = useQuery({
