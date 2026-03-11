@@ -70,25 +70,15 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const handleReject = async (userId: string) => {
     setProcessingId(userId);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session?.access_token}`,
-          },
-          body: JSON.stringify({ user_id: userId }),
-        }
-      );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      await (supabase as any)
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
 
       setRegistrations(prev => prev.filter(r => r.user_id !== userId));
       toast({
         title: 'Inscription refusée',
-        description: "L'élève a été supprimé et ne pourra pas accéder à l'application.",
+        description: "L'élève ne pourra pas accéder à l'application.",
       });
     } catch (err: any) {
       console.error('Erreur refus:', err);
