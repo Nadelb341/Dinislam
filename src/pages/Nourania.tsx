@@ -153,7 +153,7 @@ const Nourania = () => {
 
   // Submit validation request (instead of auto-validating)
   const submitValidationMutation = useMutation({
-    mutationFn: async (lessonId: number) => {
+    mutationFn: async (lessonId: string) => {
       if (!user?.id) throw new Error('Non connecté');
 
       // Check if already requested
