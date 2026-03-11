@@ -15,11 +15,11 @@ import { useWebPush } from '@/hooks/useWebPush';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
+'@/components/ui/dropdown-menu';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 const ICON_MAP: Record<string, LucideIcon> = {
-  Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users,
+  Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users
 };
 
 const Index = () => {
@@ -40,11 +40,11 @@ const Index = () => {
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
-    },
+    }
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active, title }: { id: string; is_active: boolean; title?: string }) => {
+    mutationFn: async ({ id, is_active, title }: {id: string;is_active: boolean;title?: string;}) => {
       const { error } = await supabase.from('learning_modules').update({ is_active }).eq('id', id);
       if (error) throw error;
       return { is_active, title };
@@ -53,16 +53,16 @@ const Index = () => {
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
       toast.success(result.is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
-      
+
       if (result.is_active && result.title) {
         sendPushNotification({
           title: '🌟 Nouvelle activité disponible !',
           body: `Salam ! Le module ${result.title} est maintenant disponible sur Dini Bismillah !`,
-          type: 'broadcast',
+          type: 'broadcast'
         });
       }
     },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onError: () => toast.error('Erreur lors de la mise à jour')
   });
 
   // Fetch user profile to check if name is set
@@ -70,15 +70,15 @@ const Index = () => {
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.
+      from('profiles').
+      select('full_name, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at').
+      eq('user_id', user.id).
+      maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user
   });
 
   // Show welcome dialog if user has no name set
@@ -146,7 +146,7 @@ const Index = () => {
     await supabase.from('profiles').update({
       notification_prompt_dismissed: 'later',
       notification_prompt_later_count: laterCount,
-      notification_prompt_later_at: new Date().toISOString(),
+      notification_prompt_later_at: new Date().toISOString()
     }).eq('user_id', user.id);
     queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
   };
@@ -169,8 +169,8 @@ const Index = () => {
       <AppLayout showBottomNav={false}>
         <div className="p-4 space-y-6">
           {/* Notification Permission Banner */}
-          {showNotifBanner && (
-            <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
+          {showNotifBanner &&
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
               <Bell className="h-6 w-6 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">🔔 Active les notifications pour ne rien manquer !</p>
@@ -184,7 +184,7 @@ const Index = () => {
                 </Button>
               </div>
             </div>
-          )}
+          }
           {/* Push Auto-Subscribe Banner */}
           <PushAutoSubscribe />
           <div className="text-center py-6 animate-fade-in">
@@ -198,7 +198,7 @@ const Index = () => {
             <h2 className="text-2xl font-bold text-foreground">
               Bienvenue{profile?.full_name ? `, ${profile.full_name}` : ''} !
             </h2>
-            <p className="font-arabic text-xl text-gold mt-2">
+            <p className="font-arabic text-gold mt-2 text-3xl">
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </p>
           </div>
@@ -208,18 +208,18 @@ const Index = () => {
 
           {/* Quick Stats - filtered by active modules */}
           {progress && modules && (() => {
-            const PROGRESS_MAP: Record<string, { label: string; value: string; color: string }> = {
+            const PROGRESS_MAP: Record<string, {label: string;value: string;color: string;}> = {
               '/sourates': { label: 'Sourates', value: `${progress.sourates.validated} sur ${progress.sourates.total}`, color: 'text-gold' },
               '/nourania': { label: 'Nourania', value: `${progress.nourania.validated} sur ${progress.nourania.total}`, color: 'text-primary' },
               '/ramadan': { label: 'Ramadan', value: `${progress.ramadan.completed} sur ${progress.ramadan.total}`, color: 'text-gold' },
               '/alphabet': { label: 'Alphabet', value: `${progress.alphabet.validated} sur ${progress.alphabet.total}`, color: 'text-primary' },
               '/invocations': { label: 'Invocations', value: `${progress.invocations.memorized} sur ${progress.invocations.total}`, color: 'text-gold' },
-              '/priere': { label: 'Prière', value: `${progress.prayer.validated} validées`, color: 'text-primary' },
+              '/priere': { label: 'Prière', value: `${progress.prayer.validated} validées`, color: 'text-primary' }
             };
-            const activeItems = (modules || [])
-              .filter(m => m.is_active && m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path])
-              .map(m => ({ ...PROGRESS_MAP[m.builtin_path!], order: m.display_order }))
-              .sort((a, b) => a.order - b.order);
+            const activeItems = (modules || []).
+            filter((m) => m.is_active && m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path]).
+            map((m) => ({ ...PROGRESS_MAP[m.builtin_path!], order: m.display_order })).
+            sort((a, b) => a.order - b.order);
 
             if (activeItems.length === 0) return null;
 
@@ -227,15 +227,15 @@ const Index = () => {
               <div className="bg-card rounded-2xl p-4 shadow-card border border-border animate-fade-in">
                 <h3 className="font-bold text-foreground mb-3">Votre progression</h3>
                 <div className={cn('grid gap-2', activeItems.length <= 3 ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-6')}>
-                  {activeItems.map((item) => (
-                    <div key={item.label} className="text-center">
+                  {activeItems.map((item) =>
+                  <div key={item.label} className="text-center">
                       <div className={cn('text-lg font-bold', item.color)}>{item.value}</div>
                       <p className="text-xs text-muted-foreground">{item.label}</p>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            );
+              </div>);
+
           })()}
 
           {/* Module Cards Grid - Dynamic from DB */}
@@ -250,39 +250,39 @@ const Index = () => {
                       'module-card relative overflow-hidden rounded-2xl p-4 text-left w-full',
                       'flex flex-col items-center justify-center min-h-[160px]',
                       'animate-slide-up',
-                      `stagger-${(index % 6) + 1}`,
+                      `stagger-${index % 6 + 1}`,
                       !mod.is_active && isAdmin && 'opacity-50 grayscale'
                     )}
-                    style={{ animationFillMode: 'both' }}
-                  >
+                    style={{ animationFillMode: 'both' }}>
+                    
                     {/* Background gradient overlay */}
                     <div
                       className={cn(
                         'absolute inset-0 opacity-10 bg-gradient-to-br',
                         mod.gradient
-                      )}
-                    />
+                      )} />
+                    
 
                     {/* Hidden badge for admin */}
-                    {isAdmin && !mod.is_active && (
-                      <div className="absolute top-2 left-2 z-20 bg-destructive/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                    {isAdmin && !mod.is_active &&
+                    <div className="absolute top-2 left-2 z-20 bg-destructive/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
                         Masqué
                       </div>
-                    )}
+                    }
 
                     {/* Icon or Image */}
                     <div className="relative z-10 mb-3">
-                      {mod.image_url ? (
-                        <img src={mod.image_url} alt={mod.title} className="w-14 h-14 rounded-2xl object-cover shadow-lg" loading="lazy" width={56} height={56} />
-                      ) : (
-                        <div className={cn(
-                          'w-14 h-14 rounded-2xl flex items-center justify-center',
-                          'bg-gradient-to-br shadow-lg',
-                          mod.gradient
-                        )}>
+                      {mod.image_url ?
+                      <img src={mod.image_url} alt={mod.title} className="w-14 h-14 rounded-2xl object-cover shadow-lg" loading="lazy" width={56} height={56} /> :
+
+                      <div className={cn(
+                        'w-14 h-14 rounded-2xl flex items-center justify-center',
+                        'bg-gradient-to-br shadow-lg',
+                        mod.gradient
+                      )}>
                           <Icon className={cn('h-7 w-7', mod.icon_color)} />
                         </div>
-                      )}
+                      }
                     </div>
 
                     {/* Text */}
@@ -308,41 +308,41 @@ const Index = () => {
                   </button>
 
                   {/* Admin 3-dot menu */}
-                  {isAdmin && (
-                    <div className="absolute top-2 right-2 z-20">
+                  {isAdmin &&
+                  <div className="absolute top-2 right-2 z-20">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-sm"
-                          >
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-sm">
+                          
                             <MoreVertical className="h-3.5 w-3.5 text-foreground" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title });
-                            }}
-                          >
-                            {mod.is_active
-                              ? <><EyeOff className="h-4 w-4 mr-2 text-destructive" /><span className="text-destructive">Masquer aux élèves</span></>
-                              : <><Eye className="h-4 w-4 mr-2 text-green-600" /><span className="text-green-600">Afficher aux élèves</span></>
-                            }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title });
+                          }}>
+                          
+                            {mod.is_active ?
+                          <><EyeOff className="h-4 w-4 mr-2 text-destructive" /><span className="text-destructive">Masquer aux élèves</span></> :
+                          <><Eye className="h-4 w-4 mr-2 text-green-600" /><span className="text-green-600">Afficher aux élèves</span></>
+                          }
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                  )}
-                </div>
-              );
+                  }
+                </div>);
+
             })}
           </div>
         </div>
       </AppLayout>
-    </>
-  );
+    </>);
+
 };
 
 export default Index;
