@@ -1212,7 +1212,7 @@ export type Database = {
           is_admin: boolean | null
           is_approved: boolean | null
           last_seen: string | null
-          notification_prompt_dismissed: boolean | null
+          notification_prompt_dismissed: string | null
           notification_prompt_later_at: string | null
           notification_prompt_later_count: number | null
           phone: string | null
@@ -1234,7 +1234,7 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           last_seen?: string | null
-          notification_prompt_dismissed?: boolean | null
+          notification_prompt_dismissed?: string | null
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
@@ -1256,7 +1256,7 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           last_seen?: string | null
-          notification_prompt_dismissed?: boolean | null
+          notification_prompt_dismissed?: string | null
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
@@ -1936,8 +1936,10 @@ export type Database = {
           dhuhr: boolean | null
           fajr: boolean | null
           id: string
+          is_checked: boolean | null
           isha: boolean | null
           maghrib: boolean | null
+          prayer_name: string | null
           user_id: string
         }
         Insert: {
@@ -1947,8 +1949,10 @@ export type Database = {
           dhuhr?: boolean | null
           fajr?: boolean | null
           id?: string
+          is_checked?: boolean | null
           isha?: boolean | null
           maghrib?: boolean | null
+          prayer_name?: string | null
           user_id: string
         }
         Update: {
@@ -1958,8 +1962,10 @@ export type Database = {
           dhuhr?: boolean | null
           fajr?: boolean | null
           id?: string
+          is_checked?: boolean | null
           isha?: boolean | null
           maghrib?: boolean | null
+          prayer_name?: string | null
           user_id?: string
         }
         Relationships: []
