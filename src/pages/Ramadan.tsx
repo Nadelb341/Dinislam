@@ -98,7 +98,7 @@ const Ramadan = () => {
       if (!user?.id) return [];
       const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*').eq('user_id', user.id).eq('is_unlocked', true);
       if (error) throw error;
-      return data as { id: string; user_id: string; day_id: number; is_unlocked: boolean }[];
+      return data as unknown as { id: string; user_id: string; day_id: string; is_unlocked: boolean }[];
     },
     enabled: !!user?.id,
   });
