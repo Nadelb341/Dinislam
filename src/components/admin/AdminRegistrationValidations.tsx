@@ -51,6 +51,11 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         .insert({ user_id: userId, role: 'student' })
         .select();
 
+      // Optimistic: remove user from list immediately
+      queryClient.setQueryData(['admin-all-registrations'], (old: RegistrationUser[] | undefined) =>
+        (old || []).filter(u => u.user_id !== userId)
+      );
+
       toast({
         title: 'Inscription approuvée ✅',
         description: "L'élève peut maintenant accéder à l'application.",
