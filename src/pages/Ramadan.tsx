@@ -186,7 +186,7 @@ const Ramadan = () => {
     return unlockDate;
   };
 
-  const isDayUnlocked = (dayNumber: number) => {
+  const isDayUnlocked = (dayNumber: number | string) => {
     if (!settings?.start_enabled) return false;
     if (dayNumber === 1) return true;
     const previousDay = days.find(d => d.day_number === dayNumber - 1);
