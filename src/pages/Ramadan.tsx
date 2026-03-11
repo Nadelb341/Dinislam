@@ -134,7 +134,7 @@ const Ramadan = () => {
       if (!user?.id) return [];
       const { data, error } = await supabase.from('user_ramadan_progress').select('*').eq('user_id', user.id);
       if (error) throw error;
-      return data as UserProgress[];
+      return data as unknown as UserProgress[];
     },
     enabled: !!user?.id,
   });
