@@ -198,7 +198,7 @@ const Ramadan = () => {
     return now >= unlockTime;
   };
 
-  const isWaitingForTime = (dayNumber: number | string) => {
+  const isWaitingForTime = (dayNumber: number) => {
     if (dayNumber === 1 || !settings?.start_enabled) return false;
     const previousDay = days.find(d => d.day_number === dayNumber - 1);
     if (!previousDay) return false;
