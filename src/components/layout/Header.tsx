@@ -63,6 +63,12 @@ const Header = ({
             <Button variant="ghost" size="icon" onClick={() => navigate('/attendance')} className="text-primary-foreground hover:bg-primary-foreground/10">
               <CalendarCheck className="h-5 w-5" />
             </Button>
+            {/* Admin: notifications icon */}
+            {isAdmin && (
+              <Button variant="ghost" size="icon" onClick={() => navigate('/admin?section=notifications')} className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Bell className="h-5 w-5" />
+              </Button>
+            )}
             {/* Admin: monitoring icon */}
             {isAdmin && (
               <Button variant="ghost" size="icon" onClick={() => navigate('/monitoring')} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
