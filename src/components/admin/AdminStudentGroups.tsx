@@ -233,7 +233,7 @@ const AdminStudentGroups = () => {
       toast.success(editingGroup ? 'Groupe modifié' : 'Groupe créé');
       await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
     },
-    onError: () => toast.error('Erreur'),
+    onError: (error: any) => toast.error(`Erreur: ${error?.message || error} (${error?.code || 'unknown'})`),
   });
 
   const handleDeleteGroup = async (groupId: string) => {
@@ -245,7 +245,7 @@ const AdminStudentGroups = () => {
       toast.success('Groupe supprimé');
     } else {
       queryClient.invalidateQueries({ queryKey: ['student-groups'] });
-      toast.error('Erreur');
+      toast.error(`Erreur suppression: ${error.message} (${error.code})`);
     }
   };
 
