@@ -22,7 +22,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText
 };
 
-const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; color: string }> = {
+const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; bgColor: string }> = {
   "ramadan": { emoji: "🌙", bgColor: "#fff7ed" },
   "alphabet": { emoji: "أ", bgColor: "#eff6ff" },
   "invocations": { emoji: "🤲", bgColor: "#f5f3ff" },
