@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, FileText, Video, Music, Image, Download, ExternalLink } from 'lucide-react';
+import { YoutubePlayer, extractYoutubeVideoId, isYoutubeUrl } from '@/utils/youtube';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const CONTENT_ICONS: Record<string, React.ElementType> = {
