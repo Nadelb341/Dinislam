@@ -18,7 +18,7 @@ interface RamadanDay {
   theme: string | null;
   video_url: string | null;
   pdf_url: string | null;
-  is_unlocked: boolean;
+  is_locked: boolean;
 }
 
 interface DayVideo {
