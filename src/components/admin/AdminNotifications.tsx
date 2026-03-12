@@ -54,22 +54,27 @@ const AdminNotifications = () => {
     },
   });
 
+  const { data: subscriptionsList, refetch: refetchSubs } = useQuery({
+    queryKey: ['admin-push-subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('user_id, endpoint, p256dh, auth_key, is_active, created_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: showSubs,
+  });
+
   const sendNotification = useMutation({
     mutationFn: async () => {
-      // Get all push subscriptions
-      const { data: subscriptions, error } = await supabase
-        .from('push_subscriptions')
-        .select('endpoint, p256dh, auth, user_id');
-
-      if (error) throw error;
-
-      // Call edge function to send notifications
       const { error: fnError } = await supabase.functions.invoke('send-push-notification', {
         body: {
           title: notificationTitle,
           body: notificationBody,
           type: notificationType,
-          subscriptions,
+          sendToAll: true,
         },
       });
 
