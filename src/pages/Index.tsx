@@ -54,8 +54,6 @@ const Index = () => {
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [activatingNotif, setActivatingNotif] = useState(false);
-  const [draggedModuleId, setDraggedModuleId] = useState<string | null>(null);
-  const [dragOverModuleId, setDragOverModuleId] = useState<string | null>(null);
   const { data: progress } = useUserProgress();
 
   // Fetch modules from DB
