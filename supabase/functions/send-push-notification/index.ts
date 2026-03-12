@@ -335,7 +335,8 @@ serve(async (req) => {
         success: true,
         sent: successCount,
         total: subscriptions.length,
-        cleaned: expiredEndpoints.length
+        cleaned: expiredEndpoints.length,
+        errors: errorsArray
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
