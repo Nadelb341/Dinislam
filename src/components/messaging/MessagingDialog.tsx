@@ -50,6 +50,10 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const addLog = (msg: string) => {
+    setDebugLogs(prev => [...prev, new Date().toLocaleTimeString() + ' — ' + msg]);
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -162,7 +166,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
         .from('user_roles')
         .select('user_id')
         .eq('role', 'admin');
-      console.log('ADMIN_ROLES:', adminRoles, 'ERR:', errRoles);
+      addLog('ADMIN_ROLES: ' + JSON.stringify(adminRoles) + ' ERR: ' + JSON.stringify(errRoles));
 
       if (errRoles || !adminRoles?.length) {
         console.error('Aucun admin trouvé ou erreur:', errRoles);
@@ -170,7 +174,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       }
 
       const adminIds = adminRoles.map((r: any) => r.user_id);
-      console.log('SENDING_TO_ADMINS:', adminIds);
+      addLog('SENDING_TO_ADMINS: ' + JSON.stringify(adminIds));
 
       const { data, error } = await supabase.functions.invoke(
         'send-push-notification',
@@ -183,7 +187,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
           }
         }
       );
-      console.log('PUSH_RESULT:', JSON.stringify(data), 'ERR:', error);
+      addLog('PUSH_RESULT: ' + JSON.stringify(data) + ' ERR: ' + JSON.stringify(error));
     } catch (err) {
       console.error('NOTIFY_ADMIN_CATCH:', err);
     }
@@ -251,6 +255,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md h-[70vh] flex flex-col">
         <DialogHeader>
@@ -350,6 +355,14 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
         </div>
       </DialogContent>
     </Dialog>
+    {debugLogs.length > 0 && (
+      <div className="fixed bottom-20 left-2 right-2 bg-black text-green-400 text-xs p-3 rounded-xl z-50 max-h-40 overflow-y-auto">
+        {debugLogs.map((log, i) => (
+          <div key={i}>{log}</div>
+        ))}
+      </div>
+    )}
+    </>
   );
 };
 
