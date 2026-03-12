@@ -231,6 +231,73 @@ const AdminNotifications = () => {
           ))}
         </CardContent>
       </Card>
+
+      {/* Subscriptions Debug */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Abonnements push</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowSubs(!showSubs);
+                if (!showSubs) refetchSubs();
+              }}
+            >
+              {showSubs ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+              {showSubs ? 'Masquer' : 'Voir les abonnements'}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        {showSubs && (
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Actif</TableHead>
+                    <TableHead>p256dh</TableHead>
+                    <TableHead>auth_key</TableHead>
+                    <TableHead>Créé le</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionsList?.map((sub, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs">
+                        {sub.user_id?.substring(0, 6)}…
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={sub.is_active ? 'default' : 'destructive'}>
+                          {sub.is_active ? 'Oui' : 'Non'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {sub.p256dh?.substring(0, 10)}…
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {sub.auth_key?.substring(0, 10)}…
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {sub.created_at ? new Date(sub.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!subscriptionsList || subscriptionsList.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        Aucun abonnement trouvé
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 };
