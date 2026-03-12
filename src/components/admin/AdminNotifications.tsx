@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Send, Users, Moon, Clock, Eye, EyeOff } from 'lucide-react';
+import { Bell, Send, Users, Moon, Clock } from 'lucide-react';
 import {
   Select,
   SelectContent,
