@@ -36,7 +36,7 @@ import {
   BookMarked, Hand, Settings, Mail, ClipboardCheck, UserCheck,
   Plus, GripVertical, Trash2,
   FileText, List, Video, Star, Heart, Bell, Calendar, Image, Music,
-  ClipboardList, LayoutGrid, Book, Scroll, Eye, Wrench
+  ClipboardList, LayoutGrid, Book, Scroll, Eye, EyeOff, Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
