@@ -317,16 +317,16 @@ serve(async (req) => {
 
     const successCount = results.filter(r => r.success).length;
 
-    // Log to notification_history
+    // Log to notification_history (only use columns that exist in the table)
     if (successCount > 0) {
       await supabase.from('notification_history').insert({
         title,
         body: notifBody || '',
         type: type || 'push',
-        total_recipients: successCount,
-        successful_sends: successCount,
-        failed_sends: errorsArray.length,
-        expired_cleaned: expiredEndpoints.length,
+        target_type: sendToAll ? 'all' : (userId ? 'user' : 'group'),
+        target_user_id: userId || null,
+      }).then(({ error: histErr }) => {
+        if (histErr) console.error('HISTORY_INSERT_ERROR', histErr.message);
       });
     }
 
