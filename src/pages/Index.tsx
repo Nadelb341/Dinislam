@@ -266,7 +266,9 @@ const Index = () => {
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {(modules || []).map((mod, index) => {
-              const Icon = ICON_MAP[mod.icon] || BookOpen;
+              const Icon = ICON_MAP[mod.icon] || null;
+              const slug = getModuleSlug(mod);
+              const fallback = MODULE_EMOJI_FALLBACK[slug];
               return (
                 <div key={mod.id} className="flex flex-col items-center relative">
                   <button
@@ -299,14 +301,24 @@ const Index = () => {
                     <div className="relative z-10 mb-3">
                       {mod.image_url ?
                       <img src={mod.image_url} alt={mod.title} className="w-14 h-14 rounded-2xl object-cover shadow-lg" loading="lazy" width={56} height={56} /> :
-
+                      Icon ?
                       <div className={cn(
                         'w-14 h-14 rounded-2xl flex items-center justify-center',
                         'bg-gradient-to-br shadow-lg',
                         mod.gradient
                       )}>
                           <Icon className={cn('h-7 w-7', mod.icon_color)} />
-                        </div>
+                        </div> :
+                      <div
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                        style={{
+                          backgroundColor: (fallback?.color || '#6366f1') + '20',
+                          border: `2px solid ${(fallback?.color || '#6366f1')}40`
+                        }}>
+                        <span style={{ fontSize: '28px' }}>
+                          {fallback?.emoji ?? '📚'}
+                        </span>
+                      </div>
                       }
                     </div>
 
