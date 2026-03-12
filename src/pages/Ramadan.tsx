@@ -167,7 +167,7 @@ const Ramadan = () => {
   };
 
   const isOldLocked = (day: RamadanDay): boolean => {
-    if (day.is_unlocked) return false;
+    if (!day.is_locked) return false;
     if (dayExceptions.some(e => e.day_id === day.id)) return false;
     return day.day_number < currentRamadanDay - 3;
   };
