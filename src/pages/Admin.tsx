@@ -398,6 +398,63 @@ const Admin = () => {
     onError: (err: any) => toast.error('Erreur: ' + err.message),
   });
 
+  const toggleModuleActiveMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('learning_modules').update({ is_active }).eq('id', id);
+      if (error) throw error;
+      return is_active;
+    },
+    onSuccess: (is_active) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
+      queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
+      toast.success(is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
+    },
+    onError: (err: any) => toast.error('Erreur: ' + err.message),
+  });
+
+  // Map static card keys to builtin_path for visibility toggle
+  const CARD_KEY_TO_BUILTIN_PATH: Record<string, string> = {
+    ramadan: '/ramadan',
+    nourania: '/nourania',
+    alphabet: '/alphabet',
+    invocations: '/invocations',
+    sourates: '/sourates',
+    prayer: '/priere',
+    grammaire: '/grammaire',
+    'allah-names': '/allah-names',
+    vocabulaire: '/module/vocabulaire',
+    'lecture-coran': '/module/lecture-coran',
+    darija: '/module/darija',
+    dictionnaire: '/module/dictionnaire',
+    dhikr: '/module/dhikr',
+    hadiths: '/module/hadiths',
+    'histoires-prophetes': '/module/histoires-prophetes',
+  };
+
+  const getModuleForCardKey = (key: string) => {
+    const path = CARD_KEY_TO_BUILTIN_PATH[key];
+    if (!path) return null;
+    return learningModules?.find(m => m.builtin_path === path) || null;
+  };
+
+  const renderVisibilityToggle = (cardKey: string) => {
+    const mod = getModuleForCardKey(cardKey);
+    if (!mod) return undefined;
+    return (
+      <button
+        className="w-6 h-6 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-colors"
+        onClick={() => toggleModuleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active })}
+        title={mod.is_active ? 'Masquer aux élèves' : 'Afficher aux élèves'}
+      >
+        {mod.is_active ? (
+          <Eye className="h-3.5 w-3.5 text-green-600" />
+        ) : (
+          <EyeOff className="h-3.5 w-3.5 text-destructive" />
+        )}
+      </button>
+    );
+  };
+
   if (loading) {
     return (
       <AppLayout title="Tableau de bord">
