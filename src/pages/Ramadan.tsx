@@ -256,7 +256,7 @@ const Ramadan = () => {
 
     const isInWindow = day.day_number >= (currentRamadanDayClick - 3)
                        && day.day_number <= currentRamadanDayClick;
-    const isAdminUnlocked = day.is_unlocked === true;
+    const isAdminUnlocked = day.is_locked === false;
     const hasPersonalException = dayExceptions.some(e => e.day_id === day.id);
 
     if (!isInWindow && !isAdminUnlocked && !hasPersonalException && !isCompleted) {
