@@ -213,9 +213,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
 
       toast({ title: 'Audio envoyé ✓' });
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading audio:', error);
-      toast({ title: 'Erreur', description: 'Impossible d\'envoyer l\'audio', variant: 'destructive' });
+      toast({ title: 'Erreur', description: (error?.message || 'Erreur inconnue') + (error?.code ? ` | code: ${error.code}` : ''), variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }

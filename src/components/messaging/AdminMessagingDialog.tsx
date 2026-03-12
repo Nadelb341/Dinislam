@@ -332,8 +332,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       refetch();
 
       toast({ title: `✅ Message envoyé à ${targets.length} élève${targets.length > 1 ? 's' : ''} !` });
-    } catch {
-      toast({ title: 'Erreur', description: "Impossible d'envoyer le message groupé", variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' });
     } finally {
       setGroupMsgSending(false);
     }
