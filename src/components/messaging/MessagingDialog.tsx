@@ -199,9 +199,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
       
-      await notifyAdminNewMessage(message.trim());
+      const pushResult = await notifyAdminNewMessage(message.trim());
       
-      toast({ title: 'Message envoyé', description: 'Votre message a été transmis à l\'administrateur' });
+      toast({ title: 'Message envoyé', description: 'Debug push: ' + JSON.stringify(pushResult) });
       setMessage('');
       refetch();
     } catch (error: any) {
