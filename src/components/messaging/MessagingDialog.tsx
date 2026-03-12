@@ -174,7 +174,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       }
 
       const adminIds = adminRoles.map((r: any) => r.user_id);
-      console.log('SENDING_TO_ADMINS:', adminIds);
+      addLog('SENDING_TO_ADMINS: ' + JSON.stringify(adminIds));
 
       const { data, error } = await supabase.functions.invoke(
         'send-push-notification',
