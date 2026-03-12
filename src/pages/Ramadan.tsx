@@ -18,7 +18,7 @@ interface RamadanDay {
   theme: string | null;
   video_url: string | null;
   pdf_url: string | null;
-  is_unlocked: boolean;
+  is_locked: boolean;
 }
 
 interface DayVideo {
@@ -87,7 +87,7 @@ const Ramadan = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from('ramadan_days').select('*').order('day_number');
       if (error) throw error;
-      return (data as any[]).map(d => ({ ...d, is_unlocked: d.is_unlocked ?? false })) as RamadanDay[];
+      return (data as any[]).map(d => ({ ...d, is_locked: d.is_locked ?? true })) as RamadanDay[];
     },
   });
 
@@ -161,13 +161,13 @@ const Ramadan = () => {
   const currentRamadanDay = Math.floor((new Date().getTime() - ramadanStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const isFutureDay = (day: RamadanDay): boolean => {
-    if (day.is_unlocked) return false;
+    if (!day.is_locked) return false;
     if (dayExceptions.some(e => e.day_id === day.id)) return false;
     return day.day_number > currentRamadanDay;
   };
 
   const isOldLocked = (day: RamadanDay): boolean => {
-    if (day.is_unlocked) return false;
+    if (!day.is_locked) return false;
     if (dayExceptions.some(e => e.day_id === day.id)) return false;
     return day.day_number < currentRamadanDay - 3;
   };
@@ -256,7 +256,7 @@ const Ramadan = () => {
 
     const isInWindow = day.day_number >= (currentRamadanDayClick - 3)
                        && day.day_number <= currentRamadanDayClick;
-    const isAdminUnlocked = day.is_unlocked === true;
+    const isAdminUnlocked = day.is_locked === false;
     const hasPersonalException = dayExceptions.some(e => e.day_id === day.id);
 
     if (!isInWindow && !isAdminUnlocked && !hasPersonalException && !isCompleted) {
@@ -341,68 +341,45 @@ const Ramadan = () => {
         <FastingTracker />
 
         {/* Progress Card */}
-        <div className="module-card rounded-2xl p-4 space-y-3 animate-fade-in bg-gradient-to-br from-primary/5 to-gold/5">
+        <div className="rounded-2xl p-4 space-y-3 animate-fade-in border bg-card">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Votre parcours spirituel</span>
-            <span className="text-sm font-bold text-gold">{completedDays}/30 jours</span>
+            <span className="text-sm font-medium text-foreground">Votre parcours spirituel</span>
+            <span className="text-sm font-bold text-[#FF9800]">{completedDays}/30 jours</span>
           </div>
-          <Progress value={progressPercentage} className="h-3" />
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-[#FF9800] transition-all duration-500"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
           <p className="text-xs text-center text-muted-foreground">{progressPercentage}% du Ramadan complété</p>
         </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-10 gap-2">
+        {/* Days Grid — 6 rows x 5 cols */}
+        <div className="grid grid-cols-5 gap-2">
           {days.map((day) => {
             const progress = getDayProgress(day.id);
             const isCompleted = progress?.quiz_completed;
-            const isUnlocked = isDayUnlocked(day.day_number);
-            const hasContent = dayHasContent(day);
-            const waiting = isWaitingForTime(day.day_number);
-            const notStarted = day.day_number === 1 && !settings?.start_enabled;
-            const dateLocked = isDateLocked(day);
-            const isLocked = dateLocked || notStarted || (!isUnlocked && !waiting);
+            const hasProgress = progress && (progress.video_watched || progress.quiz_completed);
+            const isLocked = day.is_locked && !dayExceptions.some(e => e.day_id === day.id);
 
-            // Determine if this is the current Ramadan day
-            const isCurrentDay = day.day_number === currentRamadanDay;
-            // Is it before 16h for the current day?
-            const isCurrentDayBeforeUnlock = isCurrentDay && waiting;
-            // Is it current day and unlocked (after 16h)?
-            const isCurrentDayUnlocked = isCurrentDay && !waiting && isUnlocked;
-            // Accessible window days (J-1, J-2, J-3) but not current day
-            const isAccessibleWindow = !isCurrentDay && !dateLocked && !isCompleted && (isUnlocked || waiting);
-            // Old locked day (before J-3)
-            const isOldLockedDay = isOldLocked(day);
-            // Future locked day
-            const isFutureLockedDay = isFutureDay(day);
+            // 4 states
+            type DayState = 'completed' | 'pending' | 'available' | 'locked';
+            let state: DayState = 'locked';
+            if (isCompleted) {
+              state = 'completed';
+            } else if (!isLocked && hasProgress) {
+              state = 'pending';
+            } else if (!isLocked) {
+              state = 'available';
+            }
 
-            // Determine if previous day quiz is completed (for accessible window)
-            const prevDay = days.find(d => d.day_number === day.day_number - 1);
-            const prevDayCompleted = !prevDay || !!getDayProgress(prevDay.id)?.quiz_completed;
-            const isAccessibleBlocked = isAccessibleWindow && !prevDayCompleted;
-
-            // Compute effective "current day" = max of date-based day and progress frontier
-            const highestCompletedDay = userProgress
-              .filter(p => p.quiz_completed)
-              .reduce((max, p) => {
-                const d = days.find(dd => dd.id === p.day_id);
-                return d ? Math.max(max, d.day_number) : max;
-              }, 0);
-            const effectiveCurrentDay = Math.max(currentRamadanDay, highestCompletedDay + 1);
-            const isEffectiveCurrent = day.day_number === effectiveCurrentDay && !isCompleted;
-            const isInWindow = day.day_number >= (effectiveCurrentDay - 3) && day.day_number < effectiveCurrentDay && !isCompleted;
-
-            const getDayStyle = (): { bg: string; showLock: boolean; showMoon: boolean } => {
-              // 1. Completed
-              if (isCompleted) return { bg: 'bg-[#22c55e] text-white shadow-md hover:scale-105 cursor-pointer', showLock: false, showMoon: false };
-              // 2. Effective current day (date or progress frontier)
-              if (isEffectiveCurrent) return { bg: 'bg-[#f97316] text-white shadow-md hover:scale-105 cursor-pointer', showLock: false, showMoon: true };
-              // 3. In accessible window (3 days before effective current)
-              if (isInWindow) return { bg: 'bg-[#dcfce7] text-green-800 hover:scale-105 cursor-pointer', showLock: !prevDayCompleted, showMoon: true };
-              // 4. Old locked or future — beige
-              return { bg: 'bg-[#fef3c7] text-amber-700', showLock: true, showMoon: true };
+            const stateStyles: Record<DayState, string> = {
+              completed: 'bg-[#4CAF50] text-white shadow-md',
+              pending: 'bg-[#FF9800] text-white shadow-md',
+              available: 'bg-[#FFF8E1] text-[#9E9E9E] border border-[#E0E0E0]',
+              locked: 'bg-[#F5F5F5] text-[#BDBDBD] border border-[#E0E0E0]',
             };
-
-            const style = getDayStyle();
 
             return (
               <button
@@ -410,19 +387,28 @@ const Ramadan = () => {
                 onClick={() => handleDayClick(day)}
                 className={cn(
                   'aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-all duration-200 relative',
-                  style.bg
+                  stateStyles[state],
+                  state !== 'locked' && 'hover:scale-105 cursor-pointer'
                 )}
               >
-                {style.showLock && (
-                  <span className="absolute top-0.5 right-0.5 text-[8px]">🔒</span>
-                )}
-
-                {isCompleted ? (
-                  <Check className="h-5 w-5" />
+                {state === 'completed' ? (
+                  <Check className="h-6 w-6 text-white" strokeWidth={3} />
+                ) : state === 'pending' ? (
+                  <>
+                    <span className="absolute top-0.5 right-1 text-[8px] text-white/80">✕</span>
+                    <span className="text-xs leading-none">☽</span>
+                    <span className="text-xs font-bold">{day.day_number}</span>
+                  </>
+                ) : state === 'available' ? (
+                  <>
+                    <span className="text-xs leading-none text-[#BDBDBD]">☽</span>
+                    <span className="text-xs font-bold">{day.day_number}</span>
+                  </>
                 ) : (
                   <>
-                    {style.showMoon && <span className="text-[10px] leading-none">🌙</span>}
-                    <span className={cn("font-bold", style.showMoon ? "text-xs" : "text-base")}>{day.day_number}</span>
+                    <span className="absolute top-0.5 right-1 text-[7px]">🔒</span>
+                    <span className="text-xs leading-none text-[#BDBDBD]">🔒</span>
+                    <span className="text-xs font-bold">{day.day_number}</span>
                   </>
                 )}
               </button>
@@ -431,24 +417,22 @@ const Ramadan = () => {
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-3 justify-center text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[#22c55e]" />
+        <div className="flex flex-wrap gap-4 justify-center text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#4CAF50]" />
             <span>Complété</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[#f97316]" />
-            <span>Jour en cours</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#FF9800]" />
+            <span>En attente</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[#dcfce7]" />
-            <span>Disponible</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-4 h-4 rounded bg-[#fef3c7] relative">
-              <span className="absolute -top-0.5 -right-0.5 text-[6px]">🔒</span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#E0E0E0]" />
             <span>Verrouillé</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3.5 h-3.5 rounded-full bg-[#FFF8E1] border border-[#E0E0E0]" />
+            <span>Disponible</span>
           </div>
         </div>
 
