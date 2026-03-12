@@ -413,8 +413,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       toast({ title: 'Thème enregistré' });
       setSavingTheme(false);
     },
-    onError: () => {
-      toast({ title: 'Erreur lors de l\'enregistrement', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
       setSavingTheme(false);
     },
   });
