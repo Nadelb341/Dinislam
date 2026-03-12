@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ interface RegistrationUser {
 
 const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [registrations, setRegistrations] = useState<RegistrationUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -40,17 +42,21 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const handleApprove = async (userId: string) => {
     setProcessingId(userId);
     try {
-      await (supabase as any)
+      const { error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ is_approved: true })
         .eq('user_id', userId);
+      if (updateError) throw updateError;
 
-      await (supabase as any)
+      const { error: roleError } = await (supabase as any)
         .from('user_roles')
-        .insert({ user_id: userId, role: 'student' })
-        .select();
+        .insert({ user_id: userId, role: 'student' });
+      if (roleError && !roleError.message?.includes('duplicate')) throw roleError;
 
       setRegistrations(prev => prev.filter(r => r.user_id !== userId));
+
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-total-count'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-students'] });
 
       toast({
         title: 'Inscription approuvée ✅',
