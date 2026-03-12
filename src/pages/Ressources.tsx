@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, List, Video, BookOpen, Star, Heart, Bell, Calendar, Image, Music, File, ExternalLink } from 'lucide-react';
+import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 import { Button } from '@/components/ui/button';
 import { LucideIcon } from 'lucide-react';
 
