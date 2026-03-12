@@ -30,7 +30,6 @@ const AdminNotifications = () => {
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationType, setNotificationType] = useState<'all' | 'prayer' | 'ramadan'>('all');
-  const [showSubs, setShowSubs] = useState(false);
 
   const { data: subscriptionStats } = useQuery({
     queryKey: ['admin-push-stats'],
