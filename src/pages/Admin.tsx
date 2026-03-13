@@ -157,14 +157,14 @@ const Admin = () => {
     },
   });
 
-  // Fetch pending invocation validation count
-  const { data: pendingInvocationsCount } = useQuery({
-    queryKey: ['admin-pending-invocations-count'],
+  // Fetch pending homework count (devoirs à corriger)
+  const { data: pendingHomeworkCount } = useQuery({
+    queryKey: ['admin-pending-homework-count'],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from('invocation_validation_requests')
+        .from('devoirs_rendus')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('statut', 'rendu');
       if (error) throw error;
       return count || 0;
     },
@@ -212,7 +212,7 @@ const Admin = () => {
   useEffect(() => { setPendingCount(pendingValidations || 0); }, [pendingValidations]);
   useEffect(() => { setPendingRegistrations(pendingRegCount || 0); }, [pendingRegCount]);
   useEffect(() => { setPendingNourania(pendingNouraniaCount || 0); }, [pendingNouraniaCount]);
-  useEffect(() => { setPendingInvocations(pendingInvocationsCount || 0); }, [pendingInvocationsCount]);
+  useEffect(() => { setPendingInvocations(pendingHomeworkCount || 0); }, [pendingHomeworkCount]);
 
   // Handle section query param from admin command modal
   useEffect(() => {
@@ -239,8 +239,8 @@ const Admin = () => {
         const { count } = await supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
         setPendingNourania(count || 0);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invocation_validation_requests' }, async () => {
-        const { count } = await supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, async () => {
+        const { count } = await supabase.from('devoirs_rendus').select('*', { count: 'exact', head: true }).eq('statut', 'rendu');
         setPendingInvocations(count || 0);
       })
       .subscribe();
@@ -547,7 +547,7 @@ const Admin = () => {
             { view: 'registration-validations' as ViewType, count: pendingRegistrations, icon: UserCheck, label: "Validation d'inscription", pendingText: 'Inscription(s) à valider', okText: 'Aucune inscription en attente' },
             { view: 'sourates-validations' as ViewType, count: pendingCount, icon: ClipboardCheck, label: 'Validation Sourates', pendingText: 'Sourate(s) à valider', okText: 'Aucune validation en attente' },
             { view: 'nourania-validations' as ViewType, count: pendingNourania, icon: Sparkles, label: 'Validation Nourania', pendingText: 'Leçon(s) à valider', okText: 'Aucune validation en attente' },
-            { view: 'invocations-validations' as ViewType, count: pendingInvocations, icon: Hand, label: 'Validation Invocations', pendingText: 'Invocation(s) à valider', okText: 'Aucune validation en attente' },
+            { view: 'homework' as ViewType, count: pendingInvocations, icon: ClipboardList, label: 'Devoirs à corriger', pendingText: 'Rendu(s) à corriger', okText: 'Aucun rendu en attente' },
           ].map((item) => {
             const Icon = item.icon;
             const hasPending = item.count > 0;
