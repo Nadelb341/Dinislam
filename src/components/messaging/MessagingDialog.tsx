@@ -160,15 +160,15 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
 
   const notifyAdminNewMessage = async (messageContent: string) => {
     try {
-      const { data: tousRoles } = await supabase
+      const { data: adminRoles, error: errRoles } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .eq('role', 'admin');
 
       return { 
-        tousRoles: tousRoles?.map((r: any) => ({ 
-          user_id: r.user_id?.slice(0, 8), 
-          role: r.role 
-        }))
+        adminRoles,
+        errRoles,
+        count: adminRoles?.length 
       };
     } catch (err: any) {
       return { catch: err.message };
