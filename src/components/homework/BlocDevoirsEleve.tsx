@@ -222,27 +222,35 @@ export default function BlocDevoirsEleve() {
       // Check which are already submitted + get statut
       const { data: rendus } = await supabase
         .from('devoirs_rendus')
-        .select('devoir_id, statut')
+        .select('devoir_id, statut, commentaire_admin')
         .eq('student_id', user.id);
 
-      const rendusMap = new Map<string, string>();
+      const rendusMap = new Map<string, { statut: string; commentaire_admin?: string }>();
       (rendus || []).forEach(r => {
-        if (r.devoir_id) rendusMap.set(r.devoir_id, r.statut || 'rendu');
+        if (r.devoir_id) rendusMap.set(r.devoir_id, { 
+          statut: r.statut || 'rendu',
+          commentaire_admin: r.commentaire_admin || undefined,
+        });
       });
 
-      const enrichis = (data || []).map(d => ({
-        id: d.id,
-        titre: d.titre,
-        type: d.type,
-        description: d.description || undefined,
-        lien_lecon: d.lien_lecon || undefined,
-        date_limite: d.date_limite || undefined,
-        rendu: rendusMap.has(d.id),
-        statut: rendusMap.get(d.id) || undefined,
-      }));
+      const enrichis = (data || []).map(d => {
+        const renduInfo = rendusMap.get(d.id);
+        return {
+          id: d.id,
+          titre: d.titre,
+          type: d.type,
+          description: d.description || undefined,
+          lien_lecon: d.lien_lecon || undefined,
+          date_limite: d.date_limite || undefined,
+          rendu: rendusMap.has(d.id),
+          statut: renduInfo?.statut || undefined,
+          commentaire_admin: renduInfo?.commentaire_admin || undefined,
+        };
+      });
 
-      setDevoirs(enrichis.filter(d => !d.rendu));
-      setDevoirsTermines(enrichis.filter(d => d.rendu));
+      // "a_refaire" devoirs go back to the active list
+      setDevoirs(enrichis.filter(d => !d.rendu || d.statut === 'a_refaire'));
+      setDevoirsTermines(enrichis.filter(d => d.rendu && d.statut !== 'a_refaire'));
       setLoading(false);
     };
 
