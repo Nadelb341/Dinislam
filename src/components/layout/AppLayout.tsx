@@ -27,6 +27,9 @@ const AppLayout = ({
       <Header title={title} showBack={showBack} />
       <EmailVerificationBanner />
       <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
+        <div className="p-4">
+          <PushAutoSubscribe />
+        </div>
         {children}
       </main>
       {showBottomNav && <BottomNav />}
