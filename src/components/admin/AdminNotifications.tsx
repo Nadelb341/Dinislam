@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Send, Users, Moon, Clock, TestTube } from 'lucide-react';
+import { Bell, Send, Users, Moon, Clock, TestTube, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -33,6 +33,51 @@ const AdminNotifications = () => {
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationType, setNotificationType] = useState<'all' | 'prayer' | 'ramadan'>('all');
   const [testSending, setTestSending] = useState(false);
+
+  // État pour statut notifications élèves
+  const [elevesStatut, setElevesStatut] = useState<any[]>([]);
+  const [showStatuts, setShowStatuts] = useState(false);
+  const [envoiIndividuel, setEnvoiIndividuel] = useState('');
+
+  useEffect(() => { chargerStatutsEleves(); }, []);
+
+  const chargerStatutsEleves = async () => {
+    const { data: profils } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .eq('is_approved', true);
+
+    const ids = (profils || []).map(p => p.user_id);
+    if (!ids.length) { setElevesStatut([]); return; }
+
+    const { data: subs } = await supabase
+      .from('push_subscriptions')
+      .select('user_id, is_active')
+      .in('user_id', ids);
+
+    const enrichis = (profils || []).map(p => ({
+      id: p.user_id,
+      full_name: p.full_name || 'Sans nom',
+      notifActive: subs?.some(s => s.user_id === p.user_id && s.is_active) || false,
+    }));
+    setElevesStatut(enrichis.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')));
+  };
+
+  const handleRenvoyerInvitation = async (userId?: string) => {
+    const cibles = userId ? [userId] : elevesStatut.map(e => e.id);
+    try {
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userIds: cibles,
+          title: '🔔 Activez vos notifications',
+          body: "Ouvrez l'application et activez les notifications pour ne rien manquer !",
+        },
+      });
+      toast({ title: `📢 Invitation envoyée à ${cibles.length} élève(s)` });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    }
+  };
 
   const handleTestAdmin = async () => {
     if (!user) return;
@@ -312,6 +357,84 @@ const AdminNotifications = () => {
             </div>
           ))}
         </CardContent>
+      </Card>
+
+      {/* Invitations notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📢 Invitations notifications</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            onClick={() => handleRenvoyerInvitation()}
+            className="w-full py-4 rounded-2xl font-bold text-lg bg-orange-500 hover:bg-orange-600"
+          >
+            🔔 Renvoyer à tous les élèves
+          </Button>
+
+          <Select value={envoiIndividuel} onValueChange={setEnvoiIndividuel}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner un élève..." />
+            </SelectTrigger>
+            <SelectContent>
+              {elevesStatut.map(e => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.notifActive ? '✅' : '❌'} {e.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {envoiIndividuel && (
+            <Button
+              onClick={() => handleRenvoyerInvitation(envoiIndividuel)}
+              className="w-full py-4 rounded-2xl font-bold text-lg"
+            >
+              🔔 Envoyer à cet élève
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Statut notifications élèves */}
+      <Card>
+        <button
+          onClick={() => setShowStatuts(!showStatuts)}
+          className="w-full flex items-center justify-between p-4"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-bold">📋 Statut notifications élèves</span>
+            <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-300">
+              {elevesStatut.filter(e => e.notifActive).length} actifs
+            </Badge>
+            <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-300">
+              {elevesStatut.filter(e => !e.notifActive).length} inactifs
+            </Badge>
+          </div>
+          {showStatuts ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        {showStatuts && (
+          <CardContent className="pt-0">
+            {elevesStatut.length === 0 && (
+              <p className="text-muted-foreground text-sm text-center py-2">Aucun élève inscrit</p>
+            )}
+            {elevesStatut.map(e => (
+              <div key={e.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <span className="text-sm font-medium">{e.full_name}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={e.notifActive ? 'bg-green-500/10 text-green-700 border-green-300' : 'bg-red-500/10 text-red-700 border-red-300'}>
+                    {e.notifActive ? '✅ Actif' : '❌ Inactif'}
+                  </Badge>
+                  {!e.notifActive && (
+                    <Button size="sm" variant="outline" onClick={() => handleRenvoyerInvitation(e.id)} className="text-xs">
+                      Relancer
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        )}
       </Card>
 
     </div>
