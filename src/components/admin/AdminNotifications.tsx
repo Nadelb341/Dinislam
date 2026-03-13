@@ -64,51 +64,24 @@ const AdminNotifications = () => {
   };
 
   const handleRenvoyerInvitation = async (userId?: string) => {
-    const cibles = userId ? [userId] : elevesStatut.filter(e => !e.notifActive).map(e => e.id);
+    const cibles = userId ? [userId] : elevesStatut.map(e => e.id);
     if (!cibles.length) {
       toast({ title: 'Aucun élève à relancer' });
       return;
     }
+
     try {
-      // Send in-app message via admin_conversations (since push can't reach unsubscribed users)
-      const messageContent = {
-        text: "🔔 Pensez à activer les notifications ! Allez dans l'application et appuyez sur le bouton 'Activer les notifications' pour ne rien manquer.",
-        sender: 'admin',
-        timestamp: new Date().toISOString(),
-      };
+      const messageText = "🔔 Pensez à activer les notifications ! Allez dans l'application et appuyez sur le bouton 'Activer les notifications' pour ne rien manquer.";
 
-      for (const targetId of cibles) {
-        // Check if conversation exists
-        const { data: existing } = await supabase
-          .from('admin_conversations')
-          .select('id, messages')
-          .eq('user_id', targetId)
-          .maybeSingle();
+      const payload = cibles.map((targetId) => ({
+        user_id: targetId,
+        message: messageText,
+        sender_type: 'admin',
+        message_type: 'text',
+      }));
 
-        if (existing) {
-          const messages = Array.isArray(existing.messages) ? existing.messages : [];
-          messages.push(messageContent);
-          await supabase
-            .from('admin_conversations')
-            .update({
-              messages,
-              last_message: messageContent.text,
-              last_message_at: new Date().toISOString(),
-              unread_count: (messages.length > 0 ? 1 : 0),
-            })
-            .eq('id', existing.id);
-        } else {
-          await supabase.from('admin_conversations').insert({
-            user_id: targetId,
-            admin_id: user?.id,
-            messages: [messageContent],
-            last_message: messageContent.text,
-            last_message_at: new Date().toISOString(),
-            unread_count: 1,
-            topic: 'Activation notifications',
-          });
-        }
-      }
+      const { error } = await supabase.from('user_messages').insert(payload);
+      if (error) throw error;
 
       toast({ title: `📨 Message envoyé à ${cibles.length} élève(s) via la messagerie` });
     } catch (e: any) {
