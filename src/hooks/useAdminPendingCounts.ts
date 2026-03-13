@@ -22,17 +22,16 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
     queryFn: async (): Promise<AdminPendingCounts> => {
       if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, messages: 0, homework: 0, total: 0 };
 
-      const [reg, sou, nou, inv, msgs, hw] = await Promise.all([
+      const [reg, sou, nou, msgs, hw] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
         supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('user_messages').select('*', { count: 'exact', head: true }).eq('sender_type', 'user').eq('is_read', false),
-        supabase.from('homework_assignments').select('*', { count: 'exact', head: true }).eq('status', 'completed').gte('completed_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('devoirs_rendus').select('*', { count: 'exact', head: true }).eq('statut', 'rendu'),
       ]);
 
-      const r = reg.count || 0, s = sou.count || 0, n = nou.count || 0, i = inv.count || 0, m = msgs.count || 0, h = hw.count || 0;
-      return { registrations: r, sourates: s, nourania: n, invocations: i, messages: m, homework: h, total: r + s + n + i + m + h };
+      const r = reg.count || 0, s = sou.count || 0, n = nou.count || 0, m = msgs.count || 0, h = hw.count || 0;
+      return { registrations: r, sourates: s, nourania: n, invocations: 0, messages: m, homework: h, total: r + s + n + m + h };
     },
     enabled: !!user && isAdmin,
     refetchInterval: 30000,
@@ -44,9 +43,8 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nourania_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invocation_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_messages' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'homework_assignments' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, queryClient]);

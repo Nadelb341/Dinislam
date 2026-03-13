@@ -33,7 +33,7 @@ const AdminCommandModal = ({
     { emoji: '📝', label: 'Inscriptions en attente', count: pendingRegistrations, icon: UserCheck, section: 'registration-validations' },
     { emoji: '✅', label: 'Sourates à valider', count: pendingSourates, icon: ClipboardCheck, section: 'sourates-validations' },
     { emoji: '🌟', label: 'Nourania à valider', count: pendingNourania, icon: Sparkles, section: 'nourania-validations' },
-    { emoji: '🤲', label: 'Invocations à valider', count: pendingInvocations, icon: Hand, section: 'invocations-validations' },
+    { emoji: '📚', label: 'Devoirs à corriger', count: pendingHomework, icon: ClipboardCheck, section: 'cahier-texte' },
   ];
 
   const handleCardClick = (section: string) => {
