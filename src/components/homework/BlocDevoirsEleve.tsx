@@ -111,7 +111,7 @@ function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string
         </p>
       )}
 
-      {!devoir.rendu && (
+      {(!devoir.rendu || devoir.statut === 'a_refaire') && (
         <div className="flex flex-col gap-2">
           {devoir.lien_lecon && (
             <a
