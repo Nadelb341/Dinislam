@@ -5,6 +5,7 @@ import usePresenceHeartbeat from '@/hooks/usePresenceHeartbeat';
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
 import StarMascot from '@/components/mascot/StarMascot';
 import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
+import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 
 interface AppLayoutProps {
   children: ReactNode;
