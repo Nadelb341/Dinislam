@@ -341,13 +341,6 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
         </div>
       </DialogContent>
     </Dialog>
-    {debugLogs.length > 0 && (
-      <div className="fixed bottom-20 left-2 right-2 bg-black text-green-400 text-xs p-3 rounded-xl z-50 max-h-40 overflow-y-auto">
-        {debugLogs.map((log, i) => (
-          <div key={i}>{log}</div>
-        ))}
-      </div>
-    )}
     </>
   );
 };
