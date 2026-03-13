@@ -187,9 +187,10 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       });
       if (error) throw error;
       
-      const pushResult = await notifyAdminNewMessage(message.trim());
+      const profile = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
+      await notifyAdminNewMessage(profile.data?.full_name || 'Un élève');
       
-      toast({ title: 'Message envoyé', description: 'Debug push: ' + JSON.stringify(pushResult) });
+      toast({ title: 'Message envoyé ✓' });
       setMessage('');
       refetch();
     } catch (error: any) {
