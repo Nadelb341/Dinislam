@@ -104,12 +104,14 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (signupPassword !== signupPasswordConfirm) {
+      setPasswordError('Les mots de passe ne correspondent pas');
+      setLoading(false);
+      return;
+    }
+
     if (signupPassword.length < 6) {
-      toast({
-        title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
-        variant: "destructive",
-      });
+      setPasswordError('Le mot de passe doit contenir au moins 6 caractères');
       setLoading(false);
       return;
     }
