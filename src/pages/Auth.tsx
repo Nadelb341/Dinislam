@@ -23,6 +23,11 @@ const Auth = () => {
   const [signupName, setSignupName] = useState('');
   const [signupGender, setSignupGender] = useState('');
   const [signupDob, setSignupDob] = useState(''); // JJ/MM/AAAA
+  const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupPasswordConfirm, setShowSignupPasswordConfirm] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
   if (authLoading) {
