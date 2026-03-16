@@ -282,100 +282,69 @@ Clique sur n'importe quel module pour commencer !
     return getEncouragementMessage();
   };
 
-  // Drag handlers
-  const handleDragStart = (clientX: number, clientY: number) => {
-    if (!starRef.current) return;
-    
-    setIsDragging(true);
-    const rect = starRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: clientX - rect.left,
-      y: clientY - rect.top
+  // Touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDraggingBtn.current = false;
+    startTouch.current = { x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    isDraggingBtn.current = true;
+    setPos({
+      x: Math.max(0, Math.min(window.innerWidth - 48, e.touches[0].clientX - startTouch.current.x)),
+      y: Math.max(0, Math.min(window.innerHeight - 48, e.touches[0].clientY - startTouch.current.y))
     });
   };
 
-  const handleDragMove = (clientX: number, clientY: number) => {
-    if (!isDragging) return;
-    
-    const newX = Math.max(0, Math.min(clientX - dragOffset.x, window.innerWidth - 64));
-    const newY = Math.max(0, Math.min(clientY - dragOffset.y, window.innerHeight - 64));
-    
-    setPosition({ x: newX, y: newY });
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
+  const handleTouchEnd = () => {
+    if (!isDraggingBtn.current) setIsOpen(true);
+    isDraggingBtn.current = false;
   };
 
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    handleDragStart(e.clientX, e.clientY);
+    isDraggingBtn.current = false;
+    startPos.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    const onMove = (ev: MouseEvent) => {
+      isDraggingBtn.current = true;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - 48, ev.clientX - startPos.current.x)),
+        y: Math.max(0, Math.min(window.innerHeight - 48, ev.clientY - startPos.current.y))
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (!isDraggingBtn.current) setIsOpen(true);
+      isDraggingBtn.current = false;
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    handleDragMove(e.clientX, e.clientY);
-  };
-
-  const handleMouseUp = () => {
-    handleDragEnd();
-  };
-
-  // Touch events
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    handleDragStart(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    handleDragMove(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchEnd = (e: TouchEvent) => {
-    e.preventDefault();
-    handleDragEnd();
-  };
-
-  // Add global event listeners for drag
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd, { passive: false });
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-      };
-    }
-  }, [isDragging, dragOffset]);
 
   if (!user || isAdmin) return null;
 
   return (
     <>
       {/* Draggable Floating Star Button */}
-      <Button
-        ref={starRef}
-        onMouseDown={handleMouseDown}
+      <button
         onTouchStart={handleTouchStart}
-        onClick={() => !isDragging && setIsOpen(true)}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onClick={(e) => { if (isDraggingBtn.current) e.preventDefault(); }}
         style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          cursor: isDragging ? 'grabbing' : 'grab',
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y,
+          zIndex: 40,
           touchAction: 'none',
+          cursor: 'grab',
         }}
-        className="fixed z-50 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-300 hover:via-yellow-400 hover:to-amber-400 shadow-lg hover:shadow-xl transition-all duration-300 p-0 group"
+        className="w-10 h-10 rounded-full shadow-md flex items-center justify-center transition-shadow hover:shadow-lg select-none bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-500"
       >
-        <Star className="h-8 w-8 text-white drop-shadow-md group-hover:scale-110 transition-transform animate-pulse pointer-events-none" />
-      </Button>
+        <span style={{ fontSize: '18px', lineHeight: 1 }}>⭐</span>
+      </button>
 
       {/* Mascot Dialog */}
       {isOpen && (
