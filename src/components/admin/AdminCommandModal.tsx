@@ -7,6 +7,8 @@ import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidation
 import AdminHomework from '@/components/admin/AdminHomework';
 import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
+import AdminStudents from '@/components/admin/AdminStudents';
+import AdminAttendance from '@/components/admin/AdminAttendance';
 
 interface AdminCommandModalProps {
   open: boolean;
