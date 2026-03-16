@@ -28,40 +28,24 @@ const StarMascot = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: progress } = useUserProgress();
   
-  const starRef = useRef<HTMLButtonElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState(() => {
-    // Safe initialization - avoid accessing window during SSR
-    if (typeof window === 'undefined') {
-      return { x: 0, y: 0 };
-    }
-    
-    try {
-      const saved = localStorage.getItem('starMascot-position');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return {
-          x: Math.max(0, Math.min(parsed.x || 0, window.innerWidth - 80)),
-          y: Math.max(0, Math.min(parsed.y || 0, window.innerHeight - 120))
-        };
-      }
-    } catch (error) {
-      console.warn('Failed to load mascot position:', error);
-    }
-    
-    return { 
-      x: Math.max(0, window.innerWidth - 80), 
-      y: Math.max(0, window.innerHeight - 120) 
-    };
-  });
+  const isDraggingBtn = useRef(false);
+  const startTouch = useRef({ x: 0, y: 0 });
+  const startPos = useRef({ x: 0, y: 0 });
+
+  const [pos, setPos] = useState({ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 80 : 0 });
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userAge, setUserAge] = useState<number | null>(null);
+
+  // Reset position on route change
+  useEffect(() => {
+    setPos({ x: 16, y: window.innerHeight - 80 });
+  }, [location.pathname]);
 
   // Get user age from profile and set up window resize handler
   useEffect(() => {
