@@ -172,29 +172,44 @@ const AdminMoonAssistant = () => {
     setShowConversationList(false);
   };
 
-  // Drag handlers
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (!moonRef.current) return;
-    const rect = moonRef.current.getBoundingClientRect();
-    setDragOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-    setIsDragging(true);
-    setHasMoved(false);
-    moonRef.current.setPointerCapture(e.pointerId);
+  // Touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDraggingBtn.current = false;
+    startTouch.current = { x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y };
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setHasMoved(true);
-    const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 56));
-    const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 56));
-    setPosition({ x: newX, y: newY });
+  const handleTouchMove = (e: React.TouchEvent) => {
+    isDraggingBtn.current = true;
+    setPos({
+      x: Math.max(0, Math.min(window.innerWidth - 48, e.touches[0].clientX - startTouch.current.x)),
+      y: Math.max(0, Math.min(window.innerHeight - 48, e.touches[0].clientY - startTouch.current.y))
+    });
   };
 
-  const handlePointerUp = () => {
-    setIsDragging(false);
-    if (!hasMoved) {
-      setIsOpen(prev => !prev);
-    }
+  const handleTouchEnd = () => {
+    if (!isDraggingBtn.current) setIsOpen(prev => !prev);
+    isDraggingBtn.current = false;
+  };
+
+  // Mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDraggingBtn.current = false;
+    startPos.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    const onMove = (ev: MouseEvent) => {
+      isDraggingBtn.current = true;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - 48, ev.clientX - startPos.current.x)),
+        y: Math.max(0, Math.min(window.innerHeight - 48, ev.clientY - startPos.current.y))
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (!isDraggingBtn.current) setIsOpen(prev => !prev);
+      isDraggingBtn.current = false;
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   };
 
   const generateTopicFromMessages = (msgs: Message[]): string => {
