@@ -7,6 +7,8 @@ import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidation
 import AdminHomework from '@/components/admin/AdminHomework';
 import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
+import AdminStudents from '@/components/admin/AdminStudents';
+import AdminAttendance from '@/components/admin/AdminAttendance';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -276,29 +278,9 @@ function AdminSectionRenderer({
     case 'notifications':
       return <AdminNotifications />;
     case 'eleves':
-      return (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground mb-4">Gestion des élèves</p>
-          <button
-            onClick={() => onNavigate('/admin')}
-            className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold"
-          >
-            Ouvrir la gestion des élèves →
-          </button>
-        </div>
-      );
+      return <AdminStudents />;
     case 'registre-presence':
-      return (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground mb-4">Registre de présence</p>
-          <button
-            onClick={() => onNavigate('/attendance')}
-            className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold"
-          >
-            Ouvrir le registre →
-          </button>
-        </div>
-      );
+      return <AdminAttendance onBack={onClose} />;
     case 'dictionnaire':
       return (
         <p className="text-muted-foreground text-center py-8">
