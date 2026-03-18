@@ -150,6 +150,7 @@ const SourateDetailDialog = ({
                 Array.from({ length: sourate.verses_count }, (_, i) => i + 1).map(verseNum => {
                   const isVerseValidated = verseProgress.get(`${dbId}-${verseNum}`) || false;
                   const verseData = verses.find(v => v.id === verseNum);
+                  const verseAudio = versetsAudio.find((a: any) => a.verset_number === verseNum);
                   return (
                     <div
                       key={verseNum}
@@ -187,6 +188,19 @@ const SourateDetailDialog = ({
                           <p className="text-xs text-muted-foreground">
                             {verseData.translation_fr}
                           </p>
+                        )}
+                        {/* Verse audio */}
+                        {verseAudio && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Volume2 className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <audio
+                              src={verseAudio.audio_url}
+                              controls
+                              preload="none"
+                              className="w-full"
+                              style={{ height: '28px' }}
+                            />
+                          </div>
                         )}
                         {/* Verse number indicator */}
                         <p className={cn(
