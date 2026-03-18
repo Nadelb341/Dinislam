@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Check, BookOpen, FileText, File } from 'lucide-react';
+import { Check, BookOpen, FileText, File, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuranVerses } from '@/hooks/useQuranVerses';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SourateDetailDialogProps {
   open: boolean;
