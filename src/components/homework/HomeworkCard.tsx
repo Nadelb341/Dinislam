@@ -101,6 +101,7 @@ const HomeworkCard = () => {
             title: '✅ Devoir terminé',
             body: `${profile?.full_name || 'Un élève'} a terminé : ${assignment?.title || ''} (${subjectLabel})`,
             type: 'admin',
+            data: { url: '/admin?section=cahier-texte' },
           },
         });
       } catch (e) {
@@ -150,6 +151,7 @@ const HomeworkCard = () => {
             title: '📎 Nouveau fichier rendu',
             body: `${profile?.full_name || 'Un élève'} a déposé un fichier pour : ${assignment?.title || ''} (${subjectLabel})`,
             type: 'admin',
+            data: { url: '/admin?section=cahier-texte' },
           },
         });
       } catch (e) {

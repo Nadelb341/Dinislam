@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
@@ -31,6 +31,18 @@ const Header = ({
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
   const pendingCounts = useAdminPendingCounts();
   const monitoringErrors = useMonitoringErrorCount();
+
+  // Auto-open messaging from URL param ?open=messages
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('open') === 'messages') {
+      clearNewMessageFlag();
+      setShowMessaging(true);
+      // Clean URL
+      const newUrl = location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search]);
 
   const handleOpenMessaging = () => {
     clearNewMessageFlag();

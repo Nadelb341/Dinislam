@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/lib/pushHelper';
 
 const COMMENTAIRE_DEFAULT = "📌 Tu t'es arrêté à :\n✅ Ligne : \n✅ Page : ";
 
@@ -82,13 +83,12 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
     }
 
     // Notify student via push
-    supabase.functions.invoke('send-push-notification', {
-      body: {
-        userIds: [eleveSelectionne],
-        title: '📝 Note de l\'enseignante',
-        body: 'Votre enseignante a mis à jour votre progression Nourania',
-      },
-    }).catch(err => console.error('[Push] Error:', err));
+    sendPushNotification({
+      userIds: [eleveSelectionne],
+      title: '📝 Note de l\'enseignante',
+      body: 'Votre enseignante a mis à jour votre progression Nourania',
+      data: { url: '/nourania' },
+    });
 
     toast.success('✅ Commentaire envoyé à l\'élève !');
     chargerCommentaires();

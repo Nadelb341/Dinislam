@@ -193,6 +193,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         userIds: [studentId],
         title: '🎉 Devoir validé !',
         body: `Ton devoir "${devoirTitre}" a été corrigé ✅`,
+        data: { url: '/?open=devoirs' },
       });
     },
     onSuccess: () => {
@@ -215,6 +216,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         userIds: [modalARefaire.studentId],
         title: '🔄 Devoir à refaire',
         body: `"${modalARefaire.devoirTitre}" est à refaire${commentaire ? ` : ${commentaire}` : ''}`,
+        data: { url: '/?open=devoirs' },
       });
     },
     onSuccess: () => {

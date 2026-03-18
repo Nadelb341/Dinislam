@@ -13,6 +13,7 @@ export function sendPushNotification(params: {
   sendToAll?: boolean;
   excludeUserId?: string;
   tag?: string;
+  data?: Record<string, string>;
 }) {
   // Map legacy 'broadcast' type to sendToAll
   const body: any = { ...params };
