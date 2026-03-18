@@ -338,11 +338,32 @@ const Nourania = () => {
                 {/* Expanded Content */}
                 {isExpanded && unlocked && (
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
+                    {/* Admin comment */}
+                    {(lesson as any).commentaire_admin && (
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                          💬 Note de l'enseignante
+                        </p>
+                        <p className="text-sm text-amber-800 dark:text-amber-300">{(lesson as any).commentaire_admin}</p>
+                      </div>
+                    )}
+
                     {/* Content files */}
                     {contents.length > 0 ? (
                       <div className="space-y-3">
                         {contents.map((content) => (
                           <div key={content.id}>
+                            {content.content_type === 'youtube' && (() => {
+                              const videoId = extractYoutubeVideoId(content.file_url);
+                              return videoId ? (
+                                <div>
+                                  {content.file_name && content.file_name !== 'Vidéo YouTube' && (
+                                    <p className="text-sm font-medium text-foreground mb-1">{content.file_name}</p>
+                                  )}
+                                  <YoutubePlayer videoId={videoId} />
+                                </div>
+                              ) : null;
+                            })()}
                             {content.content_type === 'video' && (
                               <div className="aspect-video rounded-xl overflow-hidden bg-foreground/5">
                                 <video
@@ -353,7 +374,17 @@ const Nourania = () => {
                                 />
                               </div>
                             )}
-                            {content.content_type === 'pdf' && (
+                            {content.content_type === 'audio' && (
+                              <div className="space-y-1">
+                                {content.file_name && (
+                                  <p className="text-sm font-medium text-foreground">{content.file_name}</p>
+                                )}
+                                <audio controls className="w-full" preload="metadata">
+                                  <source src={content.file_url} />
+                                </audio>
+                              </div>
+                            )}
+                            {(content.content_type === 'pdf' || content.content_type === 'fichier') && content.file_url?.endsWith('.pdf') && (
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                   {getContentIcon('pdf')}
@@ -362,7 +393,7 @@ const Nourania = () => {
                                 <div className="aspect-[3/4] rounded-xl overflow-hidden bg-muted">
                                   <iframe
                                     src={content.file_url}
-                                    title={content.file_name}
+                                    title={content.file_name || 'PDF'}
                                     className="w-full h-full"
                                   />
                                 </div>
@@ -372,13 +403,13 @@ const Nourania = () => {
                               <div className="rounded-xl overflow-hidden">
                                 <img
                                   src={content.file_url}
-                                  alt={content.file_name}
+                                  alt={content.file_name || ''}
                                   className="w-full h-auto rounded-xl"
                                   loading="lazy"
                                 />
                               </div>
                             )}
-                            {content.content_type === 'document' && (
+                            {content.content_type === 'fichier' && !content.file_url?.endsWith('.pdf') && (
                               <a
                                 href={content.file_url}
                                 target="_blank"
