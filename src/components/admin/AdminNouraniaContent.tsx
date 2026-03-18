@@ -10,6 +10,12 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 
+const COMMENTAIRE_DEFAULT = `📌 Tu t'es arrêté à :
+
+✅ Ligne : 
+
+✅ Page : `;
+
 const AdminNouraniaContent = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -169,7 +175,7 @@ const AdminNouraniaContent = () => {
                   </label>
                   <Textarea
                     placeholder="Ex: Faites attention à la prononciation de cette lettre..."
-                    value={commentaires[lesson.id] ?? (lesson as any).commentaire_admin ?? ''}
+                    value={commentaires[lesson.id] ?? (lesson as any).commentaire_admin ?? COMMENTAIRE_DEFAULT}
                     onChange={e => setCommentaires(prev => ({ ...prev, [lesson.id]: e.target.value }))}
                     rows={2}
                     className="text-sm"
