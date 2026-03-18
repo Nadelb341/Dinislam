@@ -334,7 +334,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
         try {
           if (groupMsgMode === 'all') {
             await supabase.functions.invoke('send-push-notification', {
-              body: { title: '📢 Nouveau message du professeur', body: groupMsgText.trim().substring(0, 200), type: 'all' },
+              body: { title: '📢 Nouveau message du professeur', body: groupMsgText.trim().substring(0, 200), type: 'all', data: { url: '/?open=messages' } },
             });
           } else {
             // Send to specific user IDs
