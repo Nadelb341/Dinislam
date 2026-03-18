@@ -140,10 +140,39 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       const { error } = await supabase.from('devoirs').insert(payload);
       if (error) throw error;
+
+      // Determine recipients for push notification
+      let destinataires: string[] = [];
+      if (form.assigned_to === 'all') {
+        const { data: allProfiles } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('is_approved', true);
+        if (allProfiles) destinataires = allProfiles.map(p => p.user_id);
+      } else if (form.assigned_to === 'group' && form.group_id) {
+        const { data: membres } = await supabase
+          .from('student_group_members')
+          .select('user_id')
+          .eq('group_id', form.group_id);
+        if (membres) destinataires = membres.map(m => m.user_id);
+      } else if (form.assigned_to === 'student' && form.student_id) {
+        destinataires = [form.student_id];
+      }
+
+      if (destinataires.length > 0) {
+        sendPushNotification({
+          userIds: destinataires,
+          title: '📚 Nouveau devoir !',
+          body: `Nouveau devoir : "${form.titre}" — à rendre bientôt`,
+          data: { url: '/?open=devoirs' },
+        });
+      }
+
+      return destinataires.length;
     },
-    onSuccess: () => {
+    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
-      toast.success('✅ Devoir assigné !');
+      toast.success(`✅ Devoir assigné à ${count} élève(s) !`);
       setShowForm(false);
       setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '' });
     },
