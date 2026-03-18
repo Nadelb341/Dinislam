@@ -83,6 +83,20 @@ const SourateDetailDialog = ({
               <p className="text-sm font-medium text-foreground">Ressources</p>
               {contents.map((content: any) => (
                 <div key={content.id}>
+                  {content.content_type === 'audio' && (
+                    <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2">
+                        🎵 {content.file_name || 'Audio de la sourate'}
+                      </p>
+                      <audio
+                        src={content.file_url}
+                        controls
+                        preload="metadata"
+                        className="w-full"
+                        style={{ height: '40px' }}
+                      />
+                    </div>
+                  )}
                   {content.content_type === 'video' && (
                     <video controls className="w-full rounded-lg" src={content.file_url}>
                       Votre navigateur ne supporte pas la lecture vidéo.
