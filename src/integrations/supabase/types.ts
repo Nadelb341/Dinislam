@@ -1920,6 +1920,8 @@ export type Database = {
       }
       sourates: {
         Row: {
+          audio_complet_path: string | null
+          audio_complet_url: string | null
           audio_url: string | null
           created_at: string | null
           display_order: number | null
@@ -1931,6 +1933,8 @@ export type Database = {
           verses_count: number | null
         }
         Insert: {
+          audio_complet_path?: string | null
+          audio_complet_url?: string | null
           audio_url?: string | null
           created_at?: string | null
           display_order?: number | null
@@ -1942,6 +1946,8 @@ export type Database = {
           verses_count?: number | null
         }
         Update: {
+          audio_complet_path?: string | null
+          audio_complet_url?: string | null
           audio_url?: string | null
           created_at?: string | null
           display_order?: number | null

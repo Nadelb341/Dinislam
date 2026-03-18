@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Unlock, Lock } from 'lucide-react';
+import { Unlock, Lock, Upload, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
@@ -134,6 +134,37 @@ const AdminSourateContent = () => {
 
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
+  const chargerSourates = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-sourates-list'] });
+  };
+
+  const handleUploadAudioComplet = async (sourateId: string, sourateNumber: number, file: File) => {
+    const fileName = `complet/sourate-${sourateNumber}-${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage
+      .from('sourates-versets')
+      .upload(fileName, file, { upsert: true });
+    if (uploadError) { toast.error('Erreur: ' + uploadError.message); return; }
+    const { data: urlData } = supabase.storage
+      .from('sourates-versets')
+      .getPublicUrl(fileName);
+    await supabase.from('sourates')
+      .update({ audio_complet_url: urlData.publicUrl, audio_complet_path: fileName } as any)
+      .eq('id', sourateId);
+    toast.success('✅ Audio complet uploadé');
+    chargerSourates();
+  };
+
+  const handleDeleteAudioComplet = async (sourateId: string, filePath: string | null) => {
+    if (filePath) {
+      await supabase.storage.from('sourates-versets').remove([filePath]);
+    }
+    await supabase.from('sourates')
+      .update({ audio_complet_url: null, audio_complet_path: null } as any)
+      .eq('id', sourateId);
+    toast.success('Audio supprimé');
+    chargerSourates();
+  };
+
   const mapContentType = (type: string): ContentType => {
     if (type === 'youtube') return 'youtube';
     if (type === 'audio') return 'audio';
@@ -191,6 +222,44 @@ const AdminSourateContent = () => {
                 <div>
                   <p className="font-bold">{sourate.number}. {sourate.name_french}</p>
                   <p className="text-sm text-muted-foreground font-arabic">{sourate.name_arabic}</p>
+                </div>
+                {/* Audio complet */}
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                    🎵 Audio complet de la sourate
+                  </p>
+                  {(sourate as any).audio_complet_url ? (
+                    <div className="flex items-center gap-2">
+                      <audio src={(sourate as any).audio_complet_url} controls className="flex-1" style={{ height: '32px' }} />
+                      <button
+                        onClick={() => handleDeleteAudioComplet(sourate.id, (sourate as any).audio_complet_path)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: '#fee2e2' }}
+                      >
+                        <Trash2 className="w-3 h-3 text-red-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file" accept="audio/*"
+                        className="hidden"
+                        id={`audio-complet-${sourate.id}`}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadAudioComplet(sourate.id, sourate.number, file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <label htmlFor={`audio-complet-${sourate.id}`}
+                        className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-white text-sm font-semibold cursor-pointer"
+                        style={{ backgroundColor: '#3b82f6' }}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Uploader l'audio complet
+                      </label>
+                    </div>
+                  )}
                 </div>
                 {sourateContents.length > 0 && (
                   <div className="space-y-1.5">

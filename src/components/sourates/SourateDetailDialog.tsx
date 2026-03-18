@@ -162,6 +162,7 @@ const SourateDetailDialog = ({
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
   const [versetsAudio, setVersetsAudio] = useState<any[]>([]);
+  const [audioCompletUrl, setAudioCompletUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && dbId) {
@@ -171,6 +172,13 @@ const SourateDetailDialog = ({
         .eq('sourate_id', dbId)
         .order('verset_number', { ascending: true })
         .then(({ data }) => setVersetsAudio(data || []));
+
+      supabase
+        .from('sourates')
+        .select('audio_complet_url' as any)
+        .eq('id', dbId)
+        .single()
+        .then(({ data }) => setAudioCompletUrl((data as any)?.audio_complet_url || null));
     }
   }, [open, dbId]);
 
@@ -214,6 +222,16 @@ const SourateDetailDialog = ({
             </div>
             <Progress value={versePercentage} className="h-2" />
           </div>
+
+          {/* Audio complet */}
+          {audioCompletUrl && (
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">
+                🎵 Écouter la sourate complète
+              </p>
+              <LecteurVerset audioUrl={audioCompletUrl} />
+            </div>
+          )}
 
           {/* Resources */}
           {contents.length > 0 && (
