@@ -15,6 +15,7 @@ const AdminNouraniaContent = () => {
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
+  const [commentaires, setCommentaires] = useState<Record<string, string>>({});
 
   const { data: lessons = [] } = useQuery({
     queryKey: ['admin-nourania-lessons'],
