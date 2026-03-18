@@ -100,24 +100,28 @@ const FastingTracker = () => {
         <span className="text-sm font-semibold text-foreground">Suivi du Jeûne 🌙</span>
         <span className="text-xs text-muted-foreground">{fastedCount}/30 jours jeûnés</span>
       </div>
-      <div className="grid grid-cols-10 gap-1 p-2">
+      <div className="grid grid-cols-10 gap-1.5 p-2">
         {Array.from({ length: 30 }, (_, i) => i + 1).map(day => {
           const jeune = joursJeunes.includes(day);
           return (
             <button
               key={day}
               onClick={() => handleClickJour(day)}
-              className="relative flex items-center justify-center w-8 h-8 transition-all active:scale-90"
+              className="relative flex items-center justify-center w-8 h-8 rounded-full transition-all active:scale-90"
+              style={{
+                backgroundColor: jeune ? '#22c55e' : 'transparent',
+              }}
               title={`Jour ${day} - ${jeune ? 'Jeûné ✓' : 'Cliquer pour marquer'}`}
             >
-              <span style={{ fontSize: '22px', lineHeight: 1 }}>
+              {/* Star */}
+              <span style={{ fontSize: '28px', lineHeight: 1 }}>
                 {jeune ? '⭐' : '☆'}
               </span>
+              {/* Number centered inside */}
               <span className="absolute inset-0 flex items-center justify-center" style={{
-                fontSize: '8px',
-                fontWeight: 'bold',
-                color: jeune ? '#ffffff' : '#6b7280',
-                paddingBottom: jeune ? '1px' : '0px',
+                fontSize: '9px',
+                fontWeight: 800,
+                color: jeune ? '#fff' : '#4b5563',
               }}>
                 {day}
               </span>
@@ -127,10 +131,10 @@ const FastingTracker = () => {
       </div>
       <div className="flex justify-center gap-4 mt-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span style={{ color: '#22c55e' }}>⭐</span> Jeûné
+          <span style={{ fontSize: '14px' }}>⭐</span> Jeûné
         </span>
         <span className="flex items-center gap-1">
-          <span style={{ color: '#9ca3af' }}>☆</span> À marquer
+          <span style={{ fontSize: '14px', color: '#9ca3af' }}>☆</span> À marquer
         </span>
       </div>
     </div>
