@@ -224,7 +224,7 @@ const AdminCommandModal = ({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto">
+            <div className="p-4" style={{ overflowY: 'auto', overflowX: 'visible', minHeight: '100%' }}>
               <AdminSectionRenderer
                 section={modalSection}
                 onClose={() => setModalSection(null)}
