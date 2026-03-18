@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -258,47 +258,41 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
             <Input placeholder="Titre du devoir *" value={form.titre}
               onChange={e => setForm({ ...form, titre: e.target.value })} />
-            <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TYPE_OPTIONS.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
+              className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+              {TYPE_OPTIONS.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
             <Textarea placeholder="Description (optionnel)" value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
             <Input placeholder="Lien vers la leçon (optionnel)" value={form.lien_lecon}
               onChange={e => setForm({ ...form, lien_lecon: e.target.value })} />
             <Input type="datetime-local" value={form.date_limite}
               onChange={e => setForm({ ...form, date_limite: e.target.value })} />
-            <Select value={form.assigned_to} onValueChange={v => setForm({ ...form, assigned_to: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">👥 Tous les élèves</SelectItem>
-                <SelectItem value="group">👨‍👩‍👧 Un groupe</SelectItem>
-                <SelectItem value="student">👤 Un élève</SelectItem>
-              </SelectContent>
-            </Select>
+            <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })}
+              className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+              <option value="all">👥 Tous les élèves</option>
+              <option value="group">👨‍👩‍👧 Un groupe</option>
+              <option value="student">👤 Un élève</option>
+            </select>
             {form.assigned_to === 'group' && (
-              <Select value={form.group_id} onValueChange={v => setForm({ ...form, group_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un groupe..." /></SelectTrigger>
-                <SelectContent>
-                  {groupes.map((g: any) => (
-                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
+                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+                <option value="">Sélectionner un groupe...</option>
+                {groupes.map((g: any) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
             )}
             {form.assigned_to === 'student' && (
-              <Select value={form.student_id} onValueChange={v => setForm({ ...form, student_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Sélectionner un élève..." /></SelectTrigger>
-                <SelectContent>
-                  {eleves.map((e: any) => (
-                    <SelectItem key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
+                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+                <option value="">Sélectionner un élève...</option>
+                {eleves.map((e: any) => (
+                  <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
+                ))}
+              </select>
             )}
             <Button onClick={() => createDevoir.mutate()} disabled={!form.titre || createDevoir.isPending} className="w-full">
               ✅ Assigner le devoir
