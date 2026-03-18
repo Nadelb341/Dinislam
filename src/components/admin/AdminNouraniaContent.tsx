@@ -175,7 +175,7 @@ const AdminNouraniaContent = () => {
                   </label>
                   <Textarea
                     placeholder="Ex: Faites attention à la prononciation de cette lettre..."
-                    value={commentaires[lesson.id] ?? (lesson as any).commentaire_admin ?? ''}
+                    value={commentaires[lesson.id] ?? (lesson as any).commentaire_admin ?? COMMENTAIRE_DEFAULT}
                     onChange={e => setCommentaires(prev => ({ ...prev, [lesson.id]: e.target.value }))}
                     rows={2}
                     className="text-sm"
