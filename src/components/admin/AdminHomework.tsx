@@ -193,6 +193,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         userIds: [studentId],
         title: '🎉 Devoir validé !',
         body: `Ton devoir "${devoirTitre}" a été corrigé ✅`,
+        data: { url: '/?open=devoirs' },
       });
     },
     onSuccess: () => {
