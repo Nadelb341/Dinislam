@@ -353,21 +353,24 @@ const Nourania = () => {
                 {/* Expanded Content */}
                 {isExpanded && unlocked && (
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
-                    {/* Admin comment */}
-                    {(lesson as any).commentaire_admin && (
-                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
-                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
-                          💬 Note de l'enseignante
-                        </p>
-                        <div className="text-sm text-amber-800 dark:text-amber-300">
-                          {(lesson as any).commentaire_admin.split('\n').map((ligne: string, index: number) => (
-                            <p key={index} className="mb-0.5">
-                              {ligne || '\u00A0'}
-                            </p>
-                          ))}
+                    {/* Personal teacher comment */}
+                    {(() => {
+                      const personalComment = personalComments.find((c: any) => c.lecon_id === lesson.id);
+                      return personalComment?.commentaire ? (
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                            💬 Note de l'enseignante
+                          </p>
+                          <div className="text-sm text-amber-800 dark:text-amber-300">
+                            {personalComment.commentaire.split('\n').map((ligne: string, index: number) => (
+                              <p key={index} className="mb-0.5">
+                                {ligne || '\u00A0'}
+                              </p>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      ) : null;
+                    })()}
 
                     {/* Content files */}
                     {contents.length > 0 ? (
