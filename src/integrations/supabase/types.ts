@@ -987,6 +987,38 @@ export type Database = {
         }
         Relationships: []
       }
+      nourania_commentaires_eleves: {
+        Row: {
+          commentaire: string
+          id: string
+          lecon_id: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          commentaire: string
+          id?: string
+          lecon_id?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          commentaire?: string
+          id?: string
+          lecon_id?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nourania_commentaires_eleves_lecon_id_fkey"
+            columns: ["lecon_id"]
+            isOneToOne: false
+            referencedRelation: "nourania_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nourania_lesson_content: {
         Row: {
           content_type: string
