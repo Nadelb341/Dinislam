@@ -93,28 +93,11 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
           : Promise.resolve({ data: [] }),
       ]);
 
-      // Generate fresh signed URLs for audio files
-      const enriched = await Promise.all(data.map(async (r) => {
-        let freshAudioUrl = r.audio_url;
-        if (r.audio_url) {
-          const parts = r.audio_url.split('/devoirs-audios/');
-          if (parts.length >= 2) {
-            const filePath = decodeURIComponent(parts[1].split('?')[0]);
-            const { data: signedData } = await supabase.storage
-              .from('devoirs-audios')
-              .createSignedUrl(filePath, 60 * 60 * 24 * 7);
-            if (signedData?.signedUrl) freshAudioUrl = signedData.signedUrl;
-          }
-        }
-        return {
-          ...r,
-          audio_url_fresh: freshAudioUrl,
-          student_name: profiles?.find(p => p.user_id === r.student_id)?.full_name || 'Inconnu',
-          devoir_titre: devoirsList?.find((d: any) => d.id === r.devoir_id)?.titre || '',
-        };
+      return data.map((r) => ({
+        ...r,
+        student_name: profiles?.find(p => p.user_id === r.student_id)?.full_name || 'Inconnu',
+        devoir_titre: devoirsList?.find((d: any) => d.id === r.devoir_id)?.titre || '',
       }));
-
-      return enriched;
     },
   });
 
