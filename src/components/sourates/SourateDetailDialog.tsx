@@ -255,7 +255,7 @@ const SourateDetailDialog = ({
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
   const [versetsAudio, setVersetsAudio] = useState<any[]>([]);
   const [audioCompletUrl, setAudioCompletUrl] = useState<string | null>(null);
-
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   useEffect(() => {
     if (open && dbId) {
       supabase
