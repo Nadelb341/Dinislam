@@ -148,6 +148,83 @@ function LecteurVerset({ audioUrl }: { audioUrl: string }) {
     </div>
   );
 }
+
+function LecteurVideoSourate({ videoUrl }: { videoUrl: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [src, setSrc] = useState('');
+
+  const buildUrl = (url: string, autoplay: boolean) => {
+    const base = url.split('?')[0];
+    return `${base}?` + new URLSearchParams({
+      autoplay: autoplay ? '1' : '0',
+      rel: '0',
+      modestbranding: '1',
+      playsinline: '1',
+      iv_load_policy: '3',
+      disablekb: '0',
+      fs: '1',
+    }).toString();
+  };
+
+  useEffect(() => {
+    setSrc(buildUrl(videoUrl, false));
+    setPlaying(false);
+  }, [videoUrl]);
+
+  const togglePlay = () => {
+    const newPlaying = !playing;
+    setPlaying(newPlaying);
+    setSrc(buildUrl(videoUrl, newPlaying));
+  };
+
+  if (!videoUrl) return null;
+
+  return (
+    <div>
+      <p className="text-sm font-semibold text-foreground mb-2">
+        🎬 Vidéo de la sourate
+      </p>
+      <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+        <iframe
+          src={src}
+          className="absolute inset-0 w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+          frameBorder="0"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+        />
+        <div className="absolute top-0 left-0 right-0" style={{ height: '55px' }} />
+        {!playing && (
+          <div
+            onClick={togglePlay}
+            className="absolute inset-0 flex items-center justify-center cursor-pointer"
+            style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+          >
+            <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+              style={{ backgroundColor: '#f59e0b' }}>
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
+                <polygon points="6,3 20,12 6,21"/>
+              </svg>
+            </div>
+          </div>
+        )}
+        {playing && (
+          <button
+            onClick={togglePlay}
+            className="absolute top-2 right-2 w-10 h-10 rounded-full flex items-center justify-center shadow"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
+              <rect x="5" y="3" width="4" height="18" rx="1"/>
+              <rect x="15" y="3" width="4" height="18" rx="1"/>
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface SourateDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
