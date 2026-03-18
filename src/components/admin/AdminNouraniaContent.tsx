@@ -10,11 +10,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 
-const COMMENTAIRE_DEFAULT = `📌 Tu t'es arrêté à :
-
-✅ Ligne : 
-
-✅ Page : `;
+const COMMENTAIRE_DEFAULT = "📌 Tu t'es arrêté à :\n✅ Ligne : \n✅ Page : ";
 
 const AdminNouraniaContent = () => {
   const { user } = useAuth();
