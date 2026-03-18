@@ -110,7 +110,7 @@ function PlayerAudioAdmin({ audioUrl }: { audioUrl: string }) {
   );
 }
 
-  const { user } = useAuth();
+  const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [elevesOuverts, setElevesOuverts] = useState<Record<string, boolean>>({});
