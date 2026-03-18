@@ -29,11 +29,16 @@ function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      const mr = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
-      mr.ondataavailable = e => chunksRef.current.push(e.data);
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: mimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(t => t.stop());
@@ -267,10 +272,12 @@ export default function BlocDevoirsEleve() {
   const handleRendu = async (devoirId: string, audioBlob: Blob) => {
     if (!user) return;
 
-    const fileName = `${user.id}/${devoirId}-${Date.now()}.webm`;
+    const mimeType = audioBlob.type || 'audio/webm';
+    const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const fileName = `${user.id}/${devoirId}-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from('devoirs-audios')
-      .upload(fileName, audioBlob);
+      .upload(fileName, audioBlob, { contentType: mimeType, upsert: true });
 
     if (uploadError) {
       toast.error('Erreur upload: ' + uploadError.message);
