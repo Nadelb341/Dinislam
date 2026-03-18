@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/lib/pushHelper';
 
 const COMMENTAIRE_DEFAULT = "📌 Tu t'es arrêté à :\n✅ Ligne : \n✅ Page : ";
 
