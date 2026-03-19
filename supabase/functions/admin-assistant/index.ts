@@ -1,14 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -22,7 +28,7 @@ serve(async (req) => {
     // Verify caller is admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No auth header');
-    
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!).auth.getUser(token);
     if (authError || !user) throw new Error('Unauthorized');
@@ -34,17 +40,48 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .eq('role', 'admin')
       .maybeSingle();
-    
+
     if (!roleData) throw new Error('Admin access required');
 
     const { message, conversationHistory, action } = await req.json();
 
+    // Input validation
+    if (!action) {
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return new Response(
+          JSON.stringify({ response: '🌙 Message vide. Que puis-je faire pour vous ?' }),
+          { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    const sanitizedMessage = message ? message.slice(0, 2000) : '';
+
     // If action is a confirmed DB operation
     if (action) {
+      const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const VALID_ACTION_TYPES = ['toggle_module', 'approve_user', 'unlock_day', 'send_notification', 'create_quiz', 'update_profile', 'delete_record', 'export_data'];
+
+      if (!action.type || !VALID_ACTION_TYPES.includes(action.type)) {
+        return new Response(
+          JSON.stringify({ response: `🌙 Action "${action.type}" non reconnue.` }),
+          { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const params = action.params || {};
+      for (const key of ['module_id', 'user_id', 'day_id']) {
+        if (params[key] && !UUID_REGEX.test(params[key])) {
+          return new Response(
+            JSON.stringify({ response: `🌙 Paramètre "${key}" invalide.` }),
+            { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
       const result = await executeAction(supabase, action);
       return new Response(
         JSON.stringify({ response: result }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -100,7 +137,7 @@ Types d'actions :
         role: m.type === 'user' ? 'user' : 'assistant',
         content: m.text
       })),
-      { role: 'user', content: message }
+      { role: 'user', content: sanitizedMessage }
     ];
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -121,13 +158,13 @@ Types d'actions :
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ response: '🌙 Trop de requêtes, réessayez dans quelques instants.' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ response: '🌙 Crédits IA épuisés. Veuillez recharger.' }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
       }
       const errText = await response.text();
@@ -142,14 +179,14 @@ Types d'actions :
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Admin assistant error:', error);
     return new Response(
       JSON.stringify({ response: `🌙 Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}` }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

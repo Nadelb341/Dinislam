@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import AdminOnlineUsers from '@/components/admin/AdminOnlineUsers';
 import ScheduledNotifications from '@/components/admin/ScheduledNotifications';
 import AdminPrayerGroupManager from '@/components/admin/AdminPrayerGroupManager';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import VersionTab from '@/components/admin/VersionTab';
 import { format, subDays, startOfWeek, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -263,7 +265,13 @@ const Monitoring = () => {
 
   return (
     <AppLayout>
-      <div className="p-4 space-y-6 max-w-4xl mx-auto pb-24">
+      <div className="p-4 max-w-4xl mx-auto pb-24">
+        <Tabs defaultValue="monitoring" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="version">Version</TabsTrigger>
+          </TabsList>
+          <TabsContent value="monitoring" className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
             <BarChart3 className="h-6 w-6" /> Monitoring
@@ -559,6 +567,11 @@ const Monitoring = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+          <TabsContent value="version">
+            <VersionTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );

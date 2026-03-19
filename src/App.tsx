@@ -6,28 +6,30 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useSwNavigate } from "@/hooks/useSwNavigate";
 import { Loader2 } from "lucide-react";
+import { lazy, Suspense } from 'react';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Sourates from "./pages/Sourates";
-import Invocations from "./pages/Invocations";
-import Nourania from "./pages/Nourania";
-import Priere from "./pages/Priere";
-import Ramadan from "./pages/Ramadan";
 import NotFound from "./pages/NotFound";
 import PendingApproval from "./pages/PendingApproval";
-import Admin from "./pages/Admin";
-import Settings from "./pages/Settings";
-import Ressources from "./pages/Ressources";
-import Classement from "./pages/Classement";
-import Attendance from "./pages/Attendance";
-import DynamicModule from "./pages/DynamicModule";
-import AlphabetPage from "./pages/AlphabetPage";
-import AllahNamesPage from "./pages/AllahNamesPage";
-import GenericModulePage from "./pages/GenericModulePage";
-import GrammaireConjugaisonPage from "./pages/GrammaireConjugaisonPage";
-import GenericTimelinePage from "./pages/GenericTimelinePage";
-import Monitoring from "./pages/Monitoring";
+
+const Sourates = lazy(() => import("./pages/Sourates"));
+const Invocations = lazy(() => import("./pages/Invocations"));
+const Nourania = lazy(() => import("./pages/Nourania"));
+const Priere = lazy(() => import("./pages/Priere"));
+const Ramadan = lazy(() => import("./pages/Ramadan"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Ressources = lazy(() => import("./pages/Ressources"));
+const Classement = lazy(() => import("./pages/Classement"));
+const Attendance = lazy(() => import("./pages/Attendance"));
+const AlphabetPage = lazy(() => import("./pages/AlphabetPage"));
+const AllahNamesPage = lazy(() => import("./pages/AllahNamesPage"));
+const GenericModulePage = lazy(() => import("./pages/GenericModulePage"));
+const GrammaireConjugaisonPage = lazy(() => import("./pages/GrammaireConjugaisonPage"));
+const GenericTimelinePage = lazy(() => import("./pages/GenericTimelinePage"));
+const Monitoring = lazy(() => import("./pages/Monitoring"));
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes = () => {
   useSwNavigate();
   return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-gold" />
+      </div>
+    }>
       <Routes>
         <Route path="/auth" element={<Auth />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -85,21 +92,24 @@ const AppRoutes = () => {
         <Route path="/module/:moduleId" element={<ProtectedRoute><GenericModulePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </Suspense>
   );
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

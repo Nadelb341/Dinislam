@@ -4,6 +4,7 @@ import BottomNav from './BottomNav';
 import usePresenceHeartbeat from '@/hooks/usePresenceHeartbeat';
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner';
 import StarMascot from '@/components/mascot/StarMascot';
+import VersionChangelogModal from '@/components/VersionChangelogModal';
 import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 
@@ -33,6 +34,7 @@ const AppLayout = ({
         {children}
       </main>
       {showBottomNav && <BottomNav />}
+      <VersionChangelogModal />
       <StarMascot />
       <AdminMoonAssistant />
     </div>

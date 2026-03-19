@@ -1,10 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
+
+// ── Rate limiting ──
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT = 5; // max requests
+const RATE_WINDOW = 60000; // per minute
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(userId) || [];
+  const recent = timestamps.filter(t => now - t < RATE_WINDOW);
+  if (recent.length >= RATE_LIMIT) return false;
+  recent.push(now);
+  rateLimitMap.set(userId, recent);
+  return true;
+}
 
 // ── Base64url helpers ──
 
@@ -202,38 +223,90 @@ async function sendPushToEndpoint(
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
     const body = await req.json();
-    console.log('BODY_RECU:', JSON.stringify(body));
     const { userId, userIds, sendToAll, excludeUserId, title, body: notifBody, tag, data, type } = body;
 
     // Health check
     if (type === 'health-check' || type === 'health_check') {
       return new Response(
         JSON.stringify({ success: true, sent: 0, health: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ── Auth: verify caller ──
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const authHeader = req.headers.get('Authorization');
+
+    let isServiceCall = false;
+    let callerId: string | null = null;
+
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      // Check if this is an internal service call
+      if (token === supabaseServiceKey) {
+        isServiceCall = true;
+      } else {
+        const supabaseAuth = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
+        const { data: { user: caller }, error: authError } = await supabaseAuth.auth.getUser(token);
+        if (authError || !caller) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid token' }),
+            { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          );
+        }
+        callerId = caller.id;
+        // Rate limit (skip for service calls)
+        if (!checkRateLimit(caller.id)) {
+          return new Response(
+            JSON.stringify({ error: 'Too many requests' }),
+            { status: 429, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Only admins can broadcast to all
+    if (!isServiceCall && sendToAll) {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: role } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerId!)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (!role) {
+        return new Response(
+          JSON.stringify({ error: 'Admin role required for broadcast' }),
+          { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     if (!title) {
       return new Response(
         JSON.stringify({ error: 'title is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       return new Response(
         JSON.stringify({ error: 'VAPID keys not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -254,12 +327,10 @@ serve(async (req) => {
       targetIds = (adminRoles || []).map((r: any) => r.user_id);
     }
 
-    console.log('TARGET_IDS:', JSON.stringify(targetIds));
-
     if (targetIds.length === 0) {
       return new Response(
         JSON.stringify({ success: true, sent: 0, total: 0, reason: 'no target ids' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -274,27 +345,11 @@ serve(async (req) => {
       .in('user_id', targetIds)
       .eq('is_active', true);
 
-    console.log('SUBSCRIPTIONS_FOUND:', subscriptions?.length, 'ERR:', JSON.stringify(error));
-
-    console.log('QUERY_RESULT', JSON.stringify({
-      error: error?.message,
-      count: subscriptions?.length,
-      subs: subscriptions?.map(s => ({
-        user_id: s.user_id,
-        endpoint_start: s.endpoint?.slice(0, 60),
-        has_p256dh: !!s.p256dh,
-        p256dh_len: s.p256dh?.length,
-        has_auth_key: !!s.auth_key,
-        auth_key_len: s.auth_key?.length,
-        is_active: s.is_active,
-      }))
-    }));
-
     if (error || !subscriptions || subscriptions.length === 0) {
       console.log('NO_SUBS_FOUND', error?.message || 'empty');
       return new Response(
         JSON.stringify({ success: true, sent: 0, total: 0, reason: error?.message || 'no subscriptions' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -312,25 +367,12 @@ serve(async (req) => {
       requireInteraction: false
     };
 
-    console.log('SENDING_TO', subscriptions.length, 'endpoints, payload title:', title);
-
     const results = await Promise.all(
-      subscriptions.map(async (sub, idx) => {
-        console.log(`PRE_SEND_${idx}`, JSON.stringify({
-          user_id: sub.user_id,
-          endpoint: sub.endpoint?.slice(0, 60),
-          p256dh_len: sub.p256dh?.length,
-          auth_key_len: sub.auth_key?.length,
-        }));
+      subscriptions.map(async (sub) => {
         const result = await sendPushToEndpoint(
           { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth_key },
           payload, vapidPublicKey, vapidPrivateKey
         );
-        console.log(`POST_SEND_${idx}`, JSON.stringify({
-          success: result.success,
-          statusCode: result.statusCode,
-          error: result.error,
-        }));
         return result;
       })
     );
@@ -379,25 +421,15 @@ serve(async (req) => {
         total: subscriptions.length,
         cleaned: expiredEndpoints.length,
         errors: errorsArray,
-        debug: {
-          bodyRecu: { userId, userIds, sendToAll },
-          targetIds,
-          subscriptionsFound: subscriptions.map(s => ({
-            user_id: s.user_id?.slice(0, 8),
-            is_active: s.is_active,
-            hasP256dh: !!s.p256dh,
-            hasAuthKey: !!s.auth_key
-          }))
-        }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error:', message);
     return new Response(
       JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

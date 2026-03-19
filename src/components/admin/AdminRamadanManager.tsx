@@ -38,43 +38,11 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Quiz, DayVideo, QuestionForm, emptyQuestion } from '@/types/ramadan';
 
 interface AdminRamadanManagerProps {
   onBack: () => void;
 }
-
-interface Quiz {
-  id: string;
-  day_id: string;
-  question: string;
-  options: string[];
-  correct_option: number | null;
-  explanation: string | null;
-  question_order: number;
-}
-
-interface DayVideo {
-  id: string;
-  day_id: string;
-  video_url: string;
-  file_name: string | null;
-  display_order: number;
-}
-
-interface QuestionForm {
-  question: string;
-  options: string[];
-  correctOptions: number[];
-  explanation: string;
-  existingId?: string;
-}
-
-const emptyQuestion = (): QuestionForm => ({
-  question: '',
-  options: ['', '', '', ''],
-  correctOptions: [],
-  explanation: '',
-});
 
 // Sortable question component
 const SortableQuestionCard = ({

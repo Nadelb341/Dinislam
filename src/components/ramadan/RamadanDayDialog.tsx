@@ -12,24 +12,7 @@ import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
-interface Quiz {
-  id: string;
-  day_id: string;
-  question: string;
-  options: string[];
-  correct_option: number | null;
-  correct_options?: number[];
-  explanation?: string | null;
-  question_order?: number;
-}
-
-interface DayVideo {
-  id: string;
-  video_url: string;
-  file_name: string | null;
-  display_order: number;
-}
+import { Quiz, DayVideo } from '@/types/ramadan';
 
 interface DayActivity {
   id: string;
