@@ -303,7 +303,7 @@ const SourateDetailDialog = ({
                 ? 'bg-green-500 text-white'
                 : 'bg-gradient-to-br from-primary to-royal-dark text-primary-foreground'
             )}>
-              {sourateProgress?.is_validated ? <Check className="h-5 w-5" /> : sourate.number === 1000 ? '📖' : sourate.number}
+              {sourateProgress?.is_validated ? <Check className="h-5 w-5" /> : sourate.number === 1000 ? '111b' : sourate.number}
             </div>
             <div>
               <p className="font-arabic text-lg">{sourate.name_arabic}</p>

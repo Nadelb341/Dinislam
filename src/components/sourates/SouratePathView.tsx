@@ -22,16 +22,16 @@ const CHARACTER_IMAGES = [
 ];
 
 // Layout constants
-const TOTAL_WIDTH = 320;
-const LEFT_X = 52;
-const CENTER_X = 160;
-const RIGHT_X = 268;
-const ROW_HEIGHT = 115;
-const TOP_OFFSET = 50;
+const TOTAL_WIDTH = 370;
+const LEFT_X = 60;
+const CENTER_X = 185;
+const RIGHT_X = 310;
+const ROW_HEIGHT = 130;
+const TOP_OFFSET = 55;
 const ITEMS_PER_ROW = 3;
-const CURVE_BULGE = 42;
-const STAR_SIZE = 58;
-const RIBBON_WIDTH = 13;
+const CURVE_BULGE = 48;
+const STAR_SIZE = 72;
+const RIBBON_WIDTH = 15;
 const CHARACTER_EVERY_N_TURNS = 3; // show a character every N U-turns
 
 // Gift sourates: Al-Fil (105) then every 5 sourates
@@ -132,7 +132,7 @@ const SouratePathView = ({
       if (row % CHARACTER_EVERY_N_TURNS !== CHARACTER_EVERY_N_TURNS - 1) continue;
       const isRightTurn = row % 2 === 0;
       // Character sits in the OPPOSITE side of the curve (the hollow)
-      const x = isRightTurn ? 8 : TOTAL_WIDTH - 56;
+      const x = isRightTurn ? 4 : TOTAL_WIDTH - 60;
       const y = TOP_OFFSET + row * ROW_HEIGHT + ROW_HEIGHT * 0.5;
       chars.push({ x, y, img: CHARACTER_IMAGES[charIdx % CHARACTER_IMAGES.length] });
       charIdx++;
@@ -213,9 +213,9 @@ const SouratePathView = ({
             className="absolute pointer-events-none"
             style={{
               left: char.x,
-              top: char.y - 24,
-              width: 48,
-              height: 48,
+              top: char.y - 28,
+              width: 56,
+              height: 56,
             }}
           >
             <img
@@ -245,8 +245,8 @@ const SouratePathView = ({
             >
               {/* Gift badge */}
               {isGift && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                  <span className="text-lg leading-none drop-shadow-sm">🎁</span>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <span className="text-xl leading-none drop-shadow-sm">🎁</span>
                 </div>
               )}
 
@@ -274,14 +274,14 @@ const SouratePathView = ({
                 {/* Star content */}
                 <span className={cn(
                   'absolute inset-0 flex items-center justify-center font-bold leading-none pt-0.5',
-                  isValidated ? 'text-white' : accessible ? 'text-white text-[11px]' : 'text-gray-400'
+                  isValidated ? 'text-white' : accessible ? 'text-white text-sm' : 'text-gray-400'
                 )}>
                   {isValidated ? (
-                    <Check className="w-5 h-5" strokeWidth={3} />
+                    <Check className="w-6 h-6" strokeWidth={3} />
                   ) : !accessible ? (
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-4 h-4" />
                   ) : node.sourate.number === 1000 ? (
-                    <span className="text-[10px]">📖</span>
+                    <span className="text-xs">111b</span>
                   ) : (
                     node.sourate.number
                   )}
@@ -289,7 +289,7 @@ const SouratePathView = ({
               </button>
 
               {/* Sourate name */}
-              <span className="text-[7px] text-muted-foreground text-center leading-tight mt-0.5 w-16 truncate">
+              <span className="text-[9px] text-muted-foreground text-center leading-tight mt-0.5 w-20 truncate">
                 {node.sourate.name_french}
               </span>
             </div>
