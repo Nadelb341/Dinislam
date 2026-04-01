@@ -442,7 +442,7 @@ const Admin = () => {
     return learningModules?.find(m => m.builtin_path === path) || null;
   };
 
-  const ADMIN_ONLY_CARDS = ['messages', 'eleves', 'registre-presence', 'cahier-texte'];
+  const ADMIN_ONLY_CARDS = ['messages', 'students', 'attendance', 'homework'];
 
   const renderVisibilityToggle = (cardKey: string) => {
     if (ADMIN_ONLY_CARDS.includes(cardKey)) return undefined;
