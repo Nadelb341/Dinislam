@@ -350,6 +350,12 @@ const SourateDetailDialog = ({
                       />
                     </div>
                   )}
+                  {content.content_type === 'youtube' && (
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2">🎬 {content.file_name || 'Vidéo YouTube'}</p>
+                      <LecteurVideoSourate videoUrl={content.file_url} />
+                    </div>
+                  )}
                   {content.content_type === 'video' && (
                     <video controls className="w-full rounded-lg" src={content.file_url}>
                       Votre navigateur ne supporte pas la lecture vidéo.
@@ -369,6 +375,13 @@ const SourateDetailDialog = ({
                     <a href={content.file_url} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                       <File className="h-4 w-4" />
+                      <span className="text-sm">{content.file_name}</span>
+                    </a>
+                  )}
+                  {content.content_type === 'fichier' && (
+                    <a href={content.file_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                      <FileText className="h-5 w-5 text-primary" />
                       <span className="text-sm">{content.file_name}</span>
                     </a>
                   )}
