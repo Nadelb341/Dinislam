@@ -212,6 +212,15 @@ const SouratesPage = () => {
     if (user) loadAll();
   }, [user, loadAll]);
 
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel('sourate-content-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_content' }, () => { loadAll(); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user, loadAll]);
+
   // Listen for admin validation approvals in realtime
   useEffect(() => {
     if (!user) return;
