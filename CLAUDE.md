@@ -75,11 +75,26 @@ Toutes les validations (inscriptions, sourates, nourania, invocations) disposent
 
 ## Cartes admin-only
 
-Les cartes `students`, `messages`, `attendance`, `homework` dans `ADMIN_ONLY_CARDS` n'affichent jamais le toggle de visibilité élèves (pas d'icône œil).
+Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans `ADMIN_ONLY_CARDS` n'affichent jamais le toggle de visibilité élèves (pas d'icône œil).
+
+## Récitations (fonctionnalité 2026-04-09)
+
+- Table `sourate_recitations` : `id`, `sourate_id`, `student_id`, `audio_url`, `student_comment`, `status` (pending/validated/corrected), `admin_audio_url`, `admin_comment`, `created_at`, `updated_at`.
+- Bucket Storage `recitations` (public, 50 MB max). Fichiers élèves : `{user_id}/{sourate_id}/{timestamp}.webm`. Fichiers admin : `admin/{student_id}/{recitation_id}-response.webm`.
+- **Côté élève** : `SourateRecitationPanel.tsx` dans `SourateDetailDialog.tsx` (au-dessus de la vidéo). Utilise MediaRecorder API → upload Supabase → insert en DB. Subscription realtime pour voir les réponses admin.
+- **Côté admin** : `AdminRecitationReview.tsx` accessible via la carte "Corriger audios" (ViewType `recitations`). Filtre par statut, lecture audio, champ commentaire, enregistrement audio de réponse, boutons Valider / Envoyer correction.
+- RLS : élèves voient leurs propres récitations ; admins voient et modifient toutes (`has_role(auth.uid(), 'admin'::app_role)`).
+
+## Mot de passe admin (fonctionnalité 2026-04-08)
+
+- Colonne `plain_password` dans `profiles` pour afficher le mot de passe en clair côté admin (app familiale privée).
+- Edge Function `update-user-password` : vérifie que l'appelant est admin, appelle `supabaseAdmin.auth.admin.updateUserById` + met à jour `profiles.plain_password`.
+- `AdminStudents.tsx` et `AdminStudentDetails.tsx` : menu 3 points → "Modifier le mot de passe" avec affichage du mot de passe actuel (masqué avec œil) et champ nouveau mot de passe.
 
 ## Déploiement
 
-- **Lovable** est connecté au repo GitHub `badmust75-coder/dinislam-5e689abf` (branche `main`) — push non accessible depuis le compte `Nadelb341`.
-- Le repo principal accessible est `Nadelb341/Dinislam` (remote `origin`).
+- **Vercel** est connecté au repo GitHub `Nadelb341/Dinislam` (branche `main`) — auto-déploiement à chaque push. URL : https://dinislam-two.vercel.app
+- Projet Vercel : `prj_q8p91lrumcGqfYvx2UlbMcunHENg`, team : `team_ngejdFFfsRKfFVxZZN44MYbD`.
+- `vercel.json` à la racine : buildCommand `npm run build`, outputDirectory `dist`, framework `vite`.
+- Lovable (`badmust75-coder/dinislam-5e689abf`) n'est plus utilisé pour le déploiement.
 - Pousser : `git push origin main` depuis `/Users/nadiaelb/Projets Claude Code/DInislam`.
-- Le repo git local a été initialisé lors de la session du 2026-04-08.
