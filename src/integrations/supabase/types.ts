@@ -1919,6 +1919,53 @@ export type Database = {
           },
         ]
       }
+      sourate_recitations: {
+        Row: {
+          admin_audio_url: string | null
+          admin_comment: string | null
+          audio_url: string
+          created_at: string
+          id: string
+          sourate_id: string
+          status: string
+          student_comment: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url: string
+          created_at?: string
+          id?: string
+          sourate_id: string
+          status?: string
+          student_comment?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url?: string
+          created_at?: string
+          id?: string
+          sourate_id?: string
+          status?: string
+          student_comment?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourate_recitations_sourate_id_fkey"
+            columns: ["sourate_id"]
+            isOneToOne: false
+            referencedRelation: "sourates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sourate_validation_requests: {
         Row: {
           created_at: string | null
