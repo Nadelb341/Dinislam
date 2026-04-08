@@ -8,6 +8,7 @@ import { useQuranVerses } from '@/hooks/useQuranVerses';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import SourateRecitationPanel from './SourateRecitationPanel';
 
 function LecteurVerset({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -324,6 +325,11 @@ const SourateDetailDialog = ({
             </div>
             <Progress value={versePercentage} className="h-2" />
           </div>
+
+          {/* Panel récitation élève */}
+          {dbId && (
+            <SourateRecitationPanel sourateId={dbId} sourateName={sourate.name_french} />
+          )}
 
           {/* Vidéo YouTube */}
           {videoUrl && (
