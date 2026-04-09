@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { 
   ArrowLeft, User, Search, ChevronRight, 
   Moon, Sparkles, BookOpen, Hand, BookMarked,
-  MessageSquare, MoreVertical, CalendarIcon
+  MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -46,13 +46,20 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   const [dobValue, setDobValue] = useState('');
   const [savingDob, setSavingDob] = useState(false);
 
+  // Password dialog state
+  const [pwdDialogStudent, setPwdDialogStudent] = useState<{ id: string; full_name: string | null; plain_password: string | null } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [savingPwd, setSavingPwd] = useState(false);
+
   const { data: students, isLoading } = useQuery({
     queryKey: ['admin-students-details'],
     queryFn: async () => {
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at, date_of_birth, gender')
+          .select('user_id, email, full_name, created_at, date_of_birth, gender, plain_password')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -168,6 +175,35 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     }
   };
 
+  const openPasswordDialog = (student: any) => {
+    setPwdDialogStudent({ id: student.user_id, full_name: student.full_name, plain_password: student.plain_password || null });
+    setNewPassword('');
+    setShowCurrentPwd(false);
+    setShowNewPwd(false);
+  };
+
+  const handleSavePassword = async () => {
+    if (!pwdDialogStudent || newPassword.length < 6) return;
+    setSavingPwd(true);
+    try {
+      const res = await supabase.functions.invoke('update-user-password', {
+        body: { user_id: pwdDialogStudent.id, new_password: newPassword },
+      });
+      if (res.error) throw new Error(res.error.message || 'Erreur');
+      const body = res.data as any;
+      if (body?.error) throw new Error(body.error);
+
+      toast.success('Mot de passe mis à jour ✓');
+      queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+      setPwdDialogStudent(null);
+      setNewPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur');
+    } finally {
+      setSavingPwd(false);
+    }
+  };
+
   const progressBar = (value: number, total: number, label: string, icon: React.ReactNode) => {
     const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
     return (
@@ -247,6 +283,9 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openDobDialog(student)}>
                     <CalendarIcon className="h-4 w-4 mr-2" /> 📅 Changer Date Naissance
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openPasswordDialog(student)}>
+                    <KeyRound className="h-4 w-4 mr-2" /> 🔑 Modifier le mot de passe
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -337,6 +376,63 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
             </div>
             <Button onClick={handleSaveDob} disabled={savingDob || !dobValue} className="w-full">
               {savingDob && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Enregistrer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password dialog */}
+      <Dialog open={!!pwdDialogStudent} onOpenChange={() => { setPwdDialogStudent(null); setNewPassword(''); setShowCurrentPwd(false); setShowNewPwd(false); }}>
+        <DialogContent className="max-w-xs rounded-2xl" level="nested">
+          <DialogHeader>
+            <DialogTitle>🔑 Modifier le mot de passe</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{pwdDialogStudent?.full_name || 'Élève'}</p>
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label>Mot de passe actuel</Label>
+              <div className="relative mt-1">
+                <Input
+                  type={showCurrentPwd ? 'text' : 'password'}
+                  value={pwdDialogStudent?.plain_password || '(non défini)'}
+                  readOnly
+                  className="pr-10 bg-muted/50"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                >
+                  {showCurrentPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label>Nouveau mot de passe</Label>
+              <div className="relative mt-1">
+                <Input
+                  type={showNewPwd ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Min. 6 caractères"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                  onClick={() => setShowNewPwd(!showNewPwd)}
+                >
+                  {showNewPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <Button onClick={handleSavePassword} disabled={savingPwd || newPassword.length < 6} className="w-full">
+              {savingPwd && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>
           </div>

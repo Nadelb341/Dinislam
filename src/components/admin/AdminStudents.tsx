@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
+import { toast } from 'sonner';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };

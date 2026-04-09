@@ -1399,6 +1399,7 @@ export type Database = {
           notification_prompt_later_at: string | null
           notification_prompt_later_count: number | null
           phone: string | null
+          plain_password: string | null
           points: number | null
           updated_at: string | null
           user_id: string
@@ -1421,6 +1422,7 @@ export type Database = {
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
+          plain_password?: string | null
           points?: number | null
           updated_at?: string | null
           user_id: string
@@ -1443,6 +1445,7 @@ export type Database = {
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           phone?: string | null
+          plain_password?: string | null
           points?: number | null
           updated_at?: string | null
           user_id?: string
@@ -1909,6 +1912,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sourate_content_sourate_id_fkey"
+            columns: ["sourate_id"]
+            isOneToOne: false
+            referencedRelation: "sourates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sourate_recitations: {
+        Row: {
+          admin_audio_url: string | null
+          admin_comment: string | null
+          audio_url: string
+          created_at: string
+          id: string
+          sourate_id: string
+          status: string
+          student_comment: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url: string
+          created_at?: string
+          id?: string
+          sourate_id: string
+          status?: string
+          student_comment?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url?: string
+          created_at?: string
+          id?: string
+          sourate_id?: string
+          status?: string
+          student_comment?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourate_recitations_sourate_id_fkey"
             columns: ["sourate_id"]
             isOneToOne: false
             referencedRelation: "sourates"
