@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
-import WelcomeNameDialog from '@/components/auth/WelcomeNameDialog';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
@@ -52,7 +51,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [activatingNotif, setActivatingNotif] = useState(false);
   const { data: progress } = useUserProgress();
@@ -129,15 +128,6 @@ const Index = () => {
     enabled: !!user
   });
 
-  // Show welcome dialog if user has no name set
-  useEffect(() => {
-    if (!profileLoading && profile !== undefined && user) {
-      const hasName = profile?.full_name && profile.full_name.trim().length > 0;
-      if (!hasName) {
-        setShowWelcomeDialog(true);
-      }
-    }
-  }, [profile, profileLoading, user]);
 
   // Check notification permission and show banner with smart logic
   useEffect(() => {
@@ -199,11 +189,7 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
   };
 
-  const handleWelcomeComplete = () => {
-    setShowWelcomeDialog(false);
-  };
-
-  const handleModuleClick = (mod: any) => {
+const handleModuleClick = (mod: any) => {
     if (mod.is_builtin && mod.builtin_path) {
       navigate(mod.builtin_path);
     } else {
@@ -213,8 +199,7 @@ const Index = () => {
 
   return (
     <>
-      <WelcomeNameDialog open={showWelcomeDialog} onComplete={handleWelcomeComplete} />
-      <AppLayout showBottomNav={false}>
+<AppLayout showBottomNav={false}>
         <div className="p-4 space-y-6">
           {/* Notification Permission Banner */}
           {showNotifBanner &&
