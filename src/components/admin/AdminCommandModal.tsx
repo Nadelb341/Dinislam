@@ -57,6 +57,7 @@ const AdminCommandModal = ({
     nourania: pendingNourania,
     devoirs: pendingHomework,
     recitations: pendingRecitations,
+    inscriptions: pendingRegistrations,
   };
 
   useEffect(() => {
@@ -159,16 +160,25 @@ const AdminCommandModal = ({
 
             {/* Boutons modules — 2 par ligne */}
             <div className="grid grid-cols-2 gap-2">
-              {BOUTONS_MODULES.map((btn) => (
-                <button
-                  key={btn.id}
-                  onClick={() => setModalSection(btn.section)}
-                  className="flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl font-semibold text-white text-sm transition-all active:scale-95 bg-emerald-500"
-                >
-                  <span className="text-xl">{btn.emoji}</span>
-                  <span className="text-xs">{btn.label}</span>
-                </button>
-              ))}
+              {BOUTONS_MODULES.map((btn) => {
+                const count = compteurs[btn.id] || 0;
+                const hasAction = count > 0;
+                return (
+                  <button
+                    key={btn.id}
+                    onClick={() => setModalSection(btn.section)}
+                    className={`relative flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl font-semibold text-white text-sm transition-all active:scale-95 ${hasAction ? 'bg-destructive' : 'bg-emerald-500'}`}
+                  >
+                    {hasAction && (
+                      <span className="absolute top-1.5 right-1.5 bg-white text-destructive text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                        {count}
+                      </span>
+                    )}
+                    <span className="text-xl">{btn.emoji}</span>
+                    <span className="text-xs">{btn.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Séparateur */}
