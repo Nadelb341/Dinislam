@@ -81,6 +81,21 @@ const Nourania = () => {
     enabled: !!user?.id,
   });
 
+  // Fetch admin unlocks for this user
+  const { data: adminUnlocks = [] } = useQuery({
+    queryKey: ['nourania-admin-unlocks', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await (supabase as any)
+        .from('nourania_admin_unlocks')
+        .select('lesson_id')
+        .eq('student_id', user.id);
+      if (error) throw error;
+      return (data || []).map((r: any) => r.lesson_id as string);
+    },
+    enabled: !!user?.id,
+  });
+
   // Fetch user's pending validation requests
   const { data: pendingRequests = [] } = useQuery({
     queryKey: ['nourania-validation-requests', user?.id],
@@ -95,6 +110,24 @@ const Nourania = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Realtime: écouter les déverrouillages admin
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('nourania-admin-unlocks-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'nourania_admin_unlocks',
+        filter: `student_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['nourania-admin-unlocks', user.id] });
+        toast.success('🔓 Une nouvelle leçon a été déverrouillée pour toi !');
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
 
   // Realtime: listen for admin approval to trigger confetti + unlock
   useEffect(() => {
@@ -175,6 +208,9 @@ const Nourania = () => {
 
   const isLessonUnlocked = (index: number) => {
     if (index === 0) return true;
+    const lesson = lessons[index];
+    // Déverrouillage admin direct sur cette leçon
+    if (lesson && adminUnlocks.includes(lesson.id)) return true;
     const previousLesson = lessons[index - 1];
     return previousLesson ? isLessonValidated(previousLesson.id) : false;
   };
