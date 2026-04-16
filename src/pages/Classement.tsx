@@ -192,19 +192,17 @@ const Classement = () => {
           </div>
         )}
 
-        {/* Toggle — Global seulement pour admin */}
+        {/* Toggle — Global visible par tous */}
         <div className="flex gap-2 justify-center">
-          {isAdmin && (
-            <button
-              onClick={() => setVue('global')}
-              className="px-4 py-2 rounded-xl font-semibold text-sm transition-all"
-              style={{
-                backgroundColor: vue === 'global' ? 'hsl(var(--primary))' : 'hsl(var(--muted))',
-                color: vue === 'global' ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
-              }}>
-              🌍 Global
-            </button>
-          )}
+          <button
+            onClick={() => setVue('global')}
+            className="px-4 py-2 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              backgroundColor: vue === 'global' ? 'hsl(var(--primary))' : 'hsl(var(--muted))',
+              color: vue === 'global' ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
+            }}>
+            🌍 Global
+          </button>
           <button
             onClick={() => setVue('groupes')}
             className="px-4 py-2 rounded-xl font-semibold text-sm transition-all"
@@ -221,8 +219,8 @@ const Classement = () => {
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : vue === 'global' && isAdmin ? (
-          /* CLASSEMENT GLOBAL — admin seulement */
+        ) : vue === 'global' ? (
+          /* CLASSEMENT GLOBAL — visible par tous */
           classement.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-4xl mb-2">⭐</p>
@@ -234,24 +232,30 @@ const Classement = () => {
               {classement.map((eleve, index) => {
                 const m = getMedaille(index);
                 const isMe = eleve.user_id === user?.id;
+                const nomAffiche = isAdmin
+                  ? (eleve.full_name || 'Élève')
+                  : isMe ? 'Moi' : 'Élève';
+                const couleurNom = (!isAdmin && isMe)
+                  ? 'hsl(45 93% 42%)'
+                  : m.textColor;
                 return (
                   <div
                     key={eleve.user_id}
                     className="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
                     style={{
                       backgroundColor: m.bg,
-                      borderColor: isMe ? 'hsl(38 92% 50%)' : m.border,
+                      borderColor: isMe ? 'hsl(45 93% 42%)' : m.border,
                     }}>
                     <span className="text-xl w-8 text-center font-bold">
                       {m.emoji || `${index + 1}.`}
                     </span>
                     <div className="flex-1">
-                      <p className="font-semibold text-sm" style={{ color: m.textColor }}>
-                        {eleve.full_name || 'Élève'}
-                        {isMe && <span className="ml-1 text-xs opacity-70">(Moi)</span>}
+                      <p className="font-semibold text-sm" style={{ color: couleurNom }}>
+                        {nomAffiche}
+                        {isAdmin && isMe && <span className="ml-1 text-xs opacity-70">(Moi)</span>}
                       </p>
                     </div>
-                    <span className="font-bold text-lg" style={{ color: m.textColor }}>
+                    <span className="font-bold text-lg" style={{ color: couleurNom }}>
                       {eleve.total} pts
                     </span>
                   </div>
