@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dini-bismillah-v7';
+const CACHE_NAME = 'dini-bismillah-v8';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -94,13 +94,13 @@ self.addEventListener('notificationclick', function(event) {
   event.notification.close();
 
   const url = event.notification.data?.url || '/';
-  const fullUrl = 'https://dinislam.lovable.app' + url;
+  const fullUrl = 'https://dinislam-two.vercel.app' + url;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
         for (const client of clientList) {
-          if (client.url.includes('dinislam.lovable.app') && 'focus' in client) {
+          if (client.url.includes('dinislam-two.vercel.app') && 'focus' in client) {
             client.focus();
             client.postMessage({ type: 'NAVIGATE', url });
             return;
