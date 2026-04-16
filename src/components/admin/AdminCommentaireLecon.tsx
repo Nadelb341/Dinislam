@@ -141,28 +141,55 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
         toast.success('🔒 Leçon verrouillée');
       }
     } else {
-      // Déverrouiller : insérer l'entrée
+      // Déverrouiller : insérer dans nourania_admin_unlocks
       const { error } = await (supabase as any)
         .from('nourania_admin_unlocks')
-        .insert({
+        .upsert({
           student_id: eleveSelectionne,
           lesson_id: lessonId,
           unlocked_by: user?.id,
-        });
+        }, { onConflict: 'student_id,lesson_id' });
 
       if (error) {
         toast.error('Erreur : ' + error.message);
-      } else {
-        setAdminUnlocks(prev => [...prev, lessonId]);
-        const lesson = lessons.find(l => l.id === lessonId);
-        sendPushNotification({
-          userIds: [eleveSelectionne],
-          title: '🔓 Nouvelle leçon disponible !',
-          body: `${lesson?.title_french || 'Une leçon'} a été déverrouillée pour toi`,
-          data: { url: '/nourania' },
-        });
-        toast.success('🔓 Leçon déverrouillée !');
+        setLoadingUnlock(null);
+        return;
       }
+
+      // Rendre la leçon accessible : valider toutes les leçons précédentes dans user_nourania_progress
+      const targetIndex = lessons.findIndex(l => l.id === lessonId);
+      if (targetIndex > 0) {
+        const previousLessons = lessons.slice(0, targetIndex);
+        for (const prevLesson of previousLessons) {
+          const { data: existing } = await supabase
+            .from('user_nourania_progress')
+            .select('id')
+            .eq('user_id', eleveSelectionne)
+            .eq('lesson_id', prevLesson.id)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase
+              .from('user_nourania_progress')
+              .update({ is_validated: true, updated_at: new Date().toISOString() })
+              .eq('id', existing.id);
+          } else {
+            await supabase
+              .from('user_nourania_progress')
+              .insert({ user_id: eleveSelectionne, lesson_id: prevLesson.id, is_validated: true });
+          }
+        }
+      }
+
+      setAdminUnlocks(prev => [...prev, lessonId]);
+      const lesson = lessons.find(l => l.id === lessonId);
+      sendPushNotification({
+        userIds: [eleveSelectionne],
+        title: '🔓 Nouvelle leçon disponible !',
+        body: `${lesson?.title_french || 'Une leçon'} a été déverrouillée pour toi`,
+        data: { url: '/nourania' },
+      });
+      toast.success('🔓 Leçon déverrouillée !');
     }
 
     setLoadingUnlock(null);

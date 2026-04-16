@@ -215,12 +215,38 @@ const Nourania = () => {
     return previousLesson ? isLessonValidated(previousLesson.id) : false;
   };
 
-  // Submit validation request (instead of auto-validating)
+  // Submit validation request (ou auto-validation si leçon débloquée par admin)
   const submitValidationMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       if (!user?.id) throw new Error('Non connecté');
 
-      // Check if already requested
+      const isAdminUnlocked = adminUnlocks.includes(lessonId);
+
+      if (isAdminUnlocked) {
+        // Auto-validation directe sans passer par l'admin
+        const { data: existing } = await supabase
+          .from('user_nourania_progress')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('lesson_id', lessonId)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from('user_nourania_progress')
+            .update({ is_validated: true, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('user_nourania_progress')
+            .insert({ user_id: user.id, lesson_id: lessonId, is_validated: true });
+          if (error) throw error;
+        }
+        return { autoValidated: true, lessonId };
+      }
+
+      // Validation normale → demande à l'admin
       const { data: existing } = await supabase
         .from('nourania_validation_requests')
         .select('id')
@@ -235,8 +261,7 @@ const Nourania = () => {
         .from('nourania_validation_requests')
         .insert({ user_id: user.id, lesson_id: lessonId });
       if (error) throw error;
-      
-      // Send push notification to admin
+
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
       const { data: lesson } = await supabase.from('nourania_lessons').select('title_french').eq('id', lessonId).maybeSingle();
       const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
@@ -246,16 +271,35 @@ const Nourania = () => {
         body: `${firstName} demande la validation de ${lessonName}`,
         type: 'admin',
       });
+      return { autoValidated: false, lessonId };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
-      toast.success('Demande de validation envoyée à l\'enseignant ! 📩');
+    onSuccess: (result) => {
+      if (result.autoValidated) {
+        queryClient.invalidateQueries({ queryKey: ['nourania-progress'] });
+        queryClient.invalidateQueries({ queryKey: ['nourania-admin-unlocks'] });
+        fireSuccess();
+        toast.success('Leçon validée ! 🎉');
+        const currentIndex = lessons.findIndex(l => l.id === result.lessonId);
+        const nextLesson = lessons[currentIndex + 1];
+        if (nextLesson) {
+          setTimeout(() => {
+            setUnlockDialog({
+              open: true,
+              lessonNumber: nextLesson.lesson_number,
+              lessonId: nextLesson.id,
+            });
+          }, 1500);
+        }
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
+        toast.success('Demande de validation envoyée à l\'enseignant ! 📩');
+      }
     },
     onError: (err: Error) => {
       if (err.message === 'Demande déjà envoyée') {
         toast.info('Demande déjà en cours de traitement');
       } else {
-        toast.error('Erreur lors de l\'envoi de la demande');
+        toast.error('Erreur lors de la validation');
       }
     },
   });
