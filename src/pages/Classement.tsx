@@ -44,7 +44,7 @@ const Classement = () => {
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
   const [groupMembers, setGroupMembers] = useState<GroupMemberEntry[]>([]);
   const [myGroupId, setMyGroupId] = useState<string | null>(null);
-  const [vue, setVue] = useState<'global' | 'groupes'>(isAdmin ? 'global' : 'groupes');
+  const [vue, setVue] = useState<'global' | 'groupes'>('global');
   const [loading, setLoading] = useState(true);
 
   const chargerBareme = async () => {
@@ -298,7 +298,7 @@ const Classement = () => {
               <div className="text-center py-8">
                 <p className="text-4xl mb-2">👥</p>
                 <p className="text-muted-foreground font-semibold">Tu n'es pas encore dans un groupe</p>
-                <p className="text-muted-foreground text-sm">Demande à ton enseignant de t'assigner à un groupe.</p>
+                <p className="text-muted-foreground text-sm">Ton enseignante va bientôt t'assigner à un groupe.</p>
               </div>
             ) : myGroupMembers.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Aucun membre dans ton groupe</p>
