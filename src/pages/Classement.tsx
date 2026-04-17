@@ -55,7 +55,7 @@ const Classement = () => {
   const chargerClassement = async () => {
     setLoading(true);
 
-    // Requête directe sur profiles (points + full_name) — contourne le RLS de student_ranking
+    // Requête sur profiles — accessible à tous les élèves connectés
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('user_id, full_name, points')
@@ -63,35 +63,24 @@ const Classement = () => {
       .order('points', { ascending: false })
       .limit(200);
 
-    const enrichis: ClassementEntry[] = (profilesData || [])
-      .filter(p => (p.points ?? 0) > 0 || p.user_id === user?.id)
-      .map(p => ({
-        user_id: p.user_id,
-        full_name: p.full_name,
-        total: p.points ?? 0,
-      }));
+    const profiles = profilesData || [];
+
+    const enrichis: ClassementEntry[] = profiles.map(p => ({
+      user_id: p.user_id,
+      full_name: p.full_name,
+      total: p.points ?? 0,
+    }));
 
     setClassement(enrichis);
 
-    // Rank improvement toast
-    if (user) {
-      const newIndex = enrichis.findIndex(e => e.user_id === user.id);
-      const newRank = newIndex >= 0 ? newIndex + 1 : null;
-      if (newRank && newRank <= 3) {
-        // Only toast when on podium
-      }
-    }
-
-    // Fetch group members with individual rankings
+    // Fetch group members
     const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
     const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
 
     if (groupes && membres) {
-      // Find current user's group
       const myMembership = membres.find(m => m.user_id === user?.id);
       setMyGroupId(myMembership?.group_id || null);
 
-      // Build individual member entries
       const memberEntries: GroupMemberEntry[] = [];
       for (const groupe of groupes) {
         const membreIds = membres.filter(m => m.group_id === groupe.id).map(m => m.user_id);

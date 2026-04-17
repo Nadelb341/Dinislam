@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dini-bismillah-v13';
+const CACHE_NAME = 'dini-bismillah-v14';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
