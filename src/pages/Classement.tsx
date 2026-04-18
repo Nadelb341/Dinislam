@@ -60,66 +60,57 @@ const Classement = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || !user) return;
 
-      // Classement global via Edge Function (bypass RLS — retourne tous les élèves)
+      // Source 1 : profiles (admin voit tout, élève ne voit que lui-même — mais on essaie quand même)
       let allProfiles: { user_id: string; full_name: string | null; total: number }[] = [];
-      try {
-        const res = await supabase.functions.invoke('get-ranking', {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (!res.error && res.data?.classement) {
-          // Nouvelle version de get-ranking (retourne display_name anonymisé)
-          if (res.data.classement[0]?.display_name !== undefined) {
-            setClassement(
-              res.data.classement.map((e: any) => ({
-                user_id: e.user_id || '',
-                display_name: e.display_name,
-                total: e.total,
-                is_me: e.is_me,
-              }))
-            );
-            // Groupes depuis l'Edge Function si disponibles
-            if (res.data.groupMembers) {
-              setGroupMembers(
-                res.data.groupMembers.map((m: any) => ({
-                  user_id: m.user_id || '',
-                  display_name: m.display_name,
-                  total: m.total,
-                  is_me: m.is_me,
-                  group_id: m.group_id,
-                  group_name: m.group_name,
-                  group_color: m.group_color,
-                }))
-              );
-              setMyGroupId(res.data.myGroupId);
-              return;
-            }
-          } else {
-            // Ancienne version de get-ranking (retourne full_name et user_id)
-            allProfiles = res.data.classement.map((e: any) => ({
-              user_id: e.user_id,
-              full_name: e.full_name,
-              total: e.total ?? 0,
-            }));
-          }
-        }
-      } catch (_) { /* fallback vers profiles si Edge Function échoue */ }
-
-      // Fallback : requête directe sur profiles
-      if (allProfiles.length === 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, points')
-          .eq('is_approved', true)
-          .order('points', { ascending: false })
-          .limit(200);
-        allProfiles = (profilesData || []).map(p => ({
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, points')
+        .eq('is_approved', true)
+        .order('points', { ascending: false })
+        .limit(200);
+      if (profilesData && profilesData.length > 0) {
+        allProfiles = profilesData.map(p => ({
           user_id: p.user_id,
           full_name: p.full_name,
           total: p.points ?? 0,
         }));
       }
 
-      // Anonymisation côté client
+      // Source 2 : student_ranking (pas de RLS restrictive, contient tous les élèves)
+      // On utilise cette table pour enrichir allProfiles avec les élèves manquants
+      const { data: rankingRows } = await supabase
+        .from('student_ranking')
+        .select('user_id, total_points')
+        .order('total_points', { ascending: false })
+        .limit(200);
+      if (rankingRows && rankingRows.length > allProfiles.length) {
+        // student_ranking a plus de données → l'utiliser comme source principale
+        const profilesMap = new Map(allProfiles.map(p => [p.user_id, p]));
+        allProfiles = rankingRows.map((r: any) => ({
+          user_id: r.user_id,
+          full_name: profilesMap.get(r.user_id)?.full_name ?? null,
+          total: r.total_points ?? 0,
+        }));
+      }
+
+      // Source 3 : Edge Function get-ranking (bypass RLS complet — dernier recours)
+      if (allProfiles.length <= 1) {
+        try {
+          const res = await supabase.functions.invoke('get-ranking', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (!res.error && res.data?.classement?.length > 1) {
+            const profilesMap = new Map(allProfiles.map(p => [p.user_id, p]));
+            allProfiles = res.data.classement.map((e: any) => ({
+              user_id: e.user_id || e.display_name,
+              full_name: profilesMap.get(e.user_id)?.full_name ?? e.full_name ?? null,
+              total: e.total ?? e.total_points ?? 0,
+            }));
+          }
+        } catch (_) { /* Edge Function indisponible */ }
+      }
+
+      // Anonymisation : admin voit les vrais noms, élève voit "Moi"/"Élève"
       const enrichis: ClassementEntry[] = allProfiles.map(p => ({
         user_id: p.user_id,
         display_name: isAdmin
@@ -130,7 +121,7 @@ const Classement = () => {
       }));
       setClassement(enrichis);
 
-      // Groupes — requête directe
+      // Groupes
       const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
       const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
 
