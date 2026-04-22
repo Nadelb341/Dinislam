@@ -202,7 +202,7 @@ const AdminStudentGroups = () => {
       if (editingGroup) {
         const { error } = await (supabase as any)
           .from('student_groups')
-          .update({ name: groupName, color: groupColor, updated_at: new Date().toISOString() })
+          .update({ name: groupName, color: groupColor })
           .eq('id', editingGroup.id);
         if (error) throw error;
 
