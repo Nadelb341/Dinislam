@@ -65,12 +65,22 @@ const Classement = () => {
     const userIds = (rankingData || []).map(r => r.user_id);
     let profiles: { user_id: string; full_name: string | null }[] = [];
     if (userIds.length > 0) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds)
-        .limit(200);
-      profiles = data || [];
+      // Privacy: seuls les admins récupèrent tous les noms.
+      // Un élève ne reçoit que son propre profil ; les autres lignes afficheront "Élève".
+      if (isAdmin) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds)
+          .limit(200);
+        profiles = data || [];
+      } else if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('user_id', user.id);
+        profiles = data || [];
+      }
     }
 
     const enrichis: ClassementEntry[] = (rankingData || []).map(r => ({

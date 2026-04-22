@@ -106,8 +106,19 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 
 ## Déploiement
 
-- **Vercel** est connecté au repo GitHub `Nadelb341/Dinislam` (branche `main`) — auto-déploiement à chaque push. URL : https://dinislam-two.vercel.app
-- Projet Vercel : `prj_q8p91lrumcGqfYvx2UlbMcunHENg`, team : `team_ngejdFFfsRKfFVxZZN44MYbD`.
-- `vercel.json` à la racine : buildCommand `npm run build`, outputDirectory `dist`, framework `vite`.
-- Lovable (`badmust75-coder/dinislam-5e689abf`) n'est plus utilisé pour le déploiement.
-- Pousser : `git push origin main` depuis `/Users/nadiaelb/Projets Claude Code/DInislam`.
+**⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**
+
+- Les élèves utilisent **uniquement le lien Lovable**. Migrer les élèves vers un autre URL est trop contraignant, donc Lovable reste la source de vérité côté publication.
+- Remote `lovable` → repo GitHub `badmust75-coder/dinislam-5e689abf` (branche `main`) — **c'est ce repo que Lovable surveille**.
+- Remote `origin` → repo GitHub `badmust75-coder/Dinislam` (archive/miroir, à maintenir à jour).
+- **Workflow** : modifs locales → `git push origin main && git push lovable main` → Lovable récupère depuis son repo → Mustapha clique "Publier" dans Lovable.
+- Claude **ne doit jamais** pousser vers Vercel, recréer un projet Vercel, ni proposer de migrer les élèves sur un autre URL sans demande explicite.
+- Le `vercel.json` éventuellement présent et l'URL `dinislam-two.vercel.app` sont des résidus d'une ancienne tentative — ignorer, ne pas s'en servir comme référence.
+
+## Règle UX — Confirmation avant suppression
+
+**TOUJOURS** afficher une modale de confirmation avant toute suppression définitive dans l'application.
+- Utiliser `useDeleteConfirm` + `<DeleteConfirmDialog>` (ou un `AlertDialog` équivalent si le composant n'existe pas)
+- Cela s'applique à TOUS les boutons/icônes poubelle, menus "Supprimer", et toute action de suppression irréversible
+- Messages adaptés au contexte : "Supprimer cet élève ?", "Supprimer ce devoir ?", etc.
+- Ne jamais supprimer directement sans confirmation, même pour de petits éléments
