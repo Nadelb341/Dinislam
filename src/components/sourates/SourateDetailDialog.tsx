@@ -243,6 +243,16 @@ interface SourateDetailDialogProps {
   onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
 }
 
+const AL_FATIHA_VERSETS = [
+  { num: 1, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne01.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e01.mp3' },
+  { num: 2, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne02.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e02.mp3' },
+  { num: 3, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne03.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e03.mp3' },
+  { num: 4, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne04.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e04.mp3' },
+  { num: 5, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne05.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e05.mp3' },
+  { num: 6, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne06.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e06.mp3' },
+  { num: 7, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne07.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e07.mp3' },
+];
+
 const SourateDetailDialog = ({
   open,
   onOpenChange,
@@ -400,7 +410,47 @@ const SourateDetailDialog = ({
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Versets</p>
             <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
-              {versesLoading ? (
+              {sourate.number === 1 ? (
+                AL_FATIHA_VERSETS.map(({ num, imageUrl, audioUrl }) => {
+                  const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
+                  return (
+                    <div
+                      key={num}
+                      className={cn(
+                        'flex items-start gap-3 p-3 rounded-lg transition-colors border',
+                        isVerseValidated
+                          ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+                          : 'bg-muted/30 border-transparent'
+                      )}
+                    >
+                      <Checkbox
+                        checked={isVerseValidated}
+                        onCheckedChange={() => onVerseToggle(dbId, num, sourate.number, sourate.verses_count)}
+                        className={cn(
+                          'h-5 w-5 rounded border-2 mt-1 shrink-0',
+                          isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'
+                        )}
+                      />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <img
+                          src={imageUrl}
+                          alt={`Verset ${num}`}
+                          className="w-full object-contain"
+                          style={{ maxHeight: '80px' }}
+                        />
+                        <LecteurVerset audioUrl={audioUrl} />
+                        <p className={cn(
+                          'text-[10px] font-medium',
+                          isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
+                        )}>
+                          Verset {num}
+                        </p>
+                      </div>
+                      {isVerseValidated && <Check className="h-4 w-4 text-green-500 shrink-0 mt-1" />}
+                    </div>
+                  );
+                })
+              ) : versesLoading ? (
                 Array.from({ length: Math.min(sourate.verses_count, 6) }).map((_, i) => (
                   <Skeleton key={i} className="h-20 rounded-lg" />
                 ))
@@ -414,8 +464,8 @@ const SourateDetailDialog = ({
                       key={verseNum}
                       className={cn(
                         'flex items-start gap-3 p-3 rounded-lg transition-colors border',
-                        isVerseValidated 
-                          ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' 
+                        isVerseValidated
+                          ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
                           : 'bg-muted/30 border-transparent'
                       )}
                     >
@@ -428,30 +478,25 @@ const SourateDetailDialog = ({
                         )}
                       />
                       <div className="flex-1 min-w-0 space-y-1">
-                        {/* Arabic text */}
                         <p className={cn(
                           'font-arabic text-right text-base leading-relaxed',
                           isVerseValidated ? 'text-green-700 dark:text-green-300' : 'text-foreground'
                         )}>
                           {verseData?.text_arabic || `﴿ ${verseNum} ﴾`}
                         </p>
-                        {/* Transliteration */}
                         {verseData?.transliteration && (
                           <p className="text-xs text-primary/80 italic">
                             {verseData.transliteration}
                           </p>
                         )}
-                        {/* French translation */}
                         {verseData?.translation_fr && (
                           <p className="text-xs text-muted-foreground">
                             {verseData.translation_fr}
                           </p>
                         )}
-                        {/* Verse audio */}
                         {verseAudio && (
                           <LecteurVerset audioUrl={verseAudio.audio_url} />
                         )}
-                        {/* Verse number indicator */}
                         <p className={cn(
                           'text-[10px] font-medium',
                           isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
