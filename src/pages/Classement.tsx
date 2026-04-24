@@ -17,16 +17,14 @@ interface BaremeItem {
 
 interface ClassementEntry {
   user_id: string;
-  display_name: string;
+  full_name: string | null;
   total: number;
-  is_me: boolean;
 }
 
 interface GroupMemberEntry {
   user_id: string;
-  display_name: string;
+  full_name: string | null;
   total: number;
-  is_me: boolean;
   group_id: string;
   group_name: string;
   group_color: string | null;
@@ -56,104 +54,82 @@ const Classement = () => {
 
   const chargerClassement = async () => {
     setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !user) return;
 
-      // Source 1 : profiles (admin voit tout, élève ne voit que lui-même — mais on essaie quand même)
-      let allProfiles: { user_id: string; full_name: string | null; total: number }[] = [];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, points')
-        .eq('is_approved', true)
-        .order('points', { ascending: false })
-        .limit(200);
-      if (profilesData && profilesData.length > 0) {
-        allProfiles = profilesData.map(p => ({
-          user_id: p.user_id,
-          full_name: p.full_name,
-          total: p.points ?? 0,
-        }));
+    // Fetch global ranking
+    const { data: rankingData } = await supabase
+      .from('student_ranking')
+      .select('user_id, total_points')
+      .order('total_points', { ascending: false })
+      .limit(200);
+
+    const userIds = (rankingData || []).map(r => r.user_id);
+    let profiles: { user_id: string; full_name: string | null }[] = [];
+    if (userIds.length > 0) {
+      // Privacy: seuls les admins récupèrent tous les noms.
+      // Un élève ne reçoit que son propre profil ; les autres lignes afficheront "Élève".
+      if (isAdmin) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds)
+          .limit(200);
+        profiles = data || [];
+      } else if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('user_id', user.id);
+        profiles = data || [];
       }
-
-      // Source 2 : student_ranking (pas de RLS restrictive, contient tous les élèves)
-      // On utilise cette table pour enrichir allProfiles avec les élèves manquants
-      const { data: rankingRows } = await supabase
-        .from('student_ranking')
-        .select('user_id, total_points')
-        .order('total_points', { ascending: false })
-        .limit(200);
-      if (rankingRows && rankingRows.length > allProfiles.length) {
-        // student_ranking a plus de données → l'utiliser comme source principale
-        const profilesMap = new Map(allProfiles.map(p => [p.user_id, p]));
-        allProfiles = rankingRows.map((r: any) => ({
-          user_id: r.user_id,
-          full_name: profilesMap.get(r.user_id)?.full_name ?? null,
-          total: r.total_points ?? 0,
-        }));
-      }
-
-      // Source 3 : Edge Function get-ranking (bypass RLS complet — dernier recours)
-      if (allProfiles.length <= 1) {
-        try {
-          const res = await supabase.functions.invoke('get-ranking', {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          if (!res.error && res.data?.classement?.length > 1) {
-            const profilesMap = new Map(allProfiles.map(p => [p.user_id, p]));
-            allProfiles = res.data.classement.map((e: any) => ({
-              user_id: e.user_id || e.display_name,
-              full_name: profilesMap.get(e.user_id)?.full_name ?? e.full_name ?? null,
-              total: e.total ?? e.total_points ?? 0,
-            }));
-          }
-        } catch (_) { /* Edge Function indisponible */ }
-      }
-
-      // Anonymisation : admin voit les vrais noms, élève voit "Moi"/"Élève"
-      const enrichis: ClassementEntry[] = allProfiles.map(p => ({
-        user_id: p.user_id,
-        display_name: isAdmin
-          ? (p.full_name || 'Élève')
-          : p.user_id === user.id ? 'Moi' : 'Élève',
-        total: p.total,
-        is_me: p.user_id === user.id,
-      }));
-      setClassement(enrichis);
-
-      // Groupes
-      const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
-      const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
-
-      if (groupes && membres) {
-        const myMembership = membres.find(m => m.user_id === user.id);
-        setMyGroupId(myMembership?.group_id || null);
-
-        const memberEntries: GroupMemberEntry[] = [];
-        for (const groupe of groupes) {
-          const membreIds = membres.filter(m => m.group_id === groupe.id).map(m => m.user_id);
-          for (const uid of membreIds) {
-            const rankEntry = allProfiles.find(e => e.user_id === uid);
-            memberEntries.push({
-              user_id: uid,
-              display_name: isAdmin
-                ? (rankEntry?.full_name || 'Élève')
-                : uid === user.id ? 'Moi' : 'Élève',
-              total: rankEntry?.total ?? 0,
-              is_me: uid === user.id,
-              group_id: groupe.id,
-              group_name: groupe.name,
-              group_color: groupe.color,
-            });
-          }
-        }
-        setGroupMembers(memberEntries);
-      }
-    } catch (err: any) {
-      toast.error('Impossible de charger le classement');
-    } finally {
-      setLoading(false);
     }
+
+    const enrichis: ClassementEntry[] = (rankingData || []).map(r => ({
+      user_id: r.user_id,
+      full_name: profiles.find(p => p.user_id === r.user_id)?.full_name || null,
+      total: r.total_points ?? 0,
+    }));
+
+    setClassement(enrichis);
+
+    // Rank improvement toast
+    if (user) {
+      const newIndex = enrichis.findIndex(e => e.user_id === user.id);
+      const newRank = newIndex >= 0 ? newIndex + 1 : null;
+      if (newRank && newRank <= 3) {
+        // Only toast when on podium
+      }
+    }
+
+    // Fetch group members with individual rankings
+    const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
+    const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
+
+    if (groupes && membres) {
+      // Find current user's group
+      const myMembership = membres.find(m => m.user_id === user?.id);
+      setMyGroupId(myMembership?.group_id || null);
+
+      // Build individual member entries
+      const memberEntries: GroupMemberEntry[] = [];
+      for (const groupe of groupes) {
+        const membreIds = membres.filter(m => m.group_id === groupe.id).map(m => m.user_id);
+        for (const uid of membreIds) {
+          const ranking = enrichis.find(e => e.user_id === uid);
+          const profile = profiles.find(p => p.user_id === uid);
+          memberEntries.push({
+            user_id: uid,
+            full_name: profile?.full_name || null,
+            total: ranking?.total ?? 0,
+            group_id: groupe.id,
+            group_name: groupe.name,
+            group_color: groupe.color,
+          });
+        }
+      }
+      setGroupMembers(memberEntries);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -165,7 +141,7 @@ const Classement = () => {
   useEffect(() => {
     const channel = supabase
       .channel('rankings-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_ranking' }, () => {
         chargerClassement();
       })
       .subscribe();
@@ -181,10 +157,12 @@ const Classement = () => {
     chargerBareme();
   };
 
+  // For students: only members of their group, sorted by points
   const myGroupMembers = groupMembers
     .filter(m => m.group_id === myGroupId)
     .sort((a, b) => b.total - a.total);
 
+  // For admin: all groups with their sorted members
   const groupIds = [...new Set(groupMembers.map(m => m.group_id))];
   const groupesAvecMembres = groupIds.map(gid => {
     const members = groupMembers.filter(m => m.group_id === gid).sort((a, b) => b.total - a.total);
@@ -196,8 +174,8 @@ const Classement = () => {
     };
   });
 
-  const myGlobalIndex = classement.findIndex(e => e.is_me);
-  const myRankInGroup = myGroupMembers.findIndex(m => m.is_me);
+  const myRankInGroup = myGroupMembers.findIndex(m => m.user_id === user?.id);
+  const myGlobalIndex = classement.findIndex(e => e.user_id === user?.id);
 
   return (
     <AppLayout>
@@ -212,7 +190,7 @@ const Classement = () => {
           <p className="text-sm text-muted-foreground">Qui sera au sommet cette semaine ?</p>
         </div>
 
-        {/* Ma position globale (élève) */}
+        {/* Ma position (student global) */}
         {!isAdmin && myGlobalIndex >= 0 && (
           <div className="rounded-2xl p-4 text-center space-y-1"
             style={{ backgroundColor: 'hsl(48 96% 89%)', border: '2px solid hsl(38 92% 50%)' }}>
@@ -224,21 +202,7 @@ const Classement = () => {
           </div>
         )}
 
-        {/* Ma position dans le groupe (élève) */}
-        {!isAdmin && myGroupId && myRankInGroup >= 0 && (
-          <div className="rounded-2xl p-4 text-center space-y-1"
-            style={{ backgroundColor: 'hsl(220 70% 96%)', border: '2px solid hsl(220 70% 70%)' }}>
-            <p className="text-2xl">👥</p>
-            <p className="font-bold text-foreground text-lg">
-              {myRankInGroup === 0 ? '1er' : `${myRankInGroup + 1}ème`} dans mon groupe
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {myGroupMembers[0]?.group_name} · {myGroupMembers.length} membre{myGroupMembers.length > 1 ? 's' : ''}
-            </p>
-          </div>
-        )}
-
-        {/* Toggle */}
+        {/* Toggle — Global visible pour tous (les noms sont anonymisés côté élève) */}
         <div className="flex gap-2 justify-center">
           <button
             onClick={() => setVue('global')}
@@ -260,12 +224,13 @@ const Classement = () => {
           </button>
         </div>
 
+        {/* Loading */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : vue === 'global' ? (
-          /* CLASSEMENT GLOBAL */
+          /* CLASSEMENT GLOBAL — admin seulement */
           classement.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-4xl mb-2">⭐</p>
@@ -276,25 +241,25 @@ const Classement = () => {
             <div className="space-y-2">
               {classement.map((eleve, index) => {
                 const m = getMedaille(index);
-                const couleurNom = eleve.is_me ? 'hsl(45 93% 42%)' : m.textColor;
+                const isMe = eleve.user_id === user?.id;
                 return (
                   <div
-                    key={eleve.user_id || index}
+                    key={eleve.user_id}
                     className="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
                     style={{
-                      backgroundColor: eleve.is_me ? 'hsl(48 96% 89%)' : m.bg,
-                      borderColor: eleve.is_me ? 'hsl(45 93% 42%)' : m.border,
+                      backgroundColor: m.bg,
+                      borderColor: isMe ? 'hsl(38 92% 50%)' : m.border,
                     }}>
                     <span className="text-xl w-8 text-center font-bold">
                       {m.emoji || `${index + 1}.`}
                     </span>
                     <div className="flex-1">
-                      <p className="font-semibold text-sm" style={{ color: couleurNom }}>
-                        {eleve.display_name}
-                        {isAdmin && eleve.is_me && <span className="ml-1 text-xs opacity-70">(Moi)</span>}
+                      <p className="font-semibold text-sm" style={{ color: m.textColor }}>
+                        {eleve.full_name || 'Élève'}
+                        {isMe && <span className="ml-1 text-xs opacity-70">(Moi)</span>}
                       </p>
                     </div>
-                    <span className="font-bold text-lg" style={{ color: couleurNom }}>
+                    <span className="font-bold text-lg" style={{ color: m.textColor }}>
                       {eleve.total} pts
                     </span>
                   </div>
@@ -305,6 +270,7 @@ const Classement = () => {
         ) : (
           /* CLASSEMENT PAR GROUPES */
           isAdmin ? (
+            /* Admin : tous les groupes avec noms réels */
             groupesAvecMembres.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Aucun groupe créé</p>
             ) : (
@@ -325,7 +291,7 @@ const Classement = () => {
                               {med.emoji || `${index + 1}.`}
                             </span>
                             <span className="flex-1 text-sm font-medium" style={{ color: med.textColor }}>
-                              {m.display_name}
+                              {m.full_name || 'Élève'}
                             </span>
                             <span className="font-bold text-sm" style={{ color: med.textColor }}>
                               {m.total} pts
@@ -339,12 +305,12 @@ const Classement = () => {
               </div>
             )
           ) : (
-            /* Élève : son groupe anonymisé */
+            /* Élève : seulement son groupe, anonymisé */
             myGroupId === null ? (
               <div className="text-center py-8">
                 <p className="text-4xl mb-2">👥</p>
                 <p className="text-muted-foreground font-semibold">Tu n'es pas encore dans un groupe</p>
-                <p className="text-muted-foreground text-sm">Ton enseignante va bientôt t'assigner à un groupe.</p>
+                <p className="text-muted-foreground text-sm">Demande à ton enseignant de t'assigner à un groupe.</p>
               </div>
             ) : myGroupMembers.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Aucun membre dans ton groupe</p>
@@ -357,18 +323,17 @@ const Classement = () => {
                 <div className="divide-y divide-border">
                   {myGroupMembers.map((membre, index) => {
                     const med = getMedaille(index);
+                    const isMe = membre.user_id === user?.id;
                     return (
                       <div key={membre.user_id} className="flex items-center gap-3 px-4 py-2"
-                        style={{ backgroundColor: membre.is_me ? 'hsl(48 96% 89%)' : med.bg }}>
+                        style={{ backgroundColor: isMe ? 'hsl(48 96% 89%)' : med.bg }}>
                         <span className="text-lg w-6 text-center font-bold">
                           {med.emoji || `${index + 1}.`}
                         </span>
-                        <span className="flex-1 text-sm font-medium"
-                          style={{ color: membre.is_me ? 'hsl(26 90% 37%)' : med.textColor }}>
-                          {membre.display_name}
+                        <span className="flex-1 text-sm font-medium" style={{ color: isMe ? 'hsl(26 90% 37%)' : med.textColor }}>
+                          {isMe ? 'Moi' : 'Élève'}
                         </span>
-                        <span className="font-bold text-sm"
-                          style={{ color: membre.is_me ? 'hsl(26 90% 37%)' : med.textColor }}>
+                        <span className="font-bold text-sm" style={{ color: isMe ? 'hsl(26 90% 37%)' : med.textColor }}>
                           {membre.total} pts
                         </span>
                       </div>
