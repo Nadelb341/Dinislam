@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { NPM_VERSETS } from './npmVersets';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -243,16 +244,6 @@ interface SourateDetailDialogProps {
   onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
 }
 
-const AL_FATIHA_VERSETS = [
-  { num: 1, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne01.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e01.mp3' },
-  { num: 2, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne02.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e02.mp3' },
-  { num: 3, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne03.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e03.mp3' },
-  { num: 4, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne04.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e04.mp3' },
-  { num: 5, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne05.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e05.mp3' },
-  { num: 6, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne06.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e06.mp3' },
-  { num: 7, imageUrl: 'https://www.nospetitsmusulmans.com/pages/coran/images/001-ligne07.jpg', audioUrl: 'https://www.nospetitsmusulmans.com/pages/coran/sons/001_e07.mp3' },
-];
-
 const SourateDetailDialog = ({
   open,
   onOpenChange,
@@ -410,8 +401,20 @@ const SourateDetailDialog = ({
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Versets</p>
             <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
-              {sourate.number === 1 ? (
-                AL_FATIHA_VERSETS.map(({ num, imageUrl, audioUrl }) => {
+              {NPM_VERSETS[sourate.number] ? (
+                NPM_VERSETS[sourate.number].map(({ num, parts }) => {
+                  if (num === 0) {
+                    return (
+                      <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                        {parts.map((part, i) => (
+                          <div key={i} className="space-y-1">
+                            <img src={part.imageUrl} alt="Bismillah" className="w-full object-contain" style={{ maxHeight: '60px' }} />
+                            <LecteurVerset audioUrl={part.audioUrl} />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
                   return (
                     <div
@@ -432,13 +435,12 @@ const SourateDetailDialog = ({
                         )}
                       />
                       <div className="flex-1 min-w-0 space-y-2">
-                        <img
-                          src={imageUrl}
-                          alt={`Verset ${num}`}
-                          className="w-full object-contain"
-                          style={{ maxHeight: '80px' }}
-                        />
-                        <LecteurVerset audioUrl={audioUrl} />
+                        {parts.map((part, i) => (
+                          <div key={i} className="space-y-1">
+                            <img src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
+                            <LecteurVerset audioUrl={part.audioUrl} />
+                          </div>
+                        ))}
                         <p className={cn(
                           'text-[10px] font-medium',
                           isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
