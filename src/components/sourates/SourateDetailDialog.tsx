@@ -404,11 +404,9 @@ const SourateDetailDialog = ({
             <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
               {NPM_VERSETS[sourate.number] ? (
                 NPM_VERSETS[sourate.number].map(({ num, parts }) => {
-                  // Bismillah (num=0) : affiché sans checkbox, audio CDN si sourate 1 sinon NPM
+                  // Bismillah (num=0) : même audio pour toutes les sourates (sourate 112)
                   if (num === 0) {
-                    const bismillahAudio = sourate.number === 1
-                      ? getCdnAudioUrl(1, 1)
-                      : parts[0]?.audioUrl;
+                    const bismillahAudio = 'https://www.nospetitsmusulmans.com/pages/coran/sons/112_e00.mp3';
                     return (
                       <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 space-y-1">
                         {parts.map((part, i) => (
