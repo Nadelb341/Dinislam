@@ -33,6 +33,15 @@ class ErrorBoundary extends React.Component<Props, State> {
             <p className="text-muted-foreground">
               Ne t'inquiète pas, ce n'est pas grave. Essaie de revenir à l'accueil.
             </p>
+            {this.state.error && (
+              <details className="text-left bg-muted rounded-lg p-3 text-xs text-muted-foreground">
+                <summary className="cursor-pointer font-medium text-destructive">Détails de l'erreur (pour déboguer)</summary>
+                <pre className="mt-2 whitespace-pre-wrap break-all">{this.state.error.toString()}</pre>
+                {this.state.error.stack && (
+                  <pre className="mt-1 whitespace-pre-wrap break-all text-[10px]">{this.state.error.stack}</pre>
+                )}
+              </details>
+            )}
             <button
               onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = '/'; }}
               className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
