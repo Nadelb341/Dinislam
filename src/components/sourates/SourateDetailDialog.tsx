@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NPM_VERSETS } from './npmVersets';
+import { getCdnAudioUrl } from './cdnAudio';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -403,18 +404,25 @@ const SourateDetailDialog = ({
             <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
               {NPM_VERSETS[sourate.number] ? (
                 NPM_VERSETS[sourate.number].map(({ num, parts }) => {
+                  // Bismillah (num=0) : affiché sans checkbox, audio CDN si sourate 1 sinon NPM
                   if (num === 0) {
+                    const bismillahAudio = sourate.number === 1
+                      ? getCdnAudioUrl(1, 1)
+                      : parts[0]?.audioUrl;
                     return (
-                      <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30">
+                      <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 space-y-1">
                         {parts.map((part, i) => (
-                          <div key={i} className="space-y-1">
-                            <img src={part.imageUrl} alt="Bismillah" className="w-full object-contain" style={{ maxHeight: '60px' }} />
-                            <LecteurVerset audioUrl={part.audioUrl} />
-                          </div>
+                          <img key={i} src={part.imageUrl} alt="Bismillah" className="w-full object-contain" style={{ maxHeight: '60px' }} />
                         ))}
+                        {bismillahAudio && <LecteurVerset audioUrl={bismillahAudio} />}
                       </div>
                     );
                   }
+
+                  // Versets normaux : images NPM + UN seul audio CDN par verset
+                  const cdnAudio = sourate.number === 1000
+                    ? parts[0]?.audioUrl  // Ayat Al-Kursi : garder NPM (1 verset coranique = N parties)
+                    : getCdnAudioUrl(sourate.number, num);
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
                   return (
                     <div
@@ -436,11 +444,9 @@ const SourateDetailDialog = ({
                       />
                       <div className="flex-1 min-w-0 space-y-2">
                         {parts.map((part, i) => (
-                          <div key={i} className="space-y-1">
-                            <img src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
-                            <LecteurVerset audioUrl={part.audioUrl} />
-                          </div>
+                          <img key={i} src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
                         ))}
+                        {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
                         <p className={cn(
                           'text-[10px] font-medium',
                           isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
@@ -457,10 +463,11 @@ const SourateDetailDialog = ({
                   <Skeleton key={i} className="h-20 rounded-lg" />
                 ))
               ) : (
+                // Sourates non couvertes par NPM : texte arabe API + audio CDN
                 Array.from({ length: sourate.verses_count }, (_, i) => i + 1).map(verseNum => {
                   const isVerseValidated = verseProgress.get(`${dbId}-${verseNum}`) || false;
                   const verseData = verses.find(v => v.id === verseNum);
-                  const verseAudio = versetsAudio.find((a: any) => a.verset_number === verseNum);
+                  const cdnAudio = getCdnAudioUrl(sourate.number, verseNum);
                   return (
                     <div
                       key={verseNum}
@@ -487,18 +494,12 @@ const SourateDetailDialog = ({
                           {verseData?.text_arabic || `﴿ ${verseNum} ﴾`}
                         </p>
                         {verseData?.transliteration && (
-                          <p className="text-xs text-primary/80 italic">
-                            {verseData.transliteration}
-                          </p>
+                          <p className="text-xs text-primary/80 italic">{verseData.transliteration}</p>
                         )}
                         {verseData?.translation_fr && (
-                          <p className="text-xs text-muted-foreground">
-                            {verseData.translation_fr}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{verseData.translation_fr}</p>
                         )}
-                        {verseAudio && (
-                          <LecteurVerset audioUrl={verseAudio.audio_url} />
-                        )}
+                        {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
                         <p className={cn(
                           'text-[10px] font-medium',
                           isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
