@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import SourateRecitationPanel from './SourateRecitationPanel';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
 function LecteurVerset({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -258,6 +260,7 @@ const SourateDetailDialog = ({
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
   const [versetsAudio, setVersetsAudio] = useState<any[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
   useEffect(() => {
     if (open && dbId) {
       supabase
@@ -297,7 +300,8 @@ const SourateDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <div ref={scrollRef} onScroll={handleScroll} className="max-h-[85vh] overflow-y-auto p-6 space-y-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className={cn(
@@ -317,8 +321,6 @@ const SourateDetailDialog = ({
             </div>
           </DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-4">
           {/* Progress bar */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-sm">
@@ -401,7 +403,7 @@ const SourateDetailDialog = ({
           {/* Verses */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Versets</p>
-            <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
+            <div className="grid grid-cols-1 gap-2">
               {NPM_VERSETS[sourate.number] ? (
                 NPM_VERSETS[sourate.number].map(({ num, parts }) => {
                   // Bismillah (num=0) : même audio pour toutes les sourates (sourate 112)
@@ -532,6 +534,13 @@ const SourateDetailDialog = ({
             </ul>
           </div>
         </div>
+        <ScrollButtons
+          showTop={showTop}
+          showBottom={showBottom}
+          onScrollTop={scrollToTop}
+          onScrollBottom={scrollToBottom}
+          position="absolute"
+        />
       </DialogContent>
     </Dialog>
   );
