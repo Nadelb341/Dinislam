@@ -417,10 +417,12 @@ const SourateDetailDialog = ({
                     );
                   }
 
-                  // Versets normaux : images NPM + UN seul audio CDN par verset
-                  const cdnAudio = sourate.number === 1000
-                    ? parts[0]?.audioUrl  // Ayat Al-Kursi : garder NPM (1 verset coranique = N parties)
-                    : getCdnAudioUrl(sourate.number, num);
+                  // Versets avec plusieurs parties (NPM split) → audio NPM par partie
+                  // Versets à 1 seule partie → audio CDN unique
+                  const isMultiPart = parts.length > 1;
+                  const cdnAudio = (!isMultiPart && sourate.number !== 1000)
+                    ? getCdnAudioUrl(sourate.number, num)
+                    : null;
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
                   return (
                     <div
@@ -442,7 +444,11 @@ const SourateDetailDialog = ({
                       />
                       <div className="flex-1 min-w-0 space-y-2">
                         {parts.map((part, i) => (
-                          <img key={i} src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
+                          <div key={i} className="space-y-1">
+                            <img src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
+                            {isMultiPart && <LecteurVerset audioUrl={part.audioUrl} />}
+                            {sourate.number === 1000 && <LecteurVerset audioUrl={part.audioUrl} />}
+                          </div>
                         ))}
                         {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
                         <p className={cn(
