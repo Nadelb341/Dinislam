@@ -26,7 +26,7 @@ const TOTAL_WIDTH = 370;
 const LEFT_X = 60;
 const CENTER_X = 185;
 const RIGHT_X = 310;
-const ROW_HEIGHT = 130;
+const ROW_HEIGHT = 175;
 const TOP_OFFSET = 55;
 const ITEMS_PER_ROW = 3;
 const CURVE_BULGE = 48;
@@ -294,8 +294,8 @@ const SouratePathView = ({
               </button>
 
               {/* Sourate name */}
-              <span className="text-[9px] text-muted-foreground text-center leading-tight mt-0.5 w-20 truncate">
-                {node.sourate.name_french}
+              <span className="text-[18px] font-medium text-muted-foreground text-center leading-snug mt-1 w-28 break-words">
+                {node.sourate.number === 1000 ? '2-255' : node.sourate.number} - {node.sourate.name_french}
               </span>
             </div>
           );
