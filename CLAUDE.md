@@ -78,7 +78,8 @@ Voir règle complète dans `~/PROJETS CLAUDE CODE/CLAUDE.md`.
 
 ## Sourates — Spécificités
 
-- **Ayat Al-Kursi** (numéro spécial `1000`) est insérée entre Al-Ikhlas (112) et Al-Masad (111) dans `SOURATES_ORDERED`. L'API Quran charge le verset 255 de Al-Baqara via `useQuranVerses`. Affiche "111b" dans l'étoile. Étoile dorée ambre (`hsl(38, 90%, 50%)`) avec halo animé pulsant (classe `.star-ayat-kursi`) pour la distinguer des autres.
+- **Ayat Al-Kursi** (numéro spécial `1000`) est insérée entre Al-Ikhlas (112) et Al-Masad (111) dans `SOURATES_ORDERED`. L'API Quran charge le verset 255 de Al-Baqara via `useQuranVerses`. Affiche **"2-255"** dans l'étoile (et non "111b"). Étoile dorée ambre (`hsl(38, 90%, 50%)`) avec halo animé pulsant (classe `.star-ayat-kursi`) pour la distinguer des autres.
+- **Audio Ayat Al-Kursi** : 9 fichiers MP3 hébergés localement dans `public/audio/ayat-al-kursi/002_e00.mp3` à `002_e08.mp3`. Utilisés dans `SourateDetailDialog.tsx` pour sourate.number === 1000. Raison : nospetitsmusulmans.com bloque les requêtes cross-domain. Ne pas remplacer par des URLs externes.
 - **Icônes 🎁** sur les étoiles toutes les 5 sourates à partir d'Al-Fil (105) : `GIFT_SOURATE_NUMBERS` = {105, 100, 95, …, 5}. Validation d'une sourate 🎁 → feux d'artifice (`fireConfetti`) + toast de félicitation.
 - **Accessibilité séquentielle** : basée sur l'index dans `SOURATES_ORDERED` (pas number+1), pour gérer Ayat Al-Kursi.
 - **Contenu ciblé** : `sourate_content.target_user_id` (nullable) pour envoyer du contenu à un élève spécifique. `viewed_at` pour le suivi de lecture admin.
@@ -109,11 +110,13 @@ Toutes les mutations de validation utilisent des **mises à jour optimistes** po
 - Admin voit le statut Vu/Non vu sous chaque contenu ciblé.
 - Marquage automatique `viewed_at` quand l'élève ouvre la sourate/leçon.
 
-## Parcours sourates — Layout
+## Parcours sourates — Layout (màj 2026-04-26)
 
-- Étoiles de 72px (`STAR_SIZE`), largeur parcours 370px (`TOTAL_WIDTH`), espacement 130px (`ROW_HEIGHT`).
+- Étoiles de 72px (`STAR_SIZE`), largeur parcours 370px (`TOTAL_WIDTH`), espacement **145px** (`ROW_HEIGHT`).
 - Numéros affichés dans **toutes** les étoiles (y compris verrouillées, en gris). Seules les validées affichent ✓.
 - Personnages 56px dans les virages du serpentin.
+- **Label sous chaque étoile** : `{numéro} - {name_french}` (ex : "113 - Al-Falaq (L'Aube Naissante)"), taille 9px, largeur 112px (`w-28`), wrapping sans troncature. Ayat Al-Kursi affiche "2-255" comme numéro.
+- Audios versets : CDN Alafasy `cdn.islamic.network/quran/audio/128/ar.alafasy/{N}.mp3` pour toutes les sourates sauf Ayat Al-Kursi (fichiers locaux).
 
 ## Cartes admin-only
 
@@ -138,6 +141,8 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - RLS : élèves voient leurs propres récitations ; admins voient et modifient toutes (`has_role(auth.uid(), 'admin'::app_role)`).
 - **Politique RLS admin** : si l'admin ne voit pas les récitations, relancer ce SQL : `DROP POLICY IF EXISTS "Admins full access on recitations" ON public.sourate_recitations; CREATE POLICY "Admins full access on recitations" ON public.sourate_recitations FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'::public.app_role)) WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role));`
 - **Politique Storage** : bucket `recitations` public=true. Si les audios ne se lisent pas, relancer : `UPDATE storage.buckets SET public = true WHERE id = 'recitations'; DROP POLICY IF EXISTS "Public read recitations" ON storage.objects; CREATE POLICY "Public read recitations" ON storage.objects FOR SELECT USING (bucket_id = 'recitations');`
+- **URLs signées (màj 2026-04-26)** : `AdminRecitationReview` et `SourateRecitationPanel` génèrent des **signed URLs** (validité 2h) via `supabase.storage.from('recitations').createSignedUrl(path, 7200)` dans le `queryFn`. Contourne les problèmes de cache SW et restrictions iOS WKWebView. Ne pas revenir aux URLs publiques directes.
+- **Service Worker** : les requêtes vers `/storage/v1/object/` et les requêtes de `destination === 'audio'` sont toujours passées directement au réseau (jamais mises en cache). Les réponses non-200 ne sont jamais mises en cache non plus.
 - `useAdminPendingCounts` : inclut maintenant le count `recitations` (status=pending) avec abonnement realtime.
 
 ## Mot de passe admin (fonctionnalité 2026-04-08)
@@ -171,6 +176,12 @@ Les cartes `students`, `messages`, `attendance`, `homework`, `recitations` dans 
 - **Workflow** : modifs locales → `git push origin main && git push lovable main` → Lovable récupère depuis son repo → Mustapha clique "Publier" dans Lovable.
 - Claude **ne doit jamais** pousser vers Vercel, recréer un projet Vercel, ni proposer de migrer les élèves sur un autre URL sans demande explicite.
 - Le `vercel.json` éventuellement présent et l'URL `dinislam-two.vercel.app` sont des résidus d'une ancienne tentative — ignorer, ne pas s'en servir comme référence.
+
+## Page Prière (`src/pages/Priere.tsx`) — màj 2026-04-26
+
+- **Ville par défaut** : Montpellier (34) si aucune ville n'a jamais été sélectionnée.
+- **Persistance ville** : sauvegardée dans `localStorage` sous la clé `dinislam_prayer_city` (JSON). Restaurée automatiquement à chaque ouverture. Helper `getSavedCity()` valide le JSON avant de l'utiliser.
+- `handleSelectCity(city)` : centralise la mise à jour state + localStorage + fermeture du sélecteur.
 
 ## Règle UX — Confirmation avant suppression
 
