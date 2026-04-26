@@ -6,6 +6,20 @@ Ce fichier fournit des instructions à Claude Code (claude.ai/code) pour travail
 
 Dinislam est une application web d'éducation islamique (en français) construite avec React + TypeScript + Vite, utilisant Supabase comme backend. Elle couvre les sourates du Coran (114 + Ayat Al-Kursi), les invocations, la méthode Nourania, l'apprentissage de la prière, les activités du Ramadan, l'alphabet arabe, les noms d'Allah, la grammaire/conjugaison, le vocabulaire, les hadiths, et plus encore. Elle dispose de rôles admin/élève avec un workflow d'approbation (accepter/refuser), un suivi de présence, des devoirs, une messagerie, des notifications push, un classement et un chat mascotte (via Supabase Edge Function).
 
+## ⬆️⬇️ Boutons scroll haut/bas — règle acquise (màj 2026-04-26)
+
+Présents dans **toutes** les zones scrollables.
+
+**Composants réutilisables :**
+- `src/hooks/useScrollToTop.ts` → `useScrollToTop()` (dialog/conteneur) et `useWindowScrollToTop()` (page)
+- `src/components/ui/ScrollButtons.tsx` → `<ScrollButtons showTop showBottom onScrollTop onScrollBottom position="absolute|fixed" />`
+
+**Zones couvertes :**
+- Toutes les pages : via `AppLayout.tsx` (`useWindowScrollToTop`, `position="fixed"`, `bottom-24` pour dépasser la barre de nav)
+- `SourateDetailDialog` : `position="absolute"` dans le dialog
+
+**Règle :** ⬆️ apparaît après 200px de scroll · ⬇️ apparaît quand on est en haut et qu'il reste du contenu en bas.
+
 ## 📦 Pas de débordement de texte hors de son conteneur
 Voir règle complète dans `~/PROJETS CLAUDE CODE/CLAUDE.md`.
 - `overflow-hidden` sur tout conteneur de liste/carte
