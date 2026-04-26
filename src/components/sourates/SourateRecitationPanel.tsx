@@ -31,6 +31,19 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const extractStoragePath = (url: string): string | null => {
+    const m = url?.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+
+  const toSignedUrl = async (url: string | null): Promise<string | null> => {
+    if (!url) return null;
+    const path = extractStoragePath(url);
+    if (!path) return url;
+    const { data } = await supabase.storage.from('recitations').createSignedUrl(path, 7200);
+    return data?.signedUrl ?? url;
+  };
+
   const { data: recitations } = useQuery({
     queryKey: ['student-recitations', sourateId, user?.id],
     enabled: !!user && !!sourateId,
@@ -42,7 +55,11 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         .eq('student_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      return Promise.all((data || []).map(async (r: any) => ({
+        ...r,
+        audio_url: await toSignedUrl(r.audio_url),
+        admin_audio_url: await toSignedUrl(r.admin_audio_url),
+      })));
     },
   });
 

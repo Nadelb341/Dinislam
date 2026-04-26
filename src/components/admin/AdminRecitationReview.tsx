@@ -23,6 +23,21 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
 
+  // Extrait le path Supabase Storage depuis une URL publique ou signée
+  const extractStoragePath = (url: string): string | null => {
+    const m = url?.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+
+  // Génère une URL signée valide 2h (contourne cache SW, restrictions iOS, CORS)
+  const toSignedUrl = async (url: string | null): Promise<string | null> => {
+    if (!url) return null;
+    const path = extractStoragePath(url);
+    if (!path) return url;
+    const { data } = await supabase.storage.from('recitations').createSignedUrl(path, 7200);
+    return data?.signedUrl ?? url;
+  };
+
   const { data: recitations, isLoading } = useQuery({
     queryKey: ['admin-recitations', filter],
     queryFn: async () => {
@@ -44,11 +59,14 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         supabase.from('sourates').select('id, number, name_arabic, name_french').in('id', sourateIds as string[]),
       ]);
 
-      return recs.map((r: any) => ({
+      // Génère des URLs signées pour tous les audios (contourne cache et restrictions iOS)
+      return Promise.all(recs.map(async (r: any) => ({
         ...r,
         profile: profiles?.find((p: any) => p.user_id === r.student_id),
         sourate: sourates?.find((s: any) => s.id === r.sourate_id),
-      }));
+        audio_url: await toSignedUrl(r.audio_url),
+        admin_audio_url: await toSignedUrl(r.admin_audio_url),
+      })));
     },
   });
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dini-bismillah-v16';
+const CACHE_NAME = 'dini-bismillah-v17';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -28,8 +28,9 @@ self.addEventListener('fetch', (e) => {
     url.includes('/auth/v1/') ||
     url.includes('/functions/v1/');
 
-  // Les fichiers audio/média Supabase Storage ne doivent jamais être mis en cache
+  // Les fichiers audio/média ne doivent jamais passer par le cache SW
   const isStorageRequest = url.includes('/storage/v1/object/');
+  const isMediaRequest = e.request.destination === 'audio' || e.request.destination === 'video';
 
   const isViteDevRequest =
     url.includes('/node_modules/.vite/') ||
@@ -43,7 +44,7 @@ self.addEventListener('fetch', (e) => {
     e.request.destination === 'style' ||
     e.request.destination === 'worker';
 
-  if (isBackendRequest || isStorageRequest || isViteDevRequest || isScriptOrStyleRequest) {
+  if (isBackendRequest || isStorageRequest || isMediaRequest || isViteDevRequest || isScriptOrStyleRequest) {
     e.respondWith(fetch(e.request));
     return;
   }
