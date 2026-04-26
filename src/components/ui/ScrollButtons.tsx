@@ -16,10 +16,11 @@ export function ScrollButtons({
   onScrollBottom,
   position = 'absolute',
 }: ScrollButtonsProps) {
+  const posClass = position === 'fixed' ? 'fixed bottom-24 right-4 z-50' : 'absolute bottom-4 right-4 z-10';
   const base = cn(
     'w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 active:scale-95',
     'bg-primary text-primary-foreground hover:bg-primary/90',
-    position === 'fixed' ? 'fixed bottom-6 right-4 z-50' : 'absolute bottom-4 right-4 z-10'
+    posClass
   );
 
   if (!showTop && !showBottom) return null;
@@ -32,11 +33,7 @@ export function ScrollButtons({
         </button>
       )}
       {showBottom && (
-        <button
-          onClick={onScrollBottom}
-          className={cn(base, position === 'fixed' ? 'fixed bottom-6 right-4 z-50' : 'absolute bottom-4 right-4 z-10')}
-          aria-label="Aller en bas"
-        >
+        <button onClick={onScrollBottom} className={base} aria-label="Aller en bas">
           <ArrowDown className="h-5 w-5" />
         </button>
       )}

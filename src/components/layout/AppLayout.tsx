@@ -7,6 +7,8 @@ import StarMascot from '@/components/mascot/StarMascot';
 import VersionChangelogModal from '@/components/VersionChangelogModal';
 import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
+import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,13 +17,14 @@ interface AppLayoutProps {
   showBack?: boolean;
 }
 
-const AppLayout = ({ 
-  children, 
-  title, 
+const AppLayout = ({
+  children,
+  title,
   showBottomNav = true,
-  showBack = false 
+  showBack = false
 }: AppLayoutProps) => {
   usePresenceHeartbeat();
+  const { showTop, showBottom, scrollToTop, scrollToBottom } = useWindowScrollToTop();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -37,6 +40,13 @@ const AppLayout = ({
       <VersionChangelogModal />
       <StarMascot />
       <AdminMoonAssistant />
+      <ScrollButtons
+        showTop={showTop}
+        showBottom={showBottom}
+        onScrollTop={scrollToTop}
+        onScrollBottom={scrollToBottom}
+        position="fixed"
+      />
     </div>
   );
 };
