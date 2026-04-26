@@ -408,7 +408,11 @@ const SourateDetailDialog = ({
                 NPM_VERSETS[sourate.number].map(({ num, parts }) => {
                   // Bismillah (num=0) : même audio pour toutes les sourates — verset 1 de la Fatiha (CDN Alafasy)
                   if (num === 0) {
-                    const bismillahAudio = getCdnAudioUrl(1, 1);
+                    // Ayat al-Kursi : audio local (ligne 0 = début de l'ayah, pas un bismillah)
+                    // Autres sourates : bismillah = verset 1 Al-Fatiha (CDN Alafasy)
+                    const bismillahAudio = sourate.number === 1000
+                      ? `/audio/ayat-al-kursi/002_e00.mp3`
+                      : getCdnAudioUrl(1, 1);
                     return (
                       <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 space-y-1">
                         {parts.map((part, i) => (
@@ -419,10 +423,11 @@ const SourateDetailDialog = ({
                     );
                   }
 
-                  // Tous les versets utilisent le CDN Alafasy (1 lecteur par verset, pas par partie)
-                  const cdnAudio = sourate.number !== 1000
-                    ? getCdnAudioUrl(sourate.number, num)
-                    : null;
+                  // Ayat al-Kursi : audio local hébergé dans /public/audio/ayat-al-kursi/
+                  // Autres sourates : CDN Alafasy
+                  const cdnAudio = sourate.number === 1000
+                    ? `/audio/ayat-al-kursi/002_e${String(num).padStart(2, '0')}.mp3`
+                    : getCdnAudioUrl(sourate.number, num);
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
                   return (
                     <div
