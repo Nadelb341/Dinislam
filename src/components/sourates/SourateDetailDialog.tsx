@@ -406,9 +406,9 @@ const SourateDetailDialog = ({
             <div className="grid grid-cols-1 gap-2">
               {NPM_VERSETS[sourate.number] ? (
                 NPM_VERSETS[sourate.number].map(({ num, parts }) => {
-                  // Bismillah (num=0) : même audio pour toutes les sourates (sourate 112)
+                  // Bismillah (num=0) : même audio pour toutes les sourates — verset 1 de la Fatiha (CDN Alafasy)
                   if (num === 0) {
-                    const bismillahAudio = 'https://www.nospetitsmusulmans.com/pages/coran/sons/112_e00.mp3';
+                    const bismillahAudio = getCdnAudioUrl(1, 1);
                     return (
                       <div key={0} className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 space-y-1">
                         {parts.map((part, i) => (
@@ -419,10 +419,8 @@ const SourateDetailDialog = ({
                     );
                   }
 
-                  // Versets avec plusieurs parties (NPM split) → audio NPM par partie
-                  // Versets à 1 seule partie → audio CDN unique
-                  const isMultiPart = parts.length > 1;
-                  const cdnAudio = (!isMultiPart && sourate.number !== 1000)
+                  // Tous les versets utilisent le CDN Alafasy (1 lecteur par verset, pas par partie)
+                  const cdnAudio = sourate.number !== 1000
                     ? getCdnAudioUrl(sourate.number, num)
                     : null;
                   const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
@@ -448,8 +446,6 @@ const SourateDetailDialog = ({
                         {parts.map((part, i) => (
                           <div key={i} className="space-y-1">
                             <img src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
-                            {isMultiPart && <LecteurVerset audioUrl={part.audioUrl} />}
-                            {sourate.number === 1000 && <LecteurVerset audioUrl={part.audioUrl} />}
                           </div>
                         ))}
                         {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
