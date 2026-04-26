@@ -89,15 +89,27 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   };
 
   const sendResponse = async (recitationId: string, studentId: string, newStatus: 'validated' | 'corrected') => {
+    // Optimistic: fermer le panneau et retirer l'item immédiatement
+    const previousData = queryClient.getQueryData(['admin-recitations', filter]);
+    const savedComment = adminComment;
+    const savedAudio = adminAudio;
+    setResponding(null);
+    setAdminComment('');
+    setAdminAudio(null);
+    setAdminAudioUrl(null);
+    queryClient.setQueryData(['admin-recitations', filter], (old: any) =>
+      (old || []).filter((r: any) => r.id !== recitationId)
+    );
+
     setSaving(true);
     try {
       let audioPublicUrl: string | null = null;
 
-      if (adminAudio) {
+      if (savedAudio) {
         const filename = `admin/${studentId}/${recitationId}-response.webm`;
         const { error: uploadError } = await supabase.storage
           .from('recitations')
-          .upload(filename, adminAudio, { contentType: 'audio/webm', upsert: true });
+          .upload(filename, savedAudio, { contentType: 'audio/webm', upsert: true });
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
         audioPublicUrl = publicUrl;
@@ -107,7 +119,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         .from('sourate_recitations')
         .update({
           status: newStatus,
-          admin_comment: adminComment || null,
+          admin_comment: savedComment || null,
           admin_audio_url: audioPublicUrl,
           updated_at: new Date().toISOString(),
         })
@@ -116,11 +128,12 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
 
       toast.success(newStatus === 'validated' ? 'Récitation validée ✅' : 'Correction envoyée 📝');
       queryClient.invalidateQueries({ queryKey: ['admin-recitations'] });
-      setResponding(null);
-      setAdminComment('');
-      setAdminAudio(null);
-      setAdminAudioUrl(null);
     } catch (e: any) {
+      // Rollback en cas d'erreur
+      queryClient.setQueryData(['admin-recitations', filter], previousData);
+      setResponding(recitationId);
+      setAdminComment(savedComment);
+      setAdminAudio(savedAudio);
       toast.error(e.message || 'Erreur');
     } finally {
       setSaving(false);

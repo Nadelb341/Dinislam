@@ -6,8 +6,38 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useSwNavigate } from "@/hooks/useSwNavigate";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Vérification automatique de version — force le rechargement si nouvelle version disponible
+const checkAppVersion = async () => {
+  try {
+    const res = await fetch('/version.json?t=' + Date.now());
+    const { version } = await res.json();
+    const lastVersion = localStorage.getItem('dinislam_app_version');
+    if (lastVersion && lastVersion !== version) {
+      localStorage.setItem('dinislam_app_version', version);
+      window.location.reload();
+    } else {
+      localStorage.setItem('dinislam_app_version', version);
+    }
+  } catch {}
+};
+checkAppVersion();
+
+// Vérifie aussi quand l'app revient au premier plan (iOS PWA resume depuis mémoire)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkAppVersion();
+});
+
+// Écoute le service worker qui signale une nouvelle version
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'FORCE_RELOAD') {
+      window.location.reload();
+    }
+  });
+}
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";

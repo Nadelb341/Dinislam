@@ -1,13 +1,12 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendPushNotification } from '@/lib/pushHelper';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, ArrowLeft, User } from 'lucide-react';
-import { useEffect } from 'react';
 
 interface AdminSourateValidationsProps {
   onBack: () => void;
@@ -17,6 +16,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['admin-sourate-validations'],
@@ -29,7 +29,6 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
 
       if (error) throw error;
 
-      // Get user profiles and sourate info
       const userIds = [...new Set((data || []).map(r => r.user_id))];
       const sourateIds = [...new Set((data || []).map(r => r.sourate_id))];
 
@@ -46,104 +45,95 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
     },
   });
 
-  // Realtime subscription for new requests
   useEffect(() => {
     const channel = supabase
       .channel('admin-validation-requests')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'sourate_validation_requests',
-      }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_validation_requests' }, () => {
         queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
   const approveMutation = useMutation({
     mutationFn: async (request: any) => {
-      // 1. Mark request as approved
       const { error: updateError } = await supabase
         .from('sourate_validation_requests')
-        .update({ 
-          status: 'approved', 
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id 
-        })
+        .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
         .eq('id', request.id);
-
       if (updateError) throw updateError;
 
-      // 2. Validate the sourate progress
       const { error: progressError } = await supabase
         .from('user_sourate_progress')
-        .upsert({
-          user_id: request.user_id,
-          sourate_id: request.sourate_id,
-          is_validated: true,
-          progress_percentage: 100,
-        }, { onConflict: 'user_id,sourate_id' });
-
+        .upsert({ user_id: request.user_id, sourate_id: request.sourate_id, is_validated: true, progress_percentage: 100 },
+          { onConflict: 'user_id,sourate_id' });
       if (progressError) throw progressError;
     },
+    onMutate: async (request) => {
+      setProcessingId(request.id);
+      await queryClient.cancelQueries({ queryKey: ['admin-sourate-validations'] });
+      const previous = queryClient.getQueryData(['admin-sourate-validations']);
+      queryClient.setQueryData(['admin-sourate-validations'], (old: any) =>
+        (old || []).filter((r: any) => r.id !== request.id)
+      );
+      return { previous };
+    },
     onSuccess: (_, request) => {
-      toast({ title: `Sourate ${request.sourate?.name_french || ''} validée pour ${request.profile?.full_name || 'l\'élève'}` });
-      
-      // Notify student
+      toast({ title: `✅ Sourate ${request.sourate?.name_french || ''} validée pour ${request.profile?.full_name || 'l\'élève'}` });
       sendPushNotification({
         title: '⭐ Félicitations !',
         body: `Ton professeur a validé ${request.sourate?.name_french || 'ta sourate'} ! Continue comme ça !`,
         type: 'user',
         userId: request.user_id,
       });
-      
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
     },
-    onError: () => {
+    onError: (_, __, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['admin-sourate-validations'], context.previous);
       toast({ title: 'Erreur lors de la validation', variant: 'destructive' });
     },
+    onSettled: () => setProcessingId(null),
   });
 
   const refuseMutation = useMutation({
     mutationFn: async (request: any) => {
       const { error } = await supabase
         .from('sourate_validation_requests')
-        .update({
-          status: 'refused',
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-        })
+        .update({ status: 'refused', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
         .eq('id', request.id);
       if (error) throw error;
     },
+    onMutate: async (request) => {
+      setProcessingId(request.id);
+      await queryClient.cancelQueries({ queryKey: ['admin-sourate-validations'] });
+      const previous = queryClient.getQueryData(['admin-sourate-validations']);
+      queryClient.setQueryData(['admin-sourate-validations'], (old: any) =>
+        (old || []).filter((r: any) => r.id !== request.id)
+      );
+      return { previous };
+    },
     onSuccess: (_, request) => {
-      toast({
-        title: `❌ Sourate refusée`,
-        description: `${request.sourate?.name_french || 'Sourate'} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
-      });
-
+      toast({ title: '❌ Sourate refusée', description: `${request.sourate?.name_french || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}` });
       sendPushNotification({
         title: '📖 Sourate à retravailler',
         body: `Ton professeur t'invite à retravailler ${request.sourate?.name_french || 'ta sourate'}. Continue tes efforts !`,
         type: 'user',
         userId: request.user_id,
       });
-
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
     },
-    onError: () => {
+    onError: (_, __, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['admin-sourate-validations'], context.previous);
       toast({ title: 'Erreur lors du refus', variant: 'destructive' });
     },
+    onSettled: () => setProcessingId(null),
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
+          <ArrowLeft className="h-4 w-4 mr-2" /> Retour
         </Button>
         <div>
           <h2 className="text-xl font-bold text-foreground">Validations en attente</h2>
@@ -154,9 +144,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="h-20 bg-muted/50" />
-            </Card>
+            <Card key={i} className="animate-pulse"><CardContent className="h-20 bg-muted/50" /></Card>
           ))}
         </div>
       ) : requests?.length === 0 ? (
@@ -193,19 +181,17 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50"
                       onClick={() => refuseMutation.mutate(req)}
-                      disabled={refuseMutation.isPending || approveMutation.isPending}
+                      disabled={processingId === req.id}
                     >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Refuser
+                      <XCircle className="h-4 w-4 mr-1" /> Refuser
                     </Button>
                     <Button
                       size="sm"
                       className="bg-green-500 hover:bg-green-600 text-white"
                       onClick={() => approveMutation.mutate(req)}
-                      disabled={approveMutation.isPending || refuseMutation.isPending}
+                      disabled={processingId === req.id}
                     >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Valider
+                      <CheckCircle className="h-4 w-4 mr-1" /> Valider
                     </Button>
                   </div>
                 </div>

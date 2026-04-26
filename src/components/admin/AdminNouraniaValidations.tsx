@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, ArrowLeft, User } from 'lucide-react';
-import { useEffect } from 'react';
 
 interface AdminNouraniaValidationsProps {
   onBack: () => void;
@@ -16,6 +16,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['admin-nourania-validations'],
@@ -94,27 +95,34 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         if (error) throw error;
       }
     },
+    onMutate: async (request) => {
+      setProcessingId(request.id);
+      await queryClient.cancelQueries({ queryKey: ['admin-nourania-validations'] });
+      const previous = queryClient.getQueryData(['admin-nourania-validations']);
+      queryClient.setQueryData(['admin-nourania-validations'], (old: any) =>
+        (old || []).filter((r: any) => r.id !== request.id)
+      );
+      return { previous };
+    },
     onSuccess: (_, request) => {
       toast({
         title: '✅ Leçon validée, niveau suivant débloqué !',
         description: `Leçon ${request.lesson?.lesson_number || ''} validée pour ${request.profile?.full_name || 'l\'élève'}`,
       });
-      
-      // Notify student
       sendPushNotification({
         title: '⭐ Félicitations !',
         body: `Ton professeur a validé ${request.lesson?.title_french || 'ta leçon'} ! Continue comme ça !`,
         type: 'user',
         userId: request.user_id,
       });
-      
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },
-    onError: (err: any) => {
-      console.error('Erreur validation nourania:', err);
+    onError: (err: any, __, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['admin-nourania-validations'], context.previous);
       toast({ title: 'Erreur lors de la validation', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
+    onSettled: () => setProcessingId(null),
   });
 
   const refuseMutation = useMutation({
@@ -129,25 +137,34 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         .eq('id', request.id);
       if (error) throw error;
     },
+    onMutate: async (request) => {
+      setProcessingId(request.id);
+      await queryClient.cancelQueries({ queryKey: ['admin-nourania-validations'] });
+      const previous = queryClient.getQueryData(['admin-nourania-validations']);
+      queryClient.setQueryData(['admin-nourania-validations'], (old: any) =>
+        (old || []).filter((r: any) => r.id !== request.id)
+      );
+      return { previous };
+    },
     onSuccess: (_, request) => {
       toast({
         title: `❌ Leçon refusée`,
         description: `Leçon ${request.lesson?.lesson_number || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
       });
-
       sendPushNotification({
         title: '📖 Leçon à retravailler',
         body: `Ton professeur t'invite à retravailler ${request.lesson?.title_french || 'ta leçon'}. Continue tes efforts !`,
         type: 'user',
         userId: request.user_id,
       });
-
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },
-    onError: (err: any) => {
+    onError: (err: any, __, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['admin-nourania-validations'], context.previous);
       toast({ title: 'Erreur lors du refus', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
+    onSettled: () => setProcessingId(null),
   });
 
   return (
@@ -205,7 +222,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50"
                       onClick={() => refuseMutation.mutate(req)}
-                      disabled={refuseMutation.isPending || approveMutation.isPending}
+                      disabled={processingId === req.id}
                     >
                       <XCircle className="h-4 w-4 mr-1" />
                       Refuser
@@ -214,7 +231,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
                       size="sm"
                       className="bg-green-500 hover:bg-green-600 text-white"
                       onClick={() => approveMutation.mutate(req)}
-                      disabled={approveMutation.isPending || refuseMutation.isPending}
+                      disabled={processingId === req.id}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Valider
