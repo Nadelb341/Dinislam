@@ -27,11 +27,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
 
   const loadRegistrations = useCallback(async () => {
-    const { data, error } = await (supabase as any)
-      .from('profiles')
-      .select('*')
-      .eq('is_approved', false)
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc('get_pending_registrations' as any);
 
     if (error) throw error;
     setRegistrations(data || []);
@@ -73,11 +69,6 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         .upsert({ user_id: userId, role: 'student' }, { onConflict: 'user_id,role' });
 
       if (roleError) throw roleError;
-
-      // Confirmer l'email automatiquement pour éviter le blocage connexion
-      await supabase.functions.invoke('confirm-user-email', {
-        body: { user_id: userId },
-      });
 
       await loadRegistrations();
 

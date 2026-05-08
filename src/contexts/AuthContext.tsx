@@ -161,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signUp({
         email, password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: window.location.origin + '/auth?email_confirmed=1',
           data: { full_name: fullName, gender, date_of_birth: dateOfBirth },
         },
       });
@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (dateOfBirth) { updateData.date_of_birth = dateOfBirth; updateData.dob_set_by_user = true; }
         await supabase.from('profiles').update(updateData).eq('user_id', newUser.id);
         supabase.functions.invoke('send-push-notification', {
-          body: { title: '📝 Nouvelle inscription', body: `${fullName || email} demande à rejoindre l'application.`, type: 'admin', data: { url: '/admin?section=users' } },
+          body: { title: '📝 Nouvelle demande d\'inscription', body: `${fullName || email} a rempli le formulaire — en attente de confirmation email.`, type: 'admin', data: { url: '/admin?section=users' } },
         }).catch(err => console.error('Push notification error:', err));
       }
 

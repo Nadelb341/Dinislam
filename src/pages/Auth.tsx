@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -38,10 +38,22 @@ function removeAccount(email: string) {
 }
 
 const Auth = () => {
-  const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, signOut, resetPassword } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const signedOutRef = useRef(false);
+
+  const emailConfirmedParam = new URLSearchParams(window.location.search).get('email_confirmed') === '1';
+
+  // Si l'utilisateur arrive depuis le lien de confirmation email, on le déconnecte
+  // pour qu'il se connecte manuellement avec email + mot de passe
+  useEffect(() => {
+    if (emailConfirmedParam && user && !signedOutRef.current) {
+      signedOutRef.current = true;
+      signOut();
+    }
+  }, [emailConfirmedParam, user, signOut]);
 
   // Remember me
   const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>([]);
@@ -82,7 +94,7 @@ const Auth = () => {
     );
   }
 
-  if (user) {
+  if (user && !emailConfirmedParam) {
     return <Navigate to="/" replace />;
   }
 
@@ -262,6 +274,14 @@ const Auth = () => {
       <div className="absolute top-1/4 right-1/4 text-gold/10">
         <Star className="h-8 w-8" />
       </div>
+
+      {/* Bannière confirmation email */}
+      {emailConfirmedParam && (
+        <div className="w-full max-w-md mb-4 rounded-xl bg-green-500/90 text-white px-5 py-4 text-center shadow-lg animate-fade-in">
+          <p className="font-bold text-lg">✅ Email confirmé !</p>
+          <p className="text-sm mt-1 text-white/90">Connectez-vous maintenant avec votre email et mot de passe.</p>
+        </div>
+      )}
 
       {/* Logo and Title */}
       <div className="text-center mb-8 animate-fade-in">
