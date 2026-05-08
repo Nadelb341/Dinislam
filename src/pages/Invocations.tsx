@@ -13,80 +13,7 @@ import { useIsOver20 } from '@/hooks/useIsOver20';
 import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
-
-// Scène animée : personnage + décor selon le titre
-const InvocationScene = ({ title }: { title: string }) => {
-  const t = title.toLowerCase();
-
-  const scene = (() => {
-    if (t.includes('réveille') || t.includes('reveille') || t.includes('lever') || t.includes('levé'))
-      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-rise-up text-xl">🌅</span></>;
-    if (t.includes('couche') || t.includes('coucher') || t.includes('dormir') || t.includes('sommeil'))
-      return <><span className="invoc-sink-down text-2xl">🧍</span><span className="invoc-moon text-xl">🌙</span></>;
-    if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré')))
-      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🕌</span></>;
-    if (t.includes('mosquée') && (t.includes('sortant') || t.includes('sortir')))
-      return <><span className="text-xl">🕌</span><span className="invoc-walk-left text-2xl">🚶</span></>;
-    if (t.includes('mosquée'))
-      return <><span className="invoc-bow text-2xl">🧎</span><span className="text-xl">🕌</span></>;
-    if (t.includes('avant') && (t.includes('manger') || t.includes('repas')))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🍽️</span></>;
-    if (t.includes('après') && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
-      return <><span className="invoc-pulse text-2xl">😋</span><span className="text-xl">🍽️</span></>;
-    if (t.includes('nourriture') || t.includes('repas'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🍽️</span></>;
-    if (t.includes('entrant') && (t.includes('toilet') || t.includes('wc')))
-      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🚽</span></>;
-    if (t.includes('sortant') && (t.includes('toilet') || t.includes('wc')))
-      return <><span className="text-xl">🚽</span><span className="invoc-walk-left text-2xl">🚶</span></>;
-    if (t.includes('toilet') || t.includes('wc') || t.includes('salle de bain'))
-      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🚽</span></>;
-    if (t.includes('voiture') || t.includes('véhicule') || t.includes('vehicule') || t.includes('montant dans'))
-      return <><span className="invoc-walk-right text-xl">🧍</span><span className="invoc-drive text-2xl">🚗</span></>;
-    if (t.includes('voyage') || t.includes('transport'))
-      return <><span className="invoc-walk-right text-xl">🧍</span><span className="invoc-fly text-2xl">✈️</span></>;
-    if (t.includes('matin'))
-      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-rise-up text-xl">☀️</span></>;
-    if (t.includes('soir') || t.includes('nuit') || t.includes('veillée'))
-      return <><span className="invoc-sink-down text-2xl">🧍</span><span className="invoc-moon text-xl">🌙</span></>;
-    if (t.includes('maison') && (t.includes('entrant') || t.includes('entrer')))
-      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🏠</span></>;
-    if (t.includes('maison') && (t.includes('sortant') || t.includes('sortir')))
-      return <><span className="text-xl">🏠</span><span className="invoc-walk-left text-2xl">🚶</span></>;
-    if (t.includes('habit') || t.includes('vêtement') || t.includes('vetement'))
-      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-pulse text-xl">👕</span></>;
-    if (t.includes('ablution'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pour text-xl">🚿</span></>;
-    if (t.includes('pluie'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-rise-up text-xl">🌧️</span></>;
-    if (t.includes('mariage'))
-      return <><span className="invoc-pulse text-2xl">💑</span><span className="invoc-pulse text-xl">💍</span></>;
-    if (t.includes('maladie') || t.includes('malade'))
-      return <><span className="invoc-bow text-2xl">🤒</span><span className="invoc-pulse text-xl">❤️‍🩹</span></>;
-    if (t.includes('décès') || t.includes('deces') || t.includes('mort'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🤲</span></>;
-    if (t.includes('animal'))
-      return <><span className="invoc-walk-right text-2xl">🐕</span><span className="text-xl">🧍</span></>;
-    if (t.includes('colère') || t.includes('colere'))
-      return <><span className="invoc-pulse text-2xl">😤</span><span className="invoc-bow text-xl">🧍</span></>;
-    if (t.includes('miroir'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🪞</span></>;
-    if (t.includes('vent'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-rise-up text-xl">💨</span></>;
-    if (t.includes('tonnerre') || t.includes('orage'))
-      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">⛈️</span></>;
-    if (t.includes('marché') || t.includes('marche'))
-      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🛒</span></>;
-    // Défaut
-    return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🤲</span></>;
-  })();
-
-  return (
-    <div className="flex items-end justify-center gap-0.5 w-full h-12">
-      {scene}
-    </div>
-  );
-};
+import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 
 const getCategoryColor = (category: string | null) => {
   switch (category) {
@@ -610,9 +537,11 @@ const Invocations = () => {
                   {/* Scène animée */}
                   <div className="mt-3 flex-1 flex items-center justify-center">
                     {invocation.image_url ? (
-                      <img src={invocation.image_url} alt={invocation.title_french} className="w-12 h-12 object-contain" />
+                      <img src={invocation.image_url} alt={invocation.title_french} className="w-14 h-14 object-contain" />
                     ) : (
-                      <InvocationScene title={invocation.title_french} />
+                      <div className="w-14 h-14">
+                        <InvocationSceneSVG title={invocation.title_french} />
+                      </div>
                     )}
                   </div>
 
