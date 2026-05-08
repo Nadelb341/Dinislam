@@ -117,8 +117,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
+
+        // Détection confirmation email : Supabase ajoute type=signup dans le hash
+        if (event === 'SIGNED_IN' && window.location.hash.includes('type=signup')) {
+          await supabase.auth.signOut();
+          window.location.replace('/auth?email_confirmed=1');
+          return;
+        }
+
         setSession(session);
         if (session?.user) {
           setUser(session.user);
@@ -161,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signUp({
         email, password,
         options: {
-          emailRedirectTo: window.location.origin + '/auth?email_confirmed=1',
+          emailRedirectTo: window.location.origin,
           data: { full_name: fullName, gender, date_of_birth: dateOfBirth },
         },
       });
