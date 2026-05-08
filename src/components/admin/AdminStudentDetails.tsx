@@ -16,7 +16,7 @@ import {
   ArrowLeft, User, Search,
   Moon, Sparkles, BookOpen, Hand, BookMarked,
   MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff,
-  TrendingDown, Loader2,
+  TrendingDown, Loader2, Trash2,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -58,6 +59,9 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
+
+  // Delete confirm state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
 
   // Retrograde confirm state
   const [retrogradeTarget, setRetrogradeTarget] = useState<{
@@ -295,6 +299,30 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session?.access_token}`,
+          },
+          body: JSON.stringify({ user_id: userId }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      toast.success('Élève supprimé ✅');
+      queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de la suppression');
+    }
+    setDeleteConfirm({ open: false, userId: '', name: '' });
+  };
+
   const progressBar = (value: number, total: number, label: string, icon: React.ReactNode) => {
     const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
     return (
@@ -421,6 +449,12 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openPasswordDialog(student)}>
                     <KeyRound className="h-4 w-4 mr-2" /> 🔑 Modifier le mot de passe
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => setDeleteConfirm({ open: true, userId: student.user_id, name: student.full_name || 'cet élève' })}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Supprimer l'élève
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -598,6 +632,15 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirm dialog */}
+      <ConfirmDeleteDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+        onConfirm={() => handleDeleteUser(deleteConfirm.userId)}
+        title="Supprimer cet élève ?"
+        description={`Supprimer définitivement ${deleteConfirm.name} ? Toutes ses données seront effacées. Il devra se réinscrire pour accéder à l'application.`}
+      />
 
       {/* Password dialog */}
       <Dialog open={!!pwdDialogStudent} onOpenChange={() => { setPwdDialogStudent(null); setNewPassword(''); setShowCurrentPwd(false); setShowNewPwd(false); }}>
