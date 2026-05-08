@@ -301,20 +301,11 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session?.access_token}`,
-          },
-          body: JSON.stringify({ user_id: userId }),
-        }
-      );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
       toast.success('Élève supprimé ✅');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
     } catch (err: any) {
