@@ -68,10 +68,38 @@ function parseTime(timeStr: string): Date {
   return d;
 }
 
-export function usePrayerTimesCity(city: CityOption) {
+export const PRAYER_METHOD_KEY = 'dinislam_prayer_method';
+
+export interface PrayerMethod {
+  id: number;
+  label: string;
+  description: string;
+}
+
+export const PRAYER_METHODS: PrayerMethod[] = [
+  { id: 3,  label: 'MWL / AMCES',   description: 'Ligue Islamique Mondiale — Fajr 18°, Icha 17° (recommandé France)' },
+  { id: 12, label: 'UOIF',          description: 'Union des Org. Islamiques de France — Fajr 12°, Icha 12°' },
+  { id: 2,  label: 'ISNA',          description: 'Amérique du Nord — Fajr 15°, Icha 15°' },
+];
+
+export function getSavedMethod(): PrayerMethod {
+  try {
+    const saved = localStorage.getItem(PRAYER_METHOD_KEY);
+    if (saved) {
+      const id = parseInt(saved, 10);
+      const found = PRAYER_METHODS.find(m => m.id === id);
+      if (found) return found;
+    }
+  } catch {}
+  return PRAYER_METHODS[0]; // MWL par défaut
+}
+
+export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const methodId = method?.id ?? getSavedMethod().id;
 
   const fetchTimes = useCallback(async () => {
     setLoading(true);
@@ -82,8 +110,7 @@ export function usePrayerTimesCity(city: CityOption) {
       const month = today.getMonth() + 1;
       const year = today.getFullYear();
 
-      // Method 2 = ISNA, method 12 = UOIF (France)
-      const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${city.lat}&longitude=${city.lon}&method=12`;
+      const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${city.lat}&longitude=${city.lon}&method=${methodId}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Erreur API');
       const json = await res.json();
@@ -115,7 +142,7 @@ export function usePrayerTimesCity(city: CityOption) {
     } finally {
       setLoading(false);
     }
-  }, [city.lat, city.lon]);
+  }, [city.lat, city.lon, methodId]);
 
   useEffect(() => {
     fetchTimes();

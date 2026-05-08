@@ -7,7 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
+import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CITIES, CityOption, PRAYER_METHODS, PRAYER_METHOD_KEY, getSavedMethod, PrayerMethod } from '@/hooks/usePrayerTimesCity';
 
 const MONTPELLIER: CityOption = { label: 'Montpellier (34)', country: 'FR', lat: 43.61, lon: 3.88 };
 const CITY_STORAGE_KEY = 'dinislam_prayer_city';
@@ -37,7 +37,9 @@ const Priere = () => {
   const queryClient = useQueryClient();
   const [showQibla, setShowQibla] = useState(false);
   const [showCitySelector, setShowCitySelector] = useState(false);
+  const [showMethodSelector, setShowMethodSelector] = useState(false);
   const [selectedCity, setSelectedCity] = useState<CityOption>(getSavedCity);
+  const [selectedMethod, setSelectedMethod] = useState<PrayerMethod>(getSavedMethod);
 
   const handleSelectCity = (city: CityOption) => {
     setSelectedCity(city);
@@ -45,7 +47,13 @@ const Priere = () => {
     setShowCitySelector(false);
   };
 
-  const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity);
+  const handleSelectMethod = (method: PrayerMethod) => {
+    setSelectedMethod(method);
+    localStorage.setItem(PRAYER_METHOD_KEY, String(method.id));
+    setShowMethodSelector(false);
+  };
+
+  const { prayerTimes, loading: prayerLoading, error: prayerError, getNextPrayer } = usePrayerTimesCity(selectedCity, selectedMethod);
 
   const { data: dailyPrayers = [] } = useQuery({
     queryKey: ['user-daily-prayers', user?.id],
@@ -168,6 +176,43 @@ const Priere = () => {
               <Navigation className="h-4 w-4" />
               Qibla
             </Button>
+          </div>
+
+          {/* Sélecteur de méthode de calcul */}
+          <div className="relative">
+            <button
+              onClick={() => setShowMethodSelector(!showMethodSelector)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <Clock className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="flex-1 text-left">
+                <span className="font-medium text-amber-700 dark:text-amber-400">{selectedMethod.label}</span>
+                <span className="text-muted-foreground ml-1.5 text-xs">— méthode de calcul</span>
+              </span>
+              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showMethodSelector && 'rotate-180')} />
+            </button>
+            {showMethodSelector && (
+              <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
+                <div className="px-4 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">
+                  Choisir la méthode de calcul
+                </div>
+                {PRAYER_METHODS.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => handleSelectMethod(method)}
+                    className={cn(
+                      'w-full text-left px-4 py-3 text-sm hover:bg-muted/50 transition-colors border-t border-border/40',
+                      selectedMethod.id === method.id && 'bg-amber-50 dark:bg-amber-950/30'
+                    )}
+                  >
+                    <p className={cn('font-semibold', selectedMethod.id === method.id ? 'text-amber-700 dark:text-amber-400' : 'text-foreground')}>
+                      {method.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{method.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {prayerLoading ? (

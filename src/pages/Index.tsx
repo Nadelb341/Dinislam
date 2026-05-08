@@ -8,7 +8,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
-import { usePrayerTimesCity, CITIES, CityOption } from '@/hooks/usePrayerTimesCity';
+import { usePrayerTimesCity, CITIES, CityOption, getSavedMethod } from '@/hooks/usePrayerTimesCity';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -157,7 +157,7 @@ const Index = () => {
   const { data: progress } = useUserProgress();
 
   const [prayerCity] = useState<CityOption>(getSavedCity);
-  const { prayerTimes, getNextPrayer } = usePrayerTimesCity(prayerCity);
+  const { prayerTimes, getNextPrayer } = usePrayerTimesCity(prayerCity, getSavedMethod());
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
 
