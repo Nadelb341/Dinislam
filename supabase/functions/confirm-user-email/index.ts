@@ -1,0 +1,54 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: getCorsHeaders(req) });
+  }
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
+    if (!caller) throw new Error("Not authenticated");
+
+    const { data: roleData } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id)
+      .eq("role", "admin")
+      .single();
+    if (!roleData) throw new Error("Not authorized");
+
+    const { user_id } = await req.json();
+    if (!user_id) throw new Error("Missing user_id");
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+      email_confirm: true,
+    });
+    if (error) throw error;
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
+});

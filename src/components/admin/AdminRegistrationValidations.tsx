@@ -74,6 +74,11 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
 
       if (roleError) throw roleError;
 
+      // Confirmer l'email automatiquement pour éviter le blocage connexion
+      await supabase.functions.invoke('confirm-user-email', {
+        body: { user_id: userId },
+      });
+
       await loadRegistrations();
 
       queryClient.invalidateQueries({ queryKey: ['admin-pending-total-count'] });
