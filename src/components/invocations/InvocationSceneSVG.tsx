@@ -1,480 +1,577 @@
-// Illustrations SVG pour chaque invocation
-// Personnage enfant sans visage (face beige, pas d'yeux/nez/bouche)
+// Illustrations SVG — enfant en thobe blanc + kufi, visage beige sans traits
 
-interface SceneProps {
-  title: string;
-}
+interface SceneProps { title: string; }
 
-// Personnage debout de face
+// ── Personnage principal ─────────────────────────────────────────────────
+// Enfant en thobe blanc islamique + kufi, sans yeux/nez/bouche
 const Kid = ({
-  x = 28, y = 10,
-  shirt = '#5B9BD5', pants = '#2C4A7C',
-  armLeft = 0, armRight = 0, // angle bras en degrés
-  lean = 0, // inclinaison corps
+  x = 0, y = 0,
+  armLeft = 0, armRight = 0,
+  lean = 0, flip = false,
 }: {
   x?: number; y?: number;
-  shirt?: string; pants?: string;
   armLeft?: number; armRight?: number;
-  lean?: number;
+  lean?: number; flip?: boolean;
 }) => (
-  <g transform={`translate(${x},${y}) rotate(${lean} 0 18)`}>
-    {/* Cheveux */}
-    <ellipse cx="0" cy="-2" rx="7.5" ry="8" fill="#3D2B1F"/>
-    {/* Visage beige — sans yeux/nez/bouche */}
-    <ellipse cx="0" cy="2" rx="7" ry="8" fill="#F4C89A"/>
-    {/* Cou */}
-    <rect x="-2.5" y="9" width="5" height="4" fill="#F4C89A"/>
-    {/* Corps */}
-    <rect x="-7" y="12" width="14" height="13" rx="2" fill={shirt}/>
+  <g transform={`translate(${x},${y}) ${flip ? 'scale(-1,1)' : ''} rotate(${lean} 0 20)`}>
+    {/* Thobe — longue robe blanche */}
+    <path d="M-8 13 Q-12 28 -11 43 L11 43 Q12 28 8 13 Z"
+          fill="#F8F9FF" stroke="#D8D8EC" strokeWidth="0.8"/>
+    {/* Col thobe */}
+    <path d="M-4.5 13 Q0 15.5 4.5 13" fill="none" stroke="#C8C8DC" strokeWidth="1"/>
+    {/* Pli central subtil */}
+    <line x1="0" y1="15" x2="0" y2="43" stroke="#E8E8F4" strokeWidth="0.5"/>
     {/* Bras gauche */}
-    <g transform={`rotate(${armLeft} -7 14)`}>
-      <rect x="-11" y="12" width="5" height="11" rx="2.5" fill={shirt}/>
-      <rect x="-11.5" y="22" width="5" height="4" rx="2" fill="#F4C89A"/>
+    <g transform={`rotate(${armLeft} -8 15)`}>
+      <path d="M-8 14 L-14 28 Q-12 30 -11 29 L-7 16 Z"
+            fill="#EDEDF8" stroke="#D8D8EC" strokeWidth="0.5"/>
+      <ellipse cx="-12.5" cy="30" rx="3.2" ry="3" fill="#F2C08A"/>
     </g>
     {/* Bras droit */}
-    <g transform={`rotate(${armRight} 7 14)`}>
-      <rect x="6" y="12" width="5" height="11" rx="2.5" fill={shirt}/>
-      <rect x="6.5" y="22" width="5" height="4" rx="2" fill="#F4C89A"/>
+    <g transform={`rotate(${armRight} 8 15)`}>
+      <path d="M8 14 L14 28 Q12 30 11 29 L7 16 Z"
+            fill="#EDEDF8" stroke="#D8D8EC" strokeWidth="0.5"/>
+      <ellipse cx="12.5" cy="30" rx="3.2" ry="3" fill="#F2C08A"/>
     </g>
-    {/* Jambe gauche */}
-    <rect x="-7" y="24" width="6" height="12" rx="2.5" fill={pants}/>
-    {/* Jambe droite */}
-    <rect x="1" y="24" width="6" height="12" rx="2.5" fill={pants}/>
-    {/* Chaussures */}
-    <ellipse cx="-4" cy="36.5" rx="4" ry="2.5" fill="#3D2B1F"/>
-    <ellipse cx="4" cy="36.5" rx="4" ry="2.5" fill="#3D2B1F"/>
+    {/* Cou */}
+    <rect x="-2.8" y="9" width="5.6" height="5" rx="1.8" fill="#F2C08A"/>
+    {/* Visage beige — aucun trait */}
+    <ellipse cx="0" cy="4" rx="7" ry="8.5" fill="#F2C08A"/>
+    {/* Kufi (calotte islamique blanche) */}
+    <path d="M-8 3.5 Q-8 -8 0 -10 Q8 -8 8 3.5 Z" fill="#F5F3F0" stroke="#E0DED8" strokeWidth="0.6"/>
+    <ellipse cx="0" cy="3.5" rx="8" ry="3" fill="#EDEAE6" stroke="#D8D5D0" strokeWidth="0.5"/>
+    {/* Sandales */}
+    <ellipse cx="-4.5" cy="43.5" rx="5" ry="2.2" fill="#C49050"/>
+    <ellipse cx="4.5" cy="43.5" rx="5" ry="2.2" fill="#C49050"/>
   </g>
 );
 
-// ──────────────────────────────────────────────
-// Scènes
-// ──────────────────────────────────────────────
+// Enfant allongé (pour sommeil / maladie)
+const KidLying = ({ x = 0, y = 0, shirt = '#F8F9FF' }: { x?: number; y?: number; shirt?: string }) => (
+  <g transform={`translate(${x},${y})`}>
+    {/* Corps thobe horizontal */}
+    <rect x="-18" y="-7" width="36" height="14" rx="7" fill={shirt} stroke="#D8D8EC" strokeWidth="0.7"/>
+    {/* Pli */}
+    <line x1="-18" y1="0" x2="18" y2="0" stroke="#E8E8F4" strokeWidth="0.4"/>
+    {/* Tête */}
+    <ellipse cx="-22" cy="0" rx="7" ry="8" fill="#F2C08A"/>
+    {/* Kufi */}
+    <path d="M-29 -2.5 Q-29 -10 -22 -11.5 Q-15 -10 -15 -2.5 Z" fill="#F5F3F0" stroke="#E0DED8" strokeWidth="0.5"/>
+    <ellipse cx="-22" cy="-2.5" rx="7" ry="2.5" fill="#EDEAE6"/>
+    {/* Sandales */}
+    <ellipse cx="20" cy="-3" rx="2.2" ry="5" fill="#C49050"/>
+    <ellipse cx="20" cy="3" rx="2.2" ry="5" fill="#C49050"/>
+  </g>
+);
+
+// ── Scènes ─────────────────────────────────────────────────────────────
 
 const SceneReveille = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    {/* Fond bleu ciel */}
-    <rect width="56" height="56" rx="12" fill="#C8E6FA"/>
-    {/* Fenêtre avec soleil */}
-    <rect x="33" y="6" width="17" height="16" rx="2" fill="#FFF9C4"/>
-    <rect x="33" y="6" width="17" height="16" rx="2" fill="none" stroke="#B0BEC5" strokeWidth="1"/>
-    {/* Rayons soleil */}
+    <rect width="56" height="56" rx="12" fill="#FEF3DC"/>
+    {/* Ciel matinal */}
+    <rect width="56" height="32" rx="12" fill="#FFE0A0" opacity="0.6"/>
+    {/* Fenêtre */}
+    <rect x="36" y="4" width="17" height="20" rx="2" fill="#FFF8C8" stroke="#E0C860" strokeWidth="0.8"/>
+    <line x1="44.5" y1="4" x2="44.5" y2="24" stroke="#E0C860" strokeWidth="0.6" opacity="0.5"/>
+    <line x1="36" y1="14" x2="53" y2="14" stroke="#E0C860" strokeWidth="0.6" opacity="0.5"/>
+    {/* Rayons de soleil */}
     {[0,45,90,135,180,225,270,315].map((a,i) => (
-      <line key={i} x1="41.5" y1="14"
-        x2={41.5 + Math.cos(a*Math.PI/180)*9}
-        y2={14 + Math.sin(a*Math.PI/180)*9}
-        stroke="#FFCA28" strokeWidth="1.5" strokeLinecap="round"/>
+      <line key={i}
+        x1="44.5" y1="14"
+        x2={44.5 + Math.cos(a*Math.PI/180)*14}
+        y2={14 + Math.sin(a*Math.PI/180)*14}
+        stroke="#FFCA28" strokeWidth="1.2" strokeLinecap="round" opacity="0.4"/>
     ))}
-    <circle cx="41.5" cy="14" r="5" fill="#FFCA28"/>
+    <circle cx="44.5" cy="14" r="6" fill="#FFCA28" opacity="0.7"/>
+    {/* Parquet */}
+    <rect y="44" width="56" height="12" rx="0" fill="#D4A870"/>
+    <line x1="0" y1="48" x2="56" y2="48" stroke="#C09058" strokeWidth="0.5" opacity="0.5"/>
     {/* Lit */}
-    <rect x="2" y="38" width="35" height="14" rx="4" fill="#FFFFFF" stroke="#CFD8DC" strokeWidth="1"/>
-    <rect x="2" y="38" width="35" height="6" rx="4" fill="#EF9A9A"/>
-    {/* Oreiller */}
-    <ellipse cx="12" cy="41" rx="8" ry="4" fill="#FAFAFA" stroke="#CFD8DC" strokeWidth="0.8"/>
-    {/* Enfant assis dans le lit, bras levés (étirement) */}
-    <Kid x="22" y="14" shirt="#FF8A65" pants="#5D4037" armLeft={-70} armRight={70}/>
+    <rect x="1" y="36" width="34" height="16" rx="4" fill="#FFFFFF" stroke="#DCC8B0" strokeWidth="0.8"/>
+    <rect x="1" y="36" width="34" height="7" rx="4" fill="#F4A898"/>
+    <ellipse cx="10" cy="39.5" rx="7.5" ry="3.5" fill="#FAF5F0" stroke="#E0CCC0" strokeWidth="0.6"/>
+    {/* Enfant assis, bras levés (étirement) */}
+    <Kid x="24" y="10" armLeft={-80} armRight={80}/>
   </svg>
 );
 
 const SceneCoucher = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#BBDEFB"/>
-    {/* Lune + étoiles */}
-    <path d="M44 8 Q50 14 44 20 Q38 14 44 8Z" fill="#FFF176"/>
-    <circle cx="36" cy="7" r="1.5" fill="#FFF176"/>
-    <circle cx="50" cy="10" r="1" fill="#FFF176"/>
-    <circle cx="42" cy="22" r="1" fill="#FFF176"/>
+    <rect width="56" height="56" rx="12" fill="#1C2E50"/>
+    {/* Ciel étoilé */}
+    {[[7,6],[15,10],[28,4],[42,8],[50,5],[5,18],[22,14],[38,16],[48,20]].map(([cx,cy],i) => (
+      <circle key={i} cx={cx} cy={cy} r={i%2===0?1.2:0.8} fill="#FFF" opacity={0.5+0.3*(i%3)*0.2}/>
+    ))}
+    {/* Lune croissant */}
+    <circle cx="44" cy="11" r="7.5" fill="#FFF8D0"/>
+    <circle cx="48" cy="8.5" r="6" fill="#1C2E50"/>
+    {/* Sol */}
+    <rect y="44" width="56" height="12" rx="0" fill="#2A1A0E"/>
     {/* Lit */}
-    <rect x="2" y="36" width="52" height="16" rx="4" fill="#FFFFFF" stroke="#B0BEC5" strokeWidth="1"/>
-    <rect x="2" y="36" width="52" height="7" rx="4" fill="#90CAF9"/>
+    <rect x="1" y="36" width="54" height="16" rx="4" fill="#3A2572"/>
+    <rect x="1" y="36" width="54" height="7" rx="4" fill="#5538A8"/>
     {/* Oreiller */}
-    <ellipse cx="12" cy="39.5" rx="8" ry="4" fill="#FAFAFA" stroke="#CFD8DC" strokeWidth="0.8"/>
-    {/* Enfant allongé (couché sur le côté) */}
-    <g transform="translate(28,40) rotate(-90)">
-      <ellipse cx="0" cy="-2" rx="6" ry="7" fill="#3D2B1F"/>
-      <ellipse cx="0" cy="2" rx="6" ry="7" fill="#F4C89A"/>
-      <rect x="-5" y="8" width="10" height="10" rx="2" fill="#7986CB"/>
-      <rect x="-4" y="18" width="4" height="8" rx="2" fill="#3949AB"/>
-      <rect x="0" y="18" width="4" height="8" rx="2" fill="#3949AB"/>
+    <ellipse cx="10" cy="40" rx="7" ry="3.5" fill="#7860C0" stroke="#5840A0" strokeWidth="0.7"/>
+    {/* Enfant allongé */}
+    <g transform="translate(32,41)">
+      <KidLying shirt="#F8F9FF"/>
     </g>
     {/* ZZZ */}
-    <text x="40" y="30" fontSize="8" fill="#90CAF9" fontWeight="bold">z</text>
-    <text x="44" y="24" fontSize="6" fill="#90CAF9" fontWeight="bold">z</text>
-    <text x="47" y="20" fontSize="5" fill="#90CAF9" fontWeight="bold">z</text>
+    <text x="44" y="30" fontSize="7" fill="#8888CC" fontWeight="bold">z</text>
+    <text x="48" y="24" fontSize="5" fill="#8888CC" fontWeight="bold">z</text>
   </svg>
 );
 
 const SceneEntrerMosquee = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#F3E5F5"/>
-    {/* Mosquée simplifiée */}
-    <rect x="28" y="18" width="24" height="32" fill="#CE93D8"/>
+    {/* Ciel */}
+    <rect width="56" height="56" rx="12" fill="#D0E8F8"/>
+    <rect width="56" height="36" rx="12" fill="#B8D8F0" opacity="0.4"/>
+    {/* Sol/chemin */}
+    <rect y="40" width="56" height="16" rx="0" fill="#D8C890"/>
+    <path d="M8 56 L20 40 L36 40 L48 56 Z" fill="#E8D8A0" opacity="0.8"/>
+    {/* Mosquée */}
+    <rect x="28" y="18" width="26" height="26" fill="#F2ECD8" stroke="#C8B880" strokeWidth="0.7"/>
     {/* Dôme */}
-    <ellipse cx="40" cy="18" rx="10" ry="8" fill="#BA68C8"/>
-    {/* Minaret */}
-    <rect x="46" y="8" width="5" height="18" fill="#AB47BC"/>
-    <ellipse cx="48.5" cy="8" rx="3" ry="2" fill="#9C27B0"/>
-    {/* Porte mosquée */}
-    <rect x="35" y="30" width="10" height="20" rx="5" fill="#7B1FA2"/>
-    {/* Étoile */}
-    <text x="38" y="24" fontSize="7" fill="#FFF176">★</text>
-    {/* Enfant qui marche vers la mosquée */}
-    <Kid x="18" y="18" shirt="#66BB6A" pants="#2E7D32" armLeft={30} armRight={-30}/>
-    {/* Flèche directionnelle subtile */}
-    <path d="M23 46 L27 43 L27 45 L31 45 L31 47 L27 47 L27 49Z" fill="#CE93D8" opacity="0.6"/>
+    <path d="M29 18 Q41 6 53 18" fill="#E8E0C8" stroke="#C8B880" strokeWidth="0.6"/>
+    <ellipse cx="41" cy="18" rx="8" ry="3" fill="#DDD4B8"/>
+    {/* Minarets */}
+    <rect x="28" y="6" width="5" height="15" fill="#EDE8D8" stroke="#C8B880" strokeWidth="0.5"/>
+    <path d="M28 6 Q30.5 2 33 6" fill="#D8C890"/>
+    <rect x="49" y="6" width="5" height="15" fill="#EDE8D8" stroke="#C8B880" strokeWidth="0.5"/>
+    <path d="M49 6 Q51.5 2 54 6" fill="#D8C890"/>
+    {/* Porte en arc */}
+    <path d="M36 44 L36 28 Q41 23 46 28 L46 44 Z" fill="#B89058"/>
+    <path d="M37.5 44 L37.5 29 Q41 25 44.5 29 L44.5 44 Z" fill="#A07840" opacity="0.5"/>
+    {/* Fenêtres */}
+    <path d="M30 30 L30 25 Q33 22.5 36 25 L36 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
+    <path d="M46 30 L46 25 Q49 22.5 52 25 L52 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
+    {/* Arbres */}
+    <ellipse cx="8" cy="30" rx="5" ry="7" fill="#5A9840"/>
+    <rect x="6.5" y="36" width="3" height="7" fill="#7A5028"/>
+    <ellipse cx="18" cy="33" rx="4" ry="5.5" fill="#68A850"/>
+    <rect x="16.5" y="38" width="3" height="5" fill="#7A5028"/>
+    {/* Personnage — marche vers la mosquée */}
+    <Kid x="17" y="12" armLeft={30} armRight={-25}/>
   </svg>
 );
 
 const SceneSortirMosquee = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#F8BBD0"/>
-    {/* Mosquée */}
-    <rect x="2" y="18" width="24" height="32" fill="#F48FB1"/>
-    <ellipse cx="14" cy="18" rx="10" ry="8" fill="#F06292"/>
-    <rect x="2" y="8" width="5" height="18" fill="#EC407A"/>
-    <ellipse cx="4.5" cy="8" rx="3" ry="2" fill="#E91E63"/>
-    <rect x="9" y="30" width="10" height="20" rx="5" fill="#C2185B"/>
-    <text x="11" y="24" fontSize="7" fill="#FFF176">★</text>
-    {/* Enfant qui sort, bras levés (joie) */}
-    <Kid x="38" y="18" shirt="#FF7043" pants="#BF360C" armLeft={-60} armRight={60}/>
-    {/* Mains en prière */}
-    <text x="32" y="56" fontSize="8">🤲</text>
+    <rect width="56" height="56" rx="12" fill="#D0E8F8"/>
+    <rect width="56" height="36" rx="12" fill="#B8D8F0" opacity="0.4"/>
+    <rect y="40" width="56" height="16" rx="0" fill="#D8C890"/>
+    <path d="M8 56 L20 40 L36 40 L48 56 Z" fill="#E8D8A0" opacity="0.8"/>
+    {/* Mosquée à gauche */}
+    <rect x="2" y="18" width="26" height="26" fill="#F2ECD8" stroke="#C8B880" strokeWidth="0.7"/>
+    <path d="M3 18 Q15 6 27 18" fill="#E8E0C8" stroke="#C8B880" strokeWidth="0.6"/>
+    <ellipse cx="15" cy="18" rx="8" ry="3" fill="#DDD4B8"/>
+    <rect x="2" y="6" width="5" height="15" fill="#EDE8D8" stroke="#C8B880" strokeWidth="0.5"/>
+    <path d="M2 6 Q4.5 2 7 6" fill="#D8C890"/>
+    <rect x="23" y="6" width="5" height="15" fill="#EDE8D8" stroke="#C8B880" strokeWidth="0.5"/>
+    <path d="M23 6 Q25.5 2 28 6" fill="#D8C890"/>
+    {/* Porte en arc — mosquée gauche */}
+    <path d="M10 44 L10 28 Q15 23 20 28 L20 44 Z" fill="#B89058"/>
+    <path d="M4 30 L4 25 Q7 22.5 10 25 L10 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
+    <path d="M20 30 L20 25 Q23 22.5 26 25 L26 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
+    {/* Enfant qui sort (dos à la mosquée, se dirige à droite) */}
+    <Kid x="38" y="12" armLeft={-25} armRight={30} flip={true}/>
   </svg>
 );
 
 const SceneAvantManger = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E8F5E9"/>
+    <rect width="56" height="56" rx="12" fill="#F0F8EC"/>
+    {/* Mur */}
+    <rect width="56" height="38" rx="12" fill="#E8F4E0" opacity="0.5"/>
+    {/* Parquet */}
+    <rect y="44" width="56" height="12" rx="0" fill="#C4906A"/>
     {/* Table */}
-    <rect x="14" y="38" width="32" height="4" rx="2" fill="#A1887F"/>
-    <rect x="16" y="42" width="4" height="10" rx="1" fill="#8D6E63"/>
-    <rect x="36" y="42" width="4" height="10" rx="1" fill="#8D6E63"/>
+    <rect x="10" y="36" width="36" height="5" rx="2.5" fill="#A07848"/>
+    <rect x="12" y="41" width="4" height="10" rx="1.5" fill="#8A6030"/>
+    <rect x="40" y="41" width="4" height="10" rx="1.5" fill="#8A6030"/>
+    {/* Nappe */}
+    <rect x="10" y="34" width="36" height="4" rx="2" fill="#FAFAF0" stroke="#E8E8D0" strokeWidth="0.6"/>
     {/* Assiette */}
-    <ellipse cx="30" cy="38" rx="9" ry="4" fill="#FFFFFF" stroke="#B0BEC5" strokeWidth="1"/>
-    <ellipse cx="30" cy="38" rx="6" ry="2.5" fill="#FFCCBC"/>
+    <ellipse cx="30" cy="35" rx="9" ry="4.5" fill="#FFFFFF" stroke="#D8D8C8" strokeWidth="0.7"/>
+    <ellipse cx="30" cy="35" rx="6" ry="3" fill="#FFF0E8"/>
     {/* Nourriture */}
-    <circle cx="28" cy="37.5" r="2" fill="#A5D6A7"/>
-    <circle cx="32" cy="37.5" r="2" fill="#EF9A9A"/>
+    <circle cx="28" cy="34.5" r="2.5" fill="#88CC78"/>
+    <circle cx="32" cy="34.5" r="2.5" fill="#F08878"/>
     {/* Verre */}
-    <rect x="40" y="32" width="5" height="8" rx="1" fill="#B3E5FC" opacity="0.8" stroke="#81D4FA" strokeWidth="0.8"/>
-    {/* Enfant assis */}
-    <Kid x="30" y="10" shirt="#42A5F5" pants="#1565C0" armLeft={20} armRight={-20} lean={0}/>
+    <rect x="42" y="29" width="6" height="9" rx="1.5" fill="#C8E8F8" opacity="0.8" stroke="#A8C8E8" strokeWidth="0.6"/>
+    {/* Couteau & fourchette */}
+    <line x1="16" y1="33" x2="16" y2="40" stroke="#B0B0B0" strokeWidth="1" strokeLinecap="round"/>
+    <line x1="20" y1="33" x2="20" y2="40" stroke="#B0B0B0" strokeWidth="1" strokeLinecap="round"/>
+    {/* Personnage debout, légèrement penché */}
+    <Kid x="30" y="6" armLeft={20} armRight={-20} lean={5}/>
   </svg>
 );
 
 const SceneApresManger = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#F1F8E9"/>
+    <rect width="56" height="56" rx="12" fill="#F4F8F0"/>
+    <rect width="56" height="38" rx="12" fill="#EAF4E4" opacity="0.5"/>
+    <rect y="44" width="56" height="12" rx="0" fill="#C4906A"/>
     {/* Table */}
-    <rect x="14" y="38" width="32" height="4" rx="2" fill="#A1887F"/>
-    <rect x="16" y="42" width="4" height="10" rx="1" fill="#8D6E63"/>
-    <rect x="36" y="42" width="4" height="10" rx="1" fill="#8D6E63"/>
+    <rect x="10" y="36" width="36" height="5" rx="2.5" fill="#A07848"/>
+    <rect x="12" y="41" width="4" height="10" rx="1.5" fill="#8A6030"/>
+    <rect x="40" y="41" width="4" height="10" rx="1.5" fill="#8A6030"/>
+    <rect x="10" y="34" width="36" height="4" rx="2" fill="#FAFAF0" stroke="#E8E8D0" strokeWidth="0.6"/>
     {/* Assiette vide */}
-    <ellipse cx="30" cy="38" rx="9" ry="4" fill="#FFFFFF" stroke="#B0BEC5" strokeWidth="1"/>
-    <ellipse cx="30" cy="38" rx="6" ry="2.5" fill="#F5F5F5"/>
-    {/* Fourchette et couteau croisés (repas terminé) */}
-    <line x1="27" y1="36" x2="29" y2="40" stroke="#90A4AE" strokeWidth="1.2" strokeLinecap="round"/>
-    <line x1="29" y1="36" x2="27" y2="40" stroke="#90A4AE" strokeWidth="1.2" strokeLinecap="round"/>
-    {/* Main sur ventre = bras courbé */}
-    <Kid x="30" y="10" shirt="#8D6E63" pants="#4E342E" armLeft={0} armRight={-40}/>
-    {/* Étoiles de satisfaction */}
-    <text x="8" y="20" fontSize="8" opacity="0.7">✨</text>
-    <text x="44" y="18" fontSize="6" opacity="0.6">✨</text>
+    <ellipse cx="30" cy="35" rx="9" ry="4.5" fill="#FFFFFF" stroke="#D8D8C8" strokeWidth="0.7"/>
+    <ellipse cx="30" cy="35" rx="6" ry="3" fill="#F8F5F0"/>
+    {/* Couverts croisés = repas terminé */}
+    <line x1="27" y1="33" x2="29.5" y2="37" stroke="#B0B0B0" strokeWidth="1.2" strokeLinecap="round"/>
+    <line x1="29.5" y1="33" x2="27" y2="37" stroke="#B0B0B0" strokeWidth="1.2" strokeLinecap="round"/>
+    {/* Verre vide */}
+    <rect x="42" y="29" width="6" height="9" rx="1.5" fill="#F0F8FC" opacity="0.7" stroke="#A8C8E8" strokeWidth="0.6"/>
+    {/* Étoiles satisfaction */}
+    <text x="5" y="20" fontSize="9" opacity="0.6">✨</text>
+    <text x="46" y="18" fontSize="7" opacity="0.5">✨</text>
+    {/* Personnage — main sur ventre (satisfait) */}
+    <Kid x="30" y="6" armLeft={0} armRight={-45} lean={-5}/>
   </svg>
 );
 
 const SceneEntrerToilettes = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E3F2FD"/>
-    {/* Mur salle de bain */}
-    <rect x="28" y="4" width="24" height="48" fill="#ECEFF1"/>
-    {/* Carrelage */}
-    {[0,1,2,3].map(row => [0,1].map(col => (
-      <rect key={`${row}-${col}`} x={29+col*11} y={5+row*11} width="10" height="10"
-        fill="none" stroke="#CFD8DC" strokeWidth="0.5"/>
+    <rect width="56" height="56" rx="12" fill="#EBF5FD"/>
+    {/* Mur carrelé */}
+    <rect x="28" y="0" width="28" height="56" rx="0" fill="#F2F8FC"/>
+    {[0,1,2,3,4].map(row => [0,1].map(col => (
+      <rect key={`${row}-${col}`} x={29+col*12} y={row*11} width="11" height="10"
+        fill="none" stroke="#DDEEF8" strokeWidth="0.6"/>
     )))}
-    {/* Porte */}
-    <rect x="34" y="20" width="16" height="32" rx="2" fill="#BDBDBD"/>
-    <rect x="34" y="20" width="16" height="32" rx="2" fill="none" stroke="#9E9E9E" strokeWidth="1"/>
-    <circle cx="36" cy="36" r="1.5" fill="#757575"/>
-    {/* Toilettes visibles */}
-    <ellipse cx="42" cy="46" rx="5" ry="3" fill="#FFFFFF" stroke="#B0BEC5" strokeWidth="0.8"/>
-    {/* Enfant qui avance vers la porte */}
-    <Kid x="18" y="18" shirt="#26C6DA" pants="#00838F" armLeft={30} armRight={-30}/>
+    {/* Porte de la salle de bain */}
+    <rect x="34" y="14" width="18" height="38" rx="2" fill="#D0C8B8" stroke="#B8AFA0" strokeWidth="0.8"/>
+    <rect x="34" y="14" width="18" height="38" rx="2" fill="none" stroke="#B8AFA0" strokeWidth="0.6"/>
+    <circle cx="36.5" cy="33" r="2" fill="#B8A860" stroke="#A09050" strokeWidth="0.5"/>
+    {/* Poignée porte */}
+    <path d="M36.5 33 L38.5 33" stroke="#A09050" strokeWidth="1.2" strokeLinecap="round"/>
+    {/* Sol parquet */}
+    <rect y="48" width="56" height="8" rx="0" fill="#C4906A" opacity="0.6"/>
+    {/* Mur gauche — papier peint clair */}
+    <rect x="0" y="0" width="28" height="56" rx="0" fill="#EBF5FD"/>
+    {/* Personnage s'approche */}
+    <Kid x="18" y="12" armLeft={25} armRight={-20}/>
   </svg>
 );
 
 const SceneSortirToilettes = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E0F7FA"/>
-    {/* Porte ouverte */}
-    <rect x="2" y="10" width="24" height="42" fill="#ECEFF1"/>
-    {[0,1,2,3].map(row => [0,1].map(col => (
-      <rect key={`${row}-${col}`} x={3+col*11} y={11+row*11} width="10" height="10"
-        fill="none" stroke="#CFD8DC" strokeWidth="0.5"/>
+    <rect width="56" height="56" rx="12" fill="#E4F4FD"/>
+    {/* Mur carrelé gauche */}
+    <rect x="0" y="0" width="26" height="56" rx="0" fill="#F2F8FC"/>
+    {[0,1,2,3,4].map(row => [0,1].map(col => (
+      <rect key={`${row}-${col}`} x={1+col*12} y={row*11} width="11" height="10"
+        fill="none" stroke="#DDEEF8" strokeWidth="0.6"/>
     )))}
-    <rect x="4" y="18" width="14" height="30" rx="2" fill="#BDBDBD" transform="rotate(-30 11 33)"/>
-    <circle cx="17" cy="33" r="1.5" fill="#757575"/>
-    {/* Robinet / eau (mains lavées) */}
-    <rect x="34" y="22" width="18" height="10" rx="3" fill="#B0BEC5"/>
-    <path d="M40 22 Q43 16 46 22" fill="none" stroke="#B0BEC5" strokeWidth="2"/>
-    {/* Gouttes d'eau */}
-    <ellipse cx="38" cy="20" rx="1.5" ry="2" fill="#81D4FA" opacity="0.8"/>
-    <ellipse cx="43" cy="18" rx="1.5" ry="2" fill="#81D4FA" opacity="0.8"/>
-    {/* Enfant qui sort, bras levés */}
-    <Kid x="28" y="16" shirt="#4CAF50" pants="#2E7D32" armLeft={-55} armRight={55}/>
+    {/* Porte ouverte */}
+    <rect x="4" y="12" width="16" height="36" rx="2" fill="#C8C0B0"
+          transform="rotate(-25 4 48)" stroke="#B8AFA0" strokeWidth="0.6"/>
+    {/* Lavabo / robinet */}
+    <rect x="32" y="20" width="20" height="12" rx="4" fill="#E8EEF2" stroke="#B8C8D8" strokeWidth="0.8"/>
+    <path d="M38 20 L38 14 Q42 11 46 14 L46 20" fill="none" stroke="#B8C8D8" strokeWidth="1.8"/>
+    {/* Eau */}
+    <line x1="42" y1="18" x2="41.5" y2="23" stroke="#80C4F0" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="2,1.5"/>
+    <line x1="42" y1="18" x2="42.5" y2="23" stroke="#80C4F0" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="2,1.5"/>
+    {/* Sol */}
+    <rect y="48" width="56" height="8" rx="0" fill="#C4906A" opacity="0.6"/>
+    {/* Personnage sort, bras légèrement levés */}
+    <Kid x="38" y="10" armLeft={-35} armRight={35} flip={true}/>
   </svg>
 );
 
 const SceneVoiture = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#FFF3E0"/>
+    <rect width="56" height="56" rx="12" fill="#FFF4E0"/>
+    {/* Ciel */}
+    <rect width="56" height="32" rx="12" fill="#FFE8B0" opacity="0.4"/>
     {/* Route */}
-    <rect x="0" y="42" width="56" height="10" fill="#78909C"/>
-    <rect x="0" y="42" width="56" height="2" fill="#90A4AE"/>
-    {/* Pointillés route */}
+    <rect y="40" width="56" height="16" rx="0" fill="#7A8C98"/>
+    <rect y="40" width="56" height="2" fill="#8FA0AC"/>
     {[0,1,2,3].map(i => (
-      <rect key={i} x={4+i*14} y="46" width="8" height="2" rx="1" fill="#FFF59D"/>
+      <rect key={i} x={3+i*14} y="47" width="9" height="2.5" rx="1.2" fill="#FFEE80" opacity="0.9"/>
     ))}
     {/* Voiture */}
-    <rect x="20" y="30" width="30" height="14" rx="3" fill="#EF5350"/>
-    <rect x="24" y="24" width="22" height="10" rx="3" fill="#E53935"/>
+    <rect x="22" y="28" width="32" height="14" rx="3.5" fill="#E84040"/>
+    <path d="M25 28 L28 20 L46 20 L50 28 Z" fill="#D03030"/>
     {/* Vitres */}
-    <rect x="26" y="25.5" width="8" height="7" rx="1.5" fill="#B3E5FC" opacity="0.9"/>
-    <rect x="36" y="25.5" width="8" height="7" rx="1.5" fill="#B3E5FC" opacity="0.9"/>
+    <rect x="29" y="21" width="9" height="7" rx="1.5" fill="#B8DCF8" opacity="0.9"/>
+    <rect x="40" y="21" width="8" height="7" rx="1.5" fill="#B8DCF8" opacity="0.9"/>
     {/* Roues */}
-    <circle cx="27" cy="44" r="5" fill="#37474F"/>
-    <circle cx="27" cy="44" r="2.5" fill="#78909C"/>
-    <circle cx="43" cy="44" r="5" fill="#37474F"/>
-    <circle cx="43" cy="44" r="2.5" fill="#78909C"/>
-    {/* Enfant à côté de la voiture */}
-    <Kid x="10" y="16" shirt="#42A5F5" pants="#1A237E" armLeft={0} armRight={-20}/>
+    <circle cx="30" cy="42" r="5.5" fill="#2A3038"/>
+    <circle cx="30" cy="42" r="2.8" fill="#6A7480"/>
+    <circle cx="46" cy="42" r="5.5" fill="#2A3038"/>
+    <circle cx="46" cy="42" r="2.8" fill="#6A7480"/>
+    {/* Phare avant */}
+    <ellipse cx="53" cy="32" rx="1.5" ry="2.5" fill="#FFFFC0" opacity="0.9"/>
+    {/* Personnage à côté */}
+    <Kid x="11" y="12" armLeft={0} armRight={-25}/>
   </svg>
 );
 
 const SceneVoyage = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E8EAF6"/>
+    <rect width="56" height="56" rx="12" fill="#DDE8F8"/>
     {/* Nuages */}
-    <ellipse cx="38" cy="12" rx="10" ry="6" fill="white"/>
-    <ellipse cx="44" cy="10" rx="8" ry="5" fill="white"/>
-    <ellipse cx="30" cy="11" rx="7" ry="5" fill="white"/>
+    <ellipse cx="38" cy="11" rx="11" ry="6.5" fill="white" opacity="0.9"/>
+    <ellipse cx="44" cy="9" rx="9" ry="5.5" fill="white" opacity="0.9"/>
+    <ellipse cx="30" cy="10" rx="8" ry="5" fill="white" opacity="0.9"/>
+    <ellipse cx="10" cy="18" rx="8" ry="5" fill="white" opacity="0.8"/>
+    <ellipse cx="16" cy="16" rx="7" ry="4.5" fill="white" opacity="0.8"/>
     {/* Avion */}
-    <g transform="translate(20,20) rotate(-15)">
-      <rect x="0" y="5" width="22" height="7" rx="3.5" fill="#5C6BC0"/>
-      <polygon points="16,5 22,0 22,5" fill="#3949AB"/>
-      <rect x="5" y="0" width="10" height="5" rx="2" fill="#7986CB"/>
-      <rect x="8" y="12" width="7" height="4" rx="1" fill="#7986CB"/>
-      {/* Hublots */}
-      <circle cx="7" cy="8.5" r="1.5" fill="#B3E5FC"/>
-      <circle cx="12" cy="8.5" r="1.5" fill="#B3E5FC"/>
+    <g transform="translate(18,22) rotate(-15)">
+      <rect x="0" y="4" width="24" height="8" rx="4" fill="#4A60C8"/>
+      <path d="M18 4 L24 -1 L24 4 Z" fill="#3848A8"/>
+      <rect x="5" y="-1" width="12" height="5" rx="2" fill="#6878D8"/>
+      <rect x="8" y="12" width="8" height="4" rx="1.5" fill="#6878D8"/>
+      <circle cx="7" cy="8" r="1.8" fill="#B8D8F8"/>
+      <circle cx="13" cy="8" r="1.8" fill="#B8D8F8"/>
+      <circle cx="19" cy="8" r="1.8" fill="#B8D8F8"/>
     </g>
+    {/* Sol */}
+    <rect y="44" width="56" height="12" rx="0" fill="#C8B880"/>
     {/* Valise */}
-    <rect x="2" y="40" width="12" height="10" rx="2" fill="#8D6E63"/>
-    <rect x="5" y="37" width="6" height="4" rx="1" fill="#795548"/>
-    <line x1="2" y1="45" x2="14" y2="45" stroke="#6D4C41" strokeWidth="0.8"/>
-    {/* Enfant avec valise */}
-    <Kid x="18" y="20" shirt="#EC407A" pants="#880E4F" armLeft={40} armRight={10}/>
+    <rect x="2" y="37" width="13" height="10" rx="2.5" fill="#8A6030"/>
+    <rect x="5" y="34" width="7" height="5" rx="1.5" fill="#705020"/>
+    <line x1="2" y1="42" x2="15" y2="42" stroke="#604010" strokeWidth="0.8"/>
+    {/* Poignée */}
+    <path d="M6 34 Q8.5 32 11 34" fill="none" stroke="#604010" strokeWidth="1.2" strokeLinecap="round"/>
+    {/* Personnage avec valise */}
+    <Kid x="28" y="12" armLeft={40} armRight={15}/>
   </svg>
 );
 
 const SceneMatin = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#FFF9C4"/>
-    {/* Soleil levant */}
+    <rect width="56" height="56" rx="12" fill="#FFFCE0"/>
+    {/* Dégradé de lever de soleil */}
+    <rect width="56" height="35" rx="12" fill="#FFE040" opacity="0.3"/>
+    {/* Soleil */}
     {[0,30,60,90,120,150,180,210,240,270,300,330].map((a,i) => (
-      <line key={i} x1="40" y1="14"
-        x2={40 + Math.cos(a*Math.PI/180)*12}
-        y2={14 + Math.sin(a*Math.PI/180)*12}
-        stroke="#FFCA28" strokeWidth="1.5" strokeLinecap="round"/>
+      <line key={i} x1="42" y1="14"
+        x2={42+Math.cos(a*Math.PI/180)*14}
+        y2={14+Math.sin(a*Math.PI/180)*14}
+        stroke="#FFCC00" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
     ))}
-    <circle cx="40" cy="14" r="8" fill="#FFEE58"/>
+    <circle cx="42" cy="14" r="9" fill="#FFD700" opacity="0.9"/>
+    <circle cx="42" cy="14" r="6.5" fill="#FFE840"/>
     {/* Sol */}
-    <rect x="0" y="48" width="56" height="8" fill="#C8E6C9"/>
+    <rect y="44" width="56" height="12" rx="0" fill="#98C860"/>
     {/* Herbe */}
-    {[4,10,16,22,28,34,40,46,52].map(x => (
-      <line key={x} x1={x} y1="48" x2={x-2} y2="44" stroke="#66BB6A" strokeWidth="1.5" strokeLinecap="round"/>
+    {[3,8,13,18,23,28,33,38,43,48,53].map(xx => (
+      <line key={xx} x1={xx} y1="44" x2={xx-1.5} y2="40" stroke="#70A840" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
     ))}
-    {/* Enfant debout, bras légèrement ouverts */}
-    <Kid x="24" y="14" shirt="#26A69A" pants="#004D40" armLeft={-30} armRight={30}/>
+    {/* Personnage, bras légèrement ouverts — louange du matin */}
+    <Kid x="22" y="10" armLeft={-35} armRight={35}/>
   </svg>
 );
 
 const SceneNuit = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#1A237E"/>
-    {/* Étoiles */}
-    {[[8,8],[15,15],[30,6],[44,12],[50,7],[6,22],[20,28]].map(([x,y],i) => (
-      <circle key={i} cx={x} cy={y} r="1.2" fill="#FFF176"/>
+    <rect width="56" height="56" rx="12" fill="#0E1C3C"/>
+    {/* Ciel nocturne */}
+    {[[6,5],[14,11],[26,4],[40,7],[50,4],[4,18],[20,22],[36,16],[48,19]].map(([cx,cy],i) => (
+      <circle key={i} cx={cx} cy={cy} r={i%3===0?1.4:0.9} fill="#FFFFFF" opacity={0.5+0.4*(i%2)*0.3}/>
     ))}
     {/* Lune */}
-    <path d="M44 8 Q52 16 44 24 Q36 16 44 8Z" fill="#FFF176"/>
-    {/* Lit */}
-    <rect x="2" y="38" width="52" height="14" rx="4" fill="#4A148C"/>
-    <rect x="2" y="38" width="52" height="7" rx="4" fill="#6A1B9A"/>
-    {/* Oreiller */}
-    <ellipse cx="10" cy="41.5" rx="7" ry="3.5" fill="#CE93D8" stroke="#AB47BC" strokeWidth="0.8"/>
-    {/* Enfant allongé */}
-    <g transform="translate(30,42) rotate(-90)">
-      <ellipse cx="0" cy="-2" rx="6" ry="7" fill="#3D2B1F"/>
-      <ellipse cx="0" cy="2" rx="6" ry="7" fill="#F4C89A"/>
-      <rect x="-5.5" y="8.5" width="11" height="11" rx="2" fill="#9C27B0"/>
-      <rect x="-5" y="19" width="4.5" height="7" rx="2" fill="#6A1B9A"/>
-      <rect x="0.5" y="19" width="4.5" height="7" rx="2" fill="#6A1B9A"/>
-    </g>
+    <circle cx="44" cy="12" r="8" fill="#FFF8D0"/>
+    <circle cx="48.5" cy="9" r="6.5" fill="#0E1C3C"/>
+    {/* Croissant brillant */}
+    <path d="M40 7 Q36 12 40 17" fill="none" stroke="#FFF8D0" strokeWidth="0.5" opacity="0.4"/>
+    {/* Sol */}
+    <rect y="46" width="56" height="10" rx="0" fill="#1A1008"/>
+    {/* Personnage invocation du soir */}
+    <Kid x="22" y="10" armLeft={-45} armRight={45}/>
   </svg>
 );
 
 const SceneEntrerMaison = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E8F5E9"/>
+    <rect width="56" height="56" rx="12" fill="#E8F0D8"/>
     {/* Ciel */}
-    <rect x="0" y="0" width="56" height="30" rx="12" fill="#BBDEFB"/>
-    <circle cx="40" cy="12" r="6" fill="#FFF9C4"/>
+    <rect width="56" height="30" rx="12" fill="#C8E8F8" opacity="0.7"/>
+    {/* Nuages */}
+    <ellipse cx="14" cy="10" rx="9" ry="5" fill="white" opacity="0.8"/>
+    <ellipse cx="20" cy="8" rx="7" ry="4" fill="white" opacity="0.8"/>
     {/* Maison */}
-    <polygon points="15,26 41,26 41,50 15,50" fill="#FFCC80"/>
-    <polygon points="11,28 45,28 28,10" fill="#EF5350"/>
+    <polygon points="13,26 43,26 43,52 13,52" fill="#FFCC80"/>
+    <polygon points="9,28 47,28 28,10" fill="#E05050"/>
     {/* Porte */}
-    <rect x="22" y="36" width="12" height="14" rx="2" fill="#8D6E63"/>
-    <circle cx="32" cy="43" r="1.2" fill="#FFCA28"/>
+    <rect x="20" y="36" width="12" height="16" rx="2" fill="#8A5020"/>
+    <path d="M20 36 Q26 32 32 36" fill="#A06028"/>
+    <circle cx="30" cy="44" r="1.5" fill="#FFCC20"/>
     {/* Fenêtre */}
-    <rect x="15" y="32" width="8" height="7" rx="1" fill="#B3E5FC"/>
-    <line x1="19" y1="32" x2="19" y2="39" stroke="#90CAF9" strokeWidth="0.8"/>
+    <rect x="14" y="30" width="9" height="8" rx="1.5" fill="#B8DCF0"/>
+    <line x1="18.5" y1="30" x2="18.5" y2="38" stroke="#90B8D0" strokeWidth="0.7"/>
+    <line x1="14" y1="34" x2="23" y2="34" stroke="#90B8D0" strokeWidth="0.7"/>
     {/* Sol */}
-    <rect x="0" y="50" width="56" height="6" fill="#A5D6A7"/>
-    {/* Enfant qui marche vers la porte */}
-    <Kid x="10" y="20" shirt="#FF8A65" pants="#5D4037" armLeft={25} armRight={-25}/>
+    <rect y="50" width="56" height="6" rx="0" fill="#A0C870"/>
+    {/* Allée */}
+    <path d="M22 56 L24 50 L32 50 L34 56 Z" fill="#D8C890"/>
+    {/* Personnage approche */}
+    <Kid x="9" y="14" armLeft={25} armRight={-20}/>
   </svg>
 );
 
 const SceneSortirMaison = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#F3E5F5"/>
-    {/* Ciel */}
-    <rect x="0" y="0" width="56" height="30" rx="12" fill="#E1F5FE"/>
-    <circle cx="10" cy="12" r="6" fill="#FFF9C4"/>
+    <rect width="56" height="56" rx="12" fill="#E8F0D8"/>
+    <rect width="56" height="30" rx="12" fill="#C8E8F8" opacity="0.7"/>
+    <ellipse cx="42" cy="10" rx="9" ry="5" fill="white" opacity="0.8"/>
+    <ellipse cx="36" cy="8" rx="7" ry="4" fill="white" opacity="0.8"/>
     {/* Maison */}
-    <polygon points="12,26 40,26 40,50 12,50" fill="#CE93D8"/>
-    <polygon points="8,28 44,28 26,10" fill="#9C27B0"/>
+    <polygon points="10,26 40,26 40,52 10,52" fill="#CE93D8" opacity="0.8"/>
+    <polygon points="6,28 44,28 25,10" fill="#8020A0"/>
     {/* Porte ouverte */}
-    <rect x="19" y="36" width="12" height="14" rx="2" fill="#7B1FA2" transform="rotate(-30 19 50)"/>
-    <circle cx="29" cy="43" r="1.2" fill="#FFCA28"/>
+    <rect x="17" y="36" width="12" height="16" rx="2" fill="#7B1FA2"
+          transform="rotate(-20 17 52)"/>
+    <circle cx="27" cy="44" r="1.5" fill="#FFCC20"/>
     {/* Fenêtre */}
-    <rect x="29" y="32" width="8" height="7" rx="1" fill="#B3E5FC"/>
-    <line x1="33" y1="32" x2="33" y2="39" stroke="#90CAF9" strokeWidth="0.8"/>
+    <rect x="30" y="30" width="8" height="7" rx="1.5" fill="#B8DCF0"/>
+    <line x1="34" y1="30" x2="34" y2="37" stroke="#90B8D0" strokeWidth="0.7"/>
     {/* Sol */}
-    <rect x="0" y="50" width="56" height="6" fill="#CE93D8"/>
-    {/* Enfant qui sort */}
-    <Kid x="44" y="20" shirt="#AB47BC" pants="#4A148C" armLeft={-25} armRight={25}/>
+    <rect y="50" width="56" height="6" rx="0" fill="#A0C870"/>
+    <path d="M19 56 L21 50 L29 50 L31 56 Z" fill="#D8C890"/>
+    {/* Personnage sort */}
+    <Kid x="44" y="14" armLeft={-20} armRight={25} flip={true}/>
   </svg>
 );
 
 const SceneAblutions = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E3F2FD"/>
+    <rect width="56" height="56" rx="12" fill="#E0F0FC"/>
+    {/* Carrelage mural */}
+    <rect x="26" y="0" width="30" height="56" rx="0" fill="#EEF5FA"/>
+    {[0,1,2,3,4].map(row => [0,1].map(col => (
+      <rect key={`${row}-${col}`} x={27+col*13} y={row*11} width="12" height="10"
+        fill="none" stroke="#D8EAF5" strokeWidth="0.7"/>
+    )))}
     {/* Lavabo */}
-    <rect x="28" y="32" width="22" height="12" rx="4" fill="#ECEFF1" stroke="#B0BEC5" strokeWidth="1"/>
+    <rect x="28" y="28" width="24" height="14" rx="5" fill="#F0F5F8" stroke="#C0D8E8" strokeWidth="1"/>
     {/* Robinet */}
-    <rect x="35" y="24" width="8" height="10" rx="2" fill="#B0BEC5"/>
-    <path d="M37 24 L37 20 Q39 18 41 20 L41 24" fill="none" stroke="#90A4AE" strokeWidth="1.5"/>
+    <rect x="35" y="18" width="10" height="12" rx="3" fill="#C8D8E0" stroke="#A8C0CC" strokeWidth="0.8"/>
+    <path d="M37 18 Q40 13 43 18" fill="none" stroke="#A8C0CC" strokeWidth="2" strokeLinecap="round"/>
+    <ellipse cx="40" cy="14" rx="3" ry="1.5" fill="#C8D8E0"/>
     {/* Eau qui coule */}
-    <line x1="39" y1="30" x2="38" y2="35" stroke="#64B5F6" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="2,1"/>
-    <line x1="39" y1="30" x2="40" y2="35" stroke="#64B5F6" strokeWidth="1.2" strokeLinecap="round" strokeDasharray="2,1"/>
+    <line x1="40" y1="28" x2="39.5" y2="33" stroke="#60B0E8" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2,1.5"/>
+    <line x1="40" y1="28" x2="40.5" y2="33" stroke="#60B0E8" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2,1.5"/>
     {/* Gouttes */}
-    <ellipse cx="36" cy="34" rx="1.5" ry="2" fill="#42A5F5" opacity="0.7"/>
-    <ellipse cx="41" cy="36" rx="1.5" ry="2" fill="#42A5F5" opacity="0.7"/>
-    {/* Enfant penché vers le lavabo */}
-    <Kid x="20" y="14" shirt="#29B6F6" pants="#0277BD" armLeft={-45} armRight={45} lean={15}/>
+    <ellipse cx="37" cy="32" rx="1.5" ry="2" fill="#50A8E0" opacity="0.7"/>
+    <ellipse cx="43" cy="34" rx="1.5" ry="2" fill="#50A8E0" opacity="0.6"/>
+    {/* Sol */}
+    <rect y="48" width="56" height="8" rx="0" fill="#B8C8D0" opacity="0.5"/>
+    {/* Personnage penché vers le lavabo */}
+    <Kid x="18" y="10" armLeft={-50} armRight={50} lean={18}/>
   </svg>
 );
 
 const SceneHabits = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#FFF8E1"/>
-    {/* T-shirt flottant */}
-    <path d="M30 12 L22 18 L24 24 L28 22 L28 38 L42 38 L42 22 L46 24 L48 18 L40 12 Z"
-      fill="#FF8A65" stroke="#E64A19" strokeWidth="0.8"/>
+    <rect width="56" height="56" rx="12" fill="#FFF8E8"/>
+    {/* Armoire / fond chambre */}
+    <rect x="36" y="4" width="18" height="40" rx="2" fill="#D8C0A0" stroke="#C0A880" strokeWidth="0.8"/>
+    <line x1="45" y1="4" x2="45" y2="44" stroke="#C0A880" strokeWidth="0.6"/>
+    <circle cx="43" cy="24" r="1.5" fill="#A08040"/>
+    <circle cx="47" cy="24" r="1.5" fill="#A08040"/>
+    {/* Thobe flottant (neuf) */}
+    <path d="M24 6 L16 14 L18 22 L22 20 L22 42 L36 42 L36 20 L40 22 L42 14 L34 6 Z"
+          fill="#F8F9FF" stroke="#D0D0E8" strokeWidth="0.8" opacity="0.95"/>
+    <path d="M28 6 Q29 11 30 6" fill="none" stroke="#C8C8DC" strokeWidth="0.8"/>
     {/* Col */}
-    <path d="M34 12 Q35 16 36 12" fill="none" stroke="#E64A19" strokeWidth="0.8"/>
-    {/* Enfant bras levés (met le t-shirt) */}
-    <Kid x="22" y="22" shirt="#F5F5F5" pants="#5D4037" armLeft={-80} armRight={80}/>
+    <ellipse cx="29" cy="10" rx="3" ry="2" fill="#EDEAE6" stroke="#D8D5D0" strokeWidth="0.5"/>
+    {/* Personnage bras levés (enfile le thobe) */}
+    <Kid x="24" y="18" armLeft={-85} armRight={85}/>
   </svg>
 );
 
 const ScenePluie = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#ECEFF1"/>
-    {/* Nuage */}
-    <ellipse cx="28" cy="14" rx="14" ry="8" fill="#90A4AE"/>
-    <ellipse cx="20" cy="16" rx="10" ry="7" fill="#90A4AE"/>
-    <ellipse cx="36" cy="16" rx="10" ry="7" fill="#90A4AE"/>
-    <ellipse cx="28" cy="18" rx="14" ry="6" fill="#B0BEC5"/>
+    <rect width="56" height="56" rx="12" fill="#D8E8F0"/>
+    {/* Nuages gris */}
+    <ellipse cx="28" cy="12" rx="15" ry="8" fill="#90A0B0"/>
+    <ellipse cx="18" cy="14" rx="12" ry="7" fill="#90A0B0"/>
+    <ellipse cx="38" cy="14" rx="12" ry="7" fill="#90A0B0"/>
+    <ellipse cx="28" cy="17" rx="16" ry="7" fill="#A0B0C0"/>
     {/* Pluie */}
-    {[14,20,26,32,38,44].map((x,i) => (
-      <line key={i} x1={x} y1={22+i%2*4} x2={x-2} y2={32+i%2*4}
-        stroke="#64B5F6" strokeWidth="1.2" strokeLinecap="round"/>
+    {[8,14,20,26,32,38,44,50].map((x,i) => (
+      <line key={i} x1={x} y1={22+i%3*4} x2={x-3} y2={34+i%3*4}
+        stroke="#70A0D0" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
     ))}
     {/* Parapluie */}
-    <ellipse cx="28" cy="36" rx="14" ry="6" fill="#EF5350"/>
-    <line x1="28" y1="36" x2="28" y2="52" stroke="#795548" strokeWidth="1.5" strokeLinecap="round"/>
-    <path d="M26 52 Q28 55 30 52" fill="none" stroke="#795548" strokeWidth="1.5"/>
-    {/* Enfant sous parapluie */}
-    <Kid x="28" y="36" shirt="#FF7043" pants="#BF360C"/>
+    <path d="M12 36 Q28 24 44 36 Z" fill="#E84040"/>
+    <path d="M14 36 Q28 26 42 36" fill="none" stroke="#C02020" strokeWidth="0.5"/>
+    {/* Manche parapluie */}
+    <line x1="28" y1="36" x2="28" y2="52" stroke="#6A4020" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M26 52 Q28 56 30 52" fill="none" stroke="#6A4020" strokeWidth="1.8" strokeLinecap="round"/>
+    {/* Personnage sous le parapluie */}
+    <Kid x="28" y="30" armLeft={-55} armRight={-10}/>
+    {/* Sol mouillé */}
+    <rect y="50" width="56" height="6" rx="0" fill="#8898A8" opacity="0.5"/>
+    {/* Flaques */}
+    <ellipse cx="12" cy="53" rx="5" ry="1.5" fill="#70A0C0" opacity="0.5"/>
+    <ellipse cx="44" cy="53" rx="4" ry="1.5" fill="#70A0C0" opacity="0.4"/>
   </svg>
 );
 
 const SceneMaladie = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#FCE4EC"/>
+    <rect width="56" height="56" rx="12" fill="#FCE8F0"/>
+    <rect width="56" height="40" rx="12" fill="#FAD8E8" opacity="0.4"/>
+    {/* Parquet */}
+    <rect y="46" width="56" height="10" rx="0" fill="#C07858"/>
     {/* Lit */}
-    <rect x="2" y="36" width="52" height="16" rx="4" fill="#FAFAFA" stroke="#F48FB1" strokeWidth="1"/>
-    <rect x="2" y="36" width="52" height="7" rx="4" fill="#F8BBD0"/>
+    <rect x="1" y="34" width="54" height="18" rx="4" fill="#FAFAFA" stroke="#F0C0D0" strokeWidth="0.8"/>
+    <rect x="1" y="34" width="54" height="8" rx="4" fill="#F8B0C0"/>
     {/* Oreiller */}
-    <ellipse cx="10" cy="40" rx="7" ry="3.5" fill="#FCE4EC" stroke="#F48FB1" strokeWidth="0.8"/>
+    <ellipse cx="10" cy="38" rx="7.5" ry="3.5" fill="#FCE4EC" stroke="#F4B0C8" strokeWidth="0.7"/>
     {/* Enfant allongé malade */}
-    <g transform="translate(30,41) rotate(-90)">
-      <ellipse cx="0" cy="-2" rx="6" ry="7" fill="#3D2B1F"/>
-      <ellipse cx="0" cy="2" rx="6" ry="7" fill="#F4C89A"/>
-      <rect x="-5.5" y="8.5" width="11" height="11" rx="2" fill="#EF9A9A"/>
-      <rect x="-5" y="19" width="4.5" height="7" rx="2" fill="#E57373"/>
-      <rect x="0.5" y="19" width="4.5" height="7" rx="2" fill="#E57373"/>
+    <g transform="translate(32,40)">
+      <KidLying shirt="#FCEEF5"/>
     </g>
     {/* Thermomètre */}
-    <rect x="40" y="20" width="4" height="14" rx="2" fill="#FFCC02" stroke="#FFA000" strokeWidth="0.8"/>
-    <circle cx="42" cy="34" r="4" fill="#FF5252"/>
-    {/* Petites étoiles/points de douleur */}
-    <text x="6" y="32" fontSize="10">💊</text>
-    <text x="26" y="18" fontSize="8" fill="#F48FB1">+</text>
-    <text x="34" y="14" fontSize="6" fill="#F48FB1">+</text>
+    <rect x="42" y="16" width="4.5" height="16" rx="2.2" fill="#FFF0B0" stroke="#E0C020" strokeWidth="0.8"/>
+    <circle cx="44.25" cy="32" r="4.5" fill="#FF5050"/>
+    <rect x="43.25" y="20" width="2" height="12" rx="1" fill="#FF8080" opacity="0.6"/>
+    {/* Médicaments */}
+    <rect x="8" y="24" width="10" height="6" rx="3" fill="#FF8888"/>
+    <rect x="10" y="24" width="6" height="6" rx="3" fill="#FFAAAA"/>
+    <text x="5" y="22" fontSize="8" opacity="0.5">💊</text>
+    {/* Étoiles de douleur */}
+    <text x="26" y="16" fontSize="7" fill="#F080A0" opacity="0.7">+</text>
+    <text x="34" y="12" fontSize="5" fill="#F080A0" opacity="0.6">+</text>
   </svg>
 );
 
 const SceneDefaut = () => (
   <svg viewBox="0 0 56 56" className="w-full h-full">
-    <rect width="56" height="56" rx="12" fill="#E8EAF6"/>
-    {/* Particules de lumière */}
-    {[[8,10],[48,8],[6,38],[50,42],[28,6]].map(([x,y],i) => (
-      <circle key={i} cx={x} cy={y} r="1.5" fill="#9FA8DA" opacity="0.6"/>
-    ))}
-    {/* Enfant en position de prière (mains tendues) */}
-    <Kid x="28" y="12" shirt="#5C6BC0" pants="#283593" armLeft={-50} armRight={50}/>
-    {/* Mains ouvertes */}
-    <ellipse cx="10" cy="40" rx="5" ry="3" fill="#F4C89A" transform="rotate(-30 10 40)"/>
-    <ellipse cx="46" cy="40" rx="5" ry="3" fill="#F4C89A" transform="rotate(30 46 40)"/>
-    {/* Lumière divine */}
+    <rect width="56" height="56" rx="12" fill="#EEF0FC"/>
+    {/* Lumière douce */}
     {[0,60,120,180,240,300].map((a,i) => (
-      <line key={i} x1="28" y1="6"
-        x2={28 + Math.cos(a*Math.PI/180)*6}
-        y2={6 + Math.sin(a*Math.PI/180)*6}
-        stroke="#FFD54F" strokeWidth="0.8" opacity="0.7"/>
+      <line key={i} x1="28" y1="10"
+        x2={28+Math.cos(a*Math.PI/180)*18}
+        y2={10+Math.sin(a*Math.PI/180)*18}
+        stroke="#C8C8F8" strokeWidth="1" opacity="0.4"/>
     ))}
-    <circle cx="28" cy="6" r="3" fill="#FFD54F" opacity="0.5"/>
+    <circle cx="28" cy="10" r="5" fill="#D0D0F8" opacity="0.5"/>
+    {/* Sol */}
+    <rect y="48" width="56" height="8" rx="0" fill="#D0C8E8" opacity="0.4"/>
+    {/* Mains ouvertes en dua */}
+    <ellipse cx="8" cy="40" rx="6" ry="3.5" fill="#F2C08A" transform="rotate(-20 8 40)"/>
+    <ellipse cx="48" cy="40" rx="6" ry="3.5" fill="#F2C08A" transform="rotate(20 48 40)"/>
+    {/* Personnage en position de invocation (dua) */}
+    <Kid x="28" y="8" armLeft={-55} armRight={55}/>
+    {/* Particules de lumière */}
+    {[[6,14],[50,18],[10,30],[46,28],[28,4]].map(([px,py],i) => (
+      <circle key={i} cx={px} cy={py} r="1.5" fill="#A0A0E8" opacity="0.4"/>
+    ))}
   </svg>
 );
 
-// ──────────────────────────────────────────────
-// Composant principal
-// ──────────────────────────────────────────────
-
+// ── Routeur principal ───────────────────────────────────────────────────
 export const InvocationSceneSVG = ({ title }: SceneProps) => {
   const t = title.toLowerCase();
 
@@ -482,13 +579,13 @@ export const InvocationSceneSVG = ({ title }: SceneProps) => {
     return <SceneReveille />;
   if (t.includes('couche') || t.includes('coucher') || t.includes('dormir') || t.includes('sommeil'))
     return <SceneCoucher />;
-  if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré')))
+  if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré') || t.includes('allant')))
     return <SceneEntrerMosquee />;
   if (t.includes('mosquée') && (t.includes('sortant') || t.includes('sortir')))
     return <SceneSortirMosquee />;
   if (t.includes('avant') && (t.includes('manger') || t.includes('repas')))
     return <SceneAvantManger />;
-  if (t.includes('après') && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
+  if ((t.includes('après') || t.includes('apres')) && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
     return <SceneApresManger />;
   if ((t.includes('entrant') || t.includes('entrer')) && (t.includes('toilet') || t.includes('wc') || t.includes('salle')))
     return <SceneEntrerToilettes />;
