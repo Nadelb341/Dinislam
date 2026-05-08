@@ -306,3 +306,63 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* ===== Animations scènes invocations ===== */
+@keyframes walk-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+@keyframes walk-left {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-10px); }
+}
+@keyframes rise-up {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-8px); opacity: 0.8; }
+}
+@keyframes sink-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+@keyframes drive {
+  0% { transform: translateX(-8px); }
+  50% { transform: translateX(8px); }
+  100% { transform: translateX(-8px); }
+}
+@keyframes fly-anim {
+  0% { transform: translateX(-10px) translateY(4px); }
+  50% { transform: translateX(6px) translateY(-5px); }
+  100% { transform: translateX(-10px) translateY(4px); }
+}
+@keyframes bow {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-20deg) translateY(3px); }
+}
+@keyframes stretch {
+  0%, 100% { transform: scaleY(1) translateY(0); }
+  45% { transform: scaleY(1.15) translateY(-3px); }
+}
+@keyframes pour {
+  0%, 100% { transform: rotate(0deg); }
+  45%, 60% { transform: rotate(-22deg); }
+}
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+@keyframes moon-glow {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px #fbbf24); }
+  50% { opacity: 0.75; filter: drop-shadow(0 0 8px #fbbf24); }
+}
+
+.invoc-walk-right { animation: walk-right 1.4s ease-in-out infinite; display: inline-block; }
+.invoc-walk-left  { animation: walk-left  1.4s ease-in-out infinite; display: inline-block; }
+.invoc-rise-up    { animation: rise-up    2s   ease-in-out infinite; display: inline-block; }
+.invoc-sink-down  { animation: sink-down  2s   ease-in-out infinite; display: inline-block; }
+.invoc-drive      { animation: drive      1.6s ease-in-out infinite; display: inline-block; }
+.invoc-fly        { animation: fly-anim   2s   ease-in-out infinite; display: inline-block; }
+.invoc-bow        { animation: bow        2s   ease-in-out infinite; display: inline-block; }
+.invoc-stretch    { animation: stretch    2.2s ease-in-out infinite; display: inline-block; }
+.invoc-pour       { animation: pour       2s   ease-in-out infinite; display: inline-block; }
+.invoc-pulse      { animation: pulse-soft 1.8s ease-in-out infinite; display: inline-block; }
+.invoc-moon       { animation: moon-glow  2.5s ease-in-out infinite; display: inline-block; }

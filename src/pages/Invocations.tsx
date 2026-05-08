@@ -14,66 +14,78 @@ import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
-// Emoji animé par titre d'invocation
-const getInvocationEmoji = (title: string): { emoji: string; animation: string } => {
+// Scène animée : personnage + décor selon le titre
+const InvocationScene = ({ title }: { title: string }) => {
   const t = title.toLowerCase();
-  if (t.includes('réveille') || t.includes('reveille') || t.includes('lever') || t.includes('levé'))
-    return { emoji: '🌅', animation: 'animate-bounce' };
-  if (t.includes('couche') || t.includes('coucher') || t.includes('dormir') || t.includes('sommeil'))
-    return { emoji: '😴', animation: 'animate-pulse' };
-  if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré')))
-    return { emoji: '🕌', animation: 'animate-bounce' };
-  if (t.includes('mosquée') && (t.includes('sortant') || t.includes('sortir')))
-    return { emoji: '🤲', animation: 'animate-bounce' };
-  if (t.includes('mosquée'))
-    return { emoji: '🕌', animation: 'animate-pulse' };
-  if (t.includes('avant') && (t.includes('manger') || t.includes('repas')))
-    return { emoji: '🍽️', animation: 'animate-bounce' };
-  if (t.includes('après') && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
-    return { emoji: '😋', animation: 'animate-pulse' };
-  if (t.includes('nourriture') || t.includes('repas'))
-    return { emoji: '🍽️', animation: 'animate-bounce' };
-  if (t.includes('toilet') || t.includes('wc') || t.includes('salle de bain'))
-    return { emoji: '🚿', animation: 'animate-bounce' };
-  if (t.includes('sortant') && t.includes('toilet'))
-    return { emoji: '🙌', animation: 'animate-bounce' };
-  if (t.includes('voiture') || t.includes('transport') || t.includes('véhicule') || t.includes('vehicule'))
-    return { emoji: '🚗', animation: 'animate-bounce' };
-  if (t.includes('voyage'))
-    return { emoji: '✈️', animation: 'animate-bounce' };
-  if (t.includes('matin'))
-    return { emoji: '☀️', animation: 'animate-pulse' };
-  if (t.includes('soir') || t.includes('nuit') || t.includes('veillée'))
-    return { emoji: '🌙', animation: 'animate-pulse' };
-  if (t.includes('maison') && (t.includes('entrant') || t.includes('entrer')))
-    return { emoji: '🏠', animation: 'animate-bounce' };
-  if (t.includes('maison') && (t.includes('sortant') || t.includes('sortir')))
-    return { emoji: '👋', animation: 'animate-bounce' };
-  if (t.includes('habit') || t.includes('vêtement') || t.includes('vetement'))
-    return { emoji: '👕', animation: 'animate-pulse' };
-  if (t.includes('ablution'))
-    return { emoji: '💧', animation: 'animate-bounce' };
-  if (t.includes('pluie'))
-    return { emoji: '🌧️', animation: 'animate-pulse' };
-  if (t.includes('mariage'))
-    return { emoji: '💍', animation: 'animate-pulse' };
-  if (t.includes('maladie') || t.includes('malade'))
-    return { emoji: '🤒', animation: 'animate-pulse' };
-  if (t.includes('décès') || t.includes('deces') || t.includes('mort'))
-    return { emoji: '🤲', animation: 'animate-pulse' };
-  if (t.includes('animal'))
-    return { emoji: '🐾', animation: 'animate-bounce' };
-  if (t.includes('colère') || t.includes('colere'))
-    return { emoji: '😤', animation: 'animate-bounce' };
-  if (t.includes('miroir'))
-    return { emoji: '🪞', animation: 'animate-pulse' };
-  if (t.includes('vent'))
-    return { emoji: '💨', animation: 'animate-pulse' };
-  if (t.includes('tonnerre') || t.includes('orage'))
-    return { emoji: '⛈️', animation: 'animate-pulse' };
-  if (t.includes('marché') || t.includes('marche'))
-    return { emoji: '🛒', animation: 'animate-bounce' };
-  return { emoji: '🤲', animation: 'animate-pulse' };
+
+  const scene = (() => {
+    if (t.includes('réveille') || t.includes('reveille') || t.includes('lever') || t.includes('levé'))
+      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-rise-up text-xl">🌅</span></>;
+    if (t.includes('couche') || t.includes('coucher') || t.includes('dormir') || t.includes('sommeil'))
+      return <><span className="invoc-sink-down text-2xl">🧍</span><span className="invoc-moon text-xl">🌙</span></>;
+    if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré')))
+      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🕌</span></>;
+    if (t.includes('mosquée') && (t.includes('sortant') || t.includes('sortir')))
+      return <><span className="text-xl">🕌</span><span className="invoc-walk-left text-2xl">🚶</span></>;
+    if (t.includes('mosquée'))
+      return <><span className="invoc-bow text-2xl">🧎</span><span className="text-xl">🕌</span></>;
+    if (t.includes('avant') && (t.includes('manger') || t.includes('repas')))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🍽️</span></>;
+    if (t.includes('après') && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
+      return <><span className="invoc-pulse text-2xl">😋</span><span className="text-xl">🍽️</span></>;
+    if (t.includes('nourriture') || t.includes('repas'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🍽️</span></>;
+    if (t.includes('entrant') && (t.includes('toilet') || t.includes('wc')))
+      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🚽</span></>;
+    if (t.includes('sortant') && (t.includes('toilet') || t.includes('wc')))
+      return <><span className="text-xl">🚽</span><span className="invoc-walk-left text-2xl">🚶</span></>;
+    if (t.includes('toilet') || t.includes('wc') || t.includes('salle de bain'))
+      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🚽</span></>;
+    if (t.includes('voiture') || t.includes('véhicule') || t.includes('vehicule') || t.includes('montant dans'))
+      return <><span className="invoc-walk-right text-xl">🧍</span><span className="invoc-drive text-2xl">🚗</span></>;
+    if (t.includes('voyage') || t.includes('transport'))
+      return <><span className="invoc-walk-right text-xl">🧍</span><span className="invoc-fly text-2xl">✈️</span></>;
+    if (t.includes('matin'))
+      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-rise-up text-xl">☀️</span></>;
+    if (t.includes('soir') || t.includes('nuit') || t.includes('veillée'))
+      return <><span className="invoc-sink-down text-2xl">🧍</span><span className="invoc-moon text-xl">🌙</span></>;
+    if (t.includes('maison') && (t.includes('entrant') || t.includes('entrer')))
+      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🏠</span></>;
+    if (t.includes('maison') && (t.includes('sortant') || t.includes('sortir')))
+      return <><span className="text-xl">🏠</span><span className="invoc-walk-left text-2xl">🚶</span></>;
+    if (t.includes('habit') || t.includes('vêtement') || t.includes('vetement'))
+      return <><span className="invoc-stretch text-2xl">🧍</span><span className="invoc-pulse text-xl">👕</span></>;
+    if (t.includes('ablution'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pour text-xl">🚿</span></>;
+    if (t.includes('pluie'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-rise-up text-xl">🌧️</span></>;
+    if (t.includes('mariage'))
+      return <><span className="invoc-pulse text-2xl">💑</span><span className="invoc-pulse text-xl">💍</span></>;
+    if (t.includes('maladie') || t.includes('malade'))
+      return <><span className="invoc-bow text-2xl">🤒</span><span className="invoc-pulse text-xl">❤️‍🩹</span></>;
+    if (t.includes('décès') || t.includes('deces') || t.includes('mort'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🤲</span></>;
+    if (t.includes('animal'))
+      return <><span className="invoc-walk-right text-2xl">🐕</span><span className="text-xl">🧍</span></>;
+    if (t.includes('colère') || t.includes('colere'))
+      return <><span className="invoc-pulse text-2xl">😤</span><span className="invoc-bow text-xl">🧍</span></>;
+    if (t.includes('miroir'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🪞</span></>;
+    if (t.includes('vent'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-rise-up text-xl">💨</span></>;
+    if (t.includes('tonnerre') || t.includes('orage'))
+      return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">⛈️</span></>;
+    if (t.includes('marché') || t.includes('marche'))
+      return <><span className="invoc-walk-right text-2xl">🚶</span><span className="text-xl">🛒</span></>;
+    // Défaut
+    return <><span className="invoc-bow text-2xl">🧍</span><span className="invoc-pulse text-xl">🤲</span></>;
+  })();
+
+  return (
+    <div className="flex items-end justify-center gap-0.5 w-full h-12">
+      {scene}
+    </div>
+  );
 };
 
 const getCategoryColor = (category: string | null) => {
@@ -554,7 +566,6 @@ const Invocations = () => {
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {invocations.map((invocation, index) => {
-              const emojiData = getInvocationEmoji(invocation.title_french);
               const invProgress = progress.find((p: any) => p.invocation_id === invocation.id);
               const isValidated = invProgress?.is_validated ?? false;
               const unlocked = isCardUnlocked(index);
@@ -596,19 +607,12 @@ const Invocations = () => {
                     </span>
                   ) : null}
 
-                  {/* Emoji animé */}
+                  {/* Scène animée */}
                   <div className="mt-3 flex-1 flex items-center justify-center">
                     {invocation.image_url ? (
                       <img src={invocation.image_url} alt={invocation.title_french} className="w-12 h-12 object-contain" />
                     ) : (
-                      <span
-                        className={`text-4xl ${emojiData.animation}`}
-                        style={{ animationDuration: '2s' }}
-                        role="img"
-                        aria-label={invocation.title_french}
-                      >
-                        {emojiData.emoji}
-                      </span>
+                      <InvocationScene title={invocation.title_french} />
                     )}
                   </div>
 
