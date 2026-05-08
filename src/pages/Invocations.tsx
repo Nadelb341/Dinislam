@@ -7,33 +7,73 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Sun, Moon, CloudMoon, Home, Church, Plane, Shirt, Bath, UtensilsCrossed, CloudRain, Heart, BedDouble, Droplets, PawPrint, Activity, Hand, BookOpen, Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle } from 'lucide-react';
+import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20 } from '@/hooks/useIsOver20';
 import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
-// Default icon mapping by title keyword
-const getDefaultIcon = (title: string) => {
+// Emoji animé par titre d'invocation
+const getInvocationEmoji = (title: string): { emoji: string; animation: string } => {
   const t = title.toLowerCase();
-  if (t.includes('matin')) return Sun;
-  if (t.includes('soir')) return Moon;
-  if (t.includes('nuit')) return CloudMoon;
-  if (t.includes('maison')) return Home;
-  if (t.includes('mosquée') || t.includes('mosque')) return Church;
-  if (t.includes('voyage')) return Plane;
-  if (t.includes('habit')) return Shirt;
-  if (t.includes('toilet') || t.includes('ablution')) return Bath;
-  if (t.includes('nourriture') || t.includes('repas')) return UtensilsCrossed;
-  if (t.includes('pluie')) return CloudRain;
-  if (t.includes('mariage')) return Heart;
-  if (t.includes('sommeil') || t.includes('dormir')) return BedDouble;
-  if (t.includes('ablutions')) return Droplets;
-  if (t.includes('animal')) return PawPrint;
-  if (t.includes('maladie')) return Activity;
-  if (t.includes('décès') || t.includes('mort')) return Hand;
-  return BookOpen;
+  if (t.includes('réveille') || t.includes('reveille') || t.includes('lever') || t.includes('levé'))
+    return { emoji: '🌅', animation: 'animate-bounce' };
+  if (t.includes('couche') || t.includes('coucher') || t.includes('dormir') || t.includes('sommeil'))
+    return { emoji: '😴', animation: 'animate-pulse' };
+  if (t.includes('mosquée') && (t.includes('entrant') || t.includes('entrer') || t.includes('entré')))
+    return { emoji: '🕌', animation: 'animate-bounce' };
+  if (t.includes('mosquée') && (t.includes('sortant') || t.includes('sortir')))
+    return { emoji: '🤲', animation: 'animate-bounce' };
+  if (t.includes('mosquée'))
+    return { emoji: '🕌', animation: 'animate-pulse' };
+  if (t.includes('avant') && (t.includes('manger') || t.includes('repas')))
+    return { emoji: '🍽️', animation: 'animate-bounce' };
+  if (t.includes('après') && (t.includes('manger') || t.includes('mangé') || t.includes('repas')))
+    return { emoji: '😋', animation: 'animate-pulse' };
+  if (t.includes('nourriture') || t.includes('repas'))
+    return { emoji: '🍽️', animation: 'animate-bounce' };
+  if (t.includes('toilet') || t.includes('wc') || t.includes('salle de bain'))
+    return { emoji: '🚿', animation: 'animate-bounce' };
+  if (t.includes('sortant') && t.includes('toilet'))
+    return { emoji: '🙌', animation: 'animate-bounce' };
+  if (t.includes('voiture') || t.includes('transport') || t.includes('véhicule') || t.includes('vehicule'))
+    return { emoji: '🚗', animation: 'animate-bounce' };
+  if (t.includes('voyage'))
+    return { emoji: '✈️', animation: 'animate-bounce' };
+  if (t.includes('matin'))
+    return { emoji: '☀️', animation: 'animate-pulse' };
+  if (t.includes('soir') || t.includes('nuit') || t.includes('veillée'))
+    return { emoji: '🌙', animation: 'animate-pulse' };
+  if (t.includes('maison') && (t.includes('entrant') || t.includes('entrer')))
+    return { emoji: '🏠', animation: 'animate-bounce' };
+  if (t.includes('maison') && (t.includes('sortant') || t.includes('sortir')))
+    return { emoji: '👋', animation: 'animate-bounce' };
+  if (t.includes('habit') || t.includes('vêtement') || t.includes('vetement'))
+    return { emoji: '👕', animation: 'animate-pulse' };
+  if (t.includes('ablution'))
+    return { emoji: '💧', animation: 'animate-bounce' };
+  if (t.includes('pluie'))
+    return { emoji: '🌧️', animation: 'animate-pulse' };
+  if (t.includes('mariage'))
+    return { emoji: '💍', animation: 'animate-pulse' };
+  if (t.includes('maladie') || t.includes('malade'))
+    return { emoji: '🤒', animation: 'animate-pulse' };
+  if (t.includes('décès') || t.includes('deces') || t.includes('mort'))
+    return { emoji: '🤲', animation: 'animate-pulse' };
+  if (t.includes('animal'))
+    return { emoji: '🐾', animation: 'animate-bounce' };
+  if (t.includes('colère') || t.includes('colere'))
+    return { emoji: '😤', animation: 'animate-bounce' };
+  if (t.includes('miroir'))
+    return { emoji: '🪞', animation: 'animate-pulse' };
+  if (t.includes('vent'))
+    return { emoji: '💨', animation: 'animate-pulse' };
+  if (t.includes('tonnerre') || t.includes('orage'))
+    return { emoji: '⛈️', animation: 'animate-pulse' };
+  if (t.includes('marché') || t.includes('marche'))
+    return { emoji: '🛒', animation: 'animate-bounce' };
+  return { emoji: '🤲', animation: 'animate-pulse' };
 };
 
 const getCategoryColor = (category: string | null) => {
@@ -514,7 +554,7 @@ const Invocations = () => {
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {invocations.map((invocation, index) => {
-              const Icon = getDefaultIcon(invocation.title_french);
+              const emojiData = getInvocationEmoji(invocation.title_french);
               const invProgress = progress.find((p: any) => p.invocation_id === invocation.id);
               const isValidated = invProgress?.is_validated ?? false;
               const unlocked = isCardUnlocked(index);
@@ -556,14 +596,19 @@ const Invocations = () => {
                     </span>
                   ) : null}
 
-                  {/* Icon or image */}
+                  {/* Emoji animé */}
                   <div className="mt-3 flex-1 flex items-center justify-center">
                     {invocation.image_url ? (
                       <img src={invocation.image_url} alt={invocation.title_french} className="w-12 h-12 object-contain" />
                     ) : (
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-teal-400 to-teal-600">
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
+                      <span
+                        className={`text-4xl ${emojiData.animation}`}
+                        style={{ animationDuration: '2s' }}
+                        role="img"
+                        aria-label={invocation.title_french}
+                      >
+                        {emojiData.emoji}
+                      </span>
                     )}
                   </div>
 
