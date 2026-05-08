@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AMCES_CALENDAR_2026 } from '@/data/amcesCalendar2026';
 
 export interface PrayerTimesData {
   fajr: string;
@@ -101,27 +102,37 @@ export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
 
   const methodId = method?.id ?? getSavedMethod().id;
 
+  const isAmcesCity = city.label.includes("Clermont-l'Hérault");
+
   const fetchTimes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const today = new Date();
       const day = today.getDate();
-      const month = today.getMonth() + 1;
-      const year = today.getFullYear();
+      const monthIndex = today.getMonth();
 
-      const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${city.lat}&longitude=${city.lon}&method=${methodId}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Erreur API');
-      const json = await res.json();
-      const t = json.data.timings;
+      let fajr: string, sunrise: string, dhuhr: string, asr: string, maghrib: string, isha: string;
 
-      const fajr = t.Fajr;
-      const sunrise = t.Sunrise;
-      const dhuhr = t.Dhuhr;
-      const asr = t.Asr;
-      const maghrib = t.Maghrib;
-      const isha = t.Isha;
+      if (isAmcesCity) {
+        const times = AMCES_CALENDAR_2026[monthIndex]?.[String(day)];
+        if (!times) throw new Error('Horaires AMCES introuvables pour cette date');
+        [fajr, sunrise, dhuhr, asr, maghrib, isha] = times;
+      } else {
+        const month = monthIndex + 1;
+        const year = today.getFullYear();
+        const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${city.lat}&longitude=${city.lon}&method=${methodId}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Erreur API');
+        const json = await res.json();
+        const t = json.data.timings;
+        fajr = t.Fajr;
+        sunrise = t.Sunrise;
+        dhuhr = t.Dhuhr;
+        asr = t.Asr;
+        maghrib = t.Maghrib;
+        isha = t.Isha;
+      }
 
       setPrayerTimes({
         fajr,
@@ -142,7 +153,7 @@ export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
     } finally {
       setLoading(false);
     }
-  }, [city.lat, city.lon, methodId]);
+  }, [city.lat, city.lon, methodId, isAmcesCity]);
 
   useEffect(() => {
     fetchTimes();
