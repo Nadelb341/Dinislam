@@ -6,36 +6,67 @@ Ce fichier fournit des instructions à Claude Code (claude.ai/code) pour travail
 
 Dinislam est une application web d'éducation islamique (en français) construite avec React + TypeScript + Vite, utilisant Supabase comme backend. Elle couvre les sourates du Coran (114 + Ayat Al-Kursi), les invocations, la méthode Nourania, l'apprentissage de la prière, les activités du Ramadan, l'alphabet arabe, les noms d'Allah, la grammaire/conjugaison, le vocabulaire, les hadiths, et plus encore. Elle dispose de rôles admin/élève avec un workflow d'approbation (accepter/refuser), un suivi de présence, des devoirs, une messagerie, des notifications push, un classement et un chat mascotte (via Supabase Edge Function).
 
-## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-03)
+## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-08)
 
 Quand un élève ne peut pas se connecter, proposer **immédiatement** ces étapes dans l'ordre :
 
-### 1. Vérifier email + mot de passe enregistré
+### 1. Diagnostic complet en une requête
 ```sql
-SELECT p.full_name, p.plain_password, u.email
-FROM profiles p
-JOIN auth.users u ON u.id = p.user_id
-WHERE lower(p.full_name) LIKE '%prénom%';
+SELECT u.email, u.email_confirmed_at, u.banned_until, u.deleted_at,
+       p.full_name, p.is_approved, p.plain_password, r.role
+FROM auth.users u
+LEFT JOIN profiles p ON p.user_id = u.id
+LEFT JOIN user_roles r ON r.user_id = u.id
+WHERE u.email = 'email@exemple.com';
 ```
 
-### 2. Vérifier si le compte est approuvé
-```sql
-SELECT full_name, is_approved, created_at
-FROM profiles
-WHERE lower(full_name) LIKE '%prénom%';
-```
-→ Si `is_approved = false` : approuver via le panneau admin (🛡️ → Inscriptions → Accepter) ou :
-```sql
-UPDATE profiles SET is_approved = true WHERE lower(full_name) LIKE '%prénom%';
-```
-
-### 3. Confirmer l'email manuellement (erreur "email non confirmé")
+### 2. Confirmer l'email manuellement (cause la plus fréquente)
 ```sql
 UPDATE auth.users SET email_confirmed_at = now() WHERE email = 'email@exemple.com';
 ```
 
+### 3. Approuver le compte si `is_approved = false`
+Via le panneau admin 🛡️ → Inscriptions → Accepter, ou :
+```sql
+UPDATE profiles SET is_approved = true
+WHERE user_id = (SELECT id FROM auth.users WHERE email = 'email@exemple.com');
+```
+
 ### 4. Réinitialiser le mot de passe
-Via l'app : **Panneau admin → Élèves → élève → ⋯ → Modifier le mot de passe**
+Via l'app : **Panneau admin 🛡️ → Élèves → élève → ⋯ → Modifier le mot de passe**
+
+### 5. Supprimer un compte fantôme (doublon, test...)
+```sql
+SELECT id FROM auth.users WHERE email = 'email@exemple.com';
+-- Puis avec l'UUID récupéré :
+DELETE FROM profiles WHERE user_id = 'UUID_ICI';
+DELETE FROM user_roles WHERE user_id = 'UUID_ICI';
+DELETE FROM auth.users WHERE id = 'UUID_ICI';
+```
+
+---
+
+## 📧 Flux d'inscription avec confirmation email (màj 2026-05-08)
+
+### Flux actif
+1. Élève remplit le formulaire → Supabase envoie l'email de confirmation
+2. Élève clique le lien → détecté via `type=signup` dans le hash URL → déconnexion auto → redirigé vers `/auth?email_confirmed=1`
+3. Bannière verte "✅ Email confirmé !" sur la page de connexion
+4. **L'admin voit la demande UNIQUEMENT après confirmation email** (via RPC `get_pending_registrations()`)
+5. Élève se connecte → page d'attente si pas encore approuvé (`PendingApproval.tsx`) → accueil si approuvé
+6. Admin approuve → élève apparaît dans la liste Élèves
+
+### Implémentation clé
+- `AuthContext.tsx` → `onAuthStateChange` : détection `type=signup` dans hash → signOut + redirect
+- `Auth.tsx` : bannière verte sur `?email_confirmed=1`, ne redirige pas vers `/` si ce param est présent
+- `AdminRegistrationValidations.tsx` : utilise `supabase.rpc('get_pending_registrations')` au lieu de query directe
+- `emailRedirectTo: window.location.origin` (pas de chemin personnalisé — évite besoin whitelist Supabase)
+
+### Fonction RPC (déjà déployée en base)
+```sql
+-- get_pending_registrations() : retourne profiles avec email_confirmed_at IS NOT NULL
+-- GRANT EXECUTE ON FUNCTION get_pending_registrations() TO authenticated;
+```
 
 ---
 
@@ -225,6 +256,13 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 - **Service Worker** : les requêtes vers `/storage/v1/object/` et les requêtes de `destination === 'audio'` sont toujours passées directement au réseau (jamais mises en cache). Les réponses non-200 ne sont jamais mises en cache non plus.
 - `useAdminPendingCounts` : inclut maintenant le count `recitations` (status=pending) avec abonnement realtime.
 - **Format audio iOS (màj 2026-05-07 — CRITIQUE)** : iOS Safari ne supporte PAS WebM. `mr.mimeType` est vide AVANT `mr.start()` sur iOS → fallback `audio/webm` erroné. Solution : `pickMimeType()` utilise `isTypeSupported(['audio/mp4', ...])`, crée MediaRecorder avec format explicite, lit `mr.mimeType` APRÈS `mr.start()`. Blob et upload en `audio/mp4` / `.mp4`. Preview via `FileReader.readAsDataURL()` (blob URLs cassées sur iOS WKWebView). Élèves peuvent supprimer leurs récitations "En attente" via bouton 🗑️ + AlertDialog.
+
+## Suppression d'élève (màj 2026-05-08)
+
+- Bouton **"Supprimer l'élève"** dans `AdminStudentDetails.tsx` → menu ⋯ → option rouge avec icône Trash2
+- Confirmation obligatoire via `ConfirmDeleteDialog` avant suppression
+- Suppression via `supabase.functions.invoke('delete-user', { body: { user_id } })` (Edge Function existante)
+- Edge Function `confirm-user-email` créée (`supabase/functions/confirm-user-email/`) mais **non utilisée dans le flux principal** — disponible pour corrections manuelles si besoin
 
 ## Mot de passe admin (fonctionnalité 2026-04-08)
 
