@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
+import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter,
+} from '@/components/ui/alert-dialog';
+
+const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -40,6 +48,17 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     lien_lecon: '', date_limite: '', assigned_to: 'all',
     group_id: '', student_id: '',
   });
+  const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
+
+  useEffect(() => {
+    const draft = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
+    if (draft && draft.titre.trim()) setHomeworkDraft(draft);
+  }, []);
+
+  useEffect(() => {
+    if (!showForm || !form.titre.trim()) return;
+    saveDraft(DRAFT_KEY_HOMEWORK, form);
+  }, [showForm, form]);
 
   // Fetch devoirs with enriched names
   const { data: devoirs = [] } = useQuery({
@@ -173,6 +192,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
       toast.success(`✅ Devoir assigné à ${count} élève(s) !`);
+      clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
       setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '' });
     },
@@ -275,7 +295,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => setShowForm(!showForm)} size="sm">
+        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '' }); } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
         </Button>
       </div>
@@ -498,6 +518,39 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog récupération brouillon devoir */}
+      <AlertDialog open={!!homeworkDraft} onOpenChange={(open) => { if (!open) { clearDraft(DRAFT_KEY_HOMEWORK); setHomeworkDraft(null); } }}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>⏳ Action inachevée</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              Tu as commencé à créer un devoir :{" "}
+              <span className="font-semibold text-foreground">« {homeworkDraft?.titre} »</span>
+              <br />Souhaites-tu continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2 flex-row justify-end">
+            <button
+              onClick={() => { clearDraft(DRAFT_KEY_HOMEWORK); setHomeworkDraft(null); }}
+              className="px-4 py-2 text-sm rounded-md border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              Supprimer
+            </button>
+            <button
+              onClick={() => {
+                if (!homeworkDraft) return;
+                setForm(homeworkDraft);
+                setShowForm(true);
+                setHomeworkDraft(null);
+              }}
+              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Continuer
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
