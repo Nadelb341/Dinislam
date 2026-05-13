@@ -326,6 +326,13 @@ ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS title_arabic text;
 ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
 ```
 
+## Contenu YouTube dans les cartes de module — màj 2026-05-13
+
+- Le lien YouTube est sauvegardé dans `module_card_content` avec `content_type: 'youtube'` et `file_url: embedUrl` (format `https://www.youtube.com/embed/VIDEO_ID`)
+- `GenericModulePage.tsx` affiche le contenu YouTube via `<iframe>` avec `aspect-video` pour un rendu propre
+- La conversion URL → embed se fait dans `ContentUploadTabs.tsx` via `convertYoutubeToEmbed()`
+- **Ne pas** utiliser un lien `<a>` pour les URLs embed — elles ne s'ouvrent pas correctement dans un navigateur
+
 ## Déploiement
 
 **⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**
