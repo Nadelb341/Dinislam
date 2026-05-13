@@ -285,6 +285,47 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 
 - La table **n'a pas** de colonne `updated_at`. Ne pas la référencer dans les `.update({...})` (erreur PGRST204 : "Could not find the 'updated_at' column..."). Si on veut tracker la dernière modif, ajouter d'abord la colonne via migration.
 
+## Inscriptions — màj 2026-05-13
+
+- La liste des inscriptions (`AdminRegistrationValidations.tsx`) utilise une requête directe sur `profiles` avec `.or('is_approved.eq.false,is_approved.is.null')` — **pas la RPC `get_pending_registrations()`** (celle-ci filtrait par `email_confirmed_at IS NOT NULL`, ce qui cachait les élèves non confirmés).
+- Le compteur (`useAdminPendingCounts.ts`) utilise aussi `.eq('is_approved', false)` directement sur `profiles`.
+- **Workflow push** : toujours pousser sur `origin`, `lovable` ET `lovable-fork` pour que le code atteigne bien Lovable.
+
+## Visibilité des modules — màj 2026-05-13
+
+### Table `module_visibility`
+```sql
+CREATE TABLE IF NOT EXISTS public.module_visibility (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  module_id uuid NOT NULL REFERENCES public.learning_modules(id) ON DELETE CASCADE,
+  visibility_type text NOT NULL DEFAULT 'all',
+  user_ids uuid[] NOT NULL DEFAULT '{}',
+  group_ids uuid[] NOT NULL DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT module_visibility_module_id_key UNIQUE (module_id),
+  CONSTRAINT valid_visibility_type CHECK (visibility_type IN ('all', 'users', 'groups'))
+);
+ALTER TABLE public.module_visibility ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "admin_all_module_visibility" ON public.module_visibility FOR ALL TO authenticated USING (public.has_role(auth.uid(), 'admin'::public.app_role)) WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role));
+CREATE POLICY "student_read_module_visibility" ON public.module_visibility FOR SELECT TO authenticated USING (true);
+```
+
+### Fonctionnement
+- Bouton **"Afficher à…"** dans le menu 3 points de chaque carte (page d'accueil, admin uniquement)
+- Composant : `src/components/admin/ModuleVisibilityDialog.tsx`
+- 3 modes : `all` (tout le monde), `users` (personnes spécifiques), `groups` (groupes spécifiques)
+- Badge **🎯 Ciblé** affiché sur les cartes ciblées (admin uniquement)
+- Filtrage dans `Index.tsx` : les élèves ne voient que les cartes qui leur sont destinées
+- `visibility_type = 'all'` ou pas de ligne → visible par tous
+
+## Colonnes ajoutées à `module_cards` — màj 2026-05-13
+
+```sql
+ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS title_arabic text;
+ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
+```
+
 ## Déploiement
 
 **⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**
