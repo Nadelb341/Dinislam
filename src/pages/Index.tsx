@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
+import ModuleVisibilityDialog from '@/components/admin/ModuleVisibilityDialog';
 
 const PRAYER_EMOJI: Record<string, string> = {
   'Sobh (Fajr)': '🌅',
@@ -161,8 +162,11 @@ const Index = () => {
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
 
+  // Dialog visibilité
+  const [visibilityTarget, setVisibilityTarget] = useState<{ id: string; title: string } | null>(null);
+
   // Fetch modules from DB
-  const { data: modules } = useQuery({
+  const { data: modules, refetch: refetchModules } = useQuery({
     queryKey: ['learning-modules', isAdmin],
     queryFn: async () => {
       let query = supabase.from('learning_modules').select('*').order('display_order');
@@ -171,6 +175,40 @@ const Index = () => {
       if (error) throw error;
       return data || [];
     }
+  });
+
+  // Fetch visibilités des modules
+  const { data: visibilityRows, refetch: refetchVisibility } = useQuery({
+    queryKey: ['module-visibility'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('module_visibility').select('*');
+      return (data || []) as { module_id: string; visibility_type: string; user_ids: string[]; group_ids: string[] }[];
+    }
+  });
+
+  // Fetch groupes de l'utilisateur courant (pour le filtrage côté élève)
+  const { data: myGroupIds } = useQuery({
+    queryKey: ['my-group-ids', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase.from('student_group_members').select('group_id').eq('user_id', user.id);
+      return (data || []).map(r => r.group_id);
+    },
+    enabled: !!user && !isAdmin,
+  });
+
+  // Map module_id → visibilité
+  const visibilityMap = Object.fromEntries((visibilityRows || []).map(v => [v.module_id, v]));
+
+  // Filtrage des modules pour les élèves
+  const visibleModules = (modules || []).filter(mod => {
+    if (isAdmin) return true;
+    if (!mod.is_active) return false;
+    const vis = visibilityMap[mod.id];
+    if (!vis || vis.visibility_type === 'all') return true;
+    if (vis.visibility_type === 'users') return vis.user_ids.includes(user?.id ?? '');
+    if (vis.visibility_type === 'groups') return (myGroupIds || []).some(gid => vis.group_ids.includes(gid));
+    return true;
   });
 
   // Arrow-based reorder (admin only)
@@ -466,7 +504,7 @@ const handleModuleClick = (mod: any) => {
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {(modules || []).map((mod, index) => {
+            {visibleModules.map((mod, index) => {
               const Icon = ICON_MAP[mod.icon] || null;
               const slug = getModuleSlug(mod);
               const fallback = MODULE_EMOJI_FALLBACK[slug];
@@ -490,6 +528,12 @@ const handleModuleClick = (mod: any) => {
                     {isAdmin && !mod.is_active &&
                     <div className="absolute top-2 left-2 z-20 bg-destructive/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
                         Masqué
+                      </div>
+                    }
+                    {/* Targeted badge for admin */}
+                    {isAdmin && mod.is_active && visibilityMap[mod.id] && visibilityMap[mod.id].visibility_type !== 'all' &&
+                    <div className="absolute top-2 left-2 z-20 bg-blue-500/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
+                        🎯 Ciblé
                       </div>
                     }
 
@@ -545,17 +589,21 @@ const handleModuleClick = (mod: any) => {
                             <MoreVertical className="h-3.5 w-3.5 text-foreground" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title });
                           }}>
-                          
                             {mod.is_active ?
                           <><EyeOff className="h-4 w-4 mr-2 text-destructive" /><span className="text-destructive">Masquer aux élèves</span></> :
                           <><Eye className="h-4 w-4 mr-2 text-green-600" /><span className="text-green-600">Afficher aux élèves</span></>
                           }
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => { e.stopPropagation(); setVisibilityTarget({ id: mod.id, title: mod.title }); }}>
+                            <Users className="h-4 w-4 mr-2 text-blue-500" />
+                            <span className="text-blue-600">Afficher à…</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -568,6 +616,14 @@ const handleModuleClick = (mod: any) => {
 
         </div>
       </AppLayout>
+
+      {/* Dialog visibilité module */}
+      <ModuleVisibilityDialog
+        open={!!visibilityTarget}
+        onOpenChange={(v) => { if (!v) setVisibilityTarget(null); }}
+        module={visibilityTarget}
+        onSaved={() => { refetchModules(); refetchVisibility(); }}
+      />
     </>);
 
 };
