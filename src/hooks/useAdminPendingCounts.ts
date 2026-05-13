@@ -24,7 +24,7 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
       if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, messages: 0, homework: 0, recitations: 0, total: 0 };
 
       const [reg, sou, nou, msgs, hw, rec] = await Promise.all([
-        supabase.rpc('get_pending_registrations' as any),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
         supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('user_messages').select('*', { count: 'exact', head: true }).eq('sender_type', 'user').eq('is_read', false),
@@ -32,7 +32,7 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
         supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
-      const r = reg.data?.length || 0, s = sou.count || 0, n = nou.count || 0, m = msgs.count || 0, h = hw.count || 0, rc = rec.count || 0;
+      const r = reg.count || 0, s = sou.count || 0, n = nou.count || 0, m = msgs.count || 0, h = hw.count || 0, rc = rec.count || 0;
       return { registrations: r, sourates: s, nourania: n, invocations: 0, messages: m, homework: h, recitations: rc, total: r + s + n + m + h + rc };
     },
     enabled: !!user && isAdmin,

@@ -27,7 +27,11 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
 
   const loadRegistrations = useCallback(async () => {
-    const { data, error } = await supabase.rpc('get_pending_registrations' as any);
+    const { data, error } = await (supabase as any)
+      .from('profiles')
+      .select('user_id, email, full_name, gender, age, created_at, is_approved')
+      .eq('is_approved', false)
+      .order('created_at', { ascending: true });
 
     if (error) throw error;
     setRegistrations(data || []);
