@@ -189,7 +189,18 @@ const GenericModulePage = () => {
                             <audio src={content.file_url} controls className="flex-1 h-8" />
                           </div>
                         )}
-                        {!['video','image','pdf','document','audio'].includes(content.content_type) && (
+                        {content.content_type === 'youtube' && (
+                          <div className="aspect-video">
+                            <iframe
+                              src={content.file_url}
+                              className="w-full h-full"
+                              allowFullScreen
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              title={content.file_name}
+                            />
+                          </div>
+                        )}
+                        {!['video','image','pdf','document','audio','youtube'].includes(content.content_type) && (
                           <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50">
                             {getContentIcon(content.content_type)}
                             <span className="text-sm">{content.file_name}</span>
