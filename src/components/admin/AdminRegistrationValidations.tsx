@@ -23,14 +23,16 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const queryClient = useQueryClient();
   const [registrations, setRegistrations] = useState<RegistrationUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
 
   const loadRegistrations = useCallback(async () => {
+    setLoadError(null);
     const { data, error } = await (supabase as any)
       .from('profiles')
       .select('user_id, email, full_name, gender, age, created_at, is_approved')
-      .eq('is_approved', false)
+      .or('is_approved.eq.false,is_approved.is.null')
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -41,8 +43,9 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
     const load = async () => {
       try {
         await loadRegistrations();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Erreur chargement inscriptions:', err);
+        setLoadError(err?.message || 'Erreur inconnue');
       } finally {
         setIsLoading(false);
       }
@@ -236,6 +239,13 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
               </Card>
             ))}
           </div>
+        ) : loadError ? (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-4 text-center">
+              <p className="text-red-600 font-medium text-sm">Erreur de chargement</p>
+              <p className="text-red-500 text-xs mt-1">{loadError}</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="space-y-3">
             {pendingUsers.length > 0 && (
