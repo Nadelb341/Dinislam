@@ -4,16 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 
-const FlashcardManager = ({ cardId }: { cardId: string }) => {
+interface Props {
+  cardId: string;
+  cardTitle: string;
+  moduleTitle: string;
+  description?: string;
+  contentType?: string;
+  contentUrl?: string;
+}
+
+const FlashcardManager = ({ cardId, cardTitle, moduleTitle, description, contentType, contentUrl }: Props) => {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [front, setFront] = useState('');
   const [arabic, setArabic] = useState('');
   const [translit, setTranslit] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: flashcards = [] } = useQuery({
     queryKey: ['admin-flashcards', cardId],
@@ -70,6 +80,41 @@ const FlashcardManager = ({ cardId }: { cardId: string }) => {
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    const toastId = `fc-gen-${cardId}-${Date.now()}`;
+    toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 20000 });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flashcards`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          card_id: cardId,
+          card_title: cardTitle,
+          module_title: moduleTitle,
+          description: description || '',
+          content_type: contentType || '',
+          file_url: contentUrl || '',
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success(`✨ ${result.count} flashcards générées !`, { id: toastId });
+        invalidate();
+      } else {
+        toast.error(result.error || 'Erreur lors de la génération', { id: toastId });
+      }
+    } catch (e: any) {
+      toast.error('Erreur réseau', { id: toastId });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const count = expanded ? (flashcards as any[]).length : null;
 
   return (
@@ -84,7 +129,19 @@ const FlashcardManager = ({ cardId }: { cardId: string }) => {
 
       {expanded && (
         <div className="p-3 space-y-3 border-t border-dashed border-border">
-          {/* Formulaire d'ajout */}
+          {/* Bouton génération IA */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-950"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            {isGenerating ? 'Génération en cours…' : '✨ Générer avec l\'IA'}
+          </Button>
+
+          {/* Formulaire d'ajout manuel */}
           <div className="space-y-2">
             <Input
               placeholder="Texte français (recto) *"
@@ -145,7 +202,7 @@ const FlashcardManager = ({ cardId }: { cardId: string }) => {
 
           {(flashcards as any[]).length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-2">
-              Aucune flashcard — ajoute-en avec le formulaire ci-dessus.
+              Aucune flashcard — génère-en avec l'IA ou ajoute-en manuellement.
             </p>
           )}
         </div>

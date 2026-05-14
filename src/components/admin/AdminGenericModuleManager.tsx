@@ -424,7 +424,14 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
                         {/* Flashcards */}
                         <div className="ml-14">
-                          <FlashcardManager cardId={card.id} />
+                          <FlashcardManager
+                            cardId={card.id}
+                            cardTitle={card.title}
+                            moduleTitle={moduleTitle}
+                            description={card.description || ''}
+                            contentType={cardContents[0]?.content_type}
+                            contentUrl={cardContents[0]?.file_url}
+                          />
                         </div>
                       </CardContent>
                     </Card>
