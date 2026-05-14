@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import FlashcardPlayer from '@/components/FlashcardPlayer';
 import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Video, Volume2, BookOpen, ChevronRight, Play, Image as ImageIcon } from 'lucide-react';
@@ -127,6 +128,20 @@ const GenericTimelinePage = () => {
   const selectedContents = selectedCard
     ? (cardContents as any[]).filter((c: any) => c.card_id === selectedCard.id)
     : [];
+
+  const { data: selectedFlashcards = [] } = useQuery({
+    queryKey: ['flashcards', selectedCard?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('module_flashcards')
+        .select('*')
+        .eq('module_card_id', selectedCard!.id)
+        .order('display_order');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedCard?.id,
+  });
 
   const hasContent = (cardId: string) =>
     (cardContents as any[]).some((c: any) => c.card_id === cardId);
@@ -276,6 +291,13 @@ const GenericTimelinePage = () => {
               {selectedCard.description && (
                 <div className="bg-muted/50 border border-border rounded-xl p-4">
                   <p className="text-sm text-foreground">{selectedCard.description}</p>
+                </div>
+              )}
+
+              {(selectedFlashcards as any[]).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Exercice — Flashcards</h4>
+                  <FlashcardPlayer cards={selectedFlashcards as any[]} />
                 </div>
               )}
 

@@ -21,6 +21,7 @@ import {
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
+import FlashcardManager from './FlashcardManager';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core';
@@ -369,6 +370,11 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                             onUploadAudio={(file) => handleUploadContent(card.id, file, 'audio')}
                             isUploading={isThisUploading}
                           />
+                        </div>
+
+                        {/* Flashcards */}
+                        <div className="ml-14">
+                          <FlashcardManager cardId={card.id} />
                         </div>
                       </CardContent>
                     </Card>

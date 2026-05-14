@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import FlashcardPlayer from '@/components/FlashcardPlayer';
 import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Video, Volume2, BookOpen, ChevronRight, Play } from 'lucide-react';
@@ -69,6 +70,20 @@ const GrammaireConjugaisonPage = () => {
   const selectedContents = selectedCard
     ? (cardContents as any[]).filter((c: any) => c.card_id === selectedCard.id)
     : [];
+
+  const { data: selectedFlashcards = [] } = useQuery({
+    queryKey: ['flashcards', selectedCard?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('module_flashcards')
+        .select('*')
+        .eq('module_card_id', selectedCard!.id)
+        .order('display_order');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedCard?.id,
+  });
 
   const getContentType = () => {
     if (!selectedContents.length) return null;
@@ -231,6 +246,13 @@ const GrammaireConjugaisonPage = () => {
               {selectedCard.description && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-4">
                   <p className="text-sm text-foreground">{selectedCard.description}</p>
+                </div>
+              )}
+
+              {(selectedFlashcards as any[]).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Exercice — Flashcards</h4>
+                  <FlashcardPlayer cards={selectedFlashcards as any[]} />
                 </div>
               )}
 
