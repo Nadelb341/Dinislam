@@ -25,7 +25,7 @@ serve(async (req) => {
     if (!lovableApiKey) throw new Error('LOVABLE_API_KEY non configurée');
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader) { 
       return new Response(JSON.stringify({ error: 'Non autorisé' }), {
         status: 401,
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
@@ -35,43 +35,18 @@ serve(async (req) => {
     const { card_id, card_title, module_title, description, content_type, file_url } = await req.json();
     if (!card_id || !card_title) throw new Error('card_id et card_title requis');
 
-    // Pour les PDFs : tenter une extraction basique du texte lisible
-    let pdfExtract = '';
-    if ((content_type === 'pdf' || content_type === 'document') && file_url) {
-      try {
-        const pdfRes = await fetch(file_url);
-        const buffer = await pdfRes.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        // Extraction des séquences ASCII lisibles (min 4 chars consécutifs)
-        let text = '';
-        let current = '';
-        for (const byte of bytes) {
-          if (byte >= 32 && byte <= 126) {
-            current += String.fromCharCode(byte);
-          } else {
-            if (current.length >= 4) text += current + ' ';
-            current = '';
-          }
-        }
-        const cleaned = text.replace(/\s+/g, ' ').substring(0, 2000).trim();
-        if (cleaned.length > 200) pdfExtract = `\nExtrait du document :\n${cleaned}`;
-      } catch {
-        // Fallback silencieux sur contexte seul
-      }
-    }
-
     const prompt = `Tu es un assistant pédagogique expert en éducation islamique et en langue arabe.
 
 Génère exactement 10 flashcards pour la carte d'apprentissage suivante :
 - Module : ${module_title}
-- Sujet : ${card_title}${description ? `\n- Description : ${description}` : ''}${pdfExtract}
+- Sujet : ${card_title}${description ? `\n- Description : ${description}` : ''}
 
 Chaque flashcard doit avoir :
 - front_text : expression ou concept en FRANÇAIS (ce que l'élève lit en premier)
 - back_arabic : équivalent en ARABE (écriture arabe)
 - back_transliteration : prononciation en lettres latines (ex: "ana", "bismillah")
 
-Les flashcards doivent être variées, progressives et adaptées au niveau d'un enfant ou adolescent musulman francophone.
+Les flashcards doivent être variées, progressives et adaptées au niveau d'un enfant ou adolescent musulman francophone. 
 
 Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, sans explication :
 [{"front_text":"...","back_arabic":"...","back_transliteration":"..."},...]`;
@@ -83,7 +58,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'google/gemini-flash-1.5',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 1500,
         temperature: 0.4,
@@ -112,16 +87,14 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calcul du prochain display_order
     const { data: existing } = await supabase
-      .from('module_flashcards')
+      .from('module_flashcards') 
       .select('display_order')
       .eq('module_card_id', card_id)
       .order('display_order', { ascending: false })
       .limit(1);
 
     const startOrder = existing?.length ? (existing[0].display_order + 1) : 0;
-
     const rows = flashcards.slice(0, 10).map((f: any, i: number) => ({
       module_card_id: card_id,
       front_text: String(f.front_text || '').trim(),
@@ -129,14 +102,14 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
       back_transliteration: f.back_transliteration ? String(f.back_transliteration).trim() : null,
       display_order: startOrder + i,
     })).filter(r => r.front_text.length > 0);
-
+    
     const { error: insertError } = await supabase.from('module_flashcards').insert(rows);
     if (insertError) throw insertError;
-
+    
     return new Response(JSON.stringify({ success: true, count: rows.length }), {
-      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, 
     });
-
+    
   } catch (error: any) {
     console.error('generate-flashcards error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
