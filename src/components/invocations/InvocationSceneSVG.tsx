@@ -92,7 +92,7 @@ const SceneReveille = () => (
     <rect x="1" y="36" width="34" height="7" rx="4" fill="#F4A898"/>
     <ellipse cx="10" cy="39.5" rx="7.5" ry="3.5" fill="#FAF5F0" stroke="#E0CCC0" strokeWidth="0.6"/>
     {/* Enfant assis, bras levés (étirement) */}
-    <Kid x="24" y="10" armLeft={-80} armRight={80}/>
+    <Kid x={24} y={10} armLeft={-80} armRight={80}/>
   </svg>
 );
 
@@ -153,7 +153,7 @@ const SceneEntrerMosquee = () => (
     <ellipse cx="18" cy="33" rx="4" ry="5.5" fill="#68A850"/>
     <rect x="16.5" y="38" width="3" height="5" fill="#7A5028"/>
     {/* Personnage — marche vers la mosquée */}
-    <Kid x="17" y="12" armLeft={30} armRight={-25}/>
+    <Kid x={17} y={12} armLeft={30} armRight={-25}/>
   </svg>
 );
 
@@ -176,7 +176,7 @@ const SceneSortirMosquee = () => (
     <path d="M4 30 L4 25 Q7 22.5 10 25 L10 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
     <path d="M20 30 L20 25 Q23 22.5 26 25 L26 30 Z" fill="#C0DCF0" stroke="#A8C8E0" strokeWidth="0.4"/>
     {/* Enfant qui sort (dos à la mosquée, se dirige à droite) */}
-    <Kid x="38" y="12" armLeft={-25} armRight={30} flip={true}/>
+    <Kid x={38} y={12} armLeft={-25} armRight={30} flip={true}/>
   </svg>
 );
 
@@ -205,7 +205,7 @@ const SceneAvantManger = () => (
     <line x1="16" y1="33" x2="16" y2="40" stroke="#B0B0B0" strokeWidth="1" strokeLinecap="round"/>
     <line x1="20" y1="33" x2="20" y2="40" stroke="#B0B0B0" strokeWidth="1" strokeLinecap="round"/>
     {/* Personnage debout, légèrement penché */}
-    <Kid x="30" y="6" armLeft={20} armRight={-20} lean={5}/>
+    <Kid x={30} y={6} armLeft={20} armRight={-20} lean={5}/>
   </svg>
 );
 
@@ -231,7 +231,7 @@ const SceneApresManger = () => (
     <text x="5" y="20" fontSize="9" opacity="0.6">✨</text>
     <text x="46" y="18" fontSize="7" opacity="0.5">✨</text>
     {/* Personnage — main sur ventre (satisfait) */}
-    <Kid x="30" y="6" armLeft={0} armRight={-45} lean={-5}/>
+    <Kid x={30} y={6} armLeft={0} armRight={-45} lean={-5}/>
   </svg>
 );
 
@@ -255,7 +255,7 @@ const SceneEntrerToilettes = () => (
     {/* Mur gauche — papier peint clair */}
     <rect x="0" y="0" width="28" height="56" rx="0" fill="#EBF5FD"/>
     {/* Personnage s'approche */}
-    <Kid x="18" y="12" armLeft={25} armRight={-20}/>
+    <Kid x={18} y={12} armLeft={25} armRight={-20}/>
   </svg>
 );
 
@@ -280,7 +280,7 @@ const SceneSortirToilettes = () => (
     {/* Sol */}
     <rect y="48" width="56" height="8" rx="0" fill="#C4906A" opacity="0.6"/>
     {/* Personnage sort, bras légèrement levés */}
-    <Kid x="38" y="10" armLeft={-35} armRight={35} flip={true}/>
+    <Kid x={38} y={10} armLeft={-35} armRight={35} flip={true}/>
   </svg>
 );
 
@@ -309,7 +309,7 @@ const SceneVoiture = () => (
     {/* Phare avant */}
     <ellipse cx="53" cy="32" rx="1.5" ry="2.5" fill="#FFFFC0" opacity="0.9"/>
     {/* Personnage à côté */}
-    <Kid x="11" y="12" armLeft={0} armRight={-25}/>
+    <Kid x={11} y={12} armLeft={0} armRight={-25}/>
   </svg>
 );
 
@@ -341,7 +341,7 @@ const SceneVoyage = () => (
     {/* Poignée */}
     <path d="M6 34 Q8.5 32 11 34" fill="none" stroke="#604010" strokeWidth="1.2" strokeLinecap="round"/>
     {/* Personnage avec valise */}
-    <Kid x="28" y="12" armLeft={40} armRight={15}/>
+    <Kid x={28} y={12} armLeft={40} armRight={15}/>
   </svg>
 );
 
@@ -366,7 +366,7 @@ const SceneMatin = () => (
       <line key={xx} x1={xx} y1="44" x2={xx-1.5} y2="40" stroke="#70A840" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
     ))}
     {/* Personnage, bras légèrement ouverts — louange du matin */}
-    <Kid x="22" y="10" armLeft={-35} armRight={35}/>
+    <Kid x={22} y={10} armLeft={-35} armRight={35}/>
   </svg>
 );
 
@@ -385,7 +385,7 @@ const SceneNuit = () => (
     {/* Sol */}
     <rect y="46" width="56" height="10" rx="0" fill="#1A1008"/>
     {/* Personnage invocation du soir */}
-    <Kid x="22" y="10" armLeft={-45} armRight={45}/>
+    <Kid x={22} y={10} armLeft={-45} armRight={45}/>
   </svg>
 );
 
@@ -413,7 +413,7 @@ const SceneEntrerMaison = () => (
     {/* Allée */}
     <path d="M22 56 L24 50 L32 50 L34 56 Z" fill="#D8C890"/>
     {/* Personnage approche */}
-    <Kid x="9" y="14" armLeft={25} armRight={-20}/>
+    <Kid x={9} y={14} armLeft={25} armRight={-20}/>
   </svg>
 );
 
@@ -437,7 +437,7 @@ const SceneSortirMaison = () => (
     <rect y="50" width="56" height="6" rx="0" fill="#A0C870"/>
     <path d="M19 56 L21 50 L29 50 L31 56 Z" fill="#D8C890"/>
     {/* Personnage sort */}
-    <Kid x="44" y="14" armLeft={-20} armRight={25} flip={true}/>
+    <Kid x={44} y={14} armLeft={-20} armRight={25} flip={true}/>
   </svg>
 );
 
@@ -465,7 +465,7 @@ const SceneAblutions = () => (
     {/* Sol */}
     <rect y="48" width="56" height="8" rx="0" fill="#B8C8D0" opacity="0.5"/>
     {/* Personnage penché vers le lavabo */}
-    <Kid x="18" y="10" armLeft={-50} armRight={50} lean={18}/>
+    <Kid x={18} y={10} armLeft={-50} armRight={50} lean={18}/>
   </svg>
 );
 
@@ -484,7 +484,7 @@ const SceneHabits = () => (
     {/* Col */}
     <ellipse cx="29" cy="10" rx="3" ry="2" fill="#EDEAE6" stroke="#D8D5D0" strokeWidth="0.5"/>
     {/* Personnage bras levés (enfile le thobe) */}
-    <Kid x="24" y="18" armLeft={-85} armRight={85}/>
+    <Kid x={24} y={18} armLeft={-85} armRight={85}/>
   </svg>
 );
 
@@ -508,7 +508,7 @@ const ScenePluie = () => (
     <line x1="28" y1="36" x2="28" y2="52" stroke="#6A4020" strokeWidth="2" strokeLinecap="round"/>
     <path d="M26 52 Q28 56 30 52" fill="none" stroke="#6A4020" strokeWidth="1.8" strokeLinecap="round"/>
     {/* Personnage sous le parapluie */}
-    <Kid x="28" y="30" armLeft={-55} armRight={-10}/>
+    <Kid x={28} y={30} armLeft={-55} armRight={-10}/>
     {/* Sol mouillé */}
     <rect y="50" width="56" height="6" rx="0" fill="#8898A8" opacity="0.5"/>
     {/* Flaques */}
@@ -563,7 +563,7 @@ const SceneDefaut = () => (
     <ellipse cx="8" cy="40" rx="6" ry="3.5" fill="#F2C08A" transform="rotate(-20 8 40)"/>
     <ellipse cx="48" cy="40" rx="6" ry="3.5" fill="#F2C08A" transform="rotate(20 48 40)"/>
     {/* Personnage en position de invocation (dua) */}
-    <Kid x="28" y="8" armLeft={-55} armRight={55}/>
+    <Kid x={28} y={8} armLeft={-55} armRight={55}/>
     {/* Particules de lumière */}
     {[[6,14],[50,18],[10,30],[46,28],[28,4]].map(([px,py],i) => (
       <circle key={i} cx={px} cy={py} r="1.5" fill="#A0A0E8" opacity="0.4"/>

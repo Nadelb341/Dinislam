@@ -2,7 +2,7 @@
 // Format: [Fajr, Shuruq, Dhuhr, Asr, Maghrib, Isha]
 // Index: 0=Janvier, ..., 11=Décembre. Clé = numéro du jour (string "1".."31")
 
-export const AMCES_CALENDAR_2026: Record<string, string>[][] = [
+export const AMCES_CALENDAR_2026: Record<string, string[]>[] = [
   // Janvier
   {
     "1": ["06:53", "08:20", "12:50", "15:02", "17:20", "18:40"],
