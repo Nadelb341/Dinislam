@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { generateFromTemplate } from '@/data/flashcard-templates';
 
 interface Props {
   cardId: string;
@@ -82,44 +83,32 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle, description, content
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    const toastId = `fc-gen-${cardId}-${Date.now()}`;
-    toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 20000 });
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flashcards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          card_id: cardId,
-          card_title: cardTitle,
-          module_title: moduleTitle,
-          description: description || '',
-          content_type: contentType || '',
-          file_url: contentUrl || '',
-        }),
-      });
-
-      let result: any = {};
-      try {
-        result = await res.json();
-      } catch {
-        toast.error(`Erreur ${res.status} — réponse inattendue du serveur`, { id: toastId });
+      const templates = generateFromTemplate(cardTitle, moduleTitle);
+      if (!templates) {
+        toast.error('Aucun modèle disponible pour ce sujet — ajoute les flashcards manuellement.');
         return;
       }
 
-      if (result.success) {
-        toast.success(`✨ ${result.count} flashcards générées !`, { id: toastId });
-        invalidate();
-      } else {
-        const msg = result.error || result.message || result.msg || `Erreur ${res.status}`;
-        toast.error(msg, { id: toastId });
-        console.error('[generate-flashcards] réponse complète :', result);
-      }
+      const maxOrder = (flashcards as any[]).reduce(
+        (max: number, f: any) => Math.max(max, f.display_order ?? 0), -1
+      );
+
+      const rows = templates.map((t, i) => ({
+        module_card_id: cardId,
+        front_text: t.front_text,
+        back_arabic: t.back_arabic || null,
+        back_transliteration: t.back_transliteration || null,
+        display_order: maxOrder + 1 + i,
+      }));
+
+      const { error } = await (supabase as any).from('module_flashcards').insert(rows);
+      if (error) throw error;
+
+      toast.success(`✨ ${rows.length} flashcards générées !`);
+      invalidate();
     } catch (e: any) {
-      toast.error(`Erreur réseau : ${e.message}`, { id: toastId });
+      toast.error(e.message || 'Erreur lors de la génération');
     } finally {
       setIsGenerating(false);
     }
