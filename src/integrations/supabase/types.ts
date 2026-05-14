@@ -810,7 +810,9 @@ export type Database = {
           image_url: string | null
           is_locked: boolean | null
           module_id: string
+          section: string | null
           title: string
+          title_arabic: string | null
         }
         Insert: {
           created_at?: string | null
@@ -820,7 +822,9 @@ export type Database = {
           image_url?: string | null
           is_locked?: boolean | null
           module_id: string
+          section?: string | null
           title: string
+          title_arabic?: string | null
         }
         Update: {
           created_at?: string | null
@@ -830,7 +834,9 @@ export type Database = {
           image_url?: string | null
           is_locked?: boolean | null
           module_id?: string
+          section?: string | null
           title?: string
+          title_arabic?: string | null
         }
         Relationships: [
           {
@@ -881,6 +887,82 @@ export type Database = {
             foreignKeyName: "module_content_module_id_fkey"
             columns: ["module_id"]
             isOneToOne: false
+            referencedRelation: "learning_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_flashcards: {
+        Row: {
+          back_arabic: string | null
+          back_transliteration: string | null
+          created_at: string | null
+          display_order: number
+          front_text: string
+          id: string
+          module_card_id: string
+        }
+        Insert: {
+          back_arabic?: string | null
+          back_transliteration?: string | null
+          created_at?: string | null
+          display_order?: number
+          front_text: string
+          id?: string
+          module_card_id: string
+        }
+        Update: {
+          back_arabic?: string | null
+          back_transliteration?: string | null
+          created_at?: string | null
+          display_order?: number
+          front_text?: string
+          id?: string
+          module_card_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_flashcards_module_card_id_fkey"
+            columns: ["module_card_id"]
+            isOneToOne: false
+            referencedRelation: "module_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_visibility: {
+        Row: {
+          created_at: string | null
+          group_ids: string[]
+          id: string
+          module_id: string
+          updated_at: string | null
+          user_ids: string[]
+          visibility_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_ids?: string[]
+          id?: string
+          module_id: string
+          updated_at?: string | null
+          user_ids?: string[]
+          visibility_type?: string
+        }
+        Update: {
+          created_at?: string | null
+          group_ids?: string[]
+          id?: string
+          module_id?: string
+          updated_at?: string | null
+          user_ids?: string[]
+          visibility_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_visibility_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: true
             referencedRelation: "learning_modules"
             referencedColumns: ["id"]
           },
@@ -1016,6 +1098,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      nourania_admin_unlocks: {
+        Row: {
+          id: string
+          lesson_id: string
+          student_id: string
+          unlocked_at: string
+          unlocked_by: string | null
+        }
+        Insert: {
+          id?: string
+          lesson_id: string
+          student_id: string
+          unlocked_at?: string
+          unlocked_by?: string | null
+        }
+        Update: {
+          id?: string
+          lesson_id?: string
+          student_id?: string
+          unlocked_at?: string
+          unlocked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nourania_admin_unlocks_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "nourania_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nourania_commentaires_eleves: {
         Row: {
@@ -2638,11 +2752,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_pending_registrations: {
+        Args: never
+        Returns: {
+          age: number
+          created_at: string
+          date_of_birth: string
+          email: string
+          full_name: string
+          gender: string
+          is_approved: boolean
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_user_in_group: {
+        Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
       recalculate_student_points: {
