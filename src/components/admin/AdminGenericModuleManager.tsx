@@ -189,13 +189,38 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
       toast.success('Contenu ajouté ✅');
+
+      // Génération automatique des flashcards en arrière-plan
+      const card = (cards as any[]).find((c: any) => c.id === cardId);
+      if (card) {
+        const toastId = `fc-${cardId}-${Date.now()}`;
+        toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flashcards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ card_id: card.id, card_title: card.title, module_title: moduleTitle, description: card.description || '', content_type: contentType, file_url: urlData.publicUrl }),
+          })
+          .then(r => r.json())
+          .then(result => {
+            if (result.success) {
+              toast.success(`✨ ${result.count} flashcards générées !`, { id: toastId });
+              queryClient.invalidateQueries({ queryKey: ['admin-flashcards', card.id] });
+              queryClient.invalidateQueries({ queryKey: ['flashcards', card.id] });
+            } else {
+              toast.dismiss(toastId);
+            }
+          })
+          .catch(() => toast.dismiss(toastId));
+        });
+      }
     } catch (e: any) {
       toast.error(e.message || 'Erreur upload');
     } finally {
       setIsUploading(false);
       setUploadingCardId(null);
     }
-  }, [user, contents, queryClient, moduleId]);
+  }, [user, contents, cards, queryClient, moduleId, moduleTitle]);
 
   const handleAddYoutubeContent = useCallback(async (cardId: string, embedUrl: string) => {
     if (!user?.id) return;
@@ -211,9 +236,34 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
       toast.success('Lien YouTube ajouté ✅');
+
+      // Génération automatique des flashcards en arrière-plan
+      const card = (cards as any[]).find((c: any) => c.id === cardId);
+      if (card) {
+        const toastId = `fc-${cardId}-${Date.now()}`;
+        toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flashcards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+            body: JSON.stringify({ card_id: card.id, card_title: card.title, module_title: moduleTitle, description: card.description || '', content_type: 'youtube', file_url: embedUrl }),
+          })
+          .then(r => r.json())
+          .then(result => {
+            if (result.success) {
+              toast.success(`✨ ${result.count} flashcards générées !`, { id: toastId });
+              queryClient.invalidateQueries({ queryKey: ['admin-flashcards', card.id] });
+              queryClient.invalidateQueries({ queryKey: ['flashcards', card.id] });
+            } else {
+              toast.dismiss(toastId);
+            }
+          })
+          .catch(() => toast.dismiss(toastId));
+        });
+      }
     } catch (e: any) { toast.error(e.message); }
     finally { setIsUploading(false); setUploadingCardId(null); }
-  }, [user, contents, queryClient, moduleId]);
+  }, [user, contents, cards, queryClient, moduleId, moduleTitle]);
 
   const updateContentTitleMutation = useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
