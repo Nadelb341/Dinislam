@@ -101,15 +101,25 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle, description, content
           file_url: contentUrl || '',
         }),
       });
-      const result = await res.json();
+
+      let result: any = {};
+      try {
+        result = await res.json();
+      } catch {
+        toast.error(`Erreur ${res.status} — réponse inattendue du serveur`, { id: toastId });
+        return;
+      }
+
       if (result.success) {
         toast.success(`✨ ${result.count} flashcards générées !`, { id: toastId });
         invalidate();
       } else {
-        toast.error(result.error || 'Erreur lors de la génération', { id: toastId });
+        const msg = result.error || result.message || result.msg || `Erreur ${res.status}`;
+        toast.error(msg, { id: toastId });
+        console.error('[generate-flashcards] réponse complète :', result);
       }
     } catch (e: any) {
-      toast.error('Erreur réseau', { id: toastId });
+      toast.error(`Erreur réseau : ${e.message}`, { id: toastId });
     } finally {
       setIsGenerating(false);
     }
