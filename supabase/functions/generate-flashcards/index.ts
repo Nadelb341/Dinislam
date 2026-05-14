@@ -58,7 +58,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-flash-1.5',
+        model: 'openai/gpt-5-mini',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 1500,
         temperature: 0.4,
