@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen } from 'lucide-react';
+import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20 } from '@/hooks/useIsOver20';
 import { getInvocationEnrichment } from '@/data/invocationsData';
