@@ -326,12 +326,33 @@ ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS title_arabic text;
 ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
 ```
 
-## Contenu YouTube dans les cartes de module — màj 2026-05-13
+## Contenu YouTube dans les cartes de module — màj 2026-05-14
 
 - Le lien YouTube est sauvegardé dans `module_card_content` avec `content_type: 'youtube'` et `file_url: embedUrl` (format `https://www.youtube.com/embed/VIDEO_ID`)
-- `GenericModulePage.tsx` affiche le contenu YouTube via `<iframe>` avec `aspect-video` pour un rendu propre
 - La conversion URL → embed se fait dans `ContentUploadTabs.tsx` via `convertYoutubeToEmbed()`
 - **Ne pas** utiliser un lien `<a>` pour les URLs embed — elles ne s'ouvrent pas correctement dans un navigateur
+- Affichage via `<iframe>` avec classe `aspect-video` dans **les 3 fichiers** de dialog de détail de carte :
+  - `GenericModulePage.tsx` (route `/module/:moduleId`)
+  - `GenericTimelinePage.tsx` (routes `/module/vocabulaire`, `/module/darija`, etc.)
+  - `GrammaireConjugaisonPage.tsx` (route `/grammaire`) ← **page dédiée, à ne pas oublier !**
+
+## ⚠️ Routage des modules — architecture à 3 fichiers (màj 2026-05-14)
+
+**TOUJOURS vérifier `App.tsx` avant de modifier un composant de module.**
+
+| Route | Composant | Modules |
+|-------|-----------|---------|
+| `/grammaire` | `GrammaireConjugaisonPage.tsx` | Grammaire & Conjugaison |
+| `/module/vocabulaire` | `GenericTimelinePage.tsx` | Vocabulaire |
+| `/module/lecture-coran` | `GenericTimelinePage.tsx` | Lecture Coran |
+| `/module/darija` | `GenericTimelinePage.tsx` | Darija |
+| `/module/dictionnaire` | `GenericTimelinePage.tsx` | Dictionnaire |
+| `/module/dhikr` | `GenericTimelinePage.tsx` | Dhikr |
+| `/module/hadiths` | `GenericTimelinePage.tsx` | Hadiths |
+| `/module/histoires-prophetes` | `GenericTimelinePage.tsx` | Histoires des Prophètes |
+| `/module/:moduleId` | `GenericModulePage.tsx` | Tous les autres modules dynamiques |
+
+**Règle :** quand on ajoute une fonctionnalité dans le dialog de détail d'une carte, la dupliquer dans les **3 fichiers**.
 
 ## Déploiement
 
