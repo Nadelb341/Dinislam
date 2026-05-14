@@ -336,6 +336,37 @@ ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
   - `GenericTimelinePage.tsx` (routes `/module/vocabulaire`, `/module/darija`, etc.)
   - `GrammaireConjugaisonPage.tsx` (route `/grammaire`) ← **page dédiée, à ne pas oublier !**
 
+## 🃏 Système de flashcards — màj 2026-05-14
+
+### Table SQL à créer (à exécuter par Mustapha)
+```sql
+CREATE TABLE IF NOT EXISTS public.module_flashcards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  module_card_id uuid NOT NULL REFERENCES public.module_cards(id) ON DELETE CASCADE,
+  front_text text NOT NULL,
+  back_arabic text,
+  back_transliteration text,
+  display_order int NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.module_flashcards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anyone_read_flashcards" ON public.module_flashcards
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
+  FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'::public.app_role))
+  WITH CHECK (public.has_role(auth.uid(), 'admin'::public.app_role));
+```
+
+### Architecture
+- **FlashcardPlayer** (`src/components/FlashcardPlayer.tsx`) : composant élève — flip 3D animé, navigation ←→, bouton Mélanger/Réinitialiser, barre de progression
+- **FlashcardManager** (`src/components/admin/FlashcardManager.tsx`) : accordéon admin dans chaque carte — formulaire ajout (français + arabe + translittération) + liste avec suppression
+- Intégré dans les **3 pages** module : `GrammaireConjugaisonPage`, `GenericTimelinePage`, `GenericModulePage`
+- Query key élève : `['flashcards', selectedCard?.id]` (chargement lazy à l'ouverture du dialog)
+- Query key admin : `['admin-flashcards', cardId]` + invalide aussi `['flashcards', cardId]`
+- Recto : texte français — Verso : arabe + translittération
+- Fonctionne pour **tous les modules** de l'application
+
 ## ⚠️ Routage des modules — architecture à 3 fichiers (màj 2026-05-14)
 
 **TOUJOURS vérifier `App.tsx` avant de modifier un composant de module.**
