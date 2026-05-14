@@ -312,6 +312,17 @@ const GenericTimelinePage = () => {
                       {content.content_type === 'image' && (
                         <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />
                       )}
+                      {content.content_type === 'youtube' && (
+                        <div className="aspect-video">
+                          <iframe
+                            src={content.file_url}
+                            className="w-full h-full"
+                            allowFullScreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            title={content.file_name}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
