@@ -189,6 +189,7 @@ const GrammaireConjugaisonPage = () => {
                                       if (c.content_type === 'video') return <Video key={c.id} className="h-3.5 w-3.5 text-blue-500" />;
                                       if (c.content_type === 'audio') return <Volume2 key={c.id} className="h-3.5 w-3.5 text-teal-500" />;
                                       if (c.content_type === 'pdf') return <FileText key={c.id} className="h-3.5 w-3.5 text-red-500" />;
+                                      if (c.content_type === 'youtube') return <Video key={c.id} className="h-3.5 w-3.5 text-red-500" />;
                                       return null;
                                     })}
                                   </span>
@@ -265,6 +266,17 @@ const GrammaireConjugaisonPage = () => {
                       )}
                       {content.content_type === 'image' && (
                         <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />
+                      )}
+                      {content.content_type === 'youtube' && (
+                        <div className="aspect-video">
+                          <iframe
+                            src={content.file_url}
+                            className="w-full h-full"
+                            allowFullScreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            title={content.file_name}
+                          />
+                        </div>
                       )}
                     </div>
                   ))}
