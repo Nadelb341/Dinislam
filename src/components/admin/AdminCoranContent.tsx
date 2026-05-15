@@ -155,8 +155,14 @@ const AdminCoranContent = ({ onBack }: Props) => {
 
   // Enregistrer une URL externe comme PDF du Coran
   const handleSavePdfUrl = useCallback(async () => {
-    const url = pdfUrlInput.trim();
+    let url = pdfUrlInput.trim();
     if (!url || !user?.id || !pdfCard?.id) return;
+    // Ajouter https:// si l'URL ne commence pas par un protocole
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    try { new URL(url); } catch {
+      toast.error('URL invalide — vérifie le lien collé');
+      return;
+    }
     setIsUploadingPdf(true);
     try {
       if (pdfContent) {
@@ -283,9 +289,13 @@ const AdminCoranContent = ({ onBack }: Props) => {
             <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200 [overflow-wrap:anywhere]">{pdfContent.file_name}</p>
-              <a href={pdfContent.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-600 hover:underline">
+              <button
+                type="button"
+                onClick={() => window.open(pdfContent.file_url, '_blank', 'noopener,noreferrer')}
+                className="text-xs text-emerald-600 hover:underline text-left"
+              >
                 Voir le PDF ↗
-              </a>
+              </button>
             </div>
             <Button
               variant="outline" size="sm"
