@@ -66,7 +66,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   FileText, List, Video, BookOpen, Star, Heart, Bell, Calendar, Image, Music,
 };
 
-type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'dynamic-card-content' | 'homework' | 'attendance' | 'modules' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations';
+type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'dynamic-card-content' | 'homework' | 'attendance' | 'modules' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage';
 
 interface GenericModuleManageState { moduleId: string; moduleTitle: string; }
 
@@ -294,6 +294,7 @@ const Admin = () => {
     { key: 'dhikr', title: 'Dhikr', icon: Heart, value: 'Gérer', subtitle: 'Rappels d\'Allah', color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/30', cardBgColor: 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800', view: 'dhikr-manage' as ViewType },
     { key: 'hadiths', title: 'Hadiths', icon: Scroll, value: 'Gérer', subtitle: 'Paroles du Prophète ﷺ', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30', cardBgColor: 'bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800', view: 'hadiths-manage' as ViewType },
     { key: 'histoires-prophetes', title: 'Histoires des Prophètes', icon: Users, value: 'Gérer', subtitle: 'Récits coraniques', color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/30', cardBgColor: 'bg-violet-50/50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800', view: 'histoires-prophetes-manage' as ViewType },
+    { key: 'coran', title: 'Coran', icon: BookMarked, value: 'Gérer', subtitle: 'Le Saint Coran', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900/30', cardBgColor: 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800', view: 'coran-manage' as ViewType },
   ], [stats]);
 
   // Combine static + dynamic cards with ordering
@@ -429,6 +430,7 @@ const Admin = () => {
     dhikr: '/module/dhikr',
     hadiths: '/module/hadiths',
     'histoires-prophetes': '/module/histoires-prophetes',
+    coran: '/coran',
     homework: '/admin/homework',
     attendance: '/admin/attendance',
   };
@@ -515,6 +517,7 @@ const Admin = () => {
     'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
     'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
     'histoires-prophetes-manage': { slug: '/module/histoires-prophetes', title: 'Histoires des Prophètes' },
+    'coran-manage': { slug: '/coran', title: 'Coran' },
   };
   if (currentView in SLUG_VIEWS) {
     const info = SLUG_VIEWS[currentView];

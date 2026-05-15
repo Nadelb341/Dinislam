@@ -60,6 +60,7 @@ const GenericModulePage = lazy(() => import("./pages/GenericModulePage"));
 const GrammaireConjugaisonPage = lazy(() => import("./pages/GrammaireConjugaisonPage"));
 const GenericTimelinePage = lazy(() => import("./pages/GenericTimelinePage"));
 const Monitoring = lazy(() => import("./pages/Monitoring"));
+const CoranPage = lazy(() => import("./pages/CoranPage"));
 
 const queryClient = new QueryClient();
 
@@ -119,6 +120,7 @@ const AppRoutes = () => {
         <Route path="/module/dhikr" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
         <Route path="/module/hadiths" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
         <Route path="/module/histoires-prophetes" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
+        <Route path="/coran" element={<ProtectedRoute><CoranPage /></ProtectedRoute>} />
         <Route path="/module/:moduleId" element={<ProtectedRoute><GenericModulePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
