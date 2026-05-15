@@ -186,7 +186,7 @@ const Admin = () => {
   });
 
   // Fetch learning modules (non-builtin: 99 Noms, Grammaire, etc.)
-  const { data: learningModules } = useQuery({
+  const { data: learningModules, isLoading: loadingModules, refetch: refetchModules } = useQuery({
     queryKey: ['admin-learning-modules'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -196,6 +196,7 @@ const Admin = () => {
       if (error) throw error;
       return data || [];
     },
+    staleTime: 0,
   });
 
   // Fetch card ordering
@@ -523,6 +524,28 @@ const Admin = () => {
     const info = SLUG_VIEWS[currentView];
     const mod = learningModules?.find(m => m.builtin_path === info.slug);
     if (mod) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={mod.id} moduleTitle={info.title} onBack={handleBack} /></div></AppLayout>;
+    return (
+      <AppLayout title="Tableau de bord">
+        <div className="p-4 space-y-4">
+          <Button variant="ghost" onClick={handleBack} className="mb-2">← Retour</Button>
+          {loadingModules ? (
+            <p className="text-sm text-muted-foreground">Chargement du module…</p>
+          ) : (
+            <div className="rounded-xl border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-4 space-y-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                ⚠️ Module « {info.title} » non trouvé en base de données.
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                Le SQL d'insertion a-t-il bien été exécuté ? Si oui, clique sur Actualiser.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => refetchModules()}>
+                🔄 Actualiser
+              </Button>
+            </div>
+          )}
+        </div>
+      </AppLayout>
+    );
   }
 
   if (['ramadan', 'nourania', 'alphabet', 'invocations', 'sourates', 'prayer'].includes(currentView)) {
