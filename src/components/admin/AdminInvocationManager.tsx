@@ -339,8 +339,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
 
                           {/* Actions */}
                           <div className="flex gap-1 shrink-0">
-                            {/* Upload content button */}
-                            <div className="relative">
+                            {/* Upload content button — input inside Button to avoid overflow on neighbors */}
+                            <Button variant="outline" size="sm" disabled={isThisUploading} className="h-8 px-2 gap-1 relative overflow-hidden">
                               <input
                                 type="file" multiple
                                 accept="video/*,audio/*,application/pdf,image/*"
@@ -348,10 +348,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                                 onChange={(e) => { if (e.target.files?.length) handleUploadContent(inv.id, e.target.files); e.target.value = ''; }}
                                 disabled={isThisUploading}
                               />
-                              <Button variant="outline" size="sm" disabled={isThisUploading} className="pointer-events-none h-8 px-2 gap-1">
-                                {isThisUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                              </Button>
-                            </div>
+                              {isThisUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                            </Button>
                             <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(inv)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
