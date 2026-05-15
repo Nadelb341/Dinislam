@@ -433,7 +433,32 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 - **Sourates.tsx** : `isSourateAccessible()` → bypass si `isOver20 || isAdmin` ; auto-validation si `isOver20`
 - **Nourania.tsx** : `isLessonUnlocked()` → bypass si `isOver20 || isAdmin` ; auto-validation si `isAdminUnlocked || isOver20`
 - **Invocations.tsx** : `isCardUnlocked()` → bypass si `isAdmin || isOver20`
-- **`AdminUnlockAllDialog`** (`src/components/admin/AdminUnlockAllDialog.tsx`) : bouton "Déverrouiller tout" + multi-select élèves dans Sourates.tsx, Nourania.tsx, Invocations.tsx. Upsert massif de toutes les progressions à `is_validated=true`.
+- **`AdminUnlockAllDialog`** (`src/components/admin/AdminUnlockAllDialog.tsx`) : bouton **"Accès complet"** affiché dans Sourates.tsx, Nourania.tsx, Invocations.tsx. Voir règle complète ci-dessous.
+
+## 🔓 RÈGLE ABSOLUE — Bouton "Accès complet" sur toute carte à contenu verrouillé (Dinislam, À VIE)
+
+**Cette règle est NON NÉGOCIABLE et s'applique à toute nouvelle carte créée dans Dinislam qui possède un système de progression verrouillée (validation sourate par sourate, leçon par leçon, etc.).**
+
+### Cartes actuellement équipées
+| Carte | Page | `moduleType` | Table progress | Clé de suppression (re-lock) |
+|-------|------|-------------|----------------|------------------------------|
+| Sourates | `Sourates.tsx` | `'sourates'` | `user_sourate_progress` (context='sourates') | `.eq('context', 'sourates')` |
+| Nourania | `Nourania.tsx` | `'nourania'` | `user_nourania_progress` | (tout l'utilisateur) |
+| Invocations | `Invocations.tsx` | `'invocations'` | `user_invocation_progress` | (tout l'utilisateur) |
+
+### Comportement obligatoire du dialog
+1. **À l'ouverture** : les élèves qui ont déjà l'accès complet apparaissent **pré-cochés** (requête qui compare count validé vs total items)
+2. **Cocher un élève non coché** → badge bleu "→ Accès total" → au submit : upsert massif de tout le contenu à `is_validated=true`
+3. **Décocher un élève coché** → badge orange "→ Mode normal" → au submit : **suppression de toute sa progression** pour ce module (il repart de zéro, validation une par une)
+4. **Bouton "Appliquer"** : désactivé si aucun changement, affiche `🔓 +N` / `🔒 -N` selon les actions en attente
+
+### Comment ajouter une nouvelle carte
+Quand on crée une nouvelle carte avec contenu progressif verrouillé :
+1. Ajouter `moduleType: 'nouveau_module'` dans l'union type de `Props` dans `AdminUnlockAllDialog.tsx`
+2. Ajouter le label dans `MODULE_LABELS`
+3. Ajouter les blocs `if (moduleType === 'nouveau_module')` dans `queryFn` (détection) et `mutationFn` (unlock + lock)
+4. Importer et placer `<AdminUnlockAllDialog moduleType="nouveau_module" />` dans la page admin du module
+5. **Ne jamais créer une carte verrouillée sans ce bouton** — l'admin doit toujours pouvoir gérer l'accès complet
 
 ## Déploiement
 
