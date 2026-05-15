@@ -139,6 +139,7 @@ const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; bgColor: string }> 
   "dhikr": { emoji: "📿", bgColor: "#f0fdf4" },
   "hadiths": { emoji: "🕊️", bgColor: "#eef2ff" },
   "histoires-prophetes": { emoji: "⭐", bgColor: "#fffbeb" },
+  "coran": { emoji: "📗", bgColor: "#f0fdf4" },
   "cahier-texte": { emoji: "📝", bgColor: "#eff6ff" },
   "registre-presence": { emoji: "✅", bgColor: "#f0fdf4" },
 };
