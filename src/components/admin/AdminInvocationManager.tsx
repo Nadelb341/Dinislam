@@ -231,7 +231,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       const { error: upErr } = await supabase.storage.from('invocation-content').upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('invocation-content').getPublicUrl(path);
-      const { error } = await supabase.from('invocations').update({ image_url: urlData.publicUrl }).eq('id', invocationId);
+      const imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      const { error } = await supabase.from('invocations').update({ image_url: imageUrl }).eq('id', invocationId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocations-list'] });
