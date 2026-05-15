@@ -290,34 +290,37 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${st.color}`}>
                       {st.label}
                     </span>
-                    {r.status === 'pending' && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                            disabled={deleteRecitationMutation.isPending}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                          disabled={deleteRecitationMutation.isPending}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer cette récitation ?</AlertDialogTitle>
+                          {r.status === 'validated' && (
+                            <p className="text-sm text-muted-foreground pt-1">
+                              Cette récitation a été validée par l'enseignant. En la supprimant, tu pourras en envoyer une nouvelle.
+                            </p>
+                          )}
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteRecitationMutation.mutate(r)}
+                            className="bg-destructive hover:bg-destructive/90"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Supprimer cette récitation ?</AlertDialogTitle>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteRecitationMutation.mutate(r)}
-                              className="bg-destructive hover:bg-destructive/90"
-                            >
-                              Supprimer
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 <audio src={r.audio_url} controls preload="auto" className="w-full" />
