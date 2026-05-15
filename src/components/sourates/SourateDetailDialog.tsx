@@ -309,10 +309,7 @@ const SourateDetailDialog = ({
         .flatMap(({ parts }) => parts.map(p => `<img src="${p.imageUrl}" class="verse-img" />`))
         .join('\n');
     } else {
-      content = `<p class="fallback">Cette sourate n'est pas encore disponible en format image.<br/><br/>
-        <a href="https://www.coran-en-ligne.com/coran-en-arabe.html" target="_blank">
-          Consulter sur Coran en Ligne →
-        </a></p>`;
+      content = `<p class="fallback">Cette sourate n'est pas encore disponible en format image.</p>`;
     }
 
     const printWindow = window.open('', '_blank', 'width=820,height=960');
