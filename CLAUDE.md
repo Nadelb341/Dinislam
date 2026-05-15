@@ -374,6 +374,7 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 | Route | Composant | Modules |
 |-------|-----------|---------|
 | `/grammaire` | `GrammaireConjugaisonPage.tsx` | Grammaire & Conjugaison |
+| `/coran` | `CoranPage.tsx` | Coran (PDF + 114 sourates 1→114) |
 | `/module/vocabulaire` | `GenericTimelinePage.tsx` | Vocabulaire |
 | `/module/lecture-coran` | `GenericTimelinePage.tsx` | Lecture Coran |
 | `/module/darija` | `GenericTimelinePage.tsx` | Darija |
@@ -384,6 +385,38 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 | `/module/:moduleId` | `GenericModulePage.tsx` | Tous les autres modules dynamiques |
 
 **Règle :** quand on ajoute une fonctionnalité dans le dialog de détail d'une carte, la dupliquer dans les **3 fichiers**.
+
+## Carte Coran — màj 2026-05-15
+
+### Architecture
+- **Page** : `src/pages/CoranPage.tsx` → route `/coran`
+- **Données partagées** : `src/data/sourates.ts` exporte `SOURATES_DATA` (115 sourates dont Ayat Al-Kursi) et `CORAN_ORDERED` (114 sourates triées 1→114, sans Ayat Al-Kursi)
+- **Module Supabase** : `learning_modules` avec `is_builtin=true`, `builtin_path='/coran'` (inséré via SQL par Mustapha)
+
+### Fonctionnement
+- Section PDF en haut : cherche `module_card_content` où `content_type='fichier'` dans les cartes du module Coran → bouton "Ouvrir / Télécharger" si PDF uploadé, sinon message placeholder
+- Liste des 114 sourates Al-Fatiha→An-Nas, **toutes déverrouillées** dès le départ (pas de séquencement)
+- Validation : quand tous les versets d'une sourate sont cochés → **auto-validation directe** sans demande admin (même logique que `isOver20` dans Sourates.tsx)
+- Réutilise `SourateDetailDialog` à l'identique (PDF, récitation complète, versets un par un avec audio)
+- Progress partagé avec Sourates.tsx : `user_sourate_progress` et `user_sourate_verse_progress` (mêmes tables)
+
+### Admin
+- Carte "Coran" dans `STATIC_CARDS` (vert, `view: 'coran-manage'`)
+- `CARD_KEY_TO_BUILTIN_PATH['coran'] = '/coran'` → toggle visibilité
+- `SLUG_VIEWS['coran-manage']` → `AdminGenericModuleManager` pour gérer les cartes/PDF du module
+
+### SQL à exécuter par Mustapha (déjà fourni)
+```sql
+INSERT INTO public.learning_modules (title, description, icon, color, is_active, display_order, is_builtin, builtin_path)
+VALUES ('Coran', 'Le Saint Coran — PDF complet + 114 sourates verset par verset', 'book-marked', 'green', true, 999, true, '/coran');
+```
+
+### Déverrouillage automatique 20 ans et bouton admin (màj 2026-05-15)
+- Hook `useIsOver20()` dans `src/hooks/useIsOver20.ts` : lit `date_of_birth` / `age` depuis `profiles`
+- **Sourates.tsx** : `isSourateAccessible()` → bypass si `isOver20 || isAdmin` ; auto-validation si `isOver20`
+- **Nourania.tsx** : `isLessonUnlocked()` → bypass si `isOver20 || isAdmin` ; auto-validation si `isAdminUnlocked || isOver20`
+- **Invocations.tsx** : `isCardUnlocked()` → bypass si `isAdmin || isOver20`
+- **`AdminUnlockAllDialog`** (`src/components/admin/AdminUnlockAllDialog.tsx`) : bouton "Déverrouiller tout" + multi-select élèves dans Sourates.tsx, Nourania.tsx, Invocations.tsx. Upsert massif de toutes les progressions à `is_validated=true`.
 
 ## Déploiement
 
