@@ -57,7 +57,6 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
             user_id: userId,
             sourate_id: s.id,
             is_validated: true,
-            is_memorized: true,
             progress_percentage: 100,
             context: 'sourates',
           }))
