@@ -8,13 +8,14 @@ import { toast } from 'sonner';
 import { Unlock, Users } from 'lucide-react';
 
 interface Props {
-  moduleType: 'sourates' | 'nourania' | 'invocations';
+  moduleType: 'sourates' | 'nourania' | 'invocations' | 'allah-names';
 }
 
 const MODULE_LABELS: Record<string, string> = {
   sourates: 'toutes les sourates',
   nourania: 'toutes les leçons Nourania',
   invocations: 'toutes les invocations',
+  'allah-names': 'les 99 Noms d\'Allah',
 };
 
 const AdminUnlockAllDialog = ({ moduleType }: Props) => {
@@ -79,6 +80,18 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
         if (!totalCount) return [];
         const { data: progress } = await (supabase as any)
           .from('user_invocation_progress')
+          .select('user_id')
+          .eq('is_validated', true);
+        const counts: Record<string, number> = {};
+        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
+
+      } else if (moduleType === 'allah-names') {
+        const { data: names } = await (supabase as any).from('allah_names').select('id');
+        const totalCount = names?.length || 0;
+        if (!totalCount) return [];
+        const { data: progress } = await (supabase as any)
+          .from('user_allah_name_progress')
           .select('user_id')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
@@ -175,6 +188,24 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
         }
         for (const userId of toLock) {
           await (supabase as any).from('user_invocation_progress').delete().eq('user_id', userId);
+        }
+
+      } else if (moduleType === 'allah-names') {
+        if (toUnlock.length > 0) {
+          const { data: names, error } = await (supabase as any).from('allah_names').select('id');
+          if (error) throw error;
+          for (const userId of toUnlock) {
+            await (supabase as any).from('user_allah_name_progress').delete().eq('user_id', userId);
+            const rows = (names || []).map((n: any) => ({
+              user_id: userId, name_id: n.id, is_validated: true,
+              validated_at: new Date().toISOString(),
+            }));
+            const { error: insErr } = await (supabase as any).from('user_allah_name_progress').insert(rows);
+            if (insErr) throw insErr;
+          }
+        }
+        for (const userId of toLock) {
+          await (supabase as any).from('user_allah_name_progress').delete().eq('user_id', userId);
         }
       }
     },

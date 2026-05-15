@@ -326,6 +326,17 @@ ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS title_arabic text;
 ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
 ```
 
+## Progression verrouillée — 99 Noms d'Allah (màj 2026-05-16)
+
+- Table : `user_allah_name_progress` (user_id, name_id, is_validated, validated_at) — UNIQUE(user_id, name_id)
+- **Auto-validation** : l'élève clique "J'ai mémorisé" dans le dialog → validé immédiatement sans intervention admin (99 validations admin = trop lourd)
+- Verrouillage : nom N accessible seulement si nom N-1 est validé (bypass si isAdmin ou isOver20)
+- Nom verrouillé → affichage `'﹖'` / `'🔒 Verrouillé'`, opacité 0.45
+- Nom validé → bordure verte + `CheckCircle2`
+- Barre de progression dorée en haut (validé / total)
+- Admin uniquement → bouton "Accès complet" dans `AdminAllahNamesManager` via `AdminUnlockAllDialog moduleType="allah-names"`
+- PDF ouvert via `window.open()` (pas de `<a target="_blank">` — fiabilité iOS PWA)
+
 ## Colonnes ajoutées à `invocations` — màj 2026-05-15
 
 ```sql
@@ -445,6 +456,7 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 | Sourates | `Sourates.tsx` | `'sourates'` | `user_sourate_progress` (context='sourates') | `.eq('context', 'sourates')` |
 | Nourania | `Nourania.tsx` | `'nourania'` | `user_nourania_progress` | (tout l'utilisateur) |
 | Invocations | `Invocations.tsx` | `'invocations'` | `user_invocation_progress` | (tout l'utilisateur) |
+| 99 Noms d'Allah | `AllahNamesPage.tsx` | `'allah-names'` | `user_allah_name_progress` | (tout l'utilisateur) |
 
 ### Comportement obligatoire du dialog
 1. **À l'ouverture** : les élèves qui ont déjà l'accès complet apparaissent **pré-cochés** (requête qui compare count validé vs total items)

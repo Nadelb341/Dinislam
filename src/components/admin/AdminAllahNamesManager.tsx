@@ -16,6 +16,7 @@ import {
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
 } from '@dnd-kit/core';
@@ -256,13 +257,16 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         >
           <ArrowLeft className="h-4 w-4" /> Retour
         </button>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
-          style={{ background: 'hsl(220 70% 45%)' }}
-        >
-          <Plus className="h-4 w-4" /> Ajouter un nom
-        </button>
+        <div className="flex items-center gap-2">
+          <AdminUnlockAllDialog moduleType="allah-names" />
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
+            style={{ background: 'hsl(220 70% 45%)' }}
+          >
+            <Plus className="h-4 w-4" /> Ajouter un nom
+          </button>
+        </div>
       </div>
 
       <div>
