@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import ContentUploadTabs from './ContentUploadTabs';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
-import { ArrowLeft, FileText, CheckCircle, Upload, X, BookOpen, Film, Music } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle, Upload, X, BookOpen, Film, Music, Link } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -22,6 +23,8 @@ const AdminCoranContent = ({ onBack }: Props) => {
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [isUploadingExtra, setIsUploadingExtra] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [pdfMode, setPdfMode] = useState<'upload' | 'url'>('url');
+  const [pdfUrlInput, setPdfUrlInput] = useState('');
 
   // Récupérer l'ID du module Coran
   const { data: module } = useQuery({
@@ -150,6 +153,32 @@ const AdminCoranContent = ({ onBack }: Props) => {
     }
   }, [user, pdfCard, pdfContent, refetchPdf, queryClient]);
 
+  // Enregistrer une URL externe comme PDF du Coran
+  const handleSavePdfUrl = useCallback(async () => {
+    const url = pdfUrlInput.trim();
+    if (!url || !user?.id || !pdfCard?.id) return;
+    setIsUploadingPdf(true);
+    try {
+      if (pdfContent) {
+        await removeFromStorage(pdfContent.file_url);
+        await (supabase as any).from('module_card_content').delete().eq('id', pdfContent.id);
+      }
+      const { error } = await (supabase as any).from('module_card_content').insert({
+        card_id: pdfCard.id, content_type: 'fichier', file_url: url,
+        file_name: 'Coran PDF', display_order: 0, uploaded_by: user.id,
+      });
+      if (error) throw error;
+      setPdfUrlInput('');
+      await refetchPdf();
+      queryClient.invalidateQueries({ queryKey: ['coran-pdf-content'] });
+      toast.success('✅ Lien PDF enregistré !');
+    } catch (e: any) {
+      toast.error(e.message || 'Erreur');
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  }, [pdfUrlInput, user, pdfCard, pdfContent, refetchPdf, queryClient]);
+
   // Supprimer le PDF
   const handleDeletePdf = useCallback(async () => {
     if (!pdfContent) return;
@@ -258,41 +287,75 @@ const AdminCoranContent = ({ onBack }: Props) => {
                 Voir le PDF ↗
               </a>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <label className="cursor-pointer">
+            <Button
+              variant="outline" size="sm"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10 shrink-0"
+              onClick={() => setDeleteId('pdf')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <div className={`space-y-3 ${!isReady ? 'opacity-50 pointer-events-none' : ''}`}>
+            {/* Onglets choix mode */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPdfMode('url')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${pdfMode === 'url' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+              >
+                <Link className="h-3.5 w-3.5" /> Lien URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setPdfMode('upload')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${pdfMode === 'upload' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+              >
+                <Upload className="h-3.5 w-3.5" /> Téléverser
+              </button>
+            </div>
+
+            {pdfMode === 'url' ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Colle un lien public Google Drive, Dropbox ou autre hébergement PDF.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://drive.google.com/file/d/..."
+                    value={pdfUrlInput}
+                    onChange={e => setPdfUrlInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSavePdfUrl(); } }}
+                    disabled={isUploadingPdf}
+                    className="flex-1 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSavePdfUrl}
+                    disabled={isUploadingPdf || !pdfUrlInput.trim()}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                  >
+                    {isUploadingPdf ? 'Enregistrement…' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label className="cursor-pointer block">
                 <input
                   type="file" accept=".pdf" className="hidden"
                   disabled={isUploadingPdf}
                   onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadPdf(f); e.target.value = ''; }}
                 />
-                <Button variant="outline" size="sm" asChild disabled={isUploadingPdf}>
-                  <span>{isUploadingPdf ? 'Upload…' : '🔄 Remplacer'}</span>
-                </Button>
+                <div className="border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl p-6 flex flex-col items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
+                  <Upload className="h-8 w-8 text-emerald-500" />
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 text-center">
+                    {isUploadingPdf ? 'Upload en cours…' : !isReady ? 'Chargement…' : 'Cliquer ici pour téléverser le PDF du Coran'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Fichier PDF uniquement — max ~50 Mo</p>
+                </div>
               </label>
-              <Button
-                variant="outline" size="sm"
-                className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                onClick={() => setDeleteId('pdf')}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            )}
           </div>
-        ) : (
-          <label className={`cursor-pointer block ${!isReady ? 'opacity-50 pointer-events-none' : ''}`}>
-            <input
-              type="file" accept=".pdf" className="hidden"
-              disabled={isUploadingPdf || !isReady}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadPdf(f); e.target.value = ''; }}
-            />
-            <div className="border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl p-6 flex flex-col items-center gap-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
-              <Upload className="h-8 w-8 text-emerald-500" />
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 text-center">
-                {isUploadingPdf ? 'Upload en cours…' : !isReady ? 'Chargement…' : 'Cliquer ici pour téléverser le PDF du Coran'}
-              </p>
-              <p className="text-xs text-muted-foreground">Fichier PDF uniquement</p>
-            </div>
-          </label>
         )}
       </div>
 
