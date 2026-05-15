@@ -65,8 +65,8 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
 
       const { error: progressError } = await supabase
         .from('user_sourate_progress')
-        .upsert({ user_id: request.user_id, sourate_id: request.sourate_id, is_validated: true, progress_percentage: 100 },
-          { onConflict: 'user_id,sourate_id' });
+        .upsert({ user_id: request.user_id, sourate_id: request.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' },
+          { onConflict: 'user_id,sourate_id,context' });
       if (progressError) throw progressError;
     },
     onMutate: async (request) => {

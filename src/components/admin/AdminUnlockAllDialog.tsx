@@ -59,11 +59,12 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
             is_validated: true,
             is_memorized: true,
             progress_percentage: 100,
+            context: 'sourates',
           }))
         );
         const { error: progressErr } = await (supabase as any)
           .from('user_sourate_progress')
-          .upsert(progressRows, { onConflict: 'user_id,sourate_id' });
+          .upsert(progressRows, { onConflict: 'user_id,sourate_id,context' });
         if (progressErr) throw progressErr;
 
       } else if (moduleType === 'nourania') {

@@ -177,8 +177,8 @@ const SouratesPage = () => {
         { data: contentData },
         { data: souratesDb },
       ] = await Promise.all([
-        supabase.from('user_sourate_progress').select('*').eq('user_id', user.id),
-        supabase.from('user_sourate_verse_progress').select('*').eq('user_id', user.id),
+        (supabase as any).from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
+        (supabase as any).from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
         supabase.from('sourate_admin_unlocks').select('*').eq('user_id', user.id),
         supabase.from('sourate_content').select('*').order('display_order'),
         supabase.from('sourates').select('id, number'),
@@ -346,7 +346,8 @@ const SouratesPage = () => {
           sourate_id: sourateDbId,
           verse_number: verseNumber,
           is_memorized: newValue,
-        }, { onConflict: 'user_id,sourate_id,verse_number' });
+          context: 'sourates',
+        }, { onConflict: 'user_id,sourate_id,verse_number,context' });
 
       if (error) throw error;
 
@@ -369,7 +370,8 @@ const SouratesPage = () => {
           sourate_id: sourateDbId,
           progress_percentage: percentage,
           is_validated: existing?.is_validated || false,
-        }, { onConflict: 'user_id,sourate_id' });
+          context: 'sourates',
+        }, { onConflict: 'user_id,sourate_id,context' });
 
       setSourateProgress(prev => {
         const newMap = new Map(prev);
@@ -386,8 +388,8 @@ const SouratesPage = () => {
           await supabase
             .from('user_sourate_progress' as any)
             .upsert(
-              { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100 },
-              { onConflict: 'user_id,sourate_id' }
+              { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'sourates' },
+              { onConflict: 'user_id,sourate_id,context' }
             );
           setSourateProgress(prev => {
             const newMap = new Map(prev);

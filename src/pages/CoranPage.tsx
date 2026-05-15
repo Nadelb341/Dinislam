@@ -33,8 +33,8 @@ const CoranPage = () => {
         { data: contentData },
         { data: souratesDb },
       ] = await Promise.all([
-        supabase.from('user_sourate_progress').select('*').eq('user_id', user.id),
-        (supabase as any).from('user_sourate_verse_progress').select('*').eq('user_id', user.id),
+        (supabase as any).from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
+        (supabase as any).from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
         (supabase as any).from('sourate_content').select('*').order('display_order'),
         supabase.from('sourates').select('id, number'),
       ]);
@@ -123,8 +123,8 @@ const CoranPage = () => {
       await (supabase as any)
         .from('user_sourate_verse_progress')
         .upsert(
-          { user_id: user.id, sourate_id: sourateDbId, verse_number: verseNumber, is_memorized: newValue },
-          { onConflict: 'user_id,sourate_id,verse_number' }
+          { user_id: user.id, sourate_id: sourateDbId, verse_number: verseNumber, is_memorized: newValue, context: 'coran' },
+          { onConflict: 'user_id,sourate_id,verse_number,context' }
         );
 
       const newVerseProgress = new Map(verseProgress);
@@ -145,8 +145,9 @@ const CoranPage = () => {
             sourate_id: sourateDbId,
             progress_percentage: percentage,
             is_validated: sourateProgress.get(sourateDbId)?.is_validated || false,
+            context: 'coran',
           },
-          { onConflict: 'user_id,sourate_id' }
+          { onConflict: 'user_id,sourate_id,context' }
         );
 
       setSourateProgress(prev => {
@@ -162,8 +163,8 @@ const CoranPage = () => {
         await (supabase as any)
           .from('user_sourate_progress')
           .upsert(
-            { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100 },
-            { onConflict: 'user_id,sourate_id' }
+            { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'coran' },
+            { onConflict: 'user_id,sourate_id,context' }
           );
         setSourateProgress(prev => {
           const newMap = new Map(prev);
