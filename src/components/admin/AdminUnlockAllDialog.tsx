@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,9 +18,10 @@ const MODULE_LABELS: Record<string, string> = {
 };
 
 const AdminUnlockAllDialog = ({ moduleType }: Props) => {
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [originallyUnlockedIds, setOriginallyUnlockedIds] = useState<string[]>([]);
+  const [snapshotTaken, setSnapshotTaken] = useState(false);
 
   const { data: students = [], isLoading: loadingStudents } = useQuery({
     queryKey: ['admin-students-unlock-list'],
@@ -43,74 +43,149 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
     enabled: open,
   });
 
-  const unlockMutation = useMutation({
-    mutationFn: async (userIds: string[]) => {
-      if (!user) throw new Error('Non connecté');
-
+  // Detect which students already have full access
+  const { data: fullyUnlockedIds = [], isFetched: fullyUnlockedFetched } = useQuery({
+    queryKey: ['fully-unlocked-students', moduleType],
+    enabled: open,
+    queryFn: async () => {
       if (moduleType === 'sourates') {
-        const { data: sourates, error } = await (supabase as any).from('sourates').select('id');
-        if (error) throw error;
-
-        // Batch upsert all progress (unique constraint exists on user_id,sourate_id)
-        const progressRows = userIds.flatMap((userId: string) =>
-          (sourates || []).map((s: any) => ({
-            user_id: userId,
-            sourate_id: s.id,
-            is_validated: true,
-            progress_percentage: 100,
-            context: 'sourates',
-          }))
-        );
-        const { error: progressErr } = await (supabase as any)
+        const { data: sourates } = await (supabase as any).from('sourates').select('id');
+        const totalCount = sourates?.length || 0;
+        if (!totalCount) return [];
+        const { data: progress } = await (supabase as any)
           .from('user_sourate_progress')
-          .upsert(progressRows, { onConflict: 'user_id,sourate_id,context' });
-        if (progressErr) throw progressErr;
+          .select('user_id')
+          .eq('context', 'sourates')
+          .eq('is_validated', true);
+        const counts: Record<string, number> = {};
+        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
       } else if (moduleType === 'nourania') {
-        const { data: lessons, error } = await (supabase as any).from('nourania_lessons').select('id');
-        if (error) throw error;
+        const { data: lessons } = await (supabase as any).from('nourania_lessons').select('id');
+        const totalCount = lessons?.length || 0;
+        if (!totalCount) return [];
+        const { data: progress } = await (supabase as any)
+          .from('user_nourania_progress')
+          .select('user_id')
+          .eq('is_validated', true);
+        const counts: Record<string, number> = {};
+        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
-        for (const userId of userIds) {
+      } else if (moduleType === 'invocations') {
+        const { data: invocations } = await (supabase as any).from('invocations').select('id');
+        const totalCount = invocations?.length || 0;
+        if (!totalCount) return [];
+        const { data: progress } = await (supabase as any)
+          .from('user_invocation_progress')
+          .select('user_id')
+          .eq('is_validated', true);
+        const counts: Record<string, number> = {};
+        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
+      }
+      return [];
+    },
+  });
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSnapshotTaken(false);
+      setSelectedIds([]);
+      setOriginallyUnlockedIds([]);
+    }
+  }, [open]);
+
+  // Pre-populate once when fresh data arrives
+  useEffect(() => {
+    if (open && fullyUnlockedFetched && !snapshotTaken) {
+      setSelectedIds([...fullyUnlockedIds]);
+      setOriginallyUnlockedIds([...fullyUnlockedIds]);
+      setSnapshotTaken(true);
+    }
+  }, [open, fullyUnlockedFetched, fullyUnlockedIds, snapshotTaken]);
+
+  const toUnlock = selectedIds.filter(id => !originallyUnlockedIds.includes(id));
+  const toLock = originallyUnlockedIds.filter(id => !selectedIds.includes(id));
+  const hasChanges = toUnlock.length > 0 || toLock.length > 0;
+
+  const applyMutation = useMutation({
+    mutationFn: async () => {
+      if (moduleType === 'sourates') {
+        if (toUnlock.length > 0) {
+          const { data: sourates, error } = await (supabase as any).from('sourates').select('id');
+          if (error) throw error;
+          const progressRows = toUnlock.flatMap((userId: string) =>
+            (sourates || []).map((s: any) => ({
+              user_id: userId,
+              sourate_id: s.id,
+              is_validated: true,
+              progress_percentage: 100,
+              context: 'sourates',
+            }))
+          );
+          const { error: progressErr } = await (supabase as any)
+            .from('user_sourate_progress')
+            .upsert(progressRows, { onConflict: 'user_id,sourate_id,context' });
+          if (progressErr) throw progressErr;
+        }
+        for (const userId of toLock) {
+          const { error } = await (supabase as any)
+            .from('user_sourate_progress')
+            .delete()
+            .eq('user_id', userId)
+            .eq('context', 'sourates');
+          if (error) throw error;
+        }
+
+      } else if (moduleType === 'nourania') {
+        if (toUnlock.length > 0) {
+          const { data: lessons, error } = await (supabase as any).from('nourania_lessons').select('id');
+          if (error) throw error;
+          for (const userId of toUnlock) {
+            await (supabase as any).from('user_nourania_progress').delete().eq('user_id', userId);
+            const rows = (lessons || []).map((l: any) => ({
+              user_id: userId, lesson_id: l.id, is_validated: true, is_completed: true,
+            }));
+            const { error: insErr } = await (supabase as any).from('user_nourania_progress').insert(rows);
+            if (insErr) throw insErr;
+          }
+        }
+        for (const userId of toLock) {
           await (supabase as any).from('user_nourania_progress').delete().eq('user_id', userId);
-          const rows = (lessons || []).map((l: any) => ({
-            user_id: userId,
-            lesson_id: l.id,
-            is_validated: true,
-            is_completed: true,
-          }));
-          const { error: insErr } = await (supabase as any).from('user_nourania_progress').insert(rows);
-          if (insErr) throw insErr;
         }
 
       } else if (moduleType === 'invocations') {
-        const { data: invocations, error } = await (supabase as any).from('invocations').select('id');
-        if (error) throw error;
-
-        for (const userId of userIds) {
+        if (toUnlock.length > 0) {
+          const { data: invocations, error } = await (supabase as any).from('invocations').select('id');
+          if (error) throw error;
+          for (const userId of toUnlock) {
+            await (supabase as any).from('user_invocation_progress').delete().eq('user_id', userId);
+            const rows = (invocations || []).map((i: any) => ({
+              user_id: userId, invocation_id: i.id, is_validated: true, is_memorized: true,
+            }));
+            const { error: insErr } = await (supabase as any).from('user_invocation_progress').insert(rows);
+            if (insErr) throw insErr;
+            await (supabase as any)
+              .from('invocation_validation_requests').delete()
+              .eq('user_id', userId).eq('status', 'pending');
+          }
+        }
+        for (const userId of toLock) {
           await (supabase as any).from('user_invocation_progress').delete().eq('user_id', userId);
-          const rows = (invocations || []).map((i: any) => ({
-            user_id: userId,
-            invocation_id: i.id,
-            is_validated: true,
-            is_memorized: true,
-          }));
-          const { error: insErr } = await (supabase as any).from('user_invocation_progress').insert(rows);
-          if (insErr) throw insErr;
-          // Clear pending requests
-          await (supabase as any)
-            .from('invocation_validation_requests')
-            .delete()
-            .eq('user_id', userId)
-            .eq('status', 'pending');
         }
       }
     },
     onSuccess: () => {
-      toast.success(`✅ ${MODULE_LABELS[moduleType]} ont été déverrouillées pour ${selectedIds.length} élève(s) !`);
+      const parts = [];
+      if (toUnlock.length > 0) parts.push(`${toUnlock.length} élève(s) déverrouillé(s)`);
+      if (toLock.length > 0) parts.push(`${toLock.length} élève(s) remis en mode normal`);
+      toast.success(`✅ ${parts.join(' · ')}`);
       setOpen(false);
-      setSelectedIds([]);
     },
-    onError: (e: any) => toast.error(e.message || 'Erreur lors du déverrouillage'),
+    onError: (e: any) => toast.error(e.message || 'Erreur'),
   });
 
   const allSelected = students.length > 0 && selectedIds.length === students.length;
@@ -125,6 +200,15 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
     );
   };
 
+  const getButtonLabel = () => {
+    if (applyMutation.isPending) return 'Application…';
+    const parts = [];
+    if (toUnlock.length > 0) parts.push(`🔓 +${toUnlock.length}`);
+    if (toLock.length > 0) parts.push(`🔒 -${toLock.length}`);
+    if (parts.length === 0) return 'Aucun changement';
+    return `Appliquer (${parts.join(' · ')})`;
+  };
+
   return (
     <>
       <Button
@@ -134,7 +218,7 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
         className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950"
       >
         <Unlock className="h-3.5 w-3.5 mr-1.5" />
-        Déverrouiller tout
+        Accès complet
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -142,21 +226,18 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Unlock className="h-4 w-4 text-emerald-600 shrink-0" />
-              Déverrouiller {MODULE_LABELS[moduleType]}
+              Accès complet — {MODULE_LABELS[moduleType]}
             </DialogTitle>
           </DialogHeader>
 
           <p className="text-sm text-muted-foreground -mt-1">
-            Sélectionne les élèves pour qui tout le contenu sera immédiatement accessible.
+            Les élèves <span className="font-medium text-foreground">cochés ✅</span> ont accès à tout.
+            Décocher un élève le remet en mode normal (validation une par une).
           </p>
 
           <div className="border rounded-xl overflow-hidden">
-            {/* Tout sélectionner */}
             <label className="flex items-center gap-3 px-3 py-2.5 bg-muted/40 cursor-pointer border-b hover:bg-muted/60 transition-colors">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={toggleAll}
-              />
+              <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
               <div className="flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-sm font-medium">
@@ -165,25 +246,37 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
               </div>
             </label>
 
-            {/* Liste élèves */}
             <div className="max-h-52 overflow-y-auto divide-y">
               {loadingStudents ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Chargement…</p>
               ) : students.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Aucun élève trouvé</p>
               ) : (
-                students.map((s: any) => (
-                  <label
-                    key={s.user_id}
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
-                  >
-                    <Checkbox
-                      checked={selectedIds.includes(s.user_id)}
-                      onCheckedChange={() => toggle(s.user_id)}
-                    />
-                    <span className="text-sm">{s.full_name || 'Élève sans nom'}</span>
-                  </label>
-                ))
+                students.map((s: any) => {
+                  const isChecked = selectedIds.includes(s.user_id);
+                  const wasUnlocked = originallyUnlockedIds.includes(s.user_id);
+                  return (
+                    <label
+                      key={s.user_id}
+                      className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
+                    >
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={() => toggle(s.user_id)}
+                      />
+                      <span className="text-sm flex-1">{s.full_name || 'Élève sans nom'}</span>
+                      {wasUnlocked && isChecked && (
+                        <span className="text-[10px] text-emerald-600 font-medium shrink-0">Accès total</span>
+                      )}
+                      {wasUnlocked && !isChecked && (
+                        <span className="text-[10px] text-amber-600 font-medium shrink-0">→ Mode normal</span>
+                      )}
+                      {!wasUnlocked && isChecked && (
+                        <span className="text-[10px] text-blue-600 font-medium shrink-0">→ Accès total</span>
+                      )}
+                    </label>
+                  );
+                })
               )}
             </div>
           </div>
@@ -194,12 +287,10 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
             </Button>
             <Button
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => unlockMutation.mutate(selectedIds)}
-              disabled={selectedIds.length === 0 || unlockMutation.isPending}
+              onClick={() => applyMutation.mutate()}
+              disabled={!hasChanges || applyMutation.isPending}
             >
-              {unlockMutation.isPending
-                ? 'Déverrouillage…'
-                : `🔓 Déverrouiller (${selectedIds.length})`}
+              {getButtonLabel()}
             </Button>
           </div>
         </DialogContent>
