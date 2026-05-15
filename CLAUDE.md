@@ -326,6 +326,14 @@ ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS title_arabic text;
 ALTER TABLE public.module_cards ADD COLUMN IF NOT EXISTS section text;
 ```
 
+## Colonnes ajoutées à `invocations` — màj 2026-05-15
+
+```sql
+ALTER TABLE public.invocations ADD COLUMN IF NOT EXISTS content_arabic text;
+ALTER TABLE public.invocations ADD COLUMN IF NOT EXISTS content_french text;
+```
+Ces colonnes sont utilisées dans `AdminInvocationManager.tsx` pour stocker le texte arabe et la traduction française de l'invocation.
+
 ## Contenu YouTube dans les cartes de module — màj 2026-05-14
 
 - Le lien YouTube est sauvegardé dans `module_card_content` avec `content_type: 'youtube'` et `file_url: embedUrl` (format `https://www.youtube.com/embed/VIDEO_ID`)
@@ -391,25 +399,34 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 ### Architecture
 - **Page** : `src/pages/CoranPage.tsx` → route `/coran`
 - **Données partagées** : `src/data/sourates.ts` exporte `SOURATES_DATA` (115 sourates dont Ayat Al-Kursi) et `CORAN_ORDERED` (114 sourates triées 1→114, sans Ayat Al-Kursi)
-- **Module Supabase** : `learning_modules` avec `is_builtin=true`, `builtin_path='/coran'` (inséré via SQL par Mustapha)
+- **Module Supabase** : `learning_modules` avec `is_builtin=true`, `builtin_path='/coran'`
+
+### PDF du Coran
+- **Fichier intégré** : `public/pdf/coran.pdf` (41Mo, compressé depuis 351Mo via ghostscript 60 DPI)
+- CoranPage charge d'abord l'URL depuis la base (`module_card_content`), sinon fallback sur `/pdf/coran.pdf`
+- Le service worker **exclut les PDF du cache** (`isPdfRequest` dans `sw.js`) — évite 41Mo en cache SW
+- Admin Coran → deux modes : **Lien URL** (recommandé pour gros fichiers) ou **Téléverser** (max ~50Mo Supabase)
+- Le lien URL est validé avant sauvegarde (auto-ajout de `https://` si manquant)
 
 ### Fonctionnement
-- Section PDF en haut : cherche `module_card_content` où `content_type='fichier'` dans les cartes du module Coran → bouton "Ouvrir / Télécharger" si PDF uploadé, sinon message placeholder
-- Liste des 114 sourates Al-Fatiha→An-Nas, **toutes déverrouillées** dès le départ (pas de séquencement)
-- Validation : quand tous les versets d'une sourate sont cochés → **auto-validation directe** sans demande admin (même logique que `isOver20` dans Sourates.tsx)
-- Réutilise `SourateDetailDialog` à l'identique (PDF, récitation complète, versets un par un avec audio)
-- Progress partagé avec Sourates.tsx : `user_sourate_progress` et `user_sourate_verse_progress` (mêmes tables)
+- Section PDF en haut → bouton "Ouvrir / Télécharger" → `window.open()` (fiable sur iOS PWA)
+- Liste des 114 sourates Al-Fatiha→An-Nas, **toutes déverrouillées** dès le départ
+- Validation : tous les versets cochés → **auto-validation directe** sans demande admin
+- Réutilise `SourateDetailDialog` à l'identique
+
+### Progression indépendante de la carte Sourates (màj 2026-05-15)
+- Colonne `context text NOT NULL DEFAULT 'sourates'` ajoutée dans `user_sourate_progress` et `user_sourate_verse_progress`
+- CoranPage utilise `context = 'coran'` pour toutes les lectures/écritures
+- Sourates.tsx utilise `context = 'sourates'`
+- `onConflict` mis à jour partout : `'user_id,sourate_id,context'` et `'user_id,sourate_id,verse_number,context'`
+- Contraintes UNIQUE recréées avec `context` : `idx_usp_user_sourate_context` et `idx_usvp_user_sourate_verse_context`
+- Fichiers concernés : `CoranPage.tsx`, `Sourates.tsx`, `AdminSourateValidations.tsx`, `AdminUnlockAllDialog.tsx`
+- **Ne jamais revenir à `onConflict: 'user_id,sourate_id'`** sans context — les deux parcours redeviendraient liés
 
 ### Admin
 - Carte "Coran" dans `STATIC_CARDS` (vert, `view: 'coran-manage'`)
 - `CARD_KEY_TO_BUILTIN_PATH['coran'] = '/coran'` → toggle visibilité
-- `SLUG_VIEWS['coran-manage']` → `AdminGenericModuleManager` pour gérer les cartes/PDF du module
-
-### SQL à exécuter par Mustapha (déjà fourni)
-```sql
-INSERT INTO public.learning_modules (title, description, icon, color, is_active, display_order, is_builtin, builtin_path)
-VALUES ('Coran', 'Le Saint Coran — PDF complet + 114 sourates verset par verset', 'book-marked', 'green', true, 999, true, '/coran');
-```
+- `AdminCoranContent` : gestion PDF + autres contenus (YouTube, audio, fichiers)
 
 ### Déverrouillage automatique 20 ans et bouton admin (màj 2026-05-15)
 - Hook `useIsOver20()` dans `src/hooks/useIsOver20.ts` : lit `date_of_birth` / `age` depuis `profiles`
