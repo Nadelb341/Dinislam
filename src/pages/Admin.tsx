@@ -30,6 +30,7 @@ import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminContent from '@/components/admin/AdminContent';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
+import AdminCoranContent from '@/components/admin/AdminCoranContent';
 
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -510,6 +511,8 @@ const Admin = () => {
     if (mod) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={mod.id} moduleTitle="Grammaire & Conjugaison" onBack={handleBack} /></div></AppLayout>;
   }
 
+  if (currentView === 'coran-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminCoranContent onBack={handleBack} /></div></AppLayout>;
+
   const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
     'vocabulaire-manage': { slug: '/module/vocabulaire', title: 'Vocabulaire' },
     'lecture-coran-manage': { slug: '/module/lecture-coran', title: 'Lecture du Coran' },
@@ -518,7 +521,6 @@ const Admin = () => {
     'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
     'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
     'histoires-prophetes-manage': { slug: '/module/histoires-prophetes', title: 'Histoires des Prophètes' },
-    'coran-manage': { slug: '/coran', title: 'Coran' },
   };
   if (currentView in SLUG_VIEWS) {
     const info = SLUG_VIEWS[currentView];
