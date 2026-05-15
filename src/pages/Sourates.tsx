@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useIsOver20 } from '@/hooks/useIsOver20';
+import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import SourateUnlockDialog from '@/components/sourates/SourateUnlockDialog';
 import SouratePathView from '@/components/sourates/SouratePathView';
 import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
@@ -148,7 +149,7 @@ const SOURATES_ORDERED = (() => {
 const GIFT_SOURATE_NUMBERS = new Set([105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]);
 
 const SouratesPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { fireSuccess, fireConfetti } = useConfetti();
   const isOver20 = useIsOver20();
@@ -309,6 +310,7 @@ const SouratesPage = () => {
   }, [user, dbSourates, fireSuccess]);
 
   const isSourateAccessible = (sourateNumber: number): boolean => {
+    if (isOver20 || isAdmin) return true;
     const dbId = dbSourates.get(sourateNumber);
     if (!dbId) return sourateNumber === 114;
     if (sourateNumber === 114) return true;
@@ -480,6 +482,13 @@ const SouratesPage = () => {
             className="pl-10"
           />
         </div>
+
+        {/* Bouton admin déverrouillage en masse */}
+        {isAdmin && (
+          <div className="flex justify-end">
+            <AdminUnlockAllDialog moduleType="sourates" />
+          </div>
+        )}
 
         {/* Carte Méthodes pour apprendre une sourate */}
         <button

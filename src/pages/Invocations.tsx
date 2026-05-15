@@ -14,6 +14,7 @@ import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
+import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 
 const getCategoryColor = (category: string | null) => {
   switch (category) {
@@ -441,7 +442,7 @@ const Invocations = () => {
   // Card at index 0 is always unlocked.
   // Card at index N is unlocked if invocation at index N-1 is validated.
   const isCardUnlocked = (index: number) => {
-    if (isAdmin) return true; // Admin sees all unlocked
+    if (isAdmin || isOver20) return true;
     if (index === 0) return true;
     const prevInvocation = invocations[index - 1];
     if (!prevInvocation) return false;
@@ -482,6 +483,13 @@ const Invocations = () => {
             <p className="text-xs text-muted-foreground">mémorisées</p>
           </div>
         </div>
+
+        {/* Bouton admin déverrouillage en masse */}
+        {isAdmin && (
+          <div className="flex justify-end">
+            <AdminUnlockAllDialog moduleType="invocations" />
+          </div>
+        )}
 
         {/* Grid */}
         {isLoading ? (

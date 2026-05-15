@@ -4,6 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsOver20 } from '@/hooks/useIsOver20';
+import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { sendPushNotification } from '@/lib/pushHelper';
 import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -18,9 +20,10 @@ import AudioPlayer from '@/components/audio/AudioPlayer';
 import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
 
 const Nourania = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const { fireSuccess } = useConfetti();
+  const isOver20 = useIsOver20();
   const [searchParams] = useSearchParams();
   const lessonParam = searchParams.get('lesson');
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
@@ -226,6 +229,7 @@ const Nourania = () => {
     userProgress.some(p => p.lesson_id === lessonId) || pendingRequests.some(p => p.lesson_id === lessonId);
 
   const isLessonUnlocked = (index: number) => {
+    if (isOver20 || isAdmin) return true;
     if (index === 0) return true;
     const lesson = lessons[index];
     // Déverrouillage admin direct sur cette leçon
@@ -241,7 +245,7 @@ const Nourania = () => {
 
       const isAdminUnlocked = adminUnlocks.includes(lessonId);
 
-      if (isAdminUnlocked) {
+      if (isAdminUnlocked || isOver20) {
         // Auto-validation directe sans passer par l'admin
         const { data: existing } = await supabase
           .from('user_nourania_progress')
@@ -397,6 +401,13 @@ const Nourania = () => {
           <Progress value={progressPercentage} className="h-3" />
           <p className="text-xs text-center text-muted-foreground">{progressPercentage}% complété</p>
         </div>
+
+        {/* Bouton admin déverrouillage en masse */}
+        {isAdmin && (
+          <div className="flex justify-end">
+            <AdminUnlockAllDialog moduleType="nourania" />
+          </div>
+        )}
 
         {/* Lessons List */}
         <div className="space-y-3">
