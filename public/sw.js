@@ -28,9 +28,10 @@ self.addEventListener('fetch', (e) => {
     url.includes('/auth/v1/') ||
     url.includes('/functions/v1/');
 
-  // Les fichiers audio/média ne doivent jamais passer par le cache SW
+  // Les fichiers audio/média/PDF ne doivent jamais passer par le cache SW
   const isStorageRequest = url.includes('/storage/v1/object/');
   const isMediaRequest = e.request.destination === 'audio' || e.request.destination === 'video';
+  const isPdfRequest = url.endsWith('.pdf') || e.request.destination === 'document';
 
   const isViteDevRequest =
     url.includes('/node_modules/.vite/') ||
@@ -44,7 +45,7 @@ self.addEventListener('fetch', (e) => {
     e.request.destination === 'style' ||
     e.request.destination === 'worker';
 
-  if (isBackendRequest || isStorageRequest || isMediaRequest || isViteDevRequest || isScriptOrStyleRequest) {
+  if (isBackendRequest || isStorageRequest || isMediaRequest || isPdfRequest || isViteDevRequest || isScriptOrStyleRequest) {
     e.respondWith(fetch(e.request));
     return;
   }

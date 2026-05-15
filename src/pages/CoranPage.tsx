@@ -70,7 +70,7 @@ const CoranPage = () => {
     if (user) loadAll();
   }, [user, loadAll]);
 
-  // Charger le PDF depuis le module Coran
+  // Charger le PDF — d'abord depuis la base, sinon le fichier intégré à l'app
   useEffect(() => {
     const fetchPdf = async () => {
       const { data: mod } = await (supabase as any)
@@ -78,23 +78,30 @@ const CoranPage = () => {
         .select('id')
         .eq('builtin_path', '/coran')
         .maybeSingle();
-      if (!mod) return;
-      const { data: cards } = await (supabase as any)
-        .from('module_cards')
-        .select('id')
-        .eq('module_id', mod.id)
-        .order('display_order')
-        .limit(5);
-      if (!cards?.length) return;
-      const cardIds = cards.map((c: any) => c.id);
-      const { data: contents } = await (supabase as any)
-        .from('module_card_content')
-        .select('file_url')
-        .in('card_id', cardIds)
-        .eq('content_type', 'fichier')
-        .not('file_url', 'is', null)
-        .limit(1);
-      if (contents?.length) setPdfUrl(contents[0].file_url);
+      if (mod) {
+        const { data: cards } = await (supabase as any)
+          .from('module_cards')
+          .select('id')
+          .eq('module_id', mod.id)
+          .order('display_order')
+          .limit(5);
+        if (cards?.length) {
+          const cardIds = cards.map((c: any) => c.id);
+          const { data: contents } = await (supabase as any)
+            .from('module_card_content')
+            .select('file_url')
+            .in('card_id', cardIds)
+            .eq('content_type', 'fichier')
+            .not('file_url', 'is', null)
+            .limit(1);
+          if (contents?.length) {
+            setPdfUrl(contents[0].file_url);
+            return;
+          }
+        }
+      }
+      // Fallback : PDF intégré directement dans l'application
+      setPdfUrl('/pdf/coran.pdf');
     };
     fetchPdf();
   }, []);
