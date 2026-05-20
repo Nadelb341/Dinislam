@@ -371,20 +371,27 @@ export default function BlocDevoirsEleve() {
   return (
     <div className={cn(
       "mx-4 mb-4 rounded-2xl overflow-hidden shadow border-2",
-      toutAJour ? "border-green-400 dark:border-green-700" : "border-destructive dark:border-destructive"
+      toutAJour ? "border-green-500 dark:border-green-600" : "border-red-600 dark:border-red-500"
     )}>
       <button
         onClick={() => setOuvert(!ouvert)}
         className={cn(
           "w-full flex items-center justify-between p-4",
-          toutAJour ? "bg-green-50 dark:bg-green-950/30" : "bg-destructive/5"
+          toutAJour ? "bg-green-50 dark:bg-green-950/30" : "bg-red-100 dark:bg-red-950/40"
         )}
       >
         <div className="flex items-center gap-3">
-          <span className="text-2xl">📚</span>
           <div className="text-left">
-            <p className="font-bold text-foreground">Mes Devoirs</p>
-            <p className="text-xs text-muted-foreground">
+            <p className={cn(
+              "font-extrabold text-base tracking-wide",
+              toutAJour ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"
+            )}>
+              📚 Cahier de texte 📚
+            </p>
+            <p className={cn(
+              "text-xs font-medium mt-0.5",
+              toutAJour ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+            )}>
               {toutAJour
                 ? '✅ Tout est à jour !'
                 : `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre`}
