@@ -114,11 +114,31 @@ function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string
         </span>
       </div>
 
-      {devoir.date_limite && (
-        <p className="text-xs text-muted-foreground mb-2">
-          📅 Pour le {new Date(devoir.date_limite).toLocaleDateString('fr-FR')}
-        </p>
-      )}
+      {devoir.date_limite && (() => {
+        const deadline = new Date(devoir.date_limite);
+        const now = new Date();
+        const isPast = deadline < now;
+        const hoursLeft = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+        const isUrgent = !isPast && hoursLeft < 24;
+        const dateStr = deadline.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        const timeStr = deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        return (
+          <div className={cn(
+            "text-xs font-semibold mb-2 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5",
+            isPast
+              ? "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+              : isUrgent
+              ? "bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400"
+              : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+          )}>
+            <span>{isPast ? '⚠️' : '⏰'}</span>
+            <span>
+              Tu dois rendre ce devoir avant le {dateStr} à {timeStr}
+              {isPast && ' — Date dépassée !'}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* À refaire: show feedback + re-record */}
       {isARefaire && (

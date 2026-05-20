@@ -339,8 +339,14 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
             <Input placeholder="Lien vers la leçon (optionnel)" value={form.lien_lecon}
               onChange={e => setForm({ ...form, lien_lecon: e.target.value })} />
-            <Input type="datetime-local" value={form.date_limite}
-              onChange={e => setForm({ ...form, date_limite: e.target.value })} />
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">📅 Date butoir (optionnel)</label>
+              <Input type="datetime-local" value={form.date_limite}
+                onChange={e => setForm({ ...form, date_limite: e.target.value })} />
+              {form.date_limite && (
+                <p className="text-xs text-muted-foreground">Les élèves seront rappelés toutes les 2h jusqu'au rendu.</p>
+              )}
+            </div>
             <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [] })}
               className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
               <option value="all">👥 Tous les élèves</option>
