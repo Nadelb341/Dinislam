@@ -446,6 +446,19 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 - **Invocations.tsx** : `isCardUnlocked()` → bypass si `isAdmin || isOver20`
 - **`AdminUnlockAllDialog`** (`src/components/admin/AdminUnlockAllDialog.tsx`) : bouton **"Accès complet"** affiché dans Sourates.tsx, Nourania.tsx, Invocations.tsx. Voir règle complète ci-dessous.
 
+## Cahier de texte — Devoirs (AdminHomework.tsx) — màj session 2026-05-20
+
+### Sélection multi-groupes
+- Le formulaire de création de devoir permet de sélectionner **plusieurs groupes simultanément**
+- Champ `group_ids: string[]` dans le type `HomeworkDraft` et dans l'état `form`
+- Option `assigned_to = 'groups'` dans le sélecteur → affiche une liste de boutons togglables (un par groupe)
+- **À l'envoi** : un devoir distinct est inséré en base **pour chaque groupe sélectionné** (utilise la colonne `group_id` existante)
+- Les destinataires sont dédupliqués avant l'envoi des notifications push (un élève dans 2 groupes ne reçoit qu'une notif)
+- **Brouillon localStorage** : clé `draft_dinislam_homework` — inclut `group_ids: []` dans le reset et la restauration
+- ⚠️ Pas de changement de schéma DB — la colonne `group_id` existante est réutilisée N fois (1 insertion par groupe)
+
+---
+
 ## 🔓 RÈGLE ABSOLUE — Bouton "Accès complet" sur toute carte à contenu verrouillé (Dinislam, À VIE)
 
 **Cette règle est NON NÉGOCIABLE et s'applique à toute nouvelle carte créée dans Dinislam qui possède un système de progression verrouillée (validation sourate par sourate, leçon par leçon, etc.).**
@@ -463,6 +476,18 @@ CREATE POLICY "admin_manage_flashcards" ON public.module_flashcards
 2. **Cocher un élève non coché** → badge bleu "→ Accès total" → au submit : upsert massif de tout le contenu à `is_validated=true`
 3. **Décocher un élève coché** → badge orange "→ Mode normal" → au submit : **suppression de toute sa progression** pour ce module (il repart de zéro, validation une par une)
 4. **Bouton "Appliquer"** : désactivé si aucun changement, affiche `🔓 +N` / `🔒 -N` selon les actions en attente
+
+### Points au déverrouillage/verrouillage (màj session 2026-05-20)
+- **Unlock** : le trigger DB `AFTER INSERT OR UPDATE` gère le recalcul automatiquement lors de l'upsert massif
+- **Lock (delete)** : le trigger **ne se déclenche PAS sur DELETE** → appel RPC explicite obligatoire
+- **Fix** : `AdminUnlockAllDialog.tsx` appelle `recalculate_student_points(p_user_id)` pour **tous les élèves affectés** (toUnlock + toLock) après les opérations DB :
+  ```javascript
+  const allAffected = [...new Set([...toUnlock, ...toLock])];
+  for (const userId of allAffected) {
+    await supabase.rpc('recalculate_student_points', { p_user_id: userId });
+  }
+  ```
+- **Règle** : tout futur bloc unlock/lock dans AdminUnlockAllDialog doit inclure cet appel RPC pour les utilisateurs affectés
 
 ### Comment ajouter une nouvelle carte
 Quand on crée une nouvelle carte avec contenu progressif verrouillé :
