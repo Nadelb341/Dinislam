@@ -208,6 +208,14 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
           await (supabase as any).from('user_allah_name_progress').delete().eq('user_id', userId);
         }
       }
+
+      // Recalculate points for all affected students.
+      // Unlock: the DB trigger handles it per row, but we call explicitly as safety net.
+      // Lock (delete): the trigger does NOT fire on DELETE, so this call is required.
+      const allAffected = [...new Set([...toUnlock, ...toLock])];
+      for (const userId of allAffected) {
+        await supabase.rpc('recalculate_student_points', { p_user_id: userId });
+      }
     },
     onSuccess: () => {
       const parts = [];
