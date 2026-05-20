@@ -368,6 +368,12 @@ export default function BlocDevoirsEleve() {
   const totalAFaire = devoirs.length;
   const toutAJour = totalAFaire === 0;
 
+  // Date butoir la plus proche parmi les devoirs non rendus
+  const prochaineDateButoir = devoirs
+    .filter(d => d.date_limite)
+    .map(d => new Date(d.date_limite!))
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+
   return (
     <div className={cn(
       "mx-4 mb-4 rounded-2xl overflow-hidden shadow border-2",
@@ -376,36 +382,38 @@ export default function BlocDevoirsEleve() {
       <button
         onClick={() => setOuvert(!ouvert)}
         className={cn(
-          "w-full flex items-center justify-between p-4",
+          "w-full relative flex flex-col items-center px-12 py-3 gap-0.5",
           toutAJour ? "bg-green-50 dark:bg-green-950/30" : "bg-red-100 dark:bg-red-950/40"
         )}
       >
-        <div className="flex items-center gap-3">
-          <div className="text-left">
-            <p className={cn(
-              "font-extrabold text-base tracking-wide",
-              toutAJour ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"
-            )}>
-              📚 Cahier de texte 📚
-            </p>
-            <p className={cn(
-              "text-xs font-medium mt-0.5",
-              toutAJour ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
-            )}>
-              {toutAJour
-                ? '✅ Tout est à jour !'
-                : `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre`}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+        <p className={cn(
+          "font-extrabold text-xl tracking-wide text-center w-full",
+          toutAJour ? "text-green-800 dark:text-green-300" : "text-red-800 dark:text-red-300"
+        )}>
+          📚 Cahier de texte 📚
+        </p>
+        <p className={cn(
+          "text-sm font-semibold text-center w-full",
+          toutAJour ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+        )}>
+          {toutAJour
+            ? '✅ Tout est à jour !'
+            : `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre`}
+        </p>
+        {!toutAJour && prochaineDateButoir && (
+          <p className="text-xs font-medium text-center text-red-600 dark:text-red-400 w-full mt-0.5">
+            ⏰ Avant le {prochaineDateButoir.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {prochaineDateButoir.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
+        {/* Badge + flèche positionnés à droite en absolu */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {!toutAJour && (
-            <span className="bg-destructive text-destructive-foreground text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
               {totalAFaire}
             </span>
           )}
           {toutAJour && <span className="text-xl">✅</span>}
-          <span className="text-muted-foreground">{ouvert ? '▲' : '▼'}</span>
+          <span className={cn(toutAJour ? "text-green-700" : "text-red-700")}>{ouvert ? '▲' : '▼'}</span>
         </div>
       </button>
 
