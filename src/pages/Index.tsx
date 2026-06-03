@@ -204,11 +204,12 @@ const Index = () => {
   // Filtrage des modules pour les élèves
   const visibleModules = (modules || []).filter(mod => {
     if (isAdmin) return true;
-    if (!mod.is_active) return false;
     const vis = visibilityMap[mod.id];
-    if (!vis || vis.visibility_type === 'all') return true;
-    if (vis.visibility_type === 'users') return vis.user_ids.includes(user?.id ?? '');
-    if (vis.visibility_type === 'groups') return (myGroupIds || []).some(gid => vis.group_ids.includes(gid));
+    // Le ciblage par personnes/groupes prend le dessus sur is_active
+    if (vis?.visibility_type === 'users') return vis.user_ids.includes(user?.id ?? '');
+    if (vis?.visibility_type === 'groups') return (myGroupIds || []).some(gid => vis.group_ids.includes(gid));
+    // Pour une visibilité 'all' ou sans règle, on respecte is_active
+    if (!mod.is_active) return false;
     return true;
   });
 
