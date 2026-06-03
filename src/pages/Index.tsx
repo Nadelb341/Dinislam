@@ -170,9 +170,10 @@ const Index = () => {
   const { data: modules, refetch: refetchModules } = useQuery({
     queryKey: ['learning-modules', isAdmin],
     queryFn: async () => {
-      let query = supabase.from('learning_modules').select('*').order('display_order');
-      if (!isAdmin) query = query.eq('is_active', true);
-      const { data, error } = await query;
+      // On récupère tous les modules — le filtrage is_active est géré côté client
+      // pour permettre aux modules ciblés (via module_visibility) d'être visibles
+      // même s'ils sont masqués globalement
+      const { data, error } = await supabase.from('learning_modules').select('*').order('display_order');
       if (error) throw error;
       return data || [];
     }
