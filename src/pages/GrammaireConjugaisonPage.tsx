@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileText, Video, Volume2, BookOpen, ChevronRight, Play, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import ScrollButtons from '@/components/ui/ScrollButtons';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 
 type TabId = 'lecon' | 'exercices' | 'evaluation';
