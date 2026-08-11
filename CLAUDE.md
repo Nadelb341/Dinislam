@@ -345,15 +345,23 @@ ALTER TABLE public.invocations ADD COLUMN IF NOT EXISTS content_french text;
 ```
 Ces colonnes sont utilisées dans `AdminInvocationManager.tsx` pour stocker le texte arabe et la traduction française de l'invocation.
 
-## Contenu YouTube dans les cartes de module — màj 2026-05-14
+## Contenu YouTube dans les cartes de module — màj 2026-08-11
 
 - Le lien YouTube est sauvegardé dans `module_card_content` avec `content_type: 'youtube'` et `file_url: embedUrl` (format `https://www.youtube.com/embed/VIDEO_ID`)
 - La conversion URL → embed se fait dans `ContentUploadTabs.tsx` via `convertYoutubeToEmbed()`
 - **Ne pas** utiliser un lien `<a>` pour les URLs embed — elles ne s'ouvrent pas correctement dans un navigateur
-- Affichage via `<iframe>` avec classe `aspect-video` dans **les 3 fichiers** de dialog de détail de carte :
+- Affichage via `<SafeYoutubeEmbed embedUrl={...} title={...} />` (**pas** de `<iframe>` brut) dans **les 3 fichiers** de dialog de détail de carte :
   - `GenericModulePage.tsx` (route `/module/:moduleId`)
   - `GenericTimelinePage.tsx` (routes `/module/vocabulaire`, `/module/darija`, etc.)
   - `GrammaireConjugaisonPage.tsx` (route `/grammaire`) ← **page dédiée, à ne pas oublier !**
+
+### 🔒 Vidéos YouTube sans aucune sortie possible (màj 2026-08-11 — RÈGLE ABSOLUE)
+- **Contexte** : un `<iframe>` YouTube classique affiche toujours un lien natif (logo, "Regarder sur YouTube", cartes de fin de vidéo suggérant d'autres vidéos) qui envoie directement sur youtube.com. Inacceptable pour une appli utilisée par des enfants dès 2 ans. Une première tentative existait dans `src/utils/youtube.tsx` (overlay transparent de 55px en haut de l'iframe uniquement) — insuffisante, le bouton "Regarder sur YouTube" reste cliquable en bas de la vidéo (repéré sur la carte Ramadan).
+- **Composant unique** : `src/components/SafeYoutubeEmbed.tsx` — utilise l'API YouTube IFrame (`YT.Player`) avec `controls: 0` (aucune UI native visible, donc aucun logo/lien/carte de fin) + un overlay transparent qui **couvre 100% de la surface** de la vidéo et capte tous les clics (play/pause maison). L'iframe réel est en `pointer-events-none` — **aucun clic ne peut jamais atteindre YouTube**, quelle que soit la zone cliquée.
+- **`src/utils/youtube.tsx`** : `YoutubePlayer` est maintenant un simple re-export de `SafeYoutubeEmbed` (garde la même signature `{ videoId }` pour ne pas casser les appelants existants). `extractYoutubeVideoId` et `isYoutubeUrl` inchangés.
+- **Tous les écrans concernés par ce composant partagé** (donc automatiquement sécurisés) : `RamadanDayDialog.tsx`, `Nourania.tsx`, `Ressources.tsx`, `DynamicModule.tsx`, `ContentItemCard.tsx` (admin), `AdminDynamicCardContent.tsx` (admin) — en plus des 3 fichiers `content_type: 'youtube'` listés ci-dessus qui utilisent `SafeYoutubeEmbed` directement.
+- **Règle** : toute nouvelle intégration de vidéo YouTube dans Dinislam doit obligatoirement passer par `SafeYoutubeEmbed` (ou `YoutubePlayer` qui pointe dessus), jamais un `<iframe>` YouTube brut, même avec des paramètres d'URL (`modestbranding`, `rel=0`...) — ils ne bloquent pas les cartes de fin de vidéo.
+- **Portée** : cette règle "zéro sortie vers YouTube" s'applique à **toutes les applications** de Nadia (Agenda, Paus'Étude, Planning Girl...), sauf mention contraire explicite pour une app donnée.
 
 ## 🃏 Système de flashcards — màj 2026-05-14
 

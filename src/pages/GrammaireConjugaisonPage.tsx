@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 
 type TabId = 'lecon' | 'exercices' | 'evaluation';
 
@@ -389,15 +390,7 @@ const GrammaireConjugaisonPage = () => {
                                 <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />
                               )}
                               {content.content_type === 'youtube' && (
-                                <div className="aspect-video">
-                                  <iframe
-                                    src={content.file_url}
-                                    className="w-full h-full"
-                                    allowFullScreen
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    title={content.file_name}
-                                  />
-                                </div>
+                                <SafeYoutubeEmbed embedUrl={content.file_url} title={content.file_name} />
                               )}
                             </div>
                           ))}

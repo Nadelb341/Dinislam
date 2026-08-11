@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FileText, Video, Volume2, BookOpen, ChevronRight, Play, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 
 interface ModuleConfig {
   gradientFrom: string;
@@ -335,15 +336,7 @@ const GenericTimelinePage = () => {
                         <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />
                       )}
                       {content.content_type === 'youtube' && (
-                        <div className="aspect-video">
-                          <iframe
-                            src={content.file_url}
-                            className="w-full h-full"
-                            allowFullScreen
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            title={content.file_name}
-                          />
-                        </div>
+                        <SafeYoutubeEmbed embedUrl={content.file_url} title={content.file_name} />
                       )}
                     </div>
                   ))}

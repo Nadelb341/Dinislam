@@ -11,6 +11,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Video, Volume2, Image as ImageIcon, File } from 'lucide-react';
+import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 
 const GenericModulePage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -212,15 +213,7 @@ const GenericModulePage = () => {
                           </div>
                         )}
                         {content.content_type === 'youtube' && (
-                          <div className="aspect-video">
-                            <iframe
-                              src={content.file_url}
-                              className="w-full h-full"
-                              allowFullScreen
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              title={content.file_name}
-                            />
-                          </div>
+                          <SafeYoutubeEmbed embedUrl={content.file_url} title={content.file_name} />
                         )}
                         {!['video','image','pdf','document','audio','youtube'].includes(content.content_type) && (
                           <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50">
