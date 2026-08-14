@@ -22,6 +22,7 @@ interface AdminCommandModalProps {
   pendingHomework: number;
   pendingRecitations: number;
   total: number;
+  onOpenMessages: () => void;
 }
 
 const BOUTONS_ACTIONS = [
@@ -29,6 +30,7 @@ const BOUTONS_ACTIONS = [
   { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
   { id: 'sourates', label: 'Sourates à valider', section: 'sourates-validations', emoji: '📖' },
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
+  { id: 'messages', label: 'Messages non lus', section: null, emoji: '✉️' },
 ];
 
 const BOUTONS_MODULES = [
@@ -46,6 +48,8 @@ const AdminCommandModal = ({
   pendingNourania,
   pendingHomework,
   pendingRecitations,
+  pendingMessages,
+  onOpenMessages,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
@@ -58,10 +62,11 @@ const AdminCommandModal = ({
     devoirs: pendingHomework,
     recitations: pendingRecitations,
     inscriptions: pendingRegistrations,
+    messages: pendingMessages,
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('admin_boutons_order_v3');
+    const saved = localStorage.getItem('admin_boutons_order_v4');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -69,7 +74,7 @@ const AdminCommandModal = ({
           setBoutons(parsed);
         } else if (Array.isArray(parsed) && parsed.length !== BOUTONS_ACTIONS.length) {
           // Nouvelle carte ajoutée → reset l'ordre sauvegardé
-          localStorage.removeItem('admin_boutons_order_v3');
+          localStorage.removeItem('admin_boutons_order_v4');
         }
       } catch { /* ignore */ }
     }
@@ -82,7 +87,7 @@ const AdminCommandModal = ({
     newBoutons.splice(index, 0, moved);
     setBoutons(newBoutons);
     setDragIndex(index);
-    localStorage.setItem('admin_boutons_order_v3', JSON.stringify(newBoutons));
+    localStorage.setItem('admin_boutons_order_v4', JSON.stringify(newBoutons));
   };
 
   const onClose = () => onOpenChange(false);
@@ -131,7 +136,7 @@ const AdminCommandModal = ({
               return (
                 <button
                   key={btn.id}
-                  onClick={() => setModalSection(btn.section)}
+                  onClick={() => { if (btn.section) { setModalSection(btn.section); } else { onClose(); onOpenMessages(); } }}
                   draggable
                   onDragStart={() => setDragIndex(index)}
                   onDragOver={(e) => { e.preventDefault(); handleDragOver(index); }}

@@ -505,6 +505,19 @@ Quand on crée une nouvelle carte avec contenu progressif verrouillé :
 4. Importer et placer `<AdminUnlockAllDialog moduleType="nouveau_module" />` dans la page admin du module
 5. **Ne jamais créer une carte verrouillée sans ce bouton** — l'admin doit toujours pouvoir gérer l'accès complet
 
+## 🔴🔔 Pastilles en cascade — cohérence bouclier admin / messages (màj 2026-08-14)
+
+Nouvelle règle globale ajoutée cette session dans `~/Projets Claude Code/CLAUDE.md` : une pastille rouge de niveau 1 doit toujours avoir sa cascade jusqu'à l'élément précis non validé, avec des chiffres cohérents à chaque niveau.
+
+**Diagnostic** : Dinislam avait déjà une bonne base — bouclier 🛡️ (Header.tsx, `pendingCounts.total`) → boutons d'action/module dans `AdminCommandModal.tsx` (chacun avec sa propre pastille) → listes de validation déjà groupées par élève (`AdminHomework.tsx`, `AdminSourateValidations.tsx`, `AdminRecitationReview.tsx` affichent déjà le nom de l'élève sur chaque item, donc niveau 3 déjà satisfait). Mais deux incohérences trouvées et corrigées :
+
+1. **Total du bouclier ≠ total affiché dans le panneau admin** : `pendingCounts.total` (Header) incluait les messages non lus, mais `totalBadge` (calculé dans `AdminCommandModal` à partir de `compteurs`) ne les incluait pas — aucun bouton "Messages" n'existait dans le panneau pour matcher ce chiffre.
+   - **Correctif** : ajout d'un bouton "✉️ Messages non lus" dans `BOUTONS_ACTIONS` (`AdminCommandModal.tsx`), avec `section: null` (comportement spécial : ferme le panneau et ouvre directement le dialog de messagerie via la nouvelle prop `onOpenMessages` passée depuis `Header.tsx`)
+   - Clé localStorage de l'ordre des boutons incrémentée `admin_boutons_order_v3` → `admin_boutons_order_v4` (nouveau bouton ajouté, comme documenté dans la règle existante plus haut)
+
+2. **Requête dupliquée pour le même chiffre** : `useAdminPendingCounts.ts` refaisait sa propre requête `user_messages` (identique à celle de `useUnreadMessages.ts`, déjà utilisée pour la pastille de l'icône ✉️ du header) — deux requêtes indépendantes pour la même donnée, avec un risque réel qu'elles affichent des chiffres différents à un instant donné (invalidations de cache non synchronisées)
+   - **Correctif** : `useAdminPendingCounts` appelle maintenant `useUnreadMessages()` en interne et réutilise directement `unreadCount` — une seule source pour ce chiffre, garantissant que la pastille ✉️ et le total du bouclier 🛡️ sont **toujours** rigoureusement identiques
+
 ## Déploiement
 
 **⚠️ LOVABLE EST L'OUTIL DE PUBLICATION OFFICIEL — PAS VERCEL.**

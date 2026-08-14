@@ -146,6 +146,7 @@ const Header = ({
           pendingHomework={pendingCounts.homework}
           pendingRecitations={pendingCounts.recitations}
           total={pendingCounts.total}
+          onOpenMessages={handleOpenMessaging}
         />
       )}
 
