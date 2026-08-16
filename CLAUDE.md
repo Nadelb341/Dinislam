@@ -510,7 +510,7 @@ Quand on crée une nouvelle carte avec contenu progressif verrouillé :
 Voir la règle globale complète dans `~/Projets Claude Code/CLAUDE.md` ("Corbeille : toute suppression est réversible"). Dinislam était le dernier des 4 projets de Nadia à ne pas encore avoir ce système (63 suppressions directes recensées au départ) — maintenant en place.
 
 ### Infrastructure
-- **Table `trash_items`** à créer en base (SQL fourni à Nadia, voir tout en bas de la réponse où ce SQL a été livré)
+- **Table `trash_items`** créée en base avec succès (2026-08-16)
 - `src/lib/trash.ts` : fonctions simples `moveToTrash` / `fetchTrash` / `restoreTrashItem` / `permanentlyDeleteTrashItem` / `emptyTrash` (pas de contexte React, comme Planning Girl et Paus'Étude)
 - **`restoreTrashItem` insère `item_data` tel quel** (pas de reconstruction manuelle de l'id) — nécessaire ici car certaines tables (`allah_names`) ont un id **entier auto-incrémenté**, pas un uuid ; réinjecter l'objet complet (qui contient déjà son id d'origine avec le bon type) évite un mismatch de type lors de la restauration
 - Section Corbeille dans `src/pages/Settings.tsx`, juste après la carte Notifications — liste avec Restaurer/Supprimer individuels + "Vider", chacun avec sa propre confirmation `AlertDialog`
