@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Eye, EyeOff, UserCheck, FolderOpen, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
@@ -222,6 +223,7 @@ const AdminNouraniaContent = () => {
       }
       const { error } = await supabase.from('nourania_lesson_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (user?.id) await moveToTrash(user.id, 'nourania_lesson_content', contentId, content.file_name || 'Contenu leçon', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-contents'] });

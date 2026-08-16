@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -191,12 +192,13 @@ const AdminCoranContent = ({ onBack }: Props) => {
     try {
       await removeFromStorage(pdfContent.file_url);
       await (supabase as any).from('module_card_content').delete().eq('id', pdfContent.id);
+      if (user?.id) await moveToTrash(user.id, 'module_content', pdfContent.id, pdfContent.file_name || 'PDF du Coran', pdfContent);
       await refetchPdf();
       toast.success('PDF supprimé');
     } catch {
       toast.error('Erreur lors de la suppression');
     }
-  }, [pdfContent, refetchPdf]);
+  }, [pdfContent, refetchPdf, user]);
 
   // Upload fichier ou audio dans les contenus extra
   const handleUploadExtra = useCallback(async (file: File, type: string) => {
@@ -244,13 +246,14 @@ const AdminCoranContent = ({ onBack }: Props) => {
     try {
       if (item.content_type !== 'youtube') await removeFromStorage(item.file_url);
       await (supabase as any).from('module_card_content').delete().eq('id', id);
+      if (user?.id) await moveToTrash(user.id, 'module_content', id, item.file_name || 'Contenu', item);
       await refetchExtra();
       toast.success('Contenu supprimé');
     } catch {
       toast.error('Erreur lors de la suppression');
     }
     setDeleteId(null);
-  }, [extraContents, refetchExtra]);
+  }, [extraContents, refetchExtra, user]);
 
   const contentTypeIcon = (type: string) => {
     if (type === 'youtube') return <Film className="h-4 w-4 text-red-500" />;

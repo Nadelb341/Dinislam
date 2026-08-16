@@ -6,6 +6,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,8 +124,10 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const card = cards.find((c: any) => c.id === id);
       const { error } = await supabase.from('module_cards').delete().eq('id', id);
       if (error) throw error;
+      if (card && user?.id) await moveToTrash(user.id, 'module_card', id, card.title || 'Carte', card);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
@@ -159,6 +162,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       }
       const { error } = await supabase.from('module_card_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (content && user?.id) await moveToTrash(user.id, 'module_content', contentId, content.file_name || 'Contenu', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });

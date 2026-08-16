@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -224,8 +225,10 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   // Delete devoir
   const deleteDevoir = useMutation({
     mutationFn: async (id: string) => {
+      const devoir = devoirs.find((d: any) => d.id === id);
       const { error } = await supabase.from('devoirs').delete().eq('id', id);
       if (error) throw error;
+      if (devoir && user?.id) await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir', devoir);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });

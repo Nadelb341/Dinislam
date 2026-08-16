@@ -505,6 +505,34 @@ Quand on crée une nouvelle carte avec contenu progressif verrouillé :
 4. Importer et placer `<AdminUnlockAllDialog moduleType="nouveau_module" />` dans la page admin du module
 5. **Ne jamais créer une carte verrouillée sans ce bouton** — l'admin doit toujours pouvoir gérer l'accès complet
 
+## 🗑️ Corbeille — système de suppression réversible (ajouté 2026-08-16)
+
+Voir la règle globale complète dans `~/Projets Claude Code/CLAUDE.md` ("Corbeille : toute suppression est réversible"). Dinislam était le dernier des 4 projets de Nadia à ne pas encore avoir ce système (63 suppressions directes recensées au départ) — maintenant en place.
+
+### Infrastructure
+- **Table `trash_items`** à créer en base (SQL fourni à Nadia, voir tout en bas de la réponse où ce SQL a été livré)
+- `src/lib/trash.ts` : fonctions simples `moveToTrash` / `fetchTrash` / `restoreTrashItem` / `permanentlyDeleteTrashItem` / `emptyTrash` (pas de contexte React, comme Planning Girl et Paus'Étude)
+- **`restoreTrashItem` insère `item_data` tel quel** (pas de reconstruction manuelle de l'id) — nécessaire ici car certaines tables (`allah_names`) ont un id **entier auto-incrémenté**, pas un uuid ; réinjecter l'objet complet (qui contient déjà son id d'origine avec le bon type) évite un mismatch de type lors de la restauration
+- Section Corbeille dans `src/pages/Settings.tsx`, juste après la carte Notifications — liste avec Restaurer/Supprimer individuels + "Vider", chacun avec sa propre confirmation `AlertDialog`
+
+### Modules connectés (18 types)
+`learning_module` (Admin.tsx + AdminModules.tsx) | `module_content` (AdminModules.tsx, AdminCoranContent.tsx, AdminGenericModuleManager.tsx) | `prayer_card_content` | `sourate_content` | `alphabet_content` | `allah_name` + `allah_name_media` | `invocation` + `invocation_content` | `devoir` | `nourania_lesson_content` | `ramadan_day_video` | `ramadan_quiz` | `ramadan_day_activity` | `module_card` | `flashcard` | `dashboard_card` | `admin_conversation` | `student_group` | `scheduled_notification`
+
+### Volontairement NON connecté (état interne, pas du "contenu")
+- `AdminUnlockAllDialog.tsx` : suppressions de progression lors du re-verrouillage (re-lock)
+- `AdminDynamicCardDialog.tsx` : `dashboard_card_visibility` — remplacement en bloc à chaque sauvegarde (delete-then-reinsert), pas une suppression utilisateur
+- `AdminStudentGroups.tsx` : `student_group_members` — remplacement en bloc à l'édition d'un groupe (pas la suppression du groupe lui-même, qui elle EST connectée)
+- `AdminRamadanManager.tsx` : `ramadan_day_exceptions` (déverrouillage/verrouillage par élève, comme un toggle d'accès) et `resetCalendarMutation` (reset global admin, pas une suppression d'élément)
+- `AdminCommentaireLecon.tsx` : `nourania_admin_unlocks` (toggle verrou/déverrou par leçon/élève)
+- `Sourates.tsx` / `Nourania.tsx` / `Invocations.tsx` : nettoyage auto d'une ancienne demande refusée avant resoumission (`validation_requests` où `status='refused'`)
+- `AdminRamadanManager.tsx` : `quiz_questions` bulk-replace lors de la sauvegarde (logique déjà dédupliquée, pas une suppression au sens usuel)
+- `AdminStudentGroups.tsx`, `AdminRegistrationValidations.tsx`, `AdminStudentDetails.tsx` : suppressions de compte/profil (hors périmètre de la corbeille générique, comme pour Planning Girl)
+
+### Limite connue
+La suppression d'un **groupe d'élèves** (`student_group`) ne sauvegarde que la ligne du groupe (nom, couleur...), pas la liste de ses membres (`student_group_members`, supprimée en cascade par la BDD) — une restauration recrée le groupe vide, les membres doivent être réajoutés manuellement. Comportement volontairement simple, comme pour les post-its de Planning Girl.
+
+---
+
 ## 🔴🔔 Pastilles en cascade — cohérence bouclier admin / messages (màj 2026-08-14)
 
 Nouvelle règle globale ajoutée cette session dans `~/Projets Claude Code/CLAUDE.md` : une pastille rouge de niveau 1 doit toujours avoir sa cascade jusqu'à l'élément précis non validé, avec des chiffres cohérents à chaque niveau.

@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, X } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { generateFromTemplate } from '@/data/flashcard-templates';
 
 interface Props {
@@ -18,6 +20,7 @@ interface Props {
 }
 
 const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [front, setFront] = useState('');
@@ -92,8 +95,10 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const card = flashcards.find((f: any) => f.id === id);
       const { error } = await (supabase as any).from('module_flashcards').delete().eq('id', id);
       if (error) throw error;
+      if (card && user?.id) await moveToTrash(user.id, 'flashcard', id, card.front_text || 'Flashcard', card);
     },
     onSuccess: () => {
       invalidate();

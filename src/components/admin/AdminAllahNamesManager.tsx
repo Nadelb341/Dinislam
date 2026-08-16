@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import {
   GripVertical, Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus,
@@ -46,6 +48,7 @@ interface Props { onBack: () => void; }
 
 const AdminAllahNamesManager = ({ onBack }: Props) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingName, setEditingName] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -112,8 +115,10 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
+      const nameItem = (names as any[]).find((n: any) => n.id === id);
       const { error } = await supabase.from('allah_names').delete().eq('id', id);
       if (error) throw error;
+      if (nameItem && user?.id) await moveToTrash(user.id, 'allah_name', String(id), nameItem.name_french || nameItem.name_arabic, nameItem);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
@@ -126,8 +131,10 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   const deleteMediaMutation = useMutation({
     mutationFn: async (mediaId: string) => {
+      const media = (allMedia as any[]).find((m: any) => m.id === mediaId);
       const { error } = await (supabase as any).from('allah_name_media').delete().eq('id', mediaId);
       if (error) throw error;
+      if (media && user?.id) await moveToTrash(user.id, 'allah_name_media', mediaId, media.file_name || 'Média', media);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });

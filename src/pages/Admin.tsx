@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -368,10 +369,12 @@ const Admin = () => {
 
   const deleteCardMutation = useMutation({
     mutationFn: async (cardId: string) => {
+      const card = dynamicCards?.find((c: any) => c.id === cardId);
       const { error } = await supabase.from('dashboard_cards').delete().eq('id', cardId);
       if (error) throw error;
       // Also remove from ordering
       await supabase.from('admin_card_order').delete().eq('card_key', `dynamic-${cardId}`);
+      if (card && user?.id) await moveToTrash(user.id, 'dashboard_card', cardId, card.title || 'Carte', card);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
@@ -385,8 +388,10 @@ const Admin = () => {
 
   const deleteModuleMutation = useMutation({
     mutationFn: async (moduleId: string) => {
+      const mod = learningModules?.find((m: any) => m.id === moduleId);
       const { error } = await supabase.from('learning_modules').delete().eq('id', moduleId);
       if (error) throw error;
+      if (mod && user?.id) await moveToTrash(user.id, 'learning_module', moduleId, mod.title || 'Module', mod);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });

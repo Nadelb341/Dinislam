@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,8 +141,10 @@ const AdminInvocationManager = ({ onBack }: Props) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
+      const inv = invocations.find((i: any) => i.id === id);
       const { error } = await supabase.from('invocations').delete().eq('id', id);
       if (error) throw error;
+      if (inv && user?.id) await moveToTrash(user.id, 'invocation', String(id), inv.title || inv.content_french || 'Invocation', inv);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
@@ -176,6 +179,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       }
       const { error } = await supabase.from('invocation_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (content && user?.id) await moveToTrash(user.id, 'invocation_content', contentId, content.file_name || 'Contenu', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents-full'] });

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,8 +134,10 @@ const ScheduledNotifications = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const notif = notifications.find((n: any) => n.id === id);
       const { error } = await supabase.from('scheduled_notifications').delete().eq('id', id);
       if (error) throw error;
+      if (notif && user?.id) await moveToTrash(user.id, 'scheduled_notification', id, notif.title || 'Notification', notif);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });

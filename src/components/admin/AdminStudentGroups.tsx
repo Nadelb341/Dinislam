@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Pencil, Trash2, Users, Search, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 
 const GROUP_COLORS = [
   { value: 'bg-blue-500', label: 'Bleu', preview: 'bg-blue-500' },
@@ -134,6 +136,7 @@ const DraggableGroupCard = ({
 };
 
 const AdminStudentGroups = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<StudentGroup | null>(null);
@@ -236,12 +239,17 @@ const AdminStudentGroups = () => {
   });
 
   const handleDeleteGroup = async (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
     queryClient.setQueryData(['student-groups'], (old: StudentGroup[] | undefined) =>
       (old || []).filter(g => g.id !== groupId)
     );
     const { error } = await (supabase as any).from('student_groups').delete().eq('id', groupId);
     if (!error) {
       toast.success('Groupe supprimé');
+      if (group && user?.id) {
+        const { memberCount, members, ...groupRow } = group as any;
+        await moveToTrash(user.id, 'student_group', groupId, group.name || 'Groupe', groupRow);
+      }
     } else {
       queryClient.invalidateQueries({ queryKey: ['student-groups'] });
       toast.error(`Erreur suppression: ${error.message} (${error.code})`);

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Clock, User, Shield, Send } from 'lucide-react';
+import { Bell, Moon, Clock, User, Shield, Send, Trash2, RotateCcw } from 'lucide-react';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,46 @@ import {
   updateNotificationPreferences,
 } from '@/lib/notifications';
 import { useWebPush } from '@/hooks/useWebPush';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  TrashItem,
+  fetchTrash,
+  restoreTrashItem,
+  permanentlyDeleteTrashItem,
+  emptyTrash,
+} from '@/lib/trash';
+
+const TRASH_TYPE_LABELS: Record<string, string> = {
+  learning_module: 'Module',
+  module_content: 'Contenu de module',
+  prayer_card_content: 'Contenu prière',
+  sourate_content: 'Contenu sourate',
+  alphabet_content: 'Contenu alphabet',
+  allah_name: 'Nom d\'Allah',
+  allah_name_media: 'Média (Noms d\'Allah)',
+  invocation: 'Invocation',
+  invocation_content: 'Contenu invocation',
+  devoir: 'Devoir',
+  nourania_lesson_content: 'Contenu leçon Nourania',
+  ramadan_day_video: 'Vidéo Ramadan',
+  ramadan_quiz: 'Quiz Ramadan',
+  ramadan_day_activity: 'Activité Ramadan',
+  module_card: 'Carte de module',
+  flashcard: 'Flashcard',
+  dashboard_card: 'Carte tableau de bord',
+  admin_conversation: 'Conversation assistant',
+  student_group: 'Groupe d\'élèves',
+  scheduled_notification: 'Notification programmée',
+};
 
 const Settings = () => {
   const { user, isAdmin } = useAuth();
@@ -33,6 +73,43 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [testingSend, setTestingSend] = useState(false);
   const { isSubscribed, isSupported, isLoading: pushLoading, error: pushError, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = useWebPush();
+
+  const [trashItems, setTrashItems] = useState<TrashItem[]>([]);
+  const [restoreTargetId, setRestoreTargetId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [emptyTrashConfirm, setEmptyTrashConfirm] = useState(false);
+
+  const loadTrash = async () => {
+    if (!user) return;
+    const items = await fetchTrash(user.id);
+    setTrashItems(items);
+  };
+
+  const handleRestore = async (item: TrashItem) => {
+    const ok = await restoreTrashItem(item);
+    if (ok) {
+      toast({ title: '✅ Élément restauré' });
+      loadTrash();
+    } else {
+      toast({ title: '❌ Erreur lors de la restauration', variant: 'destructive' });
+    }
+    setRestoreTargetId(null);
+  };
+
+  const handlePermanentDelete = async (id: string) => {
+    await permanentlyDeleteTrashItem(id);
+    toast({ title: '🗑️ Élément supprimé définitivement' });
+    loadTrash();
+    setDeleteTargetId(null);
+  };
+
+  const handleEmptyTrash = async () => {
+    if (!user) return;
+    await emptyTrash(user.id);
+    toast({ title: '🗑️ Corbeille vidée' });
+    loadTrash();
+    setEmptyTrashConfirm(false);
+  };
 
   const handleTestPush = async () => {
     setTestingSend(true);
@@ -59,6 +136,7 @@ const Settings = () => {
 
   useEffect(() => {
     loadPreferences();
+    loadTrash();
   }, [user, isSubscribed]);
 
   const loadPreferences = async () => {
@@ -310,7 +388,134 @@ const Settings = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Corbeille */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                🗑️ Corbeille
+              </span>
+              {trashItems.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => setEmptyTrashConfirm(true)}
+                >
+                  Vider ({trashItems.length})
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trashItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground">La corbeille est vide.</p>
+            ) : (
+              <div className="space-y-2">
+                {trashItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 overflow-hidden"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground [overflow-wrap:anywhere]">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {TRASH_TYPE_LABELS[item.item_type] || item.item_type} · supprimé le{' '}
+                        {new Date(item.deleted_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setRestoreTargetId(item.id)}
+                      title="Restaurer"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => setDeleteTargetId(item.id)}
+                      title="Supprimer définitivement"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Confirmation restauration */}
+      <AlertDialog open={!!restoreTargetId} onOpenChange={(open) => !open && setRestoreTargetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurer cet élément ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Il retrouvera sa place d'origine dans l'application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const item = trashItems.find((i) => i.id === restoreTargetId);
+                if (item) handleRestore(item);
+              }}
+            >
+              Restaurer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation suppression définitive individuelle */}
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer définitivement cet élément ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible, l'élément ne pourra plus être restauré.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTargetId && handlePermanentDelete(deleteTargetId)}
+            >
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation vider la corbeille */}
+      <AlertDialog open={emptyTrashConfirm} onOpenChange={setEmptyTrashConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vider toute la corbeille ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {trashItems.length} élément{trashItems.length > 1 ? 's' : ''} seront supprimés définitivement et ne
+              pourront plus être restaurés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleEmptyTrash}
+            >
+              Vider la corbeille
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };

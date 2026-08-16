@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
@@ -92,6 +93,7 @@ const AdminInvocationContent = () => {
       }
       const { error } = await supabase.from('invocation_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (user?.id) await moveToTrash(user.id, 'invocation_content', contentId, content.file_name || 'Contenu invocation', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents'] });

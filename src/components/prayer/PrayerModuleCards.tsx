@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Plus, Trash2, Upload, Edit2, Eye, Download, FileText, Play, Music, Image, X, GripVertical } from 'lucide-react';
@@ -149,8 +150,10 @@ const PrayerModuleCards = () => {
 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
+      const content = cardContent.find((c: any) => c.id === contentId);
       const { error } = await supabase.from('prayer_card_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (content && user?.id) await moveToTrash(user.id, 'prayer_card_content', contentId, content.file_name || 'Contenu', content);
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['prayer-card-content', selectedCard?.id] }); toast.success('Contenu supprimé'); },
   });

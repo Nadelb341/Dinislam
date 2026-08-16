@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -121,8 +122,10 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const mod = modules?.find((m: any) => m.id === id);
       const { error } = await supabase.from('learning_modules').delete().eq('id', id);
       if (error) throw error;
+      if (mod && user) await moveToTrash(user.id, 'learning_module', id, mod.title, mod);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
@@ -165,8 +168,10 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
 
   const deleteContentMutation = useMutation({
     mutationFn: async (id: string) => {
+      const content = moduleContents?.find((c: any) => c.id === id);
       const { error } = await supabase.from('module_content').delete().eq('id', id);
       if (error) throw error;
+      if (content && user) await moveToTrash(user.id, 'module_content', id, content.title || content.file_name || 'Contenu', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-all-module-contents'] });

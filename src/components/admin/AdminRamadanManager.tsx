@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link, Calendar } from 'lucide-react';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard from './ContentItemCard';
@@ -144,6 +146,7 @@ const SortableQuestionCard = ({
 
 const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -319,8 +322,10 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete video mutation
   const deleteVideoMutation = useMutation({
     mutationFn: async (videoId: string) => {
+      const video = dayVideos.find((v: any) => v.id === videoId);
       const { error } = await supabase.from('ramadan_day_videos').delete().eq('id', videoId);
       if (error) throw error;
+      if (video && user?.id) await moveToTrash(user.id, 'ramadan_day_video', videoId, video.file_name || 'Vidéo Ramadan', video);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
@@ -462,9 +467,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete quiz mutation
   const deleteQuizMutation = useMutation({
     mutationFn: async (quizId: string) => {
+      const quiz = quizzes.find((q: any) => q.id === quizId);
       await supabase.from('quiz_responses').delete().eq('quiz_id', quizId);
       const { error } = await supabase.from('ramadan_quizzes').delete().eq('id', quizId);
       if (error) throw error;
+      if (quiz && user?.id) await moveToTrash(user.id, 'ramadan_quiz', quizId, quiz.question || 'Question', quiz);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-quizzes'] });
@@ -479,6 +486,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       for (const q of dayQuizzes) {
         await supabase.from('quiz_responses').delete().eq('quiz_id', q.id);
         await supabase.from('ramadan_quizzes').delete().eq('id', q.id);
+        if (user?.id) await moveToTrash(user.id, 'ramadan_quiz', q.id, q.question || 'Question', q);
       }
     },
     onSuccess: () => {
@@ -538,8 +546,10 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete activity mutation
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: string) => {
+      const activity = dayActivities.find((a: any) => a.id === activityId);
       const { error } = await supabase.from('ramadan_day_activities').delete().eq('id', activityId);
       if (error) throw error;
+      if (activity && user?.id) await moveToTrash(user.id, 'ramadan_day_activity', activityId, activity.file_name || 'Activité Ramadan', activity);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-activities'] });

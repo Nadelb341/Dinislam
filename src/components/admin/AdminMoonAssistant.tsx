@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, X, Send, Moon, CheckCircle, XCircle, Plus, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Textarea } from '@/components/ui/textarea';
@@ -153,8 +154,15 @@ const AdminMoonAssistant = () => {
 
   const deleteConversation = async (convId: string) => {
     try {
+      const conv = conversations.find(c => c.id === convId);
       const { error } = await supabase.from('admin_conversations').delete().eq('id', convId);
       if (error) throw error;
+      if (conv && user?.id) {
+        await moveToTrash(user.id, 'admin_conversation', convId, conv.topic || 'Conversation', {
+          ...conv,
+          messages: conv.messages.map(m => ({ ...m, timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp })),
+        });
+      }
       setConversations(prev => prev.filter(c => c.id !== convId));
       if (activeConversationId === convId) {
         setActiveConversationId(null);

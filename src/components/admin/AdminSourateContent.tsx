@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Unlock, Lock, Upload, Trash2, Eye, EyeOff, UserCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
@@ -280,6 +281,7 @@ const AdminSourateContent = () => {
       }
       const { error } = await supabase.from('sourate_content').delete().eq('id', contentId);
       if (error) throw error;
+      if (user?.id) await moveToTrash(user.id, 'sourate_content', contentId, content.file_name || 'Contenu sourate', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-contents'] });
