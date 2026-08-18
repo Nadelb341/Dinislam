@@ -16,33 +16,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  GripVertical, Plus, Pencil, Trash2, Loader2,
+  Plus, Pencil, Trash2, Loader2,
   ArrowLeft, Image as ImageIcon,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import FlashcardManager from './FlashcardManager';
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-const SortableItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1">
-      <button {...attributes} {...listeners} className="flex items-center px-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none">
-        <GripVertical className="h-5 w-5" />
-      </button>
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
-  );
-};
+import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 
 interface Props {
   moduleId: string;
@@ -66,11 +47,6 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   const [formTitleAr, setFormTitleAr] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formSection, setFormSection] = useState('');
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ['admin-module-cards', moduleId],
@@ -140,9 +116,10 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
   const reorderMutation = useMutation({
     mutationFn: async (newList: any[]) => {
-      for (let i = 0; i < newList.length; i++) {
-        await supabase.from('module_cards').update({ display_order: i }).eq('id', newList[i].id);
-      }
+      const resequenced = withResequencedOrder(newList);
+      await Promise.all(
+        resequenced.map((c) => supabase.from('module_cards').update({ display_order: c.sort_order }).eq('id', c.id))
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
@@ -298,16 +275,6 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploadingImage(false);
   }, [queryClient, moduleId]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIdx = (cards as any[]).findIndex((c: any) => c.id === active.id);
-    const newIdx = (cards as any[]).findIndex((c: any) => c.id === over.id);
-    if (oldIdx < 0 || newIdx < 0) return;
-    const newOrder = arrayMove(cards as any[], oldIdx, newIdx);
-    reorderMutation.mutate(newOrder);
-  };
-
   const openAdd = () => {
     setEditingCard(null);
     setFormTitle(''); setFormTitleAr(''); setFormDesc(''); setFormSection('');
@@ -349,14 +316,16 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
           <p className="text-sm">Cliquez sur "Ajouter une carte" pour commencer.</p>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={(cards as any[]).map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {(cards as any[]).map((card: any, index: number) => {
+        <div className="space-y-2">
+          <SortableCardList
+            items={cards as any[]}
+            onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
+            renderItem={(card: any, { ref, style, isDragging, ...dragAttrs }) => {
+                const index = (cards as any[]).findIndex((c: any) => c.id === card.id);
                 const cardContents = (contents as any[]).filter((c: any) => c.card_id === card.id);
                 const isThisUploading = isUploading && uploadingCardId === card.id;
                 return (
-                  <SortableItem key={card.id} id={card.id}>
+                  <div key={card.id} ref={ref} style={style} {...dragAttrs} className={isDragging ? 'opacity-60' : ''}>
                     <Card>
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-center gap-3">
@@ -369,7 +338,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                                 <span className="text-primary-foreground text-xs font-bold">#{index + 1}</span>
                               </div>
                             )}
-                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/30 rounded-xl opacity-0 hover:opacity-100 transition-opacity">
+                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/30 rounded-xl opacity-0 hover:opacity-100 transition-opacity" onPointerDown={(e) => e.stopPropagation()}>
                               <input type="file" accept="image/*" className="hidden"
                                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadImage(card.id, f); e.target.value = ''; }}
                               />
@@ -389,7 +358,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                           </div>
 
                           {/* Actions */}
-                          <div className="flex gap-1 shrink-0">
+                          <div className="flex gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                             <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(card)}>
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -401,7 +370,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
                         {/* Content list */}
                         {cardContents.length > 0 && (
-                          <div className="ml-14 space-y-1">
+                          <div className="ml-14 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
                             {cardContents.map((content: any) => (
                               <ContentItemCard
                                 key={content.id}
@@ -417,7 +386,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         )}
 
                         {/* Upload tabs */}
-                        <div className="ml-14">
+                        <div className="ml-14" onPointerDown={(e) => e.stopPropagation()}>
                           <ContentUploadTabs
                             onUploadFile={(file) => handleUploadContent(card.id, file, 'fichier')}
                             onAddYoutubeLink={(url) => handleAddYoutubeContent(card.id, url)}
@@ -427,7 +396,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         </div>
 
                         {/* Flashcards */}
-                        <div className="ml-14">
+                        <div className="ml-14" onPointerDown={(e) => e.stopPropagation()}>
                           <FlashcardManager
                             cardId={card.id}
                             cardTitle={card.title}
@@ -439,12 +408,11 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         </div>
                       </CardContent>
                     </Card>
-                  </SortableItem>
+                  </div>
                 );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+            }}
+          />
+        </div>
       )}
 
       {/* Form dialog */}

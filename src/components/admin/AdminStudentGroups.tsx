@@ -13,10 +13,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Pencil, Trash2, Users, Search, GripVertical } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Users, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
+import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
 
 const GROUP_COLORS = [
   { value: 'bg-blue-500', label: 'Bleu', preview: 'bg-blue-500' },
@@ -53,48 +54,35 @@ const getAgeGroup = (dateOfBirth: string | null): string => {
   return 'adultes';
 };
 
-// Group card component with native HTML5 drag & drop
+// Carte de groupe — appui long sur toute la carte pour la déplacer
 const DraggableGroupCard = ({
   group,
   onEdit,
   onDelete,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDrop,
-  isDragging,
-  isDragOver,
+  dragProps,
 }: {
   group: StudentGroup;
   onEdit: (group: StudentGroup) => void;
   onDelete: (groupId: string) => void;
-  onDragStart: (e: React.DragEvent, id: string) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
-  onDrop: (e: React.DragEvent, id: string) => void;
-  isDragging: boolean;
-  isDragOver: boolean;
+  dragProps?: DragItemProps;
 }) => {
+  const { ref, style: dragStyle, isDragging, ...dragAttrs } = dragProps ?? {};
   return (
     <Card
-      draggable
-      onDragStart={(e) => onDragStart(e, group.id)}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
-      onDrop={(e) => onDrop(e, group.id)}
-      className={`transition-all cursor-grab active:cursor-grabbing ${isDragOver ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-      style={{ opacity: isDragging ? 0.4 : 1 }}
+      ref={ref}
+      {...dragAttrs}
+      className={`transition-all ${isDragging ? 'opacity-40' : ''}`}
+      style={dragStyle}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-1">
           <div className="flex items-start gap-2 min-w-0 flex-1">
-            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 cursor-grab" />
             <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${group.color}`} />
             <span className="text-sm font-bold leading-tight break-words">{group.name}</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -146,9 +134,6 @@ const AdminStudentGroups = () => {
   const [studentSearch, setStudentSearch] = useState('');
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('tous');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('tous');
-
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // Fetch groups with members
   const { data: groups = [] } = useQuery({
@@ -256,45 +241,14 @@ const AdminStudentGroups = () => {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', id);
-    setDraggedId(id);
-  };
-
-  const handleDragOver = (e: React.DragEvent, id: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverId(id);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedId(null);
-    setDragOverId(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    setDragOverId(null);
-    const sourceId = e.dataTransfer.getData('text/plain');
-    if (!sourceId || sourceId === targetId || !groups || groups.length === 0) return;
-    const oldIndex = groups.findIndex(g => g.id === sourceId);
-    const newIndex = groups.findIndex(g => g.id === targetId);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newGroups = [...groups];
-    const [moved] = newGroups.splice(oldIndex, 1);
-    newGroups.splice(newIndex, 0, moved);
-
-    const updated = newGroups.map((g, i) => ({ ...g, position: i }));
-    queryClient.setQueryData(['student-groups'], updated);
-    setDraggedId(null);
-
+  const reorderGroups = async (newGroups: StudentGroup[]) => {
+    const resequenced = withResequencedOrder(newGroups);
+    queryClient.setQueryData(['student-groups'], resequenced);
     await Promise.all(
-      updated.map((g, i) =>
+      resequenced.map((g) =>
         (supabase as any)
           .from('student_groups')
-          .update({ position: i })
+          .update({ position: g.sort_order })
           .eq('id', g.id)
       )
     );
@@ -349,20 +303,20 @@ const AdminStudentGroups = () => {
         <p className="text-sm text-muted-foreground text-center py-4">Aucun groupe créé</p>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {(groups || []).map((group) => (
-            <DraggableGroupCard
-              key={group.id}
-              group={group}
-              onEdit={openEdit}
-              onDelete={handleDeleteGroup}
-              onDragStart={handleDragStart}
-              onDragOver={(e) => handleDragOver(e, group.id)}
-              onDragEnd={handleDragEnd}
-              onDrop={handleDrop}
-              isDragging={draggedId === group.id}
-              isDragOver={dragOverId === group.id && draggedId !== group.id}
-            />
-          ))}
+          <SortableCardList
+            items={groups}
+            onReorder={reorderGroups}
+            strategy={rectSortingStrategy}
+            renderItem={(group, dragProps) => (
+              <DraggableGroupCard
+                key={group.id}
+                group={group}
+                onEdit={openEdit}
+                onDelete={handleDeleteGroup}
+                dragProps={dragProps}
+              />
+            )}
+          />
         </div>
       )}
 

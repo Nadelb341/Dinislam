@@ -14,35 +14,12 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import {
-  GripVertical, Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
+  Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-const SortableItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-stretch gap-2">
-      <button
-        {...attributes} {...listeners}
-        className="flex items-center px-1 cursor-grab active:cursor-grabbing touch-none"
-        style={{ color: 'hsl(220 20% 70%)' }}
-      >
-        <GripVertical className="h-5 w-5" />
-      </button>
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
-  );
-};
+import { SortableCardList } from '@/components/shared/SortableCardList';
 
 interface Props { onBack: () => void; }
 
@@ -59,11 +36,6 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const [formNameFr, setFormNameFr] = useState('');
   const [formTranslit, setFormTranslit] = useState('');
   const [formExplanation, setFormExplanation] = useState('');
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   const { data: names = [], isLoading } = useQuery({
     queryKey: ['admin-allah-names'],
@@ -143,10 +115,13 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   });
 
   const reorderMutation = useMutation({
+    // display_order est affiché tel quel à l'écran (#1, #2...) — on garde une numérotation
+    // continue à partir de 1 (pas le pas de 10 habituel de withResequencedOrder) pour rester cohérent visuellement.
     mutationFn: async (newList: any[]) => {
-      for (let i = 0; i < newList.length; i++) {
-        await supabase.from('allah_names').update({ display_order: i + 1 }).eq('id', newList[i].id);
-      }
+      const resequenced = newList.map((n, i) => ({ ...n, display_order: i + 1 }));
+      await Promise.all(
+        resequenced.map((n) => supabase.from('allah_names').update({ display_order: n.display_order }).eq('id', n.id))
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
@@ -190,15 +165,6 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     } catch (e: any) { toast.error(e.message); }
     finally { setUploadingMedia(null); }
   }, [queryClient]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIdx = (names as any[]).findIndex((n: any) => String(n.id) === String(active.id));
-    const newIdx = (names as any[]).findIndex((n: any) => String(n.id) === String(over.id));
-    if (oldIdx < 0 || newIdx < 0) return;
-    reorderMutation.mutate(arrayMove(names as any[], oldIdx, newIdx));
-  };
 
   const openAdd = () => {
     setEditingName(null);
@@ -286,15 +252,18 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-2xl" />)}</div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={(names as any[]).map((n: any) => String(n.id))} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {(names as any[]).map((name: any) => (
-                <SortableItem key={name.id} id={String(name.id)}>
-                  <div
-                    className="rounded-2xl border bg-white shadow-sm overflow-hidden"
-                    style={{ borderColor: 'hsl(220 20% 88%)' }}
-                  >
+        <div className="space-y-2">
+          <SortableCardList
+            items={names as any[]}
+            onReorder={(newList) => reorderMutation.mutate(newList)}
+            renderItem={(name: any, { ref, style, isDragging, ...dragAttrs }) => (
+                <div
+                  key={name.id}
+                  ref={ref}
+                  style={style}
+                  {...dragAttrs}
+                  className={`rounded-2xl border bg-white shadow-sm overflow-hidden ${isDragging ? 'opacity-60' : ''}`}
+                >
                     <div className="flex items-center gap-3 p-3">
                       {/* Amber number badge with optional image */}
                       <div className="relative shrink-0">
@@ -309,7 +278,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                           </div>
                         )}
                         {/* Image upload overlay */}
-                        <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/40 rounded-xl opacity-0 hover:opacity-100 transition-opacity">
+                        <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/40 rounded-xl opacity-0 hover:opacity-100 transition-opacity" onPointerDown={(e) => e.stopPropagation()}>
                           <input type="file" accept="image/*" className="hidden"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadImage(name.id, f); e.target.value = ''; }}
                           />
@@ -348,7 +317,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => openEdit(name)}
                           className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors hover:bg-blue-50"
@@ -389,12 +358,10 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                         <MediaUploadRow nameId={name.id} type="pdf" label="PDF" icon={FileText} />
                       </div>
                     )}
-                  </div>
-                </SortableItem>
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+                </div>
+            )}
+          />
+        </div>
       )}
 
       {/* Add/Edit dialog */}

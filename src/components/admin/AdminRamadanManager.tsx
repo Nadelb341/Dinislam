@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
-import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, GripVertical, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link, Calendar } from 'lucide-react';
+import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link, Calendar } from 'lucide-react';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard from './ContentItemCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,23 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableCardList, DragItemProps } from '@/components/shared/SortableCardList';
 import { Quiz, DayVideo, QuestionForm, emptyQuestion } from '@/types/ramadan';
 
 interface AdminRamadanManagerProps {
@@ -53,42 +37,21 @@ const SortableQuestionCard = ({
   updateQuestion,
   updateQuestionOption,
   removeQuestion,
+  dragProps,
 }: {
   qf: QuestionForm;
   qIdx: number;
   updateQuestion: (idx: number, field: keyof QuestionForm, value: unknown) => void;
   updateQuestionOption: (qIdx: number, optIdx: number, value: string) => void;
   removeQuestion: (idx: number) => void;
+  dragProps?: DragItemProps;
 }) => {
-  const id = qf.existingId || `new-${qIdx}`;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
+  const { ref, style, isDragging, ...dragAttrs } = dragProps ?? {};
 
   return (
-    <div ref={setNodeRef} style={style} className="space-y-2 p-3 rounded-lg border bg-muted/30">
+    <div ref={ref} style={style} {...dragAttrs} className={`space-y-2 p-3 rounded-lg border bg-muted/30 ${isDragging ? 'opacity-60' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted"
-            type="button"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
           <Label className="text-sm font-medium">Question {qIdx + 1}</Label>
         </div>
         <Button
@@ -96,49 +59,53 @@ const SortableQuestionCard = ({
           size="icon"
           className="h-6 w-6 text-destructive"
           onClick={() => removeQuestion(qIdx)}
+          onPointerDown={(e) => e.stopPropagation()}
         >
           <Trash2 className="h-3 w-3" />
         </Button>
       </div>
-      <Textarea
-        value={qf.question}
-        onChange={(e) => updateQuestion(qIdx, 'question', e.target.value)}
-        placeholder={`Entrez la question ${qIdx + 1}...`}
-        rows={2}
-      />
-      <div className="space-y-1.5">
-        {qf.options.map((opt, optIdx) => (
-          <div key={optIdx} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={qf.correctOptions.includes(optIdx)}
-              onChange={() => {
-                const newCorrect = qf.correctOptions.includes(optIdx)
-                  ? qf.correctOptions.filter(i => i !== optIdx)
-                  : [...qf.correctOptions, optIdx];
-                updateQuestion(qIdx, 'correctOptions', newCorrect);
-              }}
-              className="h-3.5 w-3.5 accent-green-500"
-            />
-            <Input
-              value={opt}
-              onChange={(e) => updateQuestionOption(qIdx, optIdx, e.target.value)}
-              placeholder={`Option ${optIdx + 1}`}
-              className={`h-8 text-sm ${qf.correctOptions.includes(optIdx) ? 'border-green-500' : ''}`}
-            />
-          </div>
-        ))}
-        <p className="text-xs text-muted-foreground mt-1">Cochez toutes les bonnes réponses</p>
-      </div>
-      <div className="pt-2 border-t">
-        <Label className="text-xs text-muted-foreground">📝 Explication / Correction</Label>
+      {/* Champs de texte : stopPropagation pour ne pas gêner la sélection de texte / saisie */}
+      <div onPointerDown={(e) => e.stopPropagation()}>
         <Textarea
-          value={qf.explanation}
-          onChange={(e) => updateQuestion(qIdx, 'explanation', e.target.value)}
-          placeholder="Ex: Adam est le premier homme sur terre, il a été créé d'argile..."
+          value={qf.question}
+          onChange={(e) => updateQuestion(qIdx, 'question', e.target.value)}
+          placeholder={`Entrez la question ${qIdx + 1}...`}
           rows={2}
-          className="mt-1 text-sm"
         />
+        <div className="space-y-1.5 mt-2">
+          {qf.options.map((opt, optIdx) => (
+            <div key={optIdx} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={qf.correctOptions.includes(optIdx)}
+                onChange={() => {
+                  const newCorrect = qf.correctOptions.includes(optIdx)
+                    ? qf.correctOptions.filter(i => i !== optIdx)
+                    : [...qf.correctOptions, optIdx];
+                  updateQuestion(qIdx, 'correctOptions', newCorrect);
+                }}
+                className="h-3.5 w-3.5 accent-green-500"
+              />
+              <Input
+                value={opt}
+                onChange={(e) => updateQuestionOption(qIdx, optIdx, e.target.value)}
+                placeholder={`Option ${optIdx + 1}`}
+                className={`h-8 text-sm ${qf.correctOptions.includes(optIdx) ? 'border-green-500' : ''}`}
+              />
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground mt-1">Cochez toutes les bonnes réponses</p>
+        </div>
+        <div className="pt-2 border-t mt-2">
+          <Label className="text-xs text-muted-foreground">📝 Explication / Correction</Label>
+          <Textarea
+            value={qf.explanation}
+            onChange={(e) => updateQuestion(qIdx, 'explanation', e.target.value)}
+            placeholder="Ex: Adam est le premier homme sur terre, il a été créé d'argile..."
+            rows={2}
+            className="mt-1 text-sm"
+          />
+        </div>
       </div>
     </div>
   );
@@ -169,12 +136,6 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Unlimited questions
   const [questions, setQuestions] = useState<QuestionForm[]>([emptyQuestion()]);
   const [maxErrorsInput, setMaxErrorsInput] = useState<string>('3');
-
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
 
   // Fetch ramadan settings
   const { data: settings } = useQuery({
@@ -810,18 +771,6 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    setQuestions(prev => {
-      const oldIndex = prev.findIndex(q => (q.existingId || `new-${prev.indexOf(q)}`) === active.id);
-      const newIndex = prev.findIndex(q => (q.existingId || `new-${prev.indexOf(q)}`) === over.id);
-      if (oldIndex === -1 || newIndex === -1) return prev;
-      return arrayMove(prev, oldIndex, newIndex);
-    });
-  };
-
   const handleSaveQuiz = () => {
     if (!selectedDay) return;
     const filledQuestions = questions.filter(q => q.question.trim());
@@ -844,7 +793,6 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     saveThemeMutation.mutate({ dayId: selectedDay, theme: themeInput });
   };
 
-  const questionIds = questions.map((q, idx) => q.existingId || `new-${idx}`);
 
   return (
     <div className="space-y-4">
@@ -1312,22 +1260,26 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground">↕️ Glissez-déposez les questions pour réorganiser l'ordre</p>
+              <p className="text-xs text-muted-foreground">↕️ Maintenez une question puis glissez pour la déplacer</p>
 
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={questionIds} strategy={verticalListSortingStrategy}>
-                  {questions.map((qf, qIdx) => (
+              <SortableCardList
+                items={questions.map((q, idx) => ({ ...q, id: q.existingId || `new-${idx}` }))}
+                onReorder={(newItems) => setQuestions(newItems.map(({ id, ...q }) => q))}
+                renderItem={(qf, dragProps) => {
+                  const qIdx = questions.findIndex((q, idx) => (q.existingId || `new-${idx}`) === qf.id);
+                  return (
                     <SortableQuestionCard
-                      key={qf.existingId || `new-${qIdx}`}
+                      key={qf.id}
                       qf={qf}
                       qIdx={qIdx}
                       updateQuestion={updateQuestion}
                       updateQuestionOption={updateQuestionOption}
                       removeQuestion={removeQuestion}
+                      dragProps={dragProps}
                     />
-                  ))}
-                </SortableContext>
-              </DndContext>
+                  );
+                }}
+              />
 
               {/* Add question button */}
               <Button

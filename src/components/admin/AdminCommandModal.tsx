@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, GripVertical } from 'lucide-react';
+import { X } from 'lucide-react';
+import { SortableCardList } from '@/components/shared/SortableCardList';
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
 import AdminSourateValidations from '@/components/admin/AdminSourateValidations';
 import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
@@ -54,7 +55,6 @@ const AdminCommandModal = ({
   const navigate = useNavigate();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const compteurs: Record<string, number> = {
     sourates: pendingSourates,
@@ -80,13 +80,8 @@ const AdminCommandModal = ({
     }
   }, []);
 
-  const handleDragOver = (index: number) => {
-    if (dragIndex === null || dragIndex === index) return;
-    const newBoutons = [...boutons];
-    const [moved] = newBoutons.splice(dragIndex, 1);
-    newBoutons.splice(index, 0, moved);
+  const reorderBoutons = (newBoutons: typeof BOUTONS_ACTIONS) => {
     setBoutons(newBoutons);
-    setDragIndex(index);
     localStorage.setItem('admin_boutons_order_v4', JSON.stringify(newBoutons));
   };
 
@@ -129,36 +124,39 @@ const AdminCommandModal = ({
           </div>
 
           <div className="px-4 pb-5 space-y-3">
-            {/* Boutons actions — 1 par ligne */}
-            {boutons.map((btn, index) => {
-              const count = compteurs[btn.id] || 0;
-              const hasAction = count > 0;
-              return (
-                <button
-                  key={btn.id}
-                  onClick={() => { if (btn.section) { setModalSection(btn.section); } else { onClose(); onOpenMessages(); } }}
-                  draggable
-                  onDragStart={() => setDragIndex(index)}
-                  onDragOver={(e) => { e.preventDefault(); handleDragOver(index); }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl font-semibold text-white transition-all active:scale-95 ${
-                    hasAction ? 'bg-destructive' : 'bg-emerald-500'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 opacity-40" />
-                    <span className="text-sm">{btn.emoji} {btn.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {hasAction && (
-                      <span className="bg-white text-destructive text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {count}
-                      </span>
-                    )}
-                    <span className="opacity-70 text-sm">→</span>
-                  </div>
-                </button>
-              );
-            })}
+            {/* Boutons actions — 1 par ligne, maintenir puis glisser pour réordonner */}
+            <SortableCardList
+              items={boutons}
+              onReorder={reorderBoutons}
+              renderItem={(btn, { ref, style, isDragging, ...dragAttrs }) => {
+                const count = compteurs[btn.id] || 0;
+                const hasAction = count > 0;
+                return (
+                  <button
+                    key={btn.id}
+                    ref={ref as React.Ref<HTMLButtonElement>}
+                    style={style}
+                    {...dragAttrs}
+                    onClick={() => { if (btn.section) { setModalSection(btn.section); } else { onClose(); onOpenMessages(); } }}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl font-semibold text-white transition-all active:scale-95 ${
+                      hasAction ? 'bg-destructive' : 'bg-emerald-500'
+                    } ${isDragging ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{btn.emoji} {btn.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {hasAction && (
+                        <span className="bg-white text-destructive text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                          {count}
+                        </span>
+                      )}
+                      <span className="opacity-70 text-sm">→</span>
+                    </div>
+                  </button>
+                );
+              }}
+            />
 
             {/* Séparateur */}
             <div className="border-t border-border pt-1" />

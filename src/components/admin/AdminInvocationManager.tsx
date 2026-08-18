@@ -13,17 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
-  GripVertical, Plus, Pencil, Trash2, Upload, Loader2, Video, FileText, Volume2, Image as ImageIcon, File,
+  Plus, Pencil, Trash2, Upload, Loader2, Video, FileText, Volume2, Image as ImageIcon, File,
   Sun, Moon, CloudMoon, Home, Church, Plane, Shirt, Bath, UtensilsCrossed, CloudRain, Heart, BedDouble, Droplets, PawPrint, Activity, Hand, BookOpen, ArrowLeft,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 
 const getDefaultIcon = (title: string) => {
   const t = title.toLowerCase();
@@ -44,19 +38,6 @@ const getDefaultIcon = (title: string) => {
   if (t.includes('maladie')) return Activity;
   if (t.includes('décès') || t.includes('mort')) return Hand;
   return BookOpen;
-};
-
-const SortableItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 10 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1">
-      <button {...attributes} {...listeners} className="flex items-center px-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none">
-        <GripVertical className="h-5 w-5" />
-      </button>
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
-  );
 };
 
 interface Props {
@@ -85,11 +66,6 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   const [formContentAr, setFormContentAr] = useState('');
   const [formContentFr, setFormContentFr] = useState('');
   const [formCategory, setFormCategory] = useState('quotidienne');
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
 
   const { data: invocations = [], isLoading } = useQuery({
     queryKey: ['admin-invocations-full'],
@@ -157,9 +133,10 @@ const AdminInvocationManager = ({ onBack }: Props) => {
 
   const reorderMutation = useMutation({
     mutationFn: async (newList: any[]) => {
-      for (let i = 0; i < newList.length; i++) {
-        await supabase.from('invocations').update({ display_order: i }).eq('id', newList[i].id);
-      }
+      const resequenced = withResequencedOrder(newList);
+      await Promise.all(
+        resequenced.map((inv) => supabase.from('invocations').update({ display_order: inv.sort_order }).eq('id', inv.id))
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
@@ -247,16 +224,6 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     setIsUploadingImage(false);
   }, [queryClient]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !invocations.length) return;
-    const oldIdx = invocations.findIndex((inv: any) => String(inv.id) === String(active.id));
-    const newIdx = invocations.findIndex((inv: any) => String(inv.id) === String(over.id));
-    if (oldIdx < 0 || newIdx < 0) return;
-    const newOrder = arrayMove(invocations, oldIdx, newIdx);
-    reorderMutation.mutate(newOrder);
-  };
-
   const openAdd = () => {
     setEditingInvocation(null);
     setFormTitle(''); setFormTitleAr(''); setFormContentAr(''); setFormContentFr(''); setFormCategory('quotidienne');
@@ -298,16 +265,18 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}</div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={invocations.map((inv: any) => String(inv.id))} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {invocations.map((inv: any, index: number) => {
+        <div className="space-y-2">
+          <SortableCardList
+            items={invocations}
+            onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
+            renderItem={(inv: any, { ref, style, isDragging, ...dragAttrs }) => {
+                const index = invocations.findIndex((i: any) => i.id === inv.id);
                 const Icon = getDefaultIcon(inv.title_french);
                 const invContents = contents.filter((c: any) => c.invocation_id === inv.id);
                 const isThisUploading = isUploading && uploadingInvId === inv.id;
 
                 return (
-                  <SortableItem key={inv.id} id={String(inv.id)}>
+                  <div key={inv.id} ref={ref} style={style} {...dragAttrs} className={isDragging ? 'opacity-60' : ''}>
                     <Card>
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-center gap-3">
@@ -321,7 +290,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                               </div>
                             )}
                             {/* Image upload overlay */}
-                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/30 rounded-xl opacity-0 hover:opacity-100 transition-opacity">
+                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/30 rounded-xl opacity-0 hover:opacity-100 transition-opacity" onPointerDown={(e) => e.stopPropagation()}>
                               <input type="file" accept="image/*" className="hidden"
                                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadImage(inv.id, f); e.target.value = ''; }}
                               />
@@ -343,7 +312,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                           </div>
 
                           {/* Actions */}
-                          <div className="flex gap-1 shrink-0">
+                          <div className="flex gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                             {/* Upload content button — input inside Button to avoid overflow on neighbors */}
                             <Button variant="outline" size="sm" disabled={isThisUploading} className="h-8 px-2 gap-1 relative overflow-hidden">
                               <input
@@ -366,7 +335,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
 
                         {/* Content list */}
                         {invContents.length > 0 && (
-                          <div className="ml-14 space-y-1">
+                          <div className="ml-14 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
                             {invContents.map((content: any) => (
                               <div key={content.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -384,12 +353,11 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                         )}
                       </CardContent>
                     </Card>
-                  </SortableItem>
+                  </div>
                 );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+            }}
+          />
+        </div>
       )}
 
       {/* Add/Edit Dialog */}

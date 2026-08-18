@@ -618,3 +618,20 @@ Nouvelle règle globale ajoutée cette session dans `~/Projets Claude Code/CLAUD
 - **Realtime activé** (`ALTER PUBLICATION supabase_realtime ADD TABLE nourania_commentaires_eleves`) — les élèves reçoivent les notes instantanément (toast 📝 affiché, query invalidée)
 - ⚠️ Sans le `ALTER PUBLICATION`, les élèves ne voient la note qu'après rechargement de la page
 - Migration : `supabase/migrations/20260506120000_fix_commentaires_realtime.sql`
+
+## 🖐️ Réordonnancement par appui long — harmonisation dnd-kit (màj 2026-08-18)
+
+Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section "🖐️ Réordonnancement par glisser-déposer") : tout réordonnancement de cartes se fait par appui long + glisser, jamais par flèches ni par une poignée dédiée. Dinislam avait déjà du drag & drop fonctionnel mais dans 2 styles différents, tous deux remplacés par le composant partagé `src/components/shared/SortableCardList.tsx` (copié depuis Agenda Nadia, `activationConstraint: { delay: 350, tolerance: 8 }`, pas de poignée — toute la carte est la zone de saisie) :
+
+**Ancien style dnd-kit avec poignée dédiée (`GripVertical` + activation par distance 5px)** — remplacé dans :
+- `AdminModules.tsx`, `AdminAllahNamesManager.tsx`, `AdminGenericModuleManager.tsx`, `AdminInvocationManager.tsx`, `AdminRamadanManager.tsx` (questions de quiz — reorder purement local, persistance seulement à la sauvegarde), `pages/Admin.tsx` (grille de cartes du tableau de bord, `rectSortingStrategy`)
+
+**Ancien glisser-déposer natif HTML5 (`draggable`, `onDragStart/onDragOver/onDrop`)** — ne fonctionnait pas de façon fiable au toucher sur mobile (API navigateur pensée pour la souris). Remplacé dans :
+- `AdminStudentGroups.tsx` (grille de groupes d'élèves, `rectSortingStrategy`, persistance colonne `student_groups.position`)
+- `AdminCommandModal.tsx` (boutons d'action du panneau admin 🛡️, ordre persisté dans `localStorage['admin_boutons_order_v4']`, pas de base de données)
+
+**Points d'attention pour toute future carte réordonnable dans Dinislam :**
+- `@dnd-kit/core` a dû être ajouté (`@dnd-kit/sortable` et `@dnd-kit/utilities` étaient déjà présents, mais pas `core`)
+- `SortableCardList<T>` accepte des `id` de type `string | number` (copie Dinislam élargie par rapport à la version Agenda Nadia, car plusieurs tables ici ont des id entiers auto-incrémentés comme `allah_names`)
+- Si le champ persisté est aussi **affiché à l'écran** comme un numéro (ex: `#{display_order}` sur les 99 Noms d'Allah), ne pas utiliser `withResequencedOrder` (pas de 0,10,20...) — resequencer en continu (`i + 1`) pour ne pas casser l'affichage
+- Sur toute carte contenant des champs de texte éditables (Textarea/Input), envelopper ces champs dans un `onPointerDown={(e) => e.stopPropagation()}` pour ne pas gêner la sélection de texte/saisie (voir `AdminRamadanManager.tsx`, cartes de question de quiz)

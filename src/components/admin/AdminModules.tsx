@@ -12,19 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import {
-  ArrowLeft, Plus, Pencil, Trash2, Upload, GripVertical, Image,
+  ArrowLeft, Plus, Pencil, Trash2, Upload, Image,
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText,
   MoreVertical, Eye, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LucideIcon } from 'lucide-react';
-import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -33,19 +27,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image,
 };
 const ICON_OPTIONS = Object.keys(ICON_MAP);
-
-const SortableModuleItem = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-stretch gap-1">
-      <button {...attributes} {...listeners} className="flex items-center px-1 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none">
-        <GripVertical className="h-5 w-5" />
-      </button>
-      <div className="flex-1 min-w-0">{children}</div>
-    </div>
-  );
-};
 
 interface AdminModulesProps {
   onBack: () => void;
@@ -94,11 +75,6 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
     },
   });
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
   const saveMutation = useMutation({
     mutationFn: async (moduleData: any) => {
       if (editingModule) {
@@ -139,9 +115,10 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
 
   const reorderMutation = useMutation({
     mutationFn: async (newModules: any[]) => {
-      for (let i = 0; i < newModules.length; i++) {
-        await supabase.from('learning_modules').update({ display_order: i }).eq('id', newModules[i].id);
-      }
+      const resequenced = withResequencedOrder(newModules);
+      await Promise.all(
+        resequenced.map((m) => supabase.from('learning_modules').update({ display_order: m.sort_order }).eq('id', m.id))
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
@@ -201,15 +178,6 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       }
     },
   });
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !modules) return;
-    const oldIndex = modules.findIndex(m => m.id === active.id);
-    const newIndex = modules.findIndex(m => m.id === over.id);
-    const newOrder = arrayMove(modules, oldIndex, newIndex);
-    reorderMutation.mutate(newOrder);
-  };
 
   const openEditDialog = (mod: any) => {
     setEditingModule(mod);
@@ -287,91 +255,91 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />)}</div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={(modules || []).map(m => m.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {modules?.map((mod) => {
-                const Icon = ICON_MAP[mod.icon] || BookOpen;
-                const contents = getContentsForModule(mod.id);
-                return (
-                  <SortableModuleItem key={mod.id} id={mod.id}>
-                    <Card className={`${!mod.is_active ? 'opacity-50' : ''}`}>
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="shrink-0">
-                            {mod.image_url ? (
-                              <img src={mod.image_url} className="w-12 h-12 rounded-xl object-cover" alt={mod.title} />
-                            ) : (
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${mod.gradient}`}>
-                                <Icon className={`h-6 w-6 ${mod.icon_color}`} />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-foreground truncate">{mod.title}</p>
-                              {mod.is_builtin && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">Natif</span>}
+        <div className="space-y-3">
+          <SortableCardList
+            items={modules || []}
+            onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
+            renderItem={(mod, { ref, style, isDragging, ...dragAttrs }) => {
+              const Icon = ICON_MAP[mod.icon] || BookOpen;
+              const contents = getContentsForModule(mod.id);
+              return (
+                <div key={mod.id} ref={ref} style={style} {...dragAttrs} className={isDragging ? 'opacity-60' : ''}>
+                  <Card className={`${!mod.is_active ? 'opacity-50' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="shrink-0">
+                          {mod.image_url ? (
+                            <img src={mod.image_url} className="w-12 h-12 rounded-xl object-cover" alt={mod.title} />
+                          ) : (
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${mod.gradient}`}>
+                              <Icon className={`h-6 w-6 ${mod.icon_color}`} />
                             </div>
-                            <p className="text-xs text-muted-foreground">{mod.description} • {contents.length} contenu(s)</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm"><MoreVertical className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditDialog(mod)}>
-                                <Pencil className="h-4 w-4 mr-2" /> Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedModule(mod);
-                                setContentDialogOpen(true);
-                              }}>
-                                <Plus className="h-4 w-4 mr-2" /> Ajouter du contenu
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.accept = 'image/*';
-                                input.onchange = (e) => {
-                                  const file = (e.target as HTMLInputElement).files?.[0];
-                                  if (file) handleImageUpload(mod.id, file);
-                                };
-                                input.click();
-                              }}>
-                                <Image className="h-4 w-4 mr-2" /> Importer une image
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title })}>
-                                {mod.is_active ? <><EyeOff className="h-4 w-4 mr-2" /> Masquer</> : <><Eye className="h-4 w-4 mr-2" /> Afficher</>}
-                              </DropdownMenuItem>
-                              {!mod.is_builtin && (
-                                <DropdownMenuItem className="text-destructive" onClick={() => { setModuleToDelete(mod.id); setDeleteOpen(true); }}>
-                                  <Trash2 className="h-4 w-4 mr-2" /> Supprimer
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          )}
                         </div>
-                        {/* Content list */}
-                        {contents.length > 0 && (
-                          <div className="mt-2 ml-15 space-y-1">
-                            {contents.map((c) => (
-                              <div key={c.id} className="flex items-center justify-between text-xs py-1 px-2 bg-muted/50 rounded">
-                                <span className="truncate">{c.title} ({c.content_type})</span>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setContentToDelete(c.id)}>
-                                  <Trash2 className="h-3 w-3 text-destructive" />
-                                </Button>
-                              </div>
-                            ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-foreground truncate">{mod.title}</p>
+                            {mod.is_builtin && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">Natif</span>}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </SortableModuleItem>
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+                          <p className="text-xs text-muted-foreground">{mod.description} • {contents.length} contenu(s)</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" onPointerDown={(e) => e.stopPropagation()}><MoreVertical className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(mod)}>
+                              <Pencil className="h-4 w-4 mr-2" /> Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedModule(mod);
+                              setContentDialogOpen(true);
+                            }}>
+                              <Plus className="h-4 w-4 mr-2" /> Ajouter du contenu
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = (e) => {
+                                const file = (e.target as HTMLInputElement).files?.[0];
+                                if (file) handleImageUpload(mod.id, file);
+                              };
+                              input.click();
+                            }}>
+                              <Image className="h-4 w-4 mr-2" /> Importer une image
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title })}>
+                              {mod.is_active ? <><EyeOff className="h-4 w-4 mr-2" /> Masquer</> : <><Eye className="h-4 w-4 mr-2" /> Afficher</>}
+                            </DropdownMenuItem>
+                            {!mod.is_builtin && (
+                              <DropdownMenuItem className="text-destructive" onClick={() => { setModuleToDelete(mod.id); setDeleteOpen(true); }}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Supprimer
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      {/* Content list */}
+                      {contents.length > 0 && (
+                        <div className="mt-2 ml-15 space-y-1">
+                          {contents.map((c) => (
+                            <div key={c.id} className="flex items-center justify-between text-xs py-1 px-2 bg-muted/50 rounded">
+                              <span className="truncate">{c.title} ({c.content_type})</span>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onPointerDown={(e) => e.stopPropagation()} onClick={() => setContentToDelete(c.id)}>
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }}
+          />
+        </div>
       )}
 
       {/* Add/Edit Module Dialog */}

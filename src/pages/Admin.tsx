@@ -35,32 +35,16 @@ import AdminCoranContent from '@/components/admin/AdminCoranContent';
 
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { 
+import {
   Users, GraduationCap, Moon, Sparkles, BookOpen, MessageSquare,
   BookMarked, Hand, Settings, Mail, ClipboardCheck, UserCheck,
-  Plus, GripVertical, Trash2,
+  Plus, Trash2,
   FileText, List, Video, Star, Heart, Bell, Calendar, Image, Music,
   ClipboardList, LayoutGrid, Book, Scroll, Eye, EyeOff, Wrench, Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -80,25 +64,11 @@ interface CardItem {
   dynamicCard?: any;
 }
 
-// Sortable wrapper component for grid layout
-const SortableCard = ({ id, children }: { id: string; children: React.ReactNode }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    position: 'relative' as const,
-  };
+// Wrapper appui long — appliqué sur toute la carte, pas de poignée dédiée
+const SortableCard = ({ children, dragProps }: { children: React.ReactNode; dragProps?: DragItemProps }) => {
+  const { ref, style, isDragging, ...dragAttrs } = dragProps ?? {};
   return (
-    <div ref={setNodeRef} style={style} className="relative">
-      <button
-        {...attributes}
-        {...listeners}
-        className="absolute -top-1 -left-1 z-10 flex items-center justify-center w-5 h-5 rounded-full bg-muted/80 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
-        aria-label="Déplacer"
-      >
-        <GripVertical className="h-3 w-3" />
-      </button>
+    <div ref={ref} style={style} {...dragAttrs} className={`relative ${isDragging ? 'opacity-60' : ''}`}>
       {children}
     </div>
   );
@@ -332,40 +302,24 @@ const Admin = () => {
     return items;
   }, [STATIC_CARDS, dynamicCards, cardOrdering]);
 
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
   const saveOrderMutation = useMutation({
     mutationFn: async (newOrder: CardItem[]) => {
-      const upsertData = newOrder.map((item, idx) => ({
-        card_key: item.id,
-        display_order: idx,
-        updated_at: new Date().toISOString(),
-      }));
-
-      for (const item of upsertData) {
-        await (supabase as any)
-          .from('admin_card_order')
-          .upsert({ ...item, user_id: user?.id }, { onConflict: 'card_key' });
-      }
+      const resequenced = withResequencedOrder(newOrder);
+      await Promise.all(
+        resequenced.map((item) =>
+          (supabase as any)
+            .from('admin_card_order')
+            .upsert(
+              { card_key: item.id, display_order: item.sort_order, updated_at: new Date().toISOString(), user_id: user?.id },
+              { onConflict: 'card_key' }
+            )
+        )
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-card-ordering'] });
     },
   });
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = orderedCards.findIndex(c => c.id === active.id);
-    const newIndex = orderedCards.findIndex(c => c.id === over.id);
-    const newOrder = arrayMove(orderedCards, oldIndex, newIndex);
-    saveOrderMutation.mutate(newOrder);
-  };
 
   const deleteCardMutation = useMutation({
     mutationFn: async (cardId: string) => {
@@ -575,18 +529,20 @@ const Admin = () => {
         <h2 className="text-xl font-bold text-foreground mb-2">Modules</h2>
 
         {/* Sortable cards area - 3 col grid (2 col on small screens) */}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={orderedCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-            <div className="grid grid-cols-3 gap-3">
-              {orderedCards.map((item) => {
+        <div className="grid grid-cols-3 gap-3">
+          <SortableCardList
+            items={orderedCards}
+            onReorder={(newOrder) => saveOrderMutation.mutate(newOrder)}
+            strategy={rectSortingStrategy}
+            renderItem={(item, dragProps) => {
                if (item.type === 'static') {
                   const card = STATIC_CARDS.find(c => c.key === item.key);
                   if (!card) return null;
                   const hasMultipleActions = !!(card as any).manageView;
-                  
+
                   if (hasMultipleActions) {
                     return (
-                      <SortableCard key={item.id} id={item.id}>
+                      <SortableCard key={item.id} dragProps={dragProps}>
                          <Popover>
                           <PopoverTrigger asChild>
                             <div>
@@ -625,7 +581,7 @@ const Admin = () => {
                   }
 
                   return (
-                    <SortableCard key={item.id} id={item.id}>
+                    <SortableCard key={item.id} dragProps={dragProps}>
                       <AdminModuleCard
                         title={card.title}
                         icon={card.icon}
@@ -646,7 +602,7 @@ const Admin = () => {
                 if (!dynCard) return null;
                 const DynIcon = ICON_MAP[dynCard.icon] || FileText;
                 return (
-                  <SortableCard key={item.id} id={item.id}>
+                  <SortableCard key={item.id} dragProps={dragProps}>
                     <AdminModuleCard
                       title={dynCard.title}
                       icon={DynIcon}
@@ -662,10 +618,9 @@ const Admin = () => {
                     />
                   </SortableCard>
                 );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+            }}
+          />
+        </div>
 
         {/* Floating add button for dashboard announcement cards */}
         <button
