@@ -1,10 +1,16 @@
 # CLAUDE.md
 
+## 🚨🚨 RÈGLE ABSOLUE — L'application doit TOUJOURS pouvoir s'ouvrir (voir CLAUDE.md global)
+Règle née le 2026-09-15 sur Agenda Nadia (un hook mal placé a fait planter toute l'appli pour tout le monde) — s'applique aussi ici. Règle complète (priorité maximale) dans `~/Projets Claude Code/CLAUDE.md`, tout en haut du fichier : `tsc` ET `npx eslint` (règles React des Hooks, si `eslint-plugin-react-hooks` est installé dans ce projet) obligatoires avant chaque push, vigilance renforcée sur tout composant affiché sans condition sur l'écran d'accueil/la mise en page globale.
+
 Ce fichier fournit des instructions à Claude Code (claude.ai/code) pour travailler sur ce dépôt.
 
 ## Présentation du projet
 
 Dinislam est une application web d'éducation islamique (en français) construite avec React + TypeScript + Vite, utilisant Supabase comme backend. Elle couvre les sourates du Coran (114 + Ayat Al-Kursi), les invocations, la méthode Nourania, l'apprentissage de la prière, les activités du Ramadan, l'alphabet arabe, les noms d'Allah, la grammaire/conjugaison, le vocabulaire, les hadiths, et plus encore. Elle dispose de rôles admin/élève avec un workflow d'approbation (accepter/refuser), un suivi de présence, des devoirs, une messagerie, des notifications push, un classement et un chat mascotte (via Supabase Edge Function).
+
+## ⏳ RÈGLE ABSOLUE — Ne jamais compter sur Nadia pour relancer / rappeler / redemander
+Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 2026-08-31). Toute suite à donner — blocage côté Nadia **OU** une amélioration/vérification que JE propose pour plus tard — doit être notée par moi dans une section **"⚠️ ACTION EN ATTENTE"** de ce fichier et reprise par moi au début de chaque session, jamais en attendant qu'elle m'en reparle. Nadia oublie tout : *"n'attends plus que je te dise de faire les choses à venir ou des sortes de rappels"*.
 
 ## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-08)
 
@@ -635,3 +641,27 @@ Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section
 - `SortableCardList<T>` accepte des `id` de type `string | number` (copie Dinislam élargie par rapport à la version Agenda Nadia, car plusieurs tables ici ont des id entiers auto-incrémentés comme `allah_names`)
 - Si le champ persisté est aussi **affiché à l'écran** comme un numéro (ex: `#{display_order}` sur les 99 Noms d'Allah), ne pas utiliser `withResequencedOrder` (pas de 0,10,20...) — resequencer en continu (`i + 1`) pour ne pas casser l'affichage
 - Sur toute carte contenant des champs de texte éditables (Textarea/Input), envelopper ces champs dans un `onPointerDown={(e) => e.stopPropagation()}` pour ne pas gêner la sélection de texte/saisie (voir `AdminRamadanManager.tsx`, cartes de question de quiz)
+
+## ✂️ ⚠️ ACTION EN ATTENTE — Titres/sous-titres jamais tronqués par "..." (demandé 2026-08-19)
+
+Nadia a demandé que tous les titres/sous-titres de cartes (pas les descriptions/contenus en aperçu, ni les noms de fichiers/URLs/emails) soient toujours visibles en entier, sans "...". Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "✂️ Titres et sous-titres jamais tronqués"). Déjà fait sur Agenda Nadia (audit complet, retrait de `truncate`/`line-clamp-N` sur tous les titres/noms/sous-titres factuels courts, remplacés par `[overflow-wrap:anywhere]` + `min-w-0` sur le parent flex si besoin). Pas encore fait sur Dinislam — à auditer à la prochaine session (`grep -rn "truncate\|line-clamp-1\b" src`, classer titre vs contenu, corriger).
+
+## ➗ ⚠️ ACTION EN ATTENTE — Ne jamais couper un mot en plein milieu (demandé 2026-09-01)
+
+Nouvelle règle absolue (voir `~/Projets Claude Code/CLAUDE.md`, section "➗ Ne jamais couper un mot en plein milieu"). Un mot trop long doit se couper à la syllabe avec un trait d'union, jamais lettre par lettre. `index.html` a déjà `lang="fr"` — reste à **ajouter `hyphens: auto` + `-webkit-hyphens: auto` sur `body`** dans le CSS global (réf. `Agenda Nadia/src/index.css`), puis vérifier sur mobile qu'un mot long en majuscules dans une zone étroite s'hyphène proprement.
+
+## 🖼️ Un contenu incohérent avec son rôle → s'arrêter et demander (ajoutée 2026-09-01)
+Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Demander en cas de doute" → "🖼️ Cas particulier — un contenu qui ne correspond pas à ce qu'il est censé être"). Quand une image/un champ/un libellé/une valeur montré par Nadia ne colle pas à ce qu'il devrait être (ex : écriture manuscrite scannée là où on attend une photo de plat), **le signaler et demander AVANT d'exécuter la demande à la lettre** — ne pas foncer.
+
+## ❌ ⚠️ ACTION EN ATTENTE — Croix "Fermer" rouge et bien visible (demandé 2026-09-01)
+Règle absolue (voir `~/Projets Claude Code/CLAUDE.md`, section "❌ Croix Fermer ROUGE"). Toute croix `X` de fermeture doit être **rouge (`text-destructive`), `h-5 w-5`, `strokeWidth={2.75}`**. Reste à faire ici : passer la croix par défaut de `src/components/ui/dialog.tsx` + `sheet.tsx` en rouge visible (+ prop `hideCloseButton`), puis auditer les croix custom (réf. `Agenda Nadia/src/components/ui/dialog.tsx`).
+
+## 🖼️ ⚠️ ACTION EN ATTENTE — Compression automatique des images avant upload (demandé 2026-08-18)
+
+Nadia a demandé que toute photo envoyée par un utilisateur soit compressée côté client avant l'upload (sans perte de qualité visible), pour garder l'appli légère. Déjà fait sur Agenda Nadia (`src/lib/compressImage.ts`, utilitaire sans dépendance, `compressPhoto`/`compressDocument`) — voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "🖼️ Compression automatique des images avant upload").
+
+**Pas encore fait sur Dinislam.** À la prochaine session de travail sur ce projet :
+1. Copier/adapter `compressImage.ts` depuis Agenda Nadia vers `src/lib/compressImage.ts`
+2. Câbler `compressPhoto`/`compressDocument` dans tous les points d'upload du projet (chercher `.storage.from(...).upload(` dans `src/`) — choisir le preset selon le contexte (documents à lire type devoirs/récitations vs photos casuelles)
+3. Ne PAS toucher aux photos déjà stockées (uniquement les futurs envois)
+4. Vérifier `npx tsc --noEmit -p .` propre avant de proposer le commit/push
