@@ -12,6 +12,10 @@ Dinislam est une application web d'éducation islamique (en français) construit
 ## ⏳ RÈGLE ABSOLUE — Ne jamais compter sur Nadia pour relancer / rappeler / redemander
 Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 2026-08-31). Toute suite à donner — blocage côté Nadia **OU** une amélioration/vérification que JE propose pour plus tard — doit être notée par moi dans une section **"⚠️ ACTION EN ATTENTE"** de ce fichier et reprise par moi au début de chaque session, jamais en attendant qu'elle m'en reparle. Nadia oublie tout : *"n'attends plus que je te dise de faire les choses à venir ou des sortes de rappels"*.
 
+## ⚠️ ACTION EN ATTENTE — Couper le lien Lovable ↔ GitHub (demande de Nadia du 2026-09-24)
+⚠️ **Pas maintenant** : Dinislam est encore publiée PAR Lovable (les élèves utilisent le lien Lovable, Mustapha clique « Publier »). Couper le lien aujourd'hui empêcherait toute mise à jour d'arriver aux élèves. **La coupure se fera juste après la bascule vers Vercel + Supabase indépendant** (règle Vercel permanente), dans la même séance. Le projet Lovable est dans le compte de Mustapha (`badmust75-coder/dinislam-5e689abf`) : il faudra sa participation (ou son accès) pour la déconnexion. À rappeler à Nadia dès la première séance de travail sur Dinislam, en même temps que la proposition de bascule Vercel.
+Règle générale : voir « 🔌 Couper le lien Lovable ↔ GitHub » dans `~/Projets Claude Code/CLAUDE.md`. Une fois fait : cocher ✅ ici, dans le CLAUDE.md global (tableau de suivi) et dans la mémoire.
+
 ## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-08)
 
 Quand un élève ne peut pas se connecter, proposer **immédiatement** ces étapes dans l'ordre :
