@@ -2,6 +2,12 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // L'appli a déménagé sur Vercel (2026-09-30) : l'ancien lien Lovable renvoie vers la nouvelle adresse
+      if (/lovable\.app$/.test(location.hostname)) {
+        location.replace('https://dinislam-app.vercel.app' + location.pathname + location.search + location.hash);
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
     <title>Dinislam</title>
