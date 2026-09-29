@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
@@ -20,9 +20,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const aiApiKey = Deno.env.get('GOOGLE_AI_API_KEY');
 
-    if (!lovableApiKey) throw new Error('LOVABLE_API_KEY non configurée');
+    if (!aiApiKey) throw new Error('GOOGLE_AI_API_KEY non configurée');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) { 
@@ -51,16 +51,17 @@ Les flashcards doivent être variées, progressives et adaptées au niveau d'un 
 Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, sans explication :
 [{"front_text":"...","back_arabic":"...","back_transliteration":"..."},...]`;
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${aiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',
+        model: 'gemini-3.6-flash',
+        reasoning_effort: 'low',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1500,
+        max_tokens: 2500,
         temperature: 0.4,
       }),
     });

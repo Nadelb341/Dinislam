@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';

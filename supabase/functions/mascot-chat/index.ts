@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const ALLOWED_ORIGINS = ['https://dinislam.lovable.app', 'http://localhost:8080'];
+const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
@@ -70,9 +70,9 @@ serve(async (req) => {
     const sanitizedMessage = message.slice(0, 500);
     const validAge = Math.min(18, Math.max(3, Number(userAge) || 7));
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!AI_API_KEY) {
+      throw new Error('GOOGLE_AI_API_KEY is not configured');
     }
 
     // Age-appropriate system prompts
@@ -120,19 +120,21 @@ serve(async (req) => {
       IMPORTANT : Cette question semble nécessiter une recherche. Utilise tes connaissances et fournis une réponse éducative appropriée pour un mineur musulman. Si tu n'es pas sûr d'une information, dis-le clairement.`;
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${AI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'gemini-3.6-flash',
+        reasoning_effort: 'low',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Contexte de l'application : ${context}\n\nQuestion de l'élève : ${sanitizedMessage}` }
         ],
-        max_tokens: validAge <= 6 ? 100 : validAge <= 10 ? 200 : 400,
+        // + 1024 : Gemini compte sa réflexion interne dans cette limite (sinon réponse vide)
+        max_tokens: (validAge <= 6 ? 100 : validAge <= 10 ? 200 : 400) + 1024,
         temperature: 0.7,
       }),
     });

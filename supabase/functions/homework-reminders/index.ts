@@ -82,7 +82,7 @@ serve(async () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${serviceKey}`,
-          'Origin': 'https://dinislam.lovable.app',
+          'Origin': 'https://dinislam-app.vercel.app',
         },
         body: JSON.stringify({
           userIds: toNotify,
