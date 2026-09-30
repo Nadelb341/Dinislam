@@ -12,6 +12,12 @@ Dinislam est une application web d'éducation islamique (en français) construit
 ## ⏳ RÈGLE ABSOLUE — Ne jamais compter sur Nadia pour relancer / rappeler / redemander
 Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 2026-08-31). Toute suite à donner — blocage côté Nadia **OU** une amélioration/vérification que JE propose pour plus tard — doit être notée par moi dans une section **"⚠️ ACTION EN ATTENTE"** de ce fichier et reprise par moi au début de chaque session, jamais en attendant qu'elle m'en reparle. Nadia oublie tout : *"n'attends plus que je te dise de faire les choses à venir ou des sortes de rappels"*.
 
+## ⚠️ ACTION EN ATTENTE — Prévenir les élèves du nouveau lien (2026-09-30)
+Nadia a copié le message prêt (nouvelle adresse `https://dinislam-app.vercel.app`, même e-mail/mot de passe, réinstaller l'icône, réactiver les notifications) et l'enverra le 2026-09-30 dans la journée (tout le monde dormait). À lui redemander en début de prochaine séance si c'est fait ; ensuite vérifier en base que des élèves se sont reconnectés (`auth.users.last_sign_in_at`) et réabonnés (`push_subscriptions`).
+
+## ⚠️ ACTION EN ATTENTE — 4 erreurs TypeScript préexistantes (repérées le 2026-09-30)
+`npx tsc -b` signale 4 erreurs déjà présentes avant la bascule (le build Vite passe quand même) : `AdminInvocationManager.tsx:123` (`title`/`content_french` absents du type invocations), `ScheduledNotifications.tsx:140` (`title` absent du type), `MessagingDialog.tsx:129` (type `SpeechRecognitionEvent` non déclaré). À expliquer à Nadia et corriger avec son accord (règle « l'appli doit toujours pouvoir s'ouvrir » : tsc propre avant push).
+
 ## ✅ Lien Lovable ↔ GitHub coupé (2026-09-30)
 Fait juste après la bascule Vercel, dans la même séance (Lovable › Paramètres › Git › Disconnect, dépôt `badmust75-coder/dinislam-5e689abf`). La version publiée `dinislam.lovable.app` reste en ligne et redirige vers `dinislam-app.vercel.app`.
 
