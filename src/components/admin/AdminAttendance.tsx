@@ -249,7 +249,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                       idx % 2 === 0 ? 'bg-card' : 'bg-muted/10'
                     )}
                   >
-                    <div className="w-48 shrink-0 px-4 py-3 text-sm font-medium text-foreground truncate sticky left-0 bg-inherit z-10 flex items-center gap-2">
+                    <div className="w-48 shrink-0 px-4 py-3 text-sm font-medium text-foreground [overflow-wrap:anywhere] sticky left-0 bg-inherit z-10 flex items-center gap-2">
                       <span className="text-muted-foreground text-xs">{idx + 1}.</span>
                       {student.full_name || student.email || 'Sans nom'}
                     </div>

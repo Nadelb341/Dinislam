@@ -254,7 +254,7 @@ const PrayerModuleCards = () => {
               </div>
             )}
             <div className="p-2.5">
-              <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">{card.title || card.title_arabic || 'Sans titre'}</p>
+              <p className="text-xs font-medium text-foreground [overflow-wrap:anywhere] leading-tight">{card.title || card.title_arabic || 'Sans titre'}</p>
             </div>
             {isAdmin && (
               <div className="flex justify-center gap-1 pb-2" onClick={e => e.stopPropagation()}>

@@ -69,13 +69,13 @@ const AdminUsersList = ({ onBack }: AdminUsersListProps) => {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">
+                  <p className="font-medium text-foreground [overflow-wrap:anywhere]">
                     {user.full_name || 'Utilisateur'}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                     <Calendar className="h-3 w-3 shrink-0" />
-                    <span className="truncate">Inscrit le {formatDate(user.created_at)}</span>
+                    <span className="[overflow-wrap:anywhere]">Inscrit le {formatDate(user.created_at)}</span>
                   </div>
                 </div>
                 {user.gender && (

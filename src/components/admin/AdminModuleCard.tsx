@@ -45,7 +45,7 @@ const AdminModuleCard = ({
         <div className={cn('p-2 rounded-lg', bgColor)}>
           <Icon className={cn('h-5 w-5', color)} />
         </div>
-        <p className="font-bold text-xs text-foreground leading-tight line-clamp-2">{title}</p>
+        <p className="font-bold text-xs text-foreground leading-tight [overflow-wrap:anywhere]">{title}</p>
         <p className="text-sm font-semibold text-primary leading-none">{value}</p>
         {subtitle && (
           <p className="text-[10px] text-muted-foreground leading-tight">{subtitle}</p>

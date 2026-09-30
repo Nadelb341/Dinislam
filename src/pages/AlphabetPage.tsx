@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Check, Volume2, FileText, Video, Image as ImageIcon, File } from 'lucide-react';
+import { FitText } from '@/components/shared/FitText';
 
 const AlphabetPage = () => {
   const { user } = useAuth();
@@ -125,9 +126,9 @@ const AlphabetPage = () => {
                   <div className="flex-1 flex items-center justify-center">
                     <span className="font-arabic text-3xl text-foreground">{letter.letter_arabic}</span>
                   </div>
-                  <p className="text-[10px] font-semibold text-muted-foreground truncate w-full text-center">
+                  <FitText className="text-[10px] font-semibold text-muted-foreground w-full">
                     {letter.name_french}
-                  </p>
+                  </FitText>
                 </button>
               );
             })}

@@ -460,8 +460,8 @@ const Nourania = () => {
 
                   {/* Title */}
                   <div className="flex-1 text-left min-w-0">
-                    <p className="font-arabic text-lg text-foreground truncate">{lesson.title_arabic}</p>
-                    <p className="text-sm text-muted-foreground truncate">{lesson.title_french}</p>
+                    <p className="font-arabic text-lg text-foreground [overflow-wrap:anywhere]">{lesson.title_arabic}</p>
+                    <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{lesson.title_french}</p>
                   </div>
 
                   {/* Status */}

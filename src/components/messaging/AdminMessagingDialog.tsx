@@ -484,7 +484,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{conv.profile.full_name || 'Élève'}</p>
+                        <p className="font-medium text-sm [overflow-wrap:anywhere]">{conv.profile.full_name || 'Élève'}</p>
                         {conv.unreadCount > 0 && <Badge className="bg-orange-500 text-[10px] h-5">{conv.unreadCount}</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>

@@ -158,8 +158,8 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
             <h3 className="text-lg font-bold text-foreground">Direction Qibla</h3>
             <p className="text-sm text-muted-foreground">Qibla : {Math.round(qiblaAngle)}° depuis {city.label}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full bg-muted hover:bg-muted/80">
-            <X className="h-5 w-5 text-muted-foreground" />
+          <button onClick={onClose} className="p-2 rounded-full bg-[#EF4444] text-white shadow-md hover:bg-[#DC2626]" aria-label="Fermer">
+            <X className="h-5 w-5" strokeWidth={2.75} />
           </button>
         </div>
 

@@ -150,7 +150,7 @@ const GenericModulePage = () => {
                           {card.title_arabic && (
                             <p className="font-arabic text-xs text-muted-foreground text-center">{card.title_arabic}</p>
                           )}
-                          <p className="text-[11px] font-semibold text-foreground text-center truncate">{card.title}</p>
+                          <p className="text-[11px] font-semibold text-foreground text-center [overflow-wrap:anywhere]">{card.title}</p>
                         </div>
                       </button>
                     );

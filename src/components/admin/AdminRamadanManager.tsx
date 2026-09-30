@@ -1138,7 +1138,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                       const profile = profiles.find(p => p.user_id === exc.user_id);
                       return (
                         <div key={exc.id} className="flex items-center justify-between p-1.5 rounded bg-green-500/10 text-xs">
-                          <span className="truncate">{profile?.full_name || profile?.email || exc.user_id}</span>
+                          <span className="[overflow-wrap:anywhere]">{profile?.full_name || profile?.email || exc.user_id}</span>
                           <Button
                             variant="ghost"
                             size="icon"

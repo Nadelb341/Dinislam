@@ -238,9 +238,10 @@ const AdminCommandModal = ({
               </h3>
               <button
                 onClick={() => setModalSection(null)}
-                className="bg-muted rounded-full w-8 h-8 flex items-center justify-center"
+                className="bg-[#EF4444] text-white shadow-md hover:bg-[#DC2626] rounded-full w-8 h-8 flex items-center justify-center"
+                aria-label="Fermer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" strokeWidth={2.75} />
               </button>
             </div>
             <div className="p-4" style={{ overflowY: 'auto', overflowX: 'visible', minHeight: '100%' }}>

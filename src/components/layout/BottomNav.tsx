@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LucideIcon } from 'lucide-react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { FitText } from '@/components/shared/FitText';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image,
@@ -108,14 +109,14 @@ const NavButton = ({ item, location, navigate, compact }: NavButtonProps) => {
           <Icon className={cn('h-5 w-5 transition-colors', isActive ? 'text-gold' : 'text-foreground')} />
         )}
       </div>
-      <span
+      <FitText
         className={cn(
-          'text-[10px] font-medium transition-colors truncate max-w-[60px]',
+          'text-[10px] font-medium transition-colors max-w-[60px]',
           isActive ? 'text-primary' : 'text-muted-foreground'
         )}
       >
         {item.label}
-      </span>
+      </FitText>
     </button>
   );
 };

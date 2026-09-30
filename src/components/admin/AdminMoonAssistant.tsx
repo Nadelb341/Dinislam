@@ -398,7 +398,7 @@ const AdminMoonAssistant = () => {
               )}
               <Moon className="h-5 w-5" fill="white" />
               {showConversationList ? 'Assistant Admin' : (
-                <span className="truncate text-sm">{activeConversation?.topic || 'Conversation'}</span>
+                <span className="[overflow-wrap:anywhere] text-sm">{activeConversation?.topic || 'Conversation'}</span>
               )}
             </CardTitle>
             <button
@@ -450,7 +450,7 @@ const AdminMoonAssistant = () => {
                               <MessageSquare className="h-4 w-4 text-amber-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{conv.topic}</p>
+                              <p className="text-sm font-medium [overflow-wrap:anywhere]">{conv.topic}</p>
                               <p className="text-[10px] text-muted-foreground">{timeStr} · {msgCount} msg</p>
                             </div>
                             <button

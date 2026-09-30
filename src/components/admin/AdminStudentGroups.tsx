@@ -427,7 +427,7 @@ const AdminStudentGroups = () => {
                   >
                     <Checkbox checked={selectedStudents.has(s.user_id)} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{s.full_name || 'Élève'}</p>
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]">{s.full_name || 'Élève'}</p>
                       <p className="text-xs text-muted-foreground truncate">{s.email}</p>
                     </div>
                     {s.gender && (

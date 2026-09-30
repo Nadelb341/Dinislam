@@ -81,7 +81,7 @@ const ContentItemCard = ({
             </div>
           ) : (
             <span
-              className="text-sm truncate cursor-pointer hover:underline"
+              className="text-sm [overflow-wrap:anywhere] cursor-pointer hover:underline"
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 if (onUpdateTitle) setIsEditing(true);

@@ -136,6 +136,10 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Tajawal', sans-serif;
+    /* "Ne jamais couper un mot" (règle globale révisée le 2026-09-21) : aucune césure automatique,
+       un mot qui ne rentre pas en fin de ligne passe ENTIER à la ligne suivante. */
+    hyphens: none;
+    -webkit-hyphens: none;
   }
 
   /* Arabic text styling */

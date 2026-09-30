@@ -203,7 +203,7 @@ const AdminOnlineUsers = () => {
 
                   {/* Name & status */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${isOnline ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>
+                    <p className={`text-sm [overflow-wrap:anywhere] ${isOnline ? 'font-bold text-foreground' : 'font-medium text-foreground'}`}>
                       {displayName}
                     </p>
                     <p className={`text-xs ${isOnline ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-muted-foreground'}`}>

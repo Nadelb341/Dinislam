@@ -175,7 +175,7 @@ const AdminStudents = () => {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground truncate">{student.full_name || 'Élève sans nom'}</p>
+                  <p className="font-medium text-foreground [overflow-wrap:anywhere]">{student.full_name || 'Élève sans nom'}</p>
                   <p className="text-sm text-muted-foreground truncate">{student.email}</p>
                 </div>
               </div>

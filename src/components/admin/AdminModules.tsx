@@ -278,7 +278,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-bold text-foreground truncate">{mod.title}</p>
+                            <p className="font-bold text-foreground [overflow-wrap:anywhere]">{mod.title}</p>
                             {mod.is_builtin && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">Natif</span>}
                           </div>
                           <p className="text-xs text-muted-foreground">{mod.description} • {contents.length} contenu(s)</p>
@@ -325,7 +325,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
                         <div className="mt-2 ml-15 space-y-1">
                           {contents.map((c) => (
                             <div key={c.id} className="flex items-center justify-between text-xs py-1 px-2 bg-muted/50 rounded">
-                              <span className="truncate">{c.title} ({c.content_type})</span>
+                              <span className="[overflow-wrap:anywhere]">{c.title} ({c.content_type})</span>
                               <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onPointerDown={(e) => e.stopPropagation()} onClick={() => setContentToDelete(c.id)}>
                                 <Trash2 className="h-3 w-3 text-destructive" />
                               </Button>

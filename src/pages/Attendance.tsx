@@ -190,7 +190,7 @@ const Attendance = () => {
                         student.user_id === user?.id ? 'bg-yellow-50 dark:bg-yellow-900/20' : idx % 2 === 0 ? 'bg-card' : 'bg-muted/10'
                       )}
                     >
-                      <div className="w-32 shrink-0 px-2 py-2 text-xs text-foreground truncate sticky left-0 bg-inherit z-10 flex items-center gap-1">
+                      <div className="w-32 shrink-0 px-2 py-2 text-xs text-foreground [overflow-wrap:anywhere] sticky left-0 bg-inherit z-10 flex items-center gap-1">
                         {student.user_id === user?.id && <span className="text-yellow-500">⭐</span>}
                         {(student.full_name || 'Sans nom').split(' ')[0]}
                       </div>

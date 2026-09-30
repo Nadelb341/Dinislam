@@ -245,10 +245,10 @@ const AllahNamesPage = () => {
           >
             <button
               onClick={() => { setSelected(null); setMediaOpen(null); }}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(217,119,6,0.2)', color: 'hsl(38 92% 58%)' }}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center bg-[#EF4444] text-white shadow-md hover:bg-[#DC2626]"
+              aria-label="Fermer"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" strokeWidth={2.75} />
             </button>
 
             <div className="p-6 space-y-5">

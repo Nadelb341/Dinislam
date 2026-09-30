@@ -267,7 +267,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
                   <div key={f.id} className="flex items-center gap-1.5 bg-card border border-border rounded-lg px-2 py-2">
                     <span className="text-xs text-muted-foreground w-5 shrink-0">#{i + 1}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{f.front_text}</p>
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]">{f.front_text}</p>
                       <p className="text-xs text-muted-foreground font-arabic">
                         {f.back_arabic || '—'}
                         {f.back_transliteration ? ` (${f.back_transliteration})` : ''}

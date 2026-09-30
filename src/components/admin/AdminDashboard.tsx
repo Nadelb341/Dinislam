@@ -194,7 +194,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-muted-foreground">{card.title}</p>
-                    <p className="text-lg font-bold text-foreground truncate">{card.value}</p>
+                    <p className="text-lg font-bold text-foreground [overflow-wrap:anywhere]">{card.value}</p>
                     {card.subtitle && (
                       <p className="text-xs text-muted-foreground">{card.subtitle}</p>
                     )}
