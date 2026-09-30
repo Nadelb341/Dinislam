@@ -410,7 +410,7 @@ const SouratesPage = () => {
           const sourateName = selectedSourate ? selectedSourate.name_french : `Sourate inconnue`;
           supabase.functions.invoke('send-push-notification', {
             body: {
-              title: '📖 Validation en attente',
+              title: '📖 Validation en attente', category: 'adm_valid',
               body: `Un élève a terminé ${sourateName} et attend votre validation.`,
               type: 'admin',
               data: { url: '/admin?section=sourates' },

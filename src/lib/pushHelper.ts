@@ -8,6 +8,8 @@ export function sendPushNotification(params: {
   title: string;
   body: string;
   type?: string;
+  /** Catégorie filtrée par les interrupteurs de Paramètres › Notifications (voir send-push-notification) */
+  category?: string;
   userId?: string;
   userIds?: string[];
   sendToAll?: boolean;

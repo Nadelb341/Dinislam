@@ -138,7 +138,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
       
       // Send push notification to student
       sendPushNotification({
-        title: '✉️ Nouveau message',
+        title: '✉️ Nouveau message', category: 'msg',
         body: 'Tu as reçu un nouveau message de ton professeur !',
         type: 'user',
         userId: selectedConversation.user_id,
@@ -172,7 +172,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
       
       // Send push notification to student
       sendPushNotification({
-        title: '✉️ Nouveau message',
+        title: '✉️ Nouveau message', category: 'msg',
         body: 'Tu as reçu un nouveau message audio de ton professeur !',
         type: 'user',
         userId: selectedConversation.user_id,

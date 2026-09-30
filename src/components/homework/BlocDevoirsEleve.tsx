@@ -353,7 +353,7 @@ export default function BlocDevoirsEleve() {
     if (adminIds.length > 0) {
       sendPushNotification({
         userIds: adminIds,
-        title: '📚 Devoir rendu',
+        title: '📚 Devoir rendu', category: 'adm_hw',
         body: `${user.user_metadata?.full_name || 'Un élève'} a rendu : ${devoir?.titre || 'un devoir'}`,
         data: { url: '/admin?section=cahier-texte' },
       });

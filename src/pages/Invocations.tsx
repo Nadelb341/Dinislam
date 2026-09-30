@@ -415,7 +415,7 @@ const Invocations = () => {
       const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
       const invocName = invoc?.title_french || 'une invocation';
       sendPushNotification({
-        title: '📝 Nouvelle demande de validation',
+        title: '📝 Nouvelle demande de validation', category: 'adm_valid',
         body: `${firstName} demande la validation de ${invocName}`,
         type: 'admin',
       });

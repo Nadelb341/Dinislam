@@ -99,7 +99,7 @@ const HomeworkCard = () => {
       try {
         await supabase.functions.invoke('send-push-notification', {
           body: {
-            title: '✅ Devoir terminé',
+            title: '✅ Devoir terminé', category: 'adm_hw',
             body: `${profile?.full_name || 'Un élève'} a terminé : ${assignment?.title || ''} (${subjectLabel})`,
             type: 'admin',
             data: { url: '/admin?section=cahier-texte' },
@@ -149,7 +149,7 @@ const HomeworkCard = () => {
       try {
         await supabase.functions.invoke('send-push-notification', {
           body: {
-            title: '📎 Nouveau fichier rendu',
+            title: '📎 Nouveau fichier rendu', category: 'adm_hw',
             body: `${profile?.full_name || 'Un élève'} a déposé un fichier pour : ${assignment?.title || ''} (${subjectLabel})`,
             type: 'admin',
             data: { url: '/admin?section=cahier-texte' },

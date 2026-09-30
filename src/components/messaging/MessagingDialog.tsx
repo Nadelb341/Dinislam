@@ -184,7 +184,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       await supabase.functions.invoke('send-push-notification', {
         body: {
           userIds: adminIds,
-          title: '💬 Nouveau message',
+          title: '💬 Nouveau message', category: 'adm_msg',
           body: senderName + ' vous a envoyé un message',
           url: '/admin?section=messages'
         }

@@ -228,7 +228,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { userId, userIds, sendToAll, excludeUserId, title, body: notifBody, tag, data, type } = body;
+    const { userId, userIds, sendToAll, excludeUserId, title, body: notifBody, tag, data, type, category } = body;
 
     // Health check
     if (type === 'health-check' || type === 'health_check') {
@@ -340,6 +340,36 @@ serve(async (req) => {
 
     if (excludeUserId) {
       targetIds = targetIds.filter(id => id !== excludeUserId);
+    }
+
+    // Interrupteurs de Paramètres › Notifications (piste B, 2026-09-30) : on retire les personnes
+    // qui ont coupé cette catégorie, et celles en « mode calme » entre 21 h et 8 h (heure de Paris).
+    // Une notification sans catégorie (test, envoi manuel de l'enseignante) passe toujours.
+    const CATEGORY_COLUMNS: Record<string, string> = {
+      msg: 'notif_msg', hw_new: 'notif_hw_new', hw_rem: 'notif_hw_rem', hw_res: 'notif_hw_res',
+      rec: 'notif_rec', lesson: 'notif_lesson', act: 'notif_act', sched: 'notif_sched',
+      adm_msg: 'notif_adm_msg', adm_hw: 'notif_adm_hw', adm_valid: 'notif_adm_valid', adm_reg: 'notif_adm_reg',
+    };
+    const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
+    if (prefColumn && targetIds.length > 0) {
+      const parisHour = Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
+      const quietNow = parisHour >= 21 || parisHour < 8;
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select(`user_id, quiet_mode, ${prefColumn}`)
+        .in('user_id', targetIds);
+      const blocked = new Set(
+        (prefs || [])
+          .filter((p: any) => p[prefColumn] === false || (quietNow && p.quiet_mode === true))
+          .map((p: any) => p.user_id)
+      );
+      targetIds = targetIds.filter(id => !blocked.has(id));
+      if (targetIds.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, sent: 0, total: 0, reason: 'coupé par les réglages' }),
+          { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Query subscriptions filtered by is_active

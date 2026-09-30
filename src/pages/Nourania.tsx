@@ -290,7 +290,7 @@ const Nourania = () => {
       const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
       const lessonName = lesson?.title_french || 'une leçon';
       sendPushNotification({
-        title: '📝 Nouvelle demande de validation',
+        title: '📝 Nouvelle demande de validation', category: 'adm_valid',
         body: `${firstName} demande la validation de ${lessonName}`,
         type: 'admin',
       });

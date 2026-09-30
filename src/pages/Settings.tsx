@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Moon, Clock, User, Shield, Send, Trash2, RotateCcw } from 'lucide-react';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
+import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -334,62 +335,10 @@ const Settings = () => {
               <PushDiagnostic />
             </div>
 
-            {notificationsEnabled && (
-              <>
-                <div className="border-t pt-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <Label>Rappels de prière</Label>
-                    </div>
-                    <Switch
-                      checked={prayerReminders}
-                      onCheckedChange={setPrayerReminders}
-                    />
-                  </div>
-
-                  {prayerReminders && (
-                    <div className="ml-6 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Fajr</Label>
-                        <Switch checked={fajrReminder} onCheckedChange={setFajrReminder} />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Dhuhr</Label>
-                        <Switch checked={dhuhrReminder} onCheckedChange={setDhuhrReminder} />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Asr</Label>
-                        <Switch checked={asrReminder} onCheckedChange={setAsrReminder} />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Maghrib</Label>
-                        <Switch checked={maghribReminder} onCheckedChange={setMaghribReminder} />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm">Isha</Label>
-                        <Switch checked={ishaReminder} onCheckedChange={setIshaReminder} />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Moon className="h-4 w-4 text-muted-foreground" />
-                      <Label>Activités Ramadan</Label>
-                    </div>
-                    <Switch
-                      checked={ramadanActivities}
-                      onCheckedChange={setRamadanActivities}
-                    />
-                  </div>
-                </div>
-
-                <Button onClick={handleSavePreferences} className="w-full">
-                  Enregistrer les préférences
-                </Button>
-              </>
-            )}
+            {/* Interrupteurs par famille + mode calme (piste B, 2026-09-30) */}
+            <div className="border-t pt-4">
+              <NotificationFamilies />
+            </div>
           </CardContent>
         </Card>
 

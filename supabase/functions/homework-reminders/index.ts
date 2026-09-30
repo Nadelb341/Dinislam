@@ -78,7 +78,7 @@ serve(async (req) => {
         ? "La date limite de ton devoir est demain. Pense à l'envoyer ce soir 🙏"
         : REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
 
-      const result = await sendPushInternal({ userIds: toNotify, title, body, type: 'homework_reminder', data: { url: '/?open=devoirs' } });
+      const result = await sendPushInternal({ userIds: toNotify, title, body, type: 'homework_reminder', category: 'hw_rem', data: { url: '/?open=devoirs' } });
 
       const nowIso = new Date().toISOString();
       await supabase.from('homework_reminder_logs').upsert(

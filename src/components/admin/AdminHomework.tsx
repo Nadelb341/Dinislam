@@ -212,7 +212,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       if (destinataires.length > 0) {
         sendPushNotification({
           userIds: destinataires,
-          title: '📚 Nouveau devoir !',
+          title: '📚 Nouveau devoir !', category: 'hw_new',
           body: `Nouveau devoir : "${form.titre}" — à rendre bientôt`,
           data: { url: '/?open=devoirs' },
         });
@@ -256,7 +256,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       sendPushNotification({
         userIds: [studentId],
-        title: '🎉 Devoir validé !',
+        title: '🎉 Devoir validé !', category: 'hw_res',
         body: `Ton devoir "${devoirTitre}" a été corrigé ✅`,
         data: { url: '/?open=devoirs' },
       });
@@ -279,7 +279,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       sendPushNotification({
         userIds: [modalARefaire.studentId],
-        title: '🔄 Devoir à refaire',
+        title: '🔄 Devoir à refaire', category: 'hw_res',
         body: `"${modalARefaire.devoirTitre}" est à refaire${commentaire ? ` : ${commentaire}` : ''}`,
         data: { url: '/?open=devoirs' },
       });

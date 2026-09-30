@@ -57,6 +57,7 @@ serve(async (req) => {
         body: notif.message,
         tag: `scheduled-${notif.id}`,
         type: 'scheduled',
+        category: 'sched',
       };
 
       // Determine recipients

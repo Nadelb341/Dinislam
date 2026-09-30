@@ -110,7 +110,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         description: `Leçon ${request.lesson?.lesson_number || ''} validée pour ${request.profile?.full_name || 'l\'élève'}`,
       });
       sendPushNotification({
-        title: '⭐ Félicitations !',
+        title: '⭐ Félicitations !', category: 'rec',
         body: `Ton professeur a validé ${request.lesson?.title_french || 'ta leçon'} ! Continue comme ça !`,
         type: 'user',
         userId: request.user_id,
@@ -152,7 +152,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         description: `Leçon ${request.lesson?.lesson_number || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
       });
       sendPushNotification({
-        title: '📖 Leçon à retravailler',
+        title: '📖 Leçon à retravailler', category: 'rec',
         body: `Ton professeur t'invite à retravailler ${request.lesson?.title_french || 'ta leçon'}. Continue tes efforts !`,
         type: 'user',
         userId: request.user_id,

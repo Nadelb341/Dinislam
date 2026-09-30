@@ -172,7 +172,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       // Notify all students when module is activated
       if (result.is_active && result.title) {
         sendPushNotification({
-          title: '🌟 Nouvelle activité disponible !',
+          title: '🌟 Nouvelle activité disponible !', category: 'act',
           body: `Salam ! Le module ${result.title} est maintenant disponible sur Dini Bismillah !`,
           type: 'broadcast',
         });
