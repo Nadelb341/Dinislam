@@ -26,6 +26,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Line, ComposedChart, Cell, LabelList
 } from 'recharts';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {
@@ -247,6 +248,8 @@ const Monitoring = () => {
     }
     setBroadcasting(false);
   };
+
+  const [confirmClearLogs, setConfirmClearLogs] = useState(false);
 
   const handleClearLogs = async () => {
     setClearingLogs(true);
@@ -543,7 +546,7 @@ const Monitoring = () => {
                   <CheckCircle className="h-4 w-4 mr-1" /> Marquer lu
                 </Button>
               )}
-              <Button variant="destructive" size="sm" onClick={handleClearLogs} disabled={clearingLogs}>
+              <Button variant="destructive" size="sm" onClick={() => setConfirmClearLogs(true)} disabled={clearingLogs}>
                 <Trash2 className="h-4 w-4 mr-1" /> Vider les logs
               </Button>
             </div>
@@ -573,6 +576,14 @@ const Monitoring = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <ConfirmDeleteDialog
+        open={confirmClearLogs}
+        onOpenChange={setConfirmClearLogs}
+        onConfirm={() => { setConfirmClearLogs(false); handleClearLogs(); }}
+        title="Vider les journaux ?"
+        description="Tous les journaux techniques (erreurs, événements) seront effacés. Ce sont des traces techniques, pas des données des élèves."
+      />
     </AppLayout>
   );
 };

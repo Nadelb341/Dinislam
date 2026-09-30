@@ -55,6 +55,9 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   admin_conversation: 'Conversation assistant',
   student_group: 'Groupe d\'élèves',
   scheduled_notification: 'Notification programmée',
+  sourate_verset_audio: 'Audio de verset',
+  attendance_day: 'Séance de présence',
+  registration: 'Inscription refusée',
 };
 
 const Settings = () => {

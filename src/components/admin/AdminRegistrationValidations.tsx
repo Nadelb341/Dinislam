@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, User, ArrowLeft, ShieldOff } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { moveToTrash } from '@/lib/trash';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RegistrationUser {
   user_id: string;
@@ -21,10 +23,12 @@ interface RegistrationUser {
 const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [registrations, setRegistrations] = useState<RegistrationUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectConfirm, setRejectConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId: string; name: string }>({ open: false, userId: '', name: '' });
 
   const loadRegistrations = useCallback(async () => {
@@ -101,6 +105,13 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const handleReject = async (userId: string) => {
     setProcessingId(userId);
     try {
+      // Corbeille d'abord : la fiche de l'élève refusé peut être restaurée depuis Paramètres
+      const reg = registrations.find(r => r.user_id === userId);
+      const { data: profile } = await (supabase as any).from('profiles').select('*').eq('user_id', userId).maybeSingle();
+      if (currentUser?.id && profile) {
+        const ok = await moveToTrash(currentUser.id, 'registration', userId, `Inscription refusée — ${reg?.full_name || profile.full_name || 'élève'}`, profile);
+        if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
+      }
       await (supabase as any)
         .from('profiles')
         .delete()
@@ -201,7 +212,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
                 size="sm"
                 variant="outline"
                 className="border-red-300 text-red-600 hover:bg-red-50"
-                onClick={() => handleReject(user.user_id)}
+                onClick={() => setRejectConfirm({ open: true, userId: user.user_id, name: user.full_name || user.email || 'cet élève' })}
                 disabled={processingId === user.user_id}
               >
                 <X className="h-4 w-4" />
@@ -270,6 +281,14 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteDialog
+        open={rejectConfirm.open}
+        onOpenChange={(open) => setRejectConfirm(prev => ({ ...prev, open }))}
+        onConfirm={() => handleReject(rejectConfirm.userId)}
+        title="Refuser cette inscription ?"
+        description={`Refuser l'inscription de ${rejectConfirm.name} ? Sa fiche ira dans la corbeille (Paramètres), d'où tu pourras la restaurer.`}
+      />
 
       <ConfirmDeleteDialog
         open={deleteConfirm.open}

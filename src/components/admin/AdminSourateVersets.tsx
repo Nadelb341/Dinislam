@@ -3,6 +3,9 @@ import { Upload, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { compressDocument } from '@/lib/compressImage';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trash';
 
 const NB_VERSETS: Record<number, number> = {
   1:7,2:286,3:200,4:176,5:120,6:165,7:206,8:75,9:129,10:109,
@@ -33,6 +36,8 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
   const [versets, setVersets] = useState<any[]>([]);
   const [uploading, setUploading] = useState<number | null>(null);
   const [ouvert, setOuvert] = useState(false);
+  const [versetASupprimer, setVersetASupprimer] = useState<number | null>(null);
+  const { user } = useAuth();
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const nbVersets = sourate.verses_count || NB_VERSETS[sourate.number] || 7;
@@ -104,8 +109,10 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
     const existing = getVersetAudio(versetNum);
     if (!existing) return;
 
-    if (existing.file_path) {
-      await supabase.storage.from('sourates-versets').remove([existing.file_path]);
+    // Corbeille d'abord (le fichier audio reste stocké pour pouvoir restaurer)
+    if (user?.id) {
+      const ok = await moveToTrash(user.id, 'sourate_verset_audio', String(existing.id), `Audio verset ${versetNum}`, existing);
+      if (!ok) { toast.error('Mise en corbeille impossible — rien n\'a été supprimé'); return; }
     }
 
     await (supabase as any)
@@ -210,7 +217,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
                     </button>
                     {audio && (
                       <button
-                        onClick={() => handleDelete(versetNum)}
+                        onClick={() => setVersetASupprimer(versetNum)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center bg-destructive/10 text-destructive shrink-0"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -223,6 +230,13 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
           </div>
         </div>
       )}
+      <ConfirmDeleteDialog
+        open={versetASupprimer !== null}
+        onOpenChange={(open) => { if (!open) setVersetASupprimer(null); }}
+        onConfirm={() => { if (versetASupprimer !== null) handleDelete(versetASupprimer); setVersetASupprimer(null); }}
+        title="Supprimer cet audio ?"
+        description={`L'audio du verset ${versetASupprimer ?? ''} ira dans la corbeille (Paramètres), d'où tu pourras le restaurer.`}
+      />
     </div>
   );
 };

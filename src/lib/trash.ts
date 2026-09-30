@@ -5,7 +5,8 @@ export type TrashItemType =
   | "allah_name" | "allah_name_media" | "invocation" | "invocation_content" | "devoir"
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
-  | "student_group" | "scheduled_notification";
+  | "student_group" | "scheduled_notification"
+  | "sourate_verset_audio" | "attendance_day" | "registration";
 
 export interface TrashItem {
   id: string;
@@ -38,6 +39,9 @@ const TABLE_BY_TYPE: Record<TrashItemType, string> = {
   admin_conversation: "admin_conversations",
   student_group: "student_groups",
   scheduled_notification: "scheduled_notifications",
+  sourate_verset_audio: "sourate_versets_audio",
+  attendance_day: "attendance_records",
+  registration: "profiles",
 };
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: any) {

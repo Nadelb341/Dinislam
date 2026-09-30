@@ -9,6 +9,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { moveToTrash } from '@/lib/trash';
 
 interface AdminAttendanceProps {
   onBack: () => void;
@@ -24,6 +26,7 @@ const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }>
 
 const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const { user } = useAuth();
+  const [dateASupprimer, setDateASupprimer] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: students = [] } = useQuery({
@@ -119,6 +122,12 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   };
 
   const deleteDate = async (date: string) => {
+    // Corbeille d'abord : toute la séance (présences de tous les élèves) est sauvegardée
+    const { data: rows } = await supabase.from('attendance_records').select('*').eq('date', date);
+    if (user?.id && rows && rows.length > 0) {
+      const ok = await moveToTrash(user.id, 'attendance_day', date, `Séance du ${format(parseISO(date), 'dd/MM/yyyy')}`, rows);
+      if (!ok) { toast.error('Mise en corbeille impossible — rien n\'a été supprimé'); return; }
+    }
     const { error } = await supabase
       .from('attendance_records')
       .delete()
@@ -213,7 +222,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                   <div className="font-semibold">{format(parseISO(date), 'EEE', { locale: fr })}</div>
                   <div>{format(parseISO(date), 'dd/MM', { locale: fr })}</div>
                   <button
-                    onClick={() => deleteDate(date)}
+                    onClick={() => setDateASupprimer(date)}
                     className="mt-1 text-destructive hover:text-destructive/80 transition-colors"
                     title="Supprimer cette séance"
                   >
@@ -313,6 +322,14 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteDialog
+        open={dateASupprimer !== null}
+        onOpenChange={(open) => { if (!open) setDateASupprimer(null); }}
+        onConfirm={() => { if (dateASupprimer) deleteDate(dateASupprimer); setDateASupprimer(null); }}
+        title="Supprimer cette séance ?"
+        description={dateASupprimer ? `La séance du ${format(parseISO(dateASupprimer), 'dd/MM/yyyy')} et les présences de tous les élèves iront dans la corbeille (Paramètres), d'où tu pourras les restaurer.` : ''}
+      />
     </div>
   );
 };
