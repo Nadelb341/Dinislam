@@ -7,7 +7,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation";
 
 export interface TrashItem {
   id: string;
@@ -43,6 +43,7 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
   sourate_verset_audio: "sourate_versets_audio",
   attendance_day: "attendance_records",
   registration: "profiles",
+  sourate_recitation: "sourate_recitations",
 };
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: any) {
@@ -78,10 +79,29 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   return true;
 }
 
+/** Élèves : un élément reste 2 mois dans la corbeille, puis il est vidé automatiquement (fonction trash-maintenance). */
+export const STUDENT_TRASH_DAYS = 61;
+
+/** Fichier audio d'une récitation mise à la corbeille (gardé pour pouvoir la restaurer) */
+function recitationFilePath(item: TrashItem): string | null {
+  if (item.item_type !== "sourate_recitation") return null;
+  const url: string = item.item_data?.audio_url || "";
+  const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function removeFiles(items: TrashItem[]) {
+  const paths = items.map(recitationFilePath).filter((p): p is string => !!p);
+  if (paths.length) await supabase.storage.from("recitations").remove(paths);
+}
+
 export async function permanentlyDeleteTrashItem(id: string) {
+  const { data } = await supabase.from("trash_items" as any).select("*").eq("id", id).maybeSingle();
+  if (data) await removeFiles([data as unknown as TrashItem]);
   await supabase.from("trash_items" as any).delete().eq("id", id);
 }
 
 export async function emptyTrash(userId: string) {
+  await removeFiles(await fetchTrash(userId));
   await supabase.from("trash_items" as any).delete().eq("user_id", userId);
 }

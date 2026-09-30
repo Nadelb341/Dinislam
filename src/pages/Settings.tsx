@@ -33,6 +33,7 @@ import {
   restoreTrashItem,
   permanentlyDeleteTrashItem,
   emptyTrash,
+  STUDENT_TRASH_DAYS,
 } from '@/lib/trash';
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
@@ -60,6 +61,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   attendance_day: 'Séance de présence',
   registration: 'Inscription refusée',
   draft: 'Brouillon',
+  sourate_recitation: 'Récitation',
 };
 
 const Settings = () => {
@@ -320,29 +322,6 @@ const Settings = () => {
               />
             </div>
 
-            {/* Admin test button */}
-            {isAdmin && (
-              <div className="border-t pt-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Send className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">Test notification push</p>
-                    <p className="text-sm text-muted-foreground">Envoie une notification à toi-même</p>
-                  </div>
-                  <Button size="sm" onClick={handleTestPush} disabled={testingSend}>
-                    {testingSend ? '⏳ Envoi...' : '🧪 Tester'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Diagnostic */}
-            <div className="border-t pt-4">
-              <PushDiagnostic />
-            </div>
-
             {/* Interrupteurs par famille + mode calme (piste B, 2026-09-30) */}
             <div className="border-t pt-4">
               <NotificationFamilies />
@@ -386,6 +365,11 @@ const Settings = () => {
                         {TRASH_TYPE_LABELS[item.item_type] || item.item_type} · supprimé le{' '}
                         {new Date(item.deleted_at).toLocaleDateString('fr-FR')}
                       </p>
+                      {!isAdmin && (
+                        <p className="text-xs text-amber-700">
+                          Vidée automatiquement le {new Date(new Date(item.deleted_at).getTime() + STUDENT_TRASH_DAYS * 86400000).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
                     </div>
                     <Button
                       variant="ghost"

@@ -8,6 +8,7 @@ import VersionChangelogModal from '@/components/VersionChangelogModal';
 import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 import PendingDraftsCenter from '@/components/PendingDraftsCenter';
+import TrashPurgeWarning from '@/components/TrashPurgeWarning';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
@@ -35,6 +36,7 @@ const AppLayout = ({
         <div className="p-4">
           <PushAutoSubscribe />
           <PendingDraftsCenter />
+          <TrashPurgeWarning />
         </div>
         {children}
       </main>

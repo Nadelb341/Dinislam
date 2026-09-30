@@ -88,7 +88,8 @@ const PRAYER_KEYS: PrefKey[] = ['fajr_reminder', 'dhuhr_reminder', 'asr_reminder
 
 type Prefs = Partial<Record<PrefKey | 'quiet_mode', boolean>>;
 
-const NotificationFamilies = () => {
+/** student = Paramètres (tout le monde) ; teacher = bouclier › Notifs (alertes de l'enseignante) */
+const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | 'teacher' }) => {
   const { user, isAdmin } = useAuth();
   const [prefs, setPrefs] = useState<Prefs>({});
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -116,7 +117,7 @@ const NotificationFamilies = () => {
     }
   };
 
-  const families = FAMILIES.filter(f => !f.adminOnly || isAdmin);
+  const families = FAMILIES.filter(f => (variant === 'teacher' ? f.adminOnly && isAdmin : !f.adminOnly));
 
   return (
     <div className="space-y-3">
@@ -167,6 +168,7 @@ const NotificationFamilies = () => {
         );
       })}
 
+      {variant === 'student' && (
       <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-3 flex items-center gap-3">
         <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-700 flex items-center justify-center">
           <Moon className="h-5 w-5 text-white" />
@@ -177,6 +179,7 @@ const NotificationFamilies = () => {
         </div>
         <Switch aria-label="Mode calme" checked={prefs.quiet_mode === true} onCheckedChange={(v) => save({ quiet_mode: v })} />
       </div>
+      )}
     </div>
   );
 };

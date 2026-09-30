@@ -10,6 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { moveToTrash } from '@/lib/trash';
 
 interface SourateRecitationPanelProps {
   sourateId: string;
@@ -82,8 +83,13 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
 
   const deleteRecitationMutation = useMutation({
     mutationFn: async (r: any) => {
-      const path = extractStoragePath(r.audio_url);
-      if (path) await supabase.storage.from('recitations').remove([path]);
+      // Corbeille d'abord ; le fichier audio est gardé pour pouvoir restaurer la récitation
+      if (!user?.id) throw new Error('Non connecté');
+      const { data: row } = await (supabase as any).from('sourate_recitations').select('*').eq('id', r.id).maybeSingle();
+      if (row) {
+        const ok = await moveToTrash(user.id, 'sourate_recitation', String(r.id), 'Récitation envoyée le ' + new Date(row.created_at).toLocaleDateString('fr-FR'), row);
+        if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
+      }
       const { error } = await (supabase as any)
         .from('sourate_recitations').delete().eq('id', r.id);
       if (error) throw error;
@@ -96,7 +102,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       );
       return { previous };
     },
-    onSuccess: () => toast.success('Récitation supprimée'),
+    onSuccess: () => toast.success('Récitation mise dans la corbeille (Paramètres)'),
     onError: (_e: any, _r: any, context: any) => {
       if (context?.previous) {
         queryClient.setQueryData(['student-recitations', sourateId, user?.id], context.previous);

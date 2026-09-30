@@ -25,6 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import NotificationFamilies from '@/components/settings/NotificationFamilies';
+import PushDiagnostic from '@/components/settings/PushDiagnostic';
 
 const AdminNotifications = () => {
   const { toast } = useToast();
@@ -218,6 +220,19 @@ const AdminNotifications = () => {
 
   return (
     <div className="space-y-6">
+      {/* Regroupé le 2026-09-30 : les réglages d'enseignante et le diagnostic sont ici, pas dans Paramètres */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🔔 Mes alertes d'enseignante</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <NotificationFamilies variant="teacher" />
+          <div className="border-t pt-4">
+            <PushDiagnostic />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Test admin button + Voir abonnements */}
       <div className="p-4 space-y-3">
         <Button
