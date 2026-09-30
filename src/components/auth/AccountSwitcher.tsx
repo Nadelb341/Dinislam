@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UsersRound, Plus, Trash2, Loader2 } from 'lucide-react';
+import { UsersRound, Plus, Trash2, Loader2, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PasswordInput } from '@/components/ui/password-input';
+import { useParentLock } from '@/hooks/useParentLock';
+import ParentGateDialog from '@/components/settings/ParentGateDialog';
 
 const STORAGE_KEY = 'dini_saved_accounts';
 
@@ -35,6 +37,9 @@ const setSavedAccounts = (accounts: SavedAccount[]) => {
 
 const AccountSwitcher = () => {
   const { user, signIn, signOut } = useAuth();
+  // Moins de 12 ans : changer de compte (= se déconnecter) demande le mot de passe parent
+  const { locked, unlock } = useParentLock();
+  const [gateOpen, setGateOpen] = useState(false);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<SavedAccount[]>([]);
@@ -108,10 +113,18 @@ const AccountSwitcher = () => {
   const currentEmail = user?.email;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSwitchEmail(null); setPassword(''); setShowAdd(false); } }}>
+    <>
+    <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onSuccess={() => setOpen(true)} />
+    <Dialog open={open} onOpenChange={(v) => { if (v && locked) { setGateOpen(true); return; } setOpen(v); if (!v) { setSwitchEmail(null); setPassword(''); setShowAdd(false); } }}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+          aria-label={locked ? 'Changer de compte (réservé aux parents)' : 'Changer de compte'}
+        >
           <UsersRound className="h-5 w-5" />
+          {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
@@ -213,6 +226,7 @@ const AccountSwitcher = () => {
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

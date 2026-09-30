@@ -27,6 +27,7 @@ import {
 import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -510,6 +511,9 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 {progressBar(studentProgress.sourates.validated, studentProgress.sourates.total, 'Sourates', <BookMarked className="h-4 w-4 text-gold" />)}
                 {progressBar(studentProgress.prayer.validated, studentProgress.prayer.total, 'Prière', <Hand className="h-4 w-4 text-primary" />)}
               </div>
+
+              {/* Réglages de notifications + Espace parents (2026-09-30) */}
+              {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
 
               {/* Section Rétrograder */}
               <div className="border-t pt-4">
