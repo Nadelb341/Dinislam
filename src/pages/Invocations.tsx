@@ -13,6 +13,7 @@ import { useIsOver20 } from '@/hooks/useIsOver20';
 import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 
@@ -99,13 +100,10 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                   <p className="text-xs text-white/90 font-medium">Apprendre l'invocation</p>
                 </div>
                 <div className="aspect-video">
-                  <iframe
-                    src={embedUrl}
+                  <SafeYoutubeEmbed
+                    embedUrl={embedUrl}
                     title={`Invocation — ${invocation.title_french}`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                    loading="lazy"
+                    className="w-full h-full relative overflow-hidden bg-black"
                   />
                 </div>
               </div>
