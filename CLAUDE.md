@@ -36,6 +36,13 @@ Non applicables : 🛟 filet d'édition `useEditUndo` (Dinislam n'a aucune sauve
 - ⏳ Autres formulaires de création sans brouillon (notifications programmées, nouveau message admin, flashcards, contenus…) : à ajouter au fil de l'eau au registre `pendingDrafts.ts`.
 
 
+## 🗑️ Corbeille — règles de Nadia (2026-09-30, identiques à l'Agenda)
+- Tout ce qui est supprimé dans l'appli (🗑️ ou croix rouge) va d'abord dans la corbeille de Paramètres (bouton « Corbeille » dans la fenêtre de la roue dentée ⚙️) ; rien n'est supprimé définitivement sauf quand la personne vide elle-même sa corbeille.
+- **Élèves uniquement** : chaque élément est vidé automatiquement au bout de 61 jours (2 mois), un par un (seuls ceux qui ont atteint 2 mois) — fonction `trash-maintenance`, pg_cron `dinislam-trash-maintenance` (tous les jours 9 h UTC). La date de vidage s'affiche sous chaque élément. La corbeille de l'admin n'est JAMAIS vidée automatiquement.
+- **Alerte 3 jours avant**, pour les élèves de plus de 12 ans (âge inconnu = prévenu aussi) : notification + bandeau `TrashPurgeWarning` « Attention : Ta corbeille dans « Paramètres » va être vidée automatiquement dans 3 jours ».
+- Côté élève, la seule suppression existante est celle d'une récitation envoyée (`SourateRecitationPanel`) → type `sourate_recitation`, l'audio reste stocké jusqu'au vidage définitif (supprimé alors du stockage `recitations`).
+- Notifications : Paramètres = ce dont les élèves ont besoin (activer, cartes par famille, mode calme) ; tout ce qui concerne l'enseignante (alertes d'enseignante, diagnostic, tests, envois) est dans le bouclier › « Notifs ». Pas de doublon.
+
 ## ✅ Lien Lovable ↔ GitHub coupé (2026-09-30)
 Fait juste après la bascule Vercel, dans la même séance (Lovable › Paramètres › Git › Disconnect, dépôt `badmust75-coder/dinislam-5e689abf`). La version publiée `dinislam.lovable.app` reste en ligne et redirige vers `dinislam-app.vercel.app`.
 
