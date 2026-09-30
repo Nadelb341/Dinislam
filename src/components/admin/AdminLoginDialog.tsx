@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const ADMIN_EMAIL = 'nadiaelb341@outlook.com';
 
@@ -129,9 +130,8 @@ const AdminLoginDialog = ({ open, onOpenChange }: AdminLoginDialogProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="admin-password">Mot de passe</Label>
-              <Input
+              <PasswordInput
                 id="admin-password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Entrez votre mot de passe"

@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const STORAGE_KEY = 'dini_saved_accounts';
 
@@ -167,8 +168,7 @@ const AccountSwitcher = () => {
             <p className="text-sm text-muted-foreground">
               Mot de passe pour <strong>{switchEmail}</strong>
             </p>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Mot de passe"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

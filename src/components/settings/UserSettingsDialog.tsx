@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Settings, Loader2, LogOut, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const UserSettingsDialog = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +21,7 @@ const UserSettingsDialog = () => {
   const [savingName, setSavingName] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
+  const confirmPwRef = useRef<HTMLInputElement>(null);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
@@ -221,18 +223,19 @@ const UserSettingsDialog = () => {
             {/* Change password */}
             <div className="space-y-2">
               <Label htmlFor="settings-pw" className="font-semibold">Changer le mot de passe</Label>
-              <Input
+              <PasswordInput
                 id="settings-pw"
-                type="password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Nouveau mot de passe (min. 8 car.)"
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmPwRef.current?.focus(); } }}
               />
-              <Input
-                type="password"
+              <PasswordInput
                 value={confirmPassword}
+                ref={confirmPwRef}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Confirmer le mot de passe"
+                onKeyDown={e => { if (e.key === 'Enter' && newPassword && confirmPassword && !savingPassword) { e.preventDefault(); handleSavePassword(); } }}
               />
               <Button
                 onClick={handleSavePassword}
