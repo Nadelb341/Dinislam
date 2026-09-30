@@ -135,9 +135,13 @@ const ScheduledNotifications = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const notif = notifications.find((n: any) => n.id === id);
+      // Corbeille d'abord : si l'envoi en corbeille échoue, rien n'est supprimé
+      if (notif && user?.id) {
+        const ok = await moveToTrash(user.id, 'scheduled_notification', id, notif.message || notif.module || 'Notification', notif);
+        if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
+      }
       const { error } = await supabase.from('scheduled_notifications').delete().eq('id', id);
       if (error) throw error;
-      if (notif && user?.id) await moveToTrash(user.id, 'scheduled_notification', id, notif.title || 'Notification', notif);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });

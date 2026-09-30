@@ -126,7 +126,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'fr-FR';
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      recognitionRef.current.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
         let transcript = '';
         for (let i = 0; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;

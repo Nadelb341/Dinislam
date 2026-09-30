@@ -118,9 +118,13 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const inv = invocations.find((i: any) => i.id === id);
+      // Corbeille d'abord : si l'envoi en corbeille échoue, rien n'est supprimé
+      if (inv && user?.id) {
+        const ok = await moveToTrash(user.id, 'invocation', String(id), inv.title_french || inv.title_arabic || 'Invocation', inv);
+        if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
+      }
       const { error } = await supabase.from('invocations').delete().eq('id', id);
       if (error) throw error;
-      if (inv && user?.id) await moveToTrash(user.id, 'invocation', String(id), inv.title || inv.content_french || 'Invocation', inv);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
