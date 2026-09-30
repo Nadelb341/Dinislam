@@ -36,6 +36,15 @@ Non applicables : 🛟 filet d'édition `useEditUndo` (Dinislam n'a aucune sauve
 - ⏳ Autres formulaires de création sans brouillon (notifications programmées, nouveau message admin, flashcards, contenus…) : à ajouter au fil de l'eau au registre `pendingDrafts.ts`.
 
 
+## 🧾 Bilan de fin de journée du 2026-09-30 (base solide avant les nouvelles modifications)
+Fait en plus dans la soirée : suivi des élèves sans notifications (liste + « Relancer » dans bouclier › Notifs, pastille sur « Élèves » à partir du 2026-10-07 — `src/lib/noPushStudents.ts`), historique des connexions dans la fiche élève (appareil enregistré via `user_agent` depuis le 2026-09-30), `version.json` publié à chaque mise en ligne (plugin dans `vite.config.ts`, numéro = commit Vercel) pour que les appareils se mettent à jour tout seuls, `lovable-tagger` retiré. Bugs corrigés : colonne `connected_at` inexistante (statistiques / Ramadan / en ligne lisaient rien), `version.json` jamais publié.
+⚠️ ACTION EN ATTENTE (décisions de Nadia) :
+- 🔐 Mots de passe des élèves stockés EN CLAIR dans `profiles.plain_password` (3 élèves, affichés dans la fiche élève du bouclier) : risque si la base fuit. Proposer de supprimer ce stockage (l'enseignante peut toujours en redéfinir un via `update-user-password`) — à décider avec elle.
+- 🧹 Vieux fichiers non suivis à la racine du dépôt (anciens SQL de diagnostic, `files/` = anciennes notes CLAUDE de mars, `download`, `public/version.json` local) : proposer de les ranger dans un dossier d'archives (ne rien supprimer sans son accord).
+- 👀 À surveiller dans les jours qui viennent : premiers rappels de devoirs (18 h), premier vidage de corbeille (tâche 9 h UTC), élèves qui se reconnectent / réactivent les notifications (5 reconnectés, 1 appareil abonné le 30/09 au soir), e-mails vers Hotmail/Outlook.
+- 🧑‍💻 Qualité du code : `npx eslint .` = ~770 alertes, presque toutes des `any` hérités de Lovable (sans effet sur le fonctionnement) ; `tsc` = 0 erreur ; tests = 6/6 OK.
+- 🗄️ Ancienne base Lovable Cloud (compte de Mustapha) : gelée, sert d'archive ; pourra être supprimée par Mustapha dans quelques semaines, une fois tout confirmé.
+
 ## 🗑️ Corbeille — règles de Nadia (2026-09-30, identiques à l'Agenda)
 - Tout ce qui est supprimé dans l'appli (🗑️ ou croix rouge) va d'abord dans la corbeille de Paramètres (bouton « Corbeille » dans la fenêtre de la roue dentée ⚙️) ; rien n'est supprimé définitivement sauf quand la personne vide elle-même sa corbeille.
 - **Élèves uniquement** : chaque élément est vidé automatiquement au bout de 61 jours (2 mois), un par un (seuls ceux qui ont atteint 2 mois) — fonction `trash-maintenance`, pg_cron `dinislam-trash-maintenance` (tous les jours 9 h UTC). La date de vidage s'affiche sous chaque élément. La corbeille de l'admin n'est JAMAIS vidée automatiquement.
@@ -340,7 +349,7 @@ Ces cartes étaient visibles sur la page d'accueil et dans le tableau de bord ad
 
 - La liste des inscriptions (`AdminRegistrationValidations.tsx`) utilise une requête directe sur `profiles` avec `.or('is_approved.eq.false,is_approved.is.null')` — **pas la RPC `get_pending_registrations()`** (celle-ci filtrait par `email_confirmed_at IS NOT NULL`, ce qui cachait les élèves non confirmés).
 - Le compteur (`useAdminPendingCounts.ts`) utilise aussi `.eq('is_approved', false)` directement sur `profiles`.
-- **Workflow push** : toujours pousser sur `origin`, `lovable` ET `lovable-fork` pour que le code atteigne bien Lovable.
+- **Workflow push** (màj 2026-09-30) : uniquement `git push origin main` → Vercel. Les remotes `lovable` et `lovable-fork` ont été retirés du dépôt local.
 
 ## Visibilité des modules — màj 2026-05-13
 
