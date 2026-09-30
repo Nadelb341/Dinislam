@@ -56,7 +56,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   const [savingDob, setSavingDob] = useState(false);
 
   // Password dialog state
-  const [pwdDialogStudent, setPwdDialogStudent] = useState<{ id: string; full_name: string | null; plain_password: string | null } | null>(null);
+  const [pwdDialogStudent, setPwdDialogStudent] = useState<{ id: string; full_name: string | null } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
@@ -80,7 +80,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at, date_of_birth, gender, plain_password')
+          .select('user_id, email, full_name, created_at, date_of_birth, gender')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -275,7 +275,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   };
 
   const openPasswordDialog = (student: any) => {
-    setPwdDialogStudent({ id: student.user_id, full_name: student.full_name, plain_password: student.plain_password || null });
+    setPwdDialogStudent({ id: student.user_id, full_name: student.full_name });
     setNewPassword('');
     setShowCurrentPwd(false);
     setShowNewPwd(false);
@@ -653,26 +653,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{pwdDialogStudent?.full_name || 'Élève'}</p>
           <div className="space-y-3 mt-2">
-            <div>
-              <Label>Mot de passe actuel</Label>
-              <div className="relative mt-1">
-                <Input
-                  type={showCurrentPwd ? 'text' : 'password'}
-                  value={pwdDialogStudent?.plain_password || '(non défini)'}
-                  readOnly
-                  className="pr-10 bg-muted/50"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setShowCurrentPwd(!showCurrentPwd)}
-                >
-                  {showCurrentPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground rounded-lg bg-muted/50 p-3">🔒 Par sécurité, le mot de passe des élèves n'est plus conservé (depuis le 01/10/2026). Si l'élève l'a oublié, choisis-en un nouveau ci-dessous et donne-le-lui.</p>
             <div>
               <Label>Nouveau mot de passe</Label>
               <div className="relative mt-1">

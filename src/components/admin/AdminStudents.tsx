@@ -34,7 +34,7 @@ interface StudentProgress {
 const AdminStudents = () => {
   const [search, setSearch] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; email: string; full_name: string | null } | null>(null);
-  const [passwordStudent, setPasswordStudent] = useState<{ id: string; full_name: string | null; plain_password: string | null } | null>(null);
+  const [passwordStudent, setPasswordStudent] = useState<{ id: string; full_name: string | null } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -47,7 +47,7 @@ const AdminStudents = () => {
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at, plain_password')
+          .select('user_id, email, full_name, created_at')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -190,7 +190,7 @@ const AdminStudents = () => {
                     <BarChart2 className="h-4 w-4 mr-2" />
                     Voir la progression
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setPasswordStudent({ id: student.user_id, full_name: student.full_name, plain_password: (student as any).plain_password || null }); setNewPassword(''); setShowCurrent(false); setShowNew(false); }}>
+                  <DropdownMenuItem onClick={() => { setPasswordStudent({ id: student.user_id, full_name: student.full_name }); setNewPassword(''); setShowCurrent(false); setShowNew(false); }}>
                     <KeyRound className="h-4 w-4 mr-2" />
                     Modifier le mot de passe
                   </DropdownMenuItem>
@@ -244,15 +244,7 @@ const AdminStudents = () => {
             <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" />Mot de passe — {passwordStudent?.full_name || 'Élève'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Mot de passe actuel</p>
-              <div className="relative">
-                <Input type={showCurrent ? 'text' : 'password'} value={passwordStudent?.plain_password || ''} readOnly className="pr-10 bg-muted/50" placeholder={passwordStudent?.plain_password ? '' : 'Non enregistré'} />
-                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowCurrent(v => !v)}>
-                  {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground rounded-lg bg-muted/50 p-3">🔒 Par sécurité, le mot de passe des élèves n'est plus conservé (depuis le 01/10/2026). Si l'élève l'a oublié, choisis-en un nouveau ci-dessous et donne-le-lui.</p>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Nouveau mot de passe</p>
               <div className="relative">

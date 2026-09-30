@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
     if (new_password.length < 6) throw new Error("Le mot de passe doit contenir au moins 6 caractères");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, { password: new_password });
     if (error) throw error;
-    await supabaseAdmin.from("profiles").update({ plain_password: new_password }).eq("user_id", user_id);
     return new Response(JSON.stringify({ success: true }), { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });
