@@ -91,8 +91,8 @@ const AdminOnlineUsers = () => {
       const weekStart = getWeekStart();
       const { data, error } = await (supabase as any)
         .from('connexion_logs')
-        .select('user_id, connected_at')
-        .gte('connected_at', weekStart);
+        .select('user_id, login_at')
+        .gte('login_at', weekStart);
       if (error) throw error;
 
       const counts: Record<string, number> = {};

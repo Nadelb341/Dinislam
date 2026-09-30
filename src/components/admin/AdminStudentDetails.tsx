@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
+import { fetchNoPushStudents } from '@/lib/noPushStudents';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -94,6 +95,8 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       return (profiles || []).filter((profile) => studentIds.has(profile.user_id));
     },
   });
+
+  const { data: noPush } = useQuery({ queryKey: ['admin-no-push-students-list'], queryFn: fetchNoPushStudents });
 
   const { data: studentProgress } = useQuery({
     queryKey: ['student-progress-details', selectedStudent?.id],
@@ -419,7 +422,12 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{student.full_name || 'Élève'}</p>
+                  <p className="font-medium text-foreground [overflow-wrap:anywhere]">{student.full_name || 'Élève'}</p>
+                  {noPush?.all.has(student.user_id) && (
+                    <span className={`inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium ${noPush.overdue.has(student.user_id) ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'}`}>
+                      🔕 Ne reçoit pas les notifications
+                    </span>
+                  )}
                   <p className="text-sm text-muted-foreground">{student.email}</p>
                   {student.created_at && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">

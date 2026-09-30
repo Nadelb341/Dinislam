@@ -17,11 +17,25 @@ const LABELS: Record<string, string> = {
 
 type Mode = 'auto' | 'on' | 'off';
 
+/** Bascule vers Vercel : les connexions à partir de cette date sont sur la nouvelle appli */
+const NEW_APP_SINCE = '2026-09-30T00:00:00';
+
+function deviceOf(ua: string | null): string {
+  if (!ua) return '';
+  if (/iPhone/.test(ua)) return '📱 iPhone';
+  if (/iPad/.test(ua)) return '📱 iPad';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? '📱 Android' : '📱 Tablette Android';
+  if (/Macintosh/.test(ua)) return '💻 Mac';
+  if (/Windows/.test(ua)) return '💻 PC';
+  return '💻 Ordinateur';
+}
+
 const StudentSettingsOverview = ({ userId }: { userId: string }) => {
   const [devices, setDevices] = useState<number | null>(null);
   const [prefs, setPrefs] = useState<Record<string, any> | null>(null);
   const [age, setAge] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>('auto');
+  const [logins, setLogins] = useState<{ login_at: string; user_agent: string | null }[] | null>(null);
 
   useEffect(() => {
     const db = supabase as any;
@@ -33,6 +47,8 @@ const StudentSettingsOverview = ({ userId }: { userId: string }) => {
       .then(({ data }: { data: any }) => setAge(childAge(data)));
     db.from('parent_lock_settings').select('mode').eq('user_id', userId).maybeSingle()
       .then(({ data }: { data: { mode: Mode } | null }) => setMode(data?.mode ?? 'auto'));
+    db.from('connexion_logs').select('login_at, user_agent').eq('user_id', userId).order('login_at', { ascending: false }).limit(8)
+      .then(({ data }: { data: { login_at: string; user_agent: string | null }[] | null }) => setLogins(data ?? []));
   }, [userId]);
 
   const changeMode = async (m: Mode) => {
@@ -54,6 +70,30 @@ const StudentSettingsOverview = ({ userId }: { userId: string }) => {
         <li>🔈 Son : <strong>{prefs?.notif_silent ? 'silencieux (vibration)' : 'avec son'}</strong></li>
         <li className="[overflow-wrap:anywhere]">🚫 Notifications coupées : <strong>{prefs === null ? '…' : off.length ? off.join(', ') : 'aucune, tout est activé'}</strong></li>
       </ul>
+
+      {/* Historique des connexions (idée validée le 2026-09-30) : a-t-il rejoint la nouvelle appli ? */}
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium">🕘 Dernières connexions</p>
+        {logins === null ? (
+          <p className="text-sm text-muted-foreground">…</p>
+        ) : logins.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune connexion enregistrée</p>
+        ) : (
+          <>
+            <p className={`text-sm font-medium ${logins.some(l => l.login_at >= NEW_APP_SINCE) ? 'text-emerald-700' : 'text-destructive'}`}>
+              {logins.some(l => l.login_at >= NEW_APP_SINCE) ? '✅ Connecté(e) sur la nouvelle appli' : "⚠️ Pas encore connecté(e) sur la nouvelle appli"}
+            </p>
+            <ul className="space-y-1 text-sm">
+              {logins.map(l => (
+                <li key={l.login_at} className="flex flex-wrap gap-x-2">
+                  <span>{new Date(l.login_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-muted-foreground">{deviceOf(l.user_agent)}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
 
       <div className="space-y-1.5">
         <p className="text-sm font-medium">🔒 Espace parents (mot de passe pour ouvrir les paramètres)</p>

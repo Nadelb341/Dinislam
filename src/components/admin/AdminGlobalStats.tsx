@@ -28,7 +28,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
       ] = await Promise.all([
         (supabase as any).from('user_ramadan_progress').select('user_id, day_id, quiz_completed, video_watched, pdf_read').limit(1000),
         (supabase as any).from('profiles').select('user_id, full_name').eq('is_approved', true).limit(500),
-        (supabase as any).from('connexion_logs').select('user_id, connected_at').limit(2000),
+        (supabase as any).from('connexion_logs').select('user_id, login_at').order('login_at', { ascending: false }).limit(2000),
         (supabase as any).from('ramadan_days').select('id, day_number'),
         (supabase as any).from('quiz_responses').select('quiz_id, is_correct, user_id').eq('is_correct', false).limit(2000),
         (supabase as any).from('ramadan_quizzes').select('id, question, day_id'),
@@ -91,7 +91,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
   // SECTION 4 — Connexions par jour
   const connexionsByDay = new Map<string, number>();
   connexions.forEach((c: any) => {
-    const day = c.connected_at?.substring(0, 10);
+    const day = c.login_at?.substring(0, 10);
     if (day) connexionsByDay.set(day, (connexionsByDay.get(day) || 0) + 1);
   });
   const connexionChartData = Array.from(connexionsByDay.entries())

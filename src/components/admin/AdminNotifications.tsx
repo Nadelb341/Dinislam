@@ -45,12 +45,16 @@ const AdminNotifications = () => {
   useEffect(() => { chargerStatutsEleves(); }, []);
 
   const chargerStatutsEleves = async () => {
-    const { data: profils } = await supabase
+    let { data: profils } = await supabase
       .from('profiles')
       .select('user_id, full_name')
       .eq('is_approved', true);
 
-    const ids = (profils || []).map(p => p.user_id);
+    // L'enseignante n'est pas une élève : on la retire de la liste
+    const { data: admins } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+    const adminIds = new Set((admins || []).map(a => a.user_id));
+    profils = (profils || []).filter(p => !adminIds.has(p.user_id));
+    const ids = profils.map(p => p.user_id);
     if (!ids.length) { setElevesStatut([]); return; }
 
     const { data: subs } = await supabase
@@ -390,11 +394,33 @@ const AdminNotifications = () => {
           <CardTitle>📢 Invitations notifications</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Qui ne reçoit pas les notifications (idée validée par Nadia le 2026-09-30) */}
+          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 space-y-2">
+            <p className="font-semibold text-red-900">
+              🚫 Ne reçoivent pas les notifications : {elevesStatut.filter(e => !e.notifActive).length}
+            </p>
+            {elevesStatut.filter(e => !e.notifActive).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Tous les élèves reçoivent les notifications ✅</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {elevesStatut.filter(e => !e.notifActive).map(e => (
+                  <li key={e.id} className="flex items-center gap-2 rounded-lg bg-background p-2">
+                    <span className="flex-1 min-w-0 text-sm font-medium [overflow-wrap:anywhere]">{e.full_name || 'Élève'}</span>
+                    <Button size="sm" variant="outline" className="shrink-0 min-h-11" onClick={() => handleRenvoyerInvitation(e.id)}>
+                      🔔 Relancer
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-muted-foreground">« Relancer » réaffiche à l'élève le bandeau « Activer les notifications » à sa prochaine ouverture de l'appli.</p>
+          </div>
+
           <Button
             onClick={() => handleRenvoyerInvitation()}
             className="w-full py-4 rounded-2xl font-bold text-lg bg-orange-500 hover:bg-orange-600"
           >
-            🔔 Renvoyer à tous les élèves
+            🔔 Relancer tous ceux qui ne reçoivent rien
           </Button>
 
           <Select value={envoiIndividuel} onValueChange={setEnvoiIndividuel}>

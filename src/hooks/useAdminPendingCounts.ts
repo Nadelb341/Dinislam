@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { fetchNoPushStudents } from '@/lib/noPushStudents';
 
 interface AdminPendingCounts {
   registrations: number;
@@ -12,6 +13,8 @@ interface AdminPendingCounts {
   messages: number;
   homework: number;
   recitations: number;
+  /** Élèves sans notifications depuis plus d'une semaine */
+  noPush: number;
   total: number;
 }
 
@@ -24,7 +27,7 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
 
   const { data } = useQuery({
     queryKey: ['admin-pending-breakdown'],
-    queryFn: async (): Promise<Omit<AdminPendingCounts, 'messages' | 'total'>> => {
+    queryFn: async (): Promise<Omit<AdminPendingCounts, 'messages' | 'total' | 'noPush'>> => {
       if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0 };
 
       const [reg, sou, nou, hw, rec] = await Promise.all([
@@ -54,10 +57,19 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
     return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, queryClient]);
 
+  const { data: noPushData } = useQuery({
+    queryKey: ['admin-no-push-students'],
+    queryFn: async () => (await fetchNoPushStudents()).overdue.size,
+    enabled: !!user && isAdmin,
+    refetchInterval: 5 * 60 * 1000,
+  });
+  const noPush = noPushData ?? 0;
+
   const base = data || { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0 };
   return {
     ...base,
     messages: messagesCount,
-    total: base.registrations + base.sourates + base.nourania + base.homework + base.recitations + messagesCount,
+    noPush,
+    total: base.registrations + base.sourates + base.nourania + base.homework + base.recitations + messagesCount + noPush,
   };
 };

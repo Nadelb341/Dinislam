@@ -23,7 +23,7 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
         (supabase as any).from('user_ramadan_progress').select('*').eq('user_id', studentId),
         (supabase as any).from('quiz_responses').select('quiz_id, is_correct, attempt_number, selected_option, created_at').eq('user_id', studentId),
         (supabase as any).from('ramadan_quizzes').select('id, day_id, question, correct_option, options'),
-        (supabase as any).from('connexion_logs').select('connected_at').eq('user_id', studentId),
+        (supabase as any).from('connexion_logs').select('login_at').eq('user_id', studentId),
       ]);
 
       const days = daysRes.data || [];

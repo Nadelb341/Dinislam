@@ -24,6 +24,8 @@ interface AdminCommandModalProps {
   pendingRecitations: number;
   total: number;
   onOpenMessages: () => void;
+  /** Élèves sans notifications depuis plus d'une semaine (pastille sur « Élèves ») */
+  pendingNoPush?: number;
 }
 
 const BOUTONS_ACTIONS = [
@@ -50,6 +52,7 @@ const AdminCommandModal = ({
   pendingHomework,
   pendingRecitations,
   pendingMessages,
+  pendingNoPush = 0,
   onOpenMessages,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
@@ -63,6 +66,7 @@ const AdminCommandModal = ({
     recitations: pendingRecitations,
     inscriptions: pendingRegistrations,
     messages: pendingMessages,
+    eleves: pendingNoPush,
   };
 
   useEffect(() => {

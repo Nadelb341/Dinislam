@@ -40,7 +40,7 @@ const usePresenceHeartbeat = () => {
     // Log connexion (once per session)
     (supabase as any)
       .from('connexion_logs')
-      .insert({ user_id: user.id })
+      .insert({ user_id: user.id, user_agent: navigator.userAgent.slice(0, 300) })
       .then(() => {});
 
     // Pause/resume on visibility change
