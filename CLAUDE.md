@@ -18,6 +18,22 @@ Nadia a copié le message prêt (nouvelle adresse `https://dinislam-app.vercel.a
 ## ⚠️ ACTION EN ATTENTE — 4 erreurs TypeScript préexistantes (repérées le 2026-09-30)
 `npx tsc -b` signale 4 erreurs déjà présentes avant la bascule (le build Vite passe quand même) : `AdminInvocationManager.tsx:123` (`title`/`content_french` absents du type invocations), `ScheduledNotifications.tsx:140` (`title` absent du type), `MessagingDialog.tsx:129` (type `SpeechRecognitionEvent` non déclaré). À expliquer à Nadia et corriger avec son accord (règle « l'appli doit toujours pouvoir s'ouvrir » : tsc propre avant push).
 
+## 🔎 ⚠️ ACTION EN ATTENTE — Audit du 2026-09-30 : règles globales pas encore appliquées à Dinislam
+Tour fait à la demande de Nadia (comparaison avec ce qui a été fait sur l'Agenda). À lui présenter et faire valider, par ordre de priorité :
+1. 🚫 **YouTube (règle absolue enfants)** : 2 lecteurs élèves utilisent encore un `<iframe>` YouTube brut, sans `SafeYoutubeEmbed` ni `sandbox` → un enfant peut cliquer le logo et partir sur youtube.com : `SourateDetailDialog.tsx` ~l.602 (récitation El Houssary) et `pages/Invocations.tsx` ~l.102 (vidéo « Apprendre l'invocation »). La vidéo de sourate (~l.194) a un `sandbox` mais pas `SafeYoutubeEmbed`. → passer les 3 sur `SafeYoutubeEmbed`.
+2. 📧 **Inscriptions / e-mails** : la nouvelle base Supabase utilise l'envoi d'e-mails par défaut de Supabase (très limité en nombre par heure). À tester avec une vraie inscription d'élève ; si besoin, brancher un envoi d'e-mails dédié (comme sur l'Agenda) ou s'appuyer sur la validation admin + `confirm-user-email`.
+3. ❌ Croix « Fermer » rouge (`dialog.tsx`/`sheet.tsx` : 0 occurrence de `text-destructive`) — déjà en attente.
+4. ✂️ Titres jamais tronqués + FitText : 37 fichiers avec `truncate`/`line-clamp`, 0 FitText — déjà en attente (classer titre vs contenu).
+5. ➗ `hyphens: none` sur `body` — déjà en attente (voir plus haut).
+6. 🖼️ Compression des photos avant envoi : pas de `compressImage.ts`, 30 points d'envoi de fichiers — déjà en attente.
+7. 🛟 Filet de sécurité en édition (`useEditUndo` + bouton « revenir à l'origine ») : absent.
+8. ⏳ Action inachevée rappelée dès l'ouverture de l'appli : absent (seul `useDraftRecovery` existe, utilisé dans `AdminHomework`) ; brouillon automatique à étendre aux autres formulaires de création.
+9. 🖼️➡️ Aperçu agrandi défilable des pièces jointes multiples : absent.
+10. ⛔ Confirmation avant suppression : 14 fichiers font un `.delete()` sans `AlertDialog` ni corbeille (ex. `AdminSourateVersets`, `AdminAttendance`, `AdminCommentaireLecon`, `FastingTracker`, `Priere`, `Nourania`, `Invocations`, `Sourates`…) → à passer au cas par cas (certains sont des nettoyages techniques légitimes).
+11. ✅ Confirmation avant validation (cases « fait ») : trackers élèves à vérifier (Priere, FastingTracker…).
+12. ⌨️ Touche Entrée pour valider, 👁️ œil sur les mots de passe (6 écrans à vérifier un par un), 🔔 un interrupteur par notification automatique : à vérifier écran par écran.
+Déjà conformes : corbeille (`trash_items`), boutons ⬆️⬇️ (`ScrollButtons`), page qui s'ouvre en haut (`useScrollToTop`), glisser-déposer appui long (`SortableCardList`), assistant IA admin avec confirmation, pastilles en cascade.
+
 ## ✅ Lien Lovable ↔ GitHub coupé (2026-09-30)
 Fait juste après la bascule Vercel, dans la même séance (Lovable › Paramètres › Git › Disconnect, dépôt `badmust75-coder/dinislam-5e689abf`). La version publiée `dinislam.lovable.app` reste en ligne et redirige vers `dinislam-app.vercel.app`.
 
@@ -663,9 +679,8 @@ Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section
 
 Nadia a demandé que tous les titres/sous-titres de cartes (pas les descriptions/contenus en aperçu, ni les noms de fichiers/URLs/emails) soient toujours visibles en entier, sans "...". Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "✂️ Titres et sous-titres jamais tronqués"). Déjà fait sur Agenda Nadia (audit complet, retrait de `truncate`/`line-clamp-N` sur tous les titres/noms/sous-titres factuels courts, remplacés par `[overflow-wrap:anywhere]` + `min-w-0` sur le parent flex si besoin). Pas encore fait sur Dinislam — à auditer à la prochaine session (`grep -rn "truncate\|line-clamp-1\b" src`, classer titre vs contenu, corriger).
 
-## ➗ ⚠️ ACTION EN ATTENTE — Ne jamais couper un mot en plein milieu (demandé 2026-09-01)
-
-Nouvelle règle absolue (voir `~/Projets Claude Code/CLAUDE.md`, section "➗ Ne jamais couper un mot en plein milieu"). Un mot trop long doit se couper à la syllabe avec un trait d'union, jamais lettre par lettre. `index.html` a déjà `lang="fr"` — reste à **ajouter `hyphens: auto` + `-webkit-hyphens: auto` sur `body`** dans le CSS global (réf. `Agenda Nadia/src/index.css`), puis vérifier sur mobile qu'un mot long en majuscules dans une zone étroite s'hyphène proprement.
+## ➗ ⚠️ ACTION EN ATTENTE — Ne jamais couper un mot en plein milieu (demandé 2026-09-01, RÉVISÉ 2026-09-21)
+Règle globale révisée le 2026-09-21 : **plus AUCUNE césure**, même à la syllabe → `hyphens: none` + `-webkit-hyphens: none` sur `body` (jamais `hyphens: auto`) ; un mot qui ne tient pas passe entier à la ligne suivante. Vérifié le 2026-09-30 : aucune règle `hyphens` dans `src/index.css` → à ajouter, puis vérifier sur mobile.
 
 ## 🖼️ Un contenu incohérent avec son rôle → s'arrêter et demander (ajoutée 2026-09-01)
 Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Demander en cas de doute" → "🖼️ Cas particulier — un contenu qui ne correspond pas à ce qu'il est censé être"). Quand une image/un champ/un libellé/une valeur montré par Nadia ne colle pas à ce qu'il devrait être (ex : écriture manuscrite scannée là où on attend une photo de plat), **le signaler et demander AVANT d'exécuter la demande à la lettre** — ne pas foncer.
