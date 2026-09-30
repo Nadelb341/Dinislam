@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import ContentUploadTabs from './ContentUploadTabs';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { ArrowLeft, FileText, CheckCircle, Upload, X, BookOpen, Film, Music, Link } from 'lucide-react';
+import { compressDocument } from '@/lib/compressImage';
 
 interface Props {
   onBack: () => void;
@@ -114,7 +115,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
   const uploadToStorage = async (file: File, cardId: string) => {
     const ext = file.name.split('.').pop();
     const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
+    const { error } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: false });
     if (error) throw error;
     const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
     return urlData.publicUrl;

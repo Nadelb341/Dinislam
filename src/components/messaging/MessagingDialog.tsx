@@ -23,6 +23,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
+import { compressPhoto } from '@/lib/compressImage';
 
 interface Message {
   id: string;
@@ -209,7 +210,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
     setIsSubmitting(true);
     try {
       const fileName = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, await compressPhoto(file));
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);

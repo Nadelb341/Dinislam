@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
+import { compressDocument } from '@/lib/compressImage';
 
 const getDefaultIcon = (title: string) => {
   const t = title.toLowerCase();
@@ -182,7 +183,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
         const file = files[i];
         const ext = file.name.split('.').pop();
         const path = `invocation-${invocationId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('invocation-content').upload(path, file, { upsert: false });
+        const { error: upErr } = await supabase.storage.from('invocation-content').upload(path, await compressDocument(file), { upsert: false });
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('invocation-content').getPublicUrl(path);
         let content_type = 'document';
@@ -213,7 +214,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     try {
       const ext = file.name.split('.').pop();
       const path = `invocation-icons/${invocationId}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('invocation-content').upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from('invocation-content').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('invocation-content').getPublicUrl(path);
       const imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;

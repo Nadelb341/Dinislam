@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { CheckCircle2, Clock, BookOpen, Sparkles, Hand, BookMarked, Moon, ExternalLink, FileText, Video, Music, Upload, Loader2, Mic, Square, Image as ImageIcon, FolderOpen, Play, Trash2, Send, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { compressDocument } from '@/lib/compressImage';
 
 const SUBJECTS: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string; path: string }> = {
   nourania: { label: 'Nourania', icon: Sparkles, color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/30', path: '/nourania' },
@@ -122,7 +123,7 @@ const HomeworkCard = () => {
       const filePath = `${user.id}/${assignmentId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('homework-submissions')
-        .upload(filePath, file);
+        .upload(filePath, await compressDocument(file));
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage

@@ -11,6 +11,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminSourateVersets from './AdminSourateVersets';
+import { compressDocument } from '@/lib/compressImage';
 
 function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, uploadToStorage, handleAddYoutube, handleUploadAudioComplet, handleDeleteAudioComplet, chargerSourates, isUploading, profiles }: any) {
   const [lienVideo, setLienVideo] = useState(sourate.video_url || '');
@@ -223,7 +224,7 @@ const AdminSourateContent = () => {
       const ext = file.name.split('.').pop();
       const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
       const filePath = `sourate-${sourateId}/${uniqueName}`;
-      const { error: uploadError } = await supabase.storage.from('sourate-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      const { error: uploadError } = await supabase.storage.from('sourate-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('sourate-content').getPublicUrl(filePath);
       const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;
@@ -311,7 +312,7 @@ const AdminSourateContent = () => {
     const fileName = `complet/sourate-${sourateNumber}-${Date.now()}.${file.name.split('.').pop()}`;
     const { error: uploadError } = await supabase.storage
       .from('sourates-versets')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, await compressDocument(file), { upsert: true });
     if (uploadError) { toast.error('Erreur: ' + uploadError.message); return; }
     const { data: urlData } = supabase.storage
       .from('sourates-versets')

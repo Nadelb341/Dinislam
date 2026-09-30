@@ -219,7 +219,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
     setIsSending(true);
     try {
       const fileName = `admin/${Date.now()}_${file.name}`;
-      const { error: ue } = await supabase.storage.from('messages-audio').upload(fileName, file);
+      const { error: ue } = await supabase.storage.from('messages-audio').upload(fileName, await compressPhoto(file));
       if (ue) throw ue;
       const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);
       const { error } = await supabase.from('user_messages').insert({
@@ -743,5 +743,6 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
 
 // Need Label import
 import { Label } from '@/components/ui/label';
+import { compressPhoto } from '@/lib/compressImage';
 
 export default AdminMessagingDialog;

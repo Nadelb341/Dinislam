@@ -8,6 +8,7 @@ import { moveToTrash } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
+import { compressDocument } from '@/lib/compressImage';
 
 const AdminAlphabetContent = () => {
   const { user } = useAuth();
@@ -41,7 +42,7 @@ const AdminAlphabetContent = () => {
       const ext = file.name.split('.').pop();
       const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
       const filePath = `letter-${letterId}/${uniqueName}`;
-      const { error: uploadError } = await supabase.storage.from('alphabet-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      const { error: uploadError } = await supabase.storage.from('alphabet-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('alphabet-content').getPublicUrl(filePath);
       const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;

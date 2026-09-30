@@ -22,6 +22,7 @@ import { SortableCardList, withResequencedOrder } from '@/components/shared/Sort
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { compressDocument } from '@/lib/compressImage';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image,
@@ -211,7 +212,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
     try {
       const ext = file.name.split('.').pop();
       const path = `module-images/${moduleId}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('module-content').upload(path, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('module-content').upload(path, await compressDocument(file), { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('module-content').getPublicUrl(path);
       const { error } = await supabase.from('learning_modules').update({ image_url: publicUrl }).eq('id', moduleId);
@@ -230,7 +231,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
     setUploading(true);
     try {
       const path = `${selectedModule.id}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('module-content').upload(path, file);
+      const { error: uploadError } = await supabase.storage.from('module-content').upload(path, await compressDocument(file));
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('module-content').getPublicUrl(path);
       const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'audio' : file.type.startsWith('image') ? 'image' : 'pdf';

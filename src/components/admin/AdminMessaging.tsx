@@ -13,6 +13,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
+import { compressPhoto } from '@/lib/compressImage';
 
 
 interface UserMessage {
@@ -160,7 +161,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
     setIsSending(true);
     try {
       const fileName = `admin/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from('messages-audio').upload(fileName, await compressPhoto(file));
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('messages-audio').getPublicUrl(fileName);
       const { error } = await supabase.from('user_messages').insert({

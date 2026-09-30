@@ -20,6 +20,7 @@ import {
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { SortableCardList } from '@/components/shared/SortableCardList';
+import { compressDocument } from '@/lib/compressImage';
 
 interface Props { onBack: () => void; }
 
@@ -133,7 +134,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     try {
       const ext = file.name.split('.').pop();
       const path = `allah-names/${nameId}-img.${ext}`;
-      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
       const { error } = await supabase.from('allah_names').update({ image_url: urlData.publicUrl }).eq('id', nameId);
@@ -149,7 +150,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     try {
       const ext = file.name.split('.').pop();
       const path = `allah-names/${nameId}-${type}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
       await (supabase as any).from('allah_name_media').delete().eq('name_id', nameId).eq('media_type', type);

@@ -11,6 +11,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminCommentaireLecon from './AdminCommentaireLecon';
+import { compressDocument } from '@/lib/compressImage';
 
 function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, handleUploadFile, handleAddYoutube, handleUploadAudio, isUploading, profiles }: any) {
   const [targetStudent, setTargetStudent] = useState<string>('');
@@ -140,7 +141,7 @@ const AdminNouraniaContent = () => {
       const ext = file.name.split('.').pop();
       const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
       const filePath = `lesson-${lessonId}/${uniqueName}`;
-      const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
       const contentType = getContentTypeFromFile(file);
@@ -185,7 +186,7 @@ const AdminNouraniaContent = () => {
       const ext = file.name.split('.').pop();
       const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
       const filePath = `lesson-${lessonId}/${uniqueName}`;
-      const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+      const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
       const insertData: any = {
@@ -270,7 +271,7 @@ const AdminNouraniaContent = () => {
         // Upload du nouveau PDF
         const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
         const filePath = `lesson-${lesson.id}/${uniqueName}`;
-        const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, file, { cacheControl: '3600', upsert: false });
+        const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
         if (uploadError) { toast.error(`L${lessonNum}: ${uploadError.message}`); continue; }
         const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
         const nonPdfCount = contents.filter(c => c.lesson_id === lesson.id && c.content_type !== 'fichier').length;

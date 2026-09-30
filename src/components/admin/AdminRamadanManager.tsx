@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList, DragItemProps } from '@/components/shared/SortableCardList';
 import { Quiz, DayVideo, QuestionForm, emptyQuestion } from '@/types/ramadan';
+import { compressDocument } from '@/lib/compressImage';
 
 interface AdminRamadanManagerProps {
   onBack: () => void;
@@ -246,7 +247,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
       const { error: uploadError } = await supabase.storage
         .from('ramadan-videos')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, await compressDocument(file), { upsert: true });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
@@ -466,7 +467,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
       const { error: uploadError } = await supabase.storage
         .from('ramadan-activities')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, await compressDocument(file), { upsert: true });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage

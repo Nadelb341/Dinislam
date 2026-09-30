@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { FileText, List, Video, File, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { compressDocument } from '@/lib/compressImage';
 
 interface DashboardCard {
   id: string;
@@ -137,7 +138,7 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
 
       const { error: uploadError } = await supabase.storage
         .from('admin-content')
-        .upload(filePath, file);
+        .upload(filePath, await compressDocument(file));
 
       if (uploadError) throw uploadError;
 

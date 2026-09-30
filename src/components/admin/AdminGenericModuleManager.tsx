@@ -24,6 +24,7 @@ import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import FlashcardManager from './FlashcardManager';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
+import { compressDocument } from '@/lib/compressImage';
 
 interface Props {
   moduleId: string;
@@ -158,7 +159,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
       const ext = file.name.split('.').pop();
       const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: false });
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: false });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
       const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;
@@ -261,7 +262,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     try {
       const ext = file.name.split('.').pop();
       const path = `card-images/${cardId}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
       const { error } = await supabase.from('module_cards').update({ image_url: urlData.publicUrl }).eq('id', cardId);

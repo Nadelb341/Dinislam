@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { compressDocument } from '@/lib/compressImage';
 
 const NB_VERSETS: Record<number, number> = {
   1:7,2:286,3:200,4:176,5:120,6:165,7:206,8:75,9:129,10:109,
@@ -68,7 +69,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
 
     const { error: uploadError } = await supabase.storage
       .from('sourates-versets')
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, await compressDocument(file), { upsert: true });
 
     if (uploadError) {
       toast.error('Erreur upload: ' + uploadError.message);

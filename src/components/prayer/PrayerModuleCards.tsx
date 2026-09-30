@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { compressDocument } from '@/lib/compressImage';
 
 const GROUPS = [
   { key: 'petits', label: 'Petits', labelAr: 'الصغار' },
@@ -134,7 +135,7 @@ const PrayerModuleCards = () => {
       if (!selectedCard?.id || !user?.id) throw new Error('Missing data');
       const ext = file.name.split('.').pop();
       const path = `${selectedCard.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('prayer-cards').upload(path, file);
+      const { error: uploadError } = await supabase.storage.from('prayer-cards').upload(path, await compressDocument(file));
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('prayer-cards').getPublicUrl(path);
       const maxOrder = cardContent.length > 0 ? Math.max(...cardContent.map(c => c.display_order)) : 0;
@@ -172,7 +173,7 @@ const PrayerModuleCards = () => {
   const uploadCardImage = async (file: File, cardId: string) => {
     const ext = file.name.split('.').pop();
     const path = `card-images/${cardId}.${ext}`;
-    await supabase.storage.from('prayer-cards').upload(path, file, { upsert: true });
+    await supabase.storage.from('prayer-cards').upload(path, await compressDocument(file), { upsert: true });
     const { data } = supabase.storage.from('prayer-cards').getPublicUrl(path);
     updateCardMutation.mutate({ id: cardId, image_url: data.publicUrl });
   };

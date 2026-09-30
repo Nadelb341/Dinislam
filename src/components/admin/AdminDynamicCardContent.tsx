@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Upload, Trash2, FileText, Video, List, Loader2, ExternalLink } from 'lucide-react';
 import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { compressDocument } from '@/lib/compressImage';
 
 interface DashboardCard {
   id: string;
@@ -40,7 +41,7 @@ const AdminDynamicCardContent = ({ card, onBack }: Props) => {
       const filePath = `${card.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('admin-content')
-        .upload(filePath, file);
+        .upload(filePath, await compressDocument(file));
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
