@@ -16,6 +16,7 @@ import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 const getCategoryColor = (category: string | null) => {
   switch (category) {
@@ -62,6 +63,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
   const enrichment = getInvocationEnrichment(invocation.title_french);
+  const { askValidation, validationDialog } = useConfirmValidation();
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
   const embedUrl = enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
 
@@ -207,7 +209,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
             <Button
               className="w-full gap-2"
               variant={isMemorized ? 'outline' : 'default'}
-              onClick={() => onMarkMemorized(invocation.id, !isMemorized)}
+              onClick={() => isMemorized ? onMarkMemorized(invocation.id, false) : askValidation('Valider cette invocation ?', `« ${invocation.title_french} » sera marquée comme mémorisée.`, () => onMarkMemorized(invocation.id, true))}
             >
               {isMemorized ? (
                 <><Check className="h-4 w-4 text-green-500" /> Mémorisée ✅</>
@@ -256,6 +258,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
           onScrollBottom={scrollToBottom}
           position="absolute"
         />
+        {validationDialog}
       </DialogContent>
     </Dialog>
   );

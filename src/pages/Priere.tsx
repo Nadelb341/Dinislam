@@ -26,6 +26,7 @@ import SunArcDisplay from '@/components/prayer/SunArcDisplay';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
 import PrayerModuleCards from '@/components/prayer/PrayerModuleCards';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 function getTodayKey(): string {
   const d = new Date();
@@ -86,6 +87,8 @@ const Priere = () => {
     });
     return Object.entries(map).map(([date, count]) => ({ date, count }));
   }, [dailyPrayers]);
+
+  const { askValidation, validationDialog } = useConfirmValidation();
 
   const toggleDailyPrayerMutation = useMutation({
     mutationFn: async (prayerName: string) => {
@@ -231,7 +234,11 @@ const Priere = () => {
               prayerTimes={prayerTimes}
               cityLabel={`${selectedCity.label}, ${selectedCity.country}`}
               checkedPrayers={todayChecked}
-              onTogglePrayer={(name) => toggleDailyPrayerMutation.mutate(name)}
+              onTogglePrayer={(name) => {
+                const done = dailyPrayers.some(p => p.date === todayKey && p.prayer_name === name);
+                if (done) toggleDailyPrayerMutation.mutate(name);
+                else askValidation('Valider cette prière ?', `« ${name} » sera cochée comme faite aujourd'hui.`, () => toggleDailyPrayerMutation.mutate(name));
+              }}
             />
           ) : null}
         </div>
@@ -242,6 +249,7 @@ const Priere = () => {
       {showQibla && (
         <QiblaCompass city={selectedCity} onClose={() => setShowQibla(false)} />
       )}
+      {validationDialog}
     </AppLayout>
   );
 };

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 const FastingTracker = () => {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ const FastingTracker = () => {
   useEffect(() => {
     setJoursJeunes(fastingData.filter(f => f.has_fasted).map(f => f.day_number));
   }, [fastingData]);
+
+  const { askValidation, validationDialog } = useConfirmValidation();
 
   const handleClickJour = async (dayNumber: number) => {
     if (!user?.id) return;
@@ -106,7 +109,7 @@ const FastingTracker = () => {
           return (
             <button
               key={day}
-              onClick={() => handleClickJour(day)}
+              onClick={() => joursJeunes.includes(day) ? handleClickJour(day) : askValidation('Valider ce jour de jeûne ?', `Le jour ${day} du Ramadan sera coché comme jeûné.`, () => handleClickJour(day))}
               className="flex items-center justify-center transition-all active:scale-90"
               style={{ 
                 width: '28px', 
@@ -159,6 +162,7 @@ const FastingTracker = () => {
           À marquer
         </span>
       </div>
+      {validationDialog}
     </div>
   );
 };

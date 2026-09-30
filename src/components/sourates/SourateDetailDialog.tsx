@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import SourateRecitationPanel from './SourateRecitationPanel';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 function LecteurVerset({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -204,6 +205,7 @@ const SourateDetailDialog = ({
   onVerseToggle,
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
+  const { askValidation, validationDialog } = useConfirmValidation();
   const [versetsAudio, setVersetsAudio] = useState<any[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
@@ -661,7 +663,7 @@ const SourateDetailDialog = ({
                     >
                       <Checkbox
                         checked={isVerseValidated}
-                        onCheckedChange={() => onVerseToggle(dbId, num, sourate.number, sourate.verses_count)}
+                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, num, sourate.number, sourate.verses_count) : askValidation('Valider ce verset ?', `Le verset ${num} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, num, sourate.number, sourate.verses_count))}
                         className={cn(
                           'h-5 w-5 rounded border-2 mt-1 shrink-0',
                           isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'
@@ -715,7 +717,7 @@ const SourateDetailDialog = ({
                     >
                       <Checkbox
                         checked={isVerseValidated}
-                        onCheckedChange={() => onVerseToggle(dbId, verseNum, sourate.number, sourate.verses_count)}
+                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, verseNum, sourate.number, sourate.verses_count) : askValidation('Valider ce verset ?', `Le verset ${verseNum} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, verseNum, sourate.number, sourate.verses_count))}
                         className={cn(
                           'h-5 w-5 rounded border-2 mt-1 shrink-0',
                           isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'
@@ -770,6 +772,7 @@ const SourateDetailDialog = ({
           onScrollBottom={scrollToBottom}
           position="absolute"
         />
+        {validationDialog}
       </DialogContent>
     </Dialog>
   );
