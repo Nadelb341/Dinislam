@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'luci
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
+import { takeDraftResume } from '@/lib/pendingDrafts';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
@@ -53,7 +54,14 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
   useEffect(() => {
     const draft = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
-    if (draft && draft.titre.trim()) setHomeworkDraft(draft);
+    if (!draft || !draft.titre.trim()) return;
+    if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
+      // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
+      setForm(prev => ({ ...prev, ...draft }));
+      setShowForm(true);
+    } else {
+      setHomeworkDraft(draft);
+    }
   }, []);
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import StarMascot from '@/components/mascot/StarMascot';
 import VersionChangelogModal from '@/components/VersionChangelogModal';
 import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
+import PendingDraftsCenter from '@/components/PendingDraftsCenter';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
@@ -33,6 +34,7 @@ const AppLayout = ({
       <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
         <div className="p-4">
           <PushAutoSubscribe />
+          <PendingDraftsCenter />
         </div>
         {children}
       </main>

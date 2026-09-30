@@ -58,6 +58,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   sourate_verset_audio: 'Audio de verset',
   attendance_day: 'Séance de présence',
   registration: 'Inscription refusée',
+  draft: 'Brouillon',
 };
 
 const Settings = () => {

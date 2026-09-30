@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { saveDraft } from "@/hooks/useDraftRecovery";
 
 export type TrashItemType =
   | "learning_module" | "module_content" | "prayer_card_content" | "sourate_content" | "alphabet_content"
@@ -6,7 +7,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft";
 
 export interface TrashItem {
   id: string;
@@ -18,7 +19,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<TrashItemType, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -61,7 +62,15 @@ export async function fetchTrash(userId: string): Promise<TrashItem[]> {
 }
 
 export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
-  const table = TABLE_BY_TYPE[item.item_type as TrashItemType];
+  // Brouillon : on le remet sur l'appareil, il sera reproposé à la prochaine ouverture de l'appli
+  if (item.item_type === "draft") {
+    const d = item.item_data as { key?: string; data?: unknown } | null;
+    if (!d?.key) return false;
+    saveDraft(d.key, d.data);
+    await supabase.from("trash_items" as any).delete().eq("id", item.id);
+    return true;
+  }
+  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft">];
   if (!table) return false;
   const { error } = await supabase.from(table as any).insert(item.item_data as any);
   if (error) return false;

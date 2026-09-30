@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import { compressPhoto } from '@/lib/compressImage';
+import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 
 interface Message {
   id: string;
@@ -49,6 +50,20 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
+  // Brouillon du message en cours (règle « brouillon automatique ») : rien n'est perdu en fermant la messagerie
+  const draftKey = user?.id ? `messaging_student_${user.id}` : null;
+  useEffect(() => {
+    if (open && draftKey) {
+      const saved = loadDraft<string>(draftKey);
+      if (saved && !message) setMessage(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, draftKey]);
+  useEffect(() => {
+    if (!draftKey) return;
+    if (message.trim()) saveDraft(draftKey, message);
+    else clearDraft(draftKey);
+  }, [message, draftKey]);
   const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,7 +253,6 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
   const handleClose = () => {
     if (isRecording && recognitionRef.current) recognitionRef.current.stop();
     setIsRecording(false);
-    setMessage('');
     onOpenChange(false);
   };
 
