@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import NotificationFamilies from '@/components/settings/NotificationFamilies';
+import PushToggle from '@/components/settings/PushToggle';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 
 const AdminNotifications = () => {
@@ -226,6 +227,7 @@ const AdminNotifications = () => {
           <CardTitle>🔔 Mes alertes d'enseignante</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <PushToggle />
           <NotificationFamilies variant="teacher" />
           <div className="border-t pt-4">
             <PushDiagnostic />

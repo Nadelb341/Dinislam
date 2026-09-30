@@ -35,6 +35,8 @@ import {
   emptyTrash,
   STUDENT_TRASH_DAYS,
 } from '@/lib/trash';
+import { useParentLock } from '@/hooks/useParentLock';
+import ParentGateDialog from '@/components/settings/ParentGateDialog';
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
   learning_module: 'Module',
@@ -66,6 +68,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
 
 const Settings = () => {
   const { user, isAdmin } = useAuth();
+  const { locked: parentLocked, unlock: unlockParent } = useParentLock();
+  const [gateOpen, setGateOpen] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -251,6 +255,18 @@ const Settings = () => {
     );
   }
 
+  if (parentLocked) {
+    return (
+      <AppLayout title="Paramètres">
+        <div className="max-w-sm mx-auto py-10 text-center space-y-4">
+          <p className="text-muted-foreground">🔒 Les paramètres sont réservés aux parents.</p>
+          <Button onClick={() => setGateOpen(true)}>Ouvrir avec le mot de passe</Button>
+        </div>
+        <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlockParent} onSuccess={() => {}} />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Paramètres">
       <div className="p-4 space-y-4">
@@ -289,7 +305,8 @@ const Settings = () => {
           </Card>
         )}
 
-        {/* Notifications Section */}
+        {/* Notifications Section — élèves seulement : l'enseignante a tout dans le bouclier › Notifs (demande de Nadia 2026-09-30) */}
+        {!isAdmin && (
         <Card id="section-notifications" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -328,6 +345,7 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Corbeille */}
         <Card id="section-corbeille" className="scroll-mt-24">

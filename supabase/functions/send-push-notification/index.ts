@@ -353,14 +353,16 @@ serve(async (req) => {
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {
       const parisHour = Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
-      const quietNow = parisHour >= 21 || parisHour < 8;
+      // Heures du mode calme choisies par chaque élève (par défaut 21 h – 8 h), y compris par-dessus minuit
+      const inQuiet = (start: number, end: number) =>
+        start === end ? false : start < end ? parisHour >= start && parisHour < end : parisHour >= start || parisHour < end;
       const { data: prefs } = await supabase
         .from('notification_preferences')
-        .select(`user_id, quiet_mode, ${prefColumn}`)
+        .select(`user_id, quiet_mode, quiet_start, quiet_end, ${prefColumn}`)
         .in('user_id', targetIds);
       const blocked = new Set(
         (prefs || [])
-          .filter((p: any) => p[prefColumn] === false || (quietNow && p.quiet_mode === true))
+          .filter((p: any) => p[prefColumn] === false || (p.quiet_mode === true && inQuiet(p.quiet_start ?? 21, p.quiet_end ?? 8)))
           .map((p: any) => p.user_id)
       );
       targetIds = targetIds.filter(id => !blocked.has(id));
@@ -401,11 +403,17 @@ serve(async (req) => {
       requireInteraction: false
     };
 
+    // Réglage « Silencieux (vibration seulement) »
+    const { data: silentPrefs } = await supabase
+      .from('notification_preferences').select('user_id').eq('notif_silent', true)
+      .in('user_id', subscriptions.map((s: any) => s.user_id));
+    const silentIds = new Set((silentPrefs || []).map((p: any) => p.user_id));
+
     const results = await Promise.all(
       subscriptions.map(async (sub) => {
         const result = await sendPushToEndpoint(
           { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth_key },
-          payload, vapidPublicKey, vapidPrivateKey
+          silentIds.has(sub.user_id) ? { ...payload, silent: true } : payload, vapidPublicKey, vapidPrivateKey
         );
         return result;
       })

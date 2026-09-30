@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2 } from 'lucide-react';
+import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +11,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PasswordInput } from '@/components/ui/password-input';
+import { useParentLock } from '@/hooks/useParentLock';
+import ParentGateDialog from '@/components/settings/ParentGateDialog';
 
 const UserSettingsDialog = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -29,6 +31,12 @@ const UserSettingsDialog = () => {
   const [dobDisplay, setDobDisplay] = useState(''); // JJ/MM/AAAA
   const [dobSetByUser, setDobSetByUser] = useState(false);
   const [loadingDob, setLoadingDob] = useState(false);
+
+  const { locked, unlock } = useParentLock();
+  const [gateOpen, setGateOpen] = useState(false);
+
+  // Moins de 12 ans : mot de passe demandé avant d'ouvrir les paramètres
+  const requestOpen = () => { if (locked) setGateOpen(true); else handleOpen(); };
 
   const handleOpen = async () => {
     const currentName = user?.user_metadata?.full_name || '';
@@ -160,11 +168,14 @@ const UserSettingsDialog = () => {
       <Button
         variant="ghost"
         size="icon"
-        onClick={handleOpen}
-        className="text-primary-foreground hover:bg-primary-foreground/10"
+        onClick={requestOpen}
+        className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+        aria-label={locked ? 'Paramètres (réservé aux parents)' : 'Paramètres'}
       >
         <Settings className="h-5 w-5" />
+        {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
       </Button>
+      <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onSuccess={handleOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm rounded-2xl">
@@ -250,11 +261,13 @@ const UserSettingsDialog = () => {
 
             {/* Accès à la page Paramètres (notifications, corbeille) — avant le 2026-09-30, aucun bouton n'y menait */}
             <Separator />
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#notifications'); }}>
-                <Bell className="h-4 w-4 mr-2 shrink-0" />
-                Notifications
-              </Button>
+            <div className={`grid gap-2 ${isAdmin ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {!isAdmin && (
+                <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#notifications'); }}>
+                  <Bell className="h-4 w-4 mr-2 shrink-0" />
+                  Notifications
+                </Button>
+              )}
               <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#corbeille'); }}>
                 <Trash2 className="h-4 w-4 mr-2 shrink-0" />
                 Corbeille

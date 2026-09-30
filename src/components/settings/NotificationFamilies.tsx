@@ -86,7 +86,10 @@ const FAMILIES: Family[] = [
 
 const PRAYER_KEYS: PrefKey[] = ['fajr_reminder', 'dhuhr_reminder', 'asr_reminder', 'maghrib_reminder', 'isha_reminder'];
 
-type Prefs = Partial<Record<PrefKey | 'quiet_mode', boolean>>;
+type Prefs = Partial<Record<PrefKey | 'quiet_mode' | 'notif_silent', boolean>> & { quiet_start?: number; quiet_end?: number };
+
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const hourLabel = (h: number) => `${h} h`;
 
 /** student = Paramètres (tout le monde) ; teacher = bouclier › Notifs (alertes de l'enseignante) */
 const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | 'teacher' }) => {
@@ -169,16 +172,77 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
       })}
 
       {variant === 'student' && (
-      <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-3 flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-700 flex items-center justify-center">
-          <Moon className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-indigo-900">Mode calme</p>
-          <p className="text-sm text-muted-foreground">Aucune notification entre 21 h et 8 h (les rappels de prière restent actifs)</p>
-        </div>
-        <Switch aria-label="Mode calme" checked={prefs.quiet_mode === true} onCheckedChange={(v) => save({ quiet_mode: v })} />
-      </div>
+        <>
+          {/* Mode calme, heures réglables (idée validée par Nadia le 2026-09-30) */}
+          <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-700 flex items-center justify-center">
+                <Moon className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-indigo-900">Mode calme</p>
+                <p className="text-sm text-muted-foreground">
+                  Aucune notification de {hourLabel(prefs.quiet_start ?? 21)} à {hourLabel(prefs.quiet_end ?? 8)} (les rappels de prière restent actifs)
+                </p>
+              </div>
+              <Switch aria-label="Mode calme" checked={prefs.quiet_mode === true} onCheckedChange={(v) => save({ quiet_mode: v })} />
+            </div>
+            {prefs.quiet_mode === true && (
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-sm text-indigo-900">
+                  De
+                  <select
+                    className="min-h-11 rounded-xl border border-indigo-200 bg-background px-3"
+                    value={prefs.quiet_start ?? 21}
+                    onChange={(e) => save({ quiet_start: Number(e.target.value) })}
+                  >
+                    {HOURS.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-indigo-900">
+                  À
+                  <select
+                    className="min-h-11 rounded-xl border border-indigo-200 bg-background px-3"
+                    value={prefs.quiet_end ?? 8}
+                    onChange={(e) => save({ quiet_end: Number(e.target.value) })}
+                  >
+                    {HOURS.map(h => <option key={h} value={h}>{hourLabel(h)}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Son des notifications */}
+          <div className="rounded-2xl border-2 border-sky-200 bg-sky-50 p-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-sky-700 flex items-center justify-center">
+                <Bell className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sky-900">Son des notifications</p>
+                <p className="text-sm text-muted-foreground">Le son est celui choisi dans les réglages du téléphone</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Son des notifications">
+              {[{ v: false, label: '🔔 Avec son' }, { v: true, label: '📳 Silencieux (vibration)' }].map(o => {
+                const active = (prefs.notif_silent === true) === o.v;
+                return (
+                  <button
+                    key={String(o.v)}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => save({ notif_silent: o.v })}
+                    className={`min-h-11 rounded-xl border-2 px-2 py-2 text-sm font-medium [overflow-wrap:anywhere] ${active ? 'border-sky-700 bg-sky-700 text-white' : 'border-sky-200 bg-background text-sky-900'}`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
