@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Loader2, LogOut, CalendarIcon } from 'lucide-react';
+import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -245,6 +245,19 @@ const UserSettingsDialog = () => {
               >
                 {savingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Enregistrer le mot de passe
+              </Button>
+            </div>
+
+            {/* Accès à la page Paramètres (notifications, corbeille) — avant le 2026-09-30, aucun bouton n'y menait */}
+            <Separator />
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#notifications'); }}>
+                <Bell className="h-4 w-4 mr-2 shrink-0" />
+                Notifications
+              </Button>
+              <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#corbeille'); }}>
+                <Trash2 className="h-4 w-4 mr-2 shrink-0" />
+                Corbeille
               </Button>
             </div>
 

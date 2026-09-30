@@ -144,6 +144,14 @@ const Settings = () => {
     loadTrash();
   }, [user, isSubscribed]);
 
+  // Ouverture depuis la fenêtre du profil : aller directement à la section demandée
+  useEffect(() => {
+    const target = window.location.hash.replace('#', '');
+    if (!target) return;
+    const t = setTimeout(() => document.getElementById(`section-${target}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    return () => clearTimeout(t);
+  }, []);
+
   const loadPreferences = async () => {
     if (!user) return;
 
@@ -280,7 +288,7 @@ const Settings = () => {
         )}
 
         {/* Notifications Section */}
-        <Card>
+        <Card id="section-notifications" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
@@ -343,7 +351,7 @@ const Settings = () => {
         </Card>
 
         {/* Corbeille */}
-        <Card>
+        <Card id="section-corbeille" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
