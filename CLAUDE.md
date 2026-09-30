@@ -15,24 +15,26 @@ Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 202
 ## ⚠️ ACTION EN ATTENTE — Prévenir les élèves du nouveau lien (2026-09-30)
 Nadia a copié le message prêt (nouvelle adresse `https://dinislam-app.vercel.app`, même e-mail/mot de passe, réinstaller l'icône, réactiver les notifications) et l'enverra le 2026-09-30 dans la journée (tout le monde dormait). À lui redemander en début de prochaine séance si c'est fait ; ensuite vérifier en base que des élèves se sont reconnectés (`auth.users.last_sign_in_at`) et réabonnés (`push_subscriptions`).
 
-## ⚠️ ACTION EN ATTENTE — 4 erreurs TypeScript préexistantes (repérées le 2026-09-30)
-`npx tsc -b` signale 4 erreurs déjà présentes avant la bascule (le build Vite passe quand même) : `AdminInvocationManager.tsx:123` (`title`/`content_french` absents du type invocations), `ScheduledNotifications.tsx:140` (`title` absent du type), `MessagingDialog.tsx:129` (type `SpeechRecognitionEvent` non déclaré). À expliquer à Nadia et corriger avec son accord (règle « l'appli doit toujours pouvoir s'ouvrir » : tsc propre avant push).
+## 🔎 Audit du 2026-09-30 : règles globales appliquées à Dinislam (fait en autonomie le 2026-09-30 matin, à la demande de Nadia)
+✅ **Fait et en ligne** (commits `27d7a41` → `a0c3a8e`, `tsc -b` à 0 erreur, build OK, Vercel « success ») :
+1. 🚫 YouTube : les 3 lecteurs élèves (vidéo de sourate, récitation El Houssary, vidéo d'invocation) passent par `SafeYoutubeEmbed` → plus aucun clic possible vers youtube.com.
+2. 🛠️ Les 4 erreurs TypeScript préexistantes corrigées (libellés de corbeille invocations / notifications programmées qui utilisaient des champs inexistants, + mise en corbeille AVANT la suppression et blocage si elle échoue ; type de la reconnaissance vocale).
+3. ❌ Croix « Fermer » : style Dinislam = rond rouge `#EF4444` + croix blanche (déjà celui de `dialog.tsx`) ; appliqué à `sheet.tsx`, `QiblaCompass`, `AdminCommandModal` (sections), `AllahNamesPage`. Les autres croix étaient déjà rouges.
+4. ➗ `hyphens: none` sur `body` (`src/index.css`).
+5. ✂️ Titres/noms jamais coupés : `truncate`/`line-clamp` retirés de 25 titres/noms (→ `[overflow-wrap:anywhere]`) ; `FitText` (`src/components/shared/FitText.tsx`, copie de l'Agenda) pour la barre du bas et les noms de lettres de l'alphabet. Restent volontairement tronqués : noms de fichiers, e-mails, aperçus de messages/descriptions, et l'aperçu du thème dans les minuscules cases du calendrier Ramadan admin (texte en 6 px, à revoir avec Nadia si gênant).
+6. 🖼️ Compression des images avant envoi : `src/lib/compressImage.ts` (copie adaptée de l'Agenda : image transparente → WebP pour garder la transparence, sinon JPEG) branchée sur les 27 envois de fichiers (`compressDocument` pour les contenus, `compressPhoto` pour la messagerie) ; audios non concernés ; fichiers existants jamais retouchés.
+7. ⛔ Confirmation + corbeille ajoutées à 4 suppressions qui n'en avaient pas : audio de verset (`AdminSourateVersets`, le fichier reste stocké pour pouvoir restaurer), séance de présence entière (`AdminAttendance`), refus d'inscription (`AdminRegistrationValidations`, fiche profil en corbeille) ; confirmation avant « Vider les journaux » (`Monitoring`). Nouveaux types de corbeille : `sourate_verset_audio`, `attendance_day`, `registration`, `draft`. Les autres `.delete()` sans confirmation sont des bascules techniques (verrouiller/déverrouiller, décocher, nettoyage de demandes refusées) → laissés tels quels.
+8. 👁️ Œil afficher/masquer : composant `src/components/ui/password-input.tsx` (`PasswordInput`) sur les 4 champs qui n'en avaient pas (changement de mot de passe dans Paramètres ×2, changement de compte, connexion admin) + touche Entrée dans le changement de mot de passe.
+9. ⏳ Actions inachevées rappelées dès l'ouverture : registre `src/lib/pendingDrafts.ts` (**tout nouveau brouillon de création doit y être ajouté**) + message `src/components/PendingDraftsCenter.tsx` (monté dans `AppLayout`) : Continuer / Plus tard / Supprimer → corbeille (type `draft`, restauration = brouillon remis sur l'appareil). Branché sur : création de devoir (`dinislam_homework`, reprise directe sans reposer la question via `takeDraftResume`) et message pas encore envoyé d'un élève (`messaging_student_<userId>`, le texte n'est plus effacé en fermant la messagerie ; brouillons séparés par compte sur un appareil partagé).
+Non applicables : 🛟 filet d'édition `useEditUndo` (Dinislam n'a aucune sauvegarde automatique à l'édition, tout passe par un bouton Enregistrer) ; 🖼️➡️ galerie défilable (aucun endroit n'affiche plusieurs photos au même endroit).
 
-## 🔎 ⚠️ ACTION EN ATTENTE — Audit du 2026-09-30 : règles globales pas encore appliquées à Dinislam
-Tour fait à la demande de Nadia (comparaison avec ce qui a été fait sur l'Agenda). À lui présenter et faire valider, par ordre de priorité :
-1. 🚫 **YouTube (règle absolue enfants)** : 2 lecteurs élèves utilisent encore un `<iframe>` YouTube brut, sans `SafeYoutubeEmbed` ni `sandbox` → un enfant peut cliquer le logo et partir sur youtube.com : `SourateDetailDialog.tsx` ~l.602 (récitation El Houssary) et `pages/Invocations.tsx` ~l.102 (vidéo « Apprendre l'invocation »). La vidéo de sourate (~l.194) a un `sandbox` mais pas `SafeYoutubeEmbed`. → passer les 3 sur `SafeYoutubeEmbed`.
-2. 📧 **Inscriptions / e-mails** : la nouvelle base Supabase utilise l'envoi d'e-mails par défaut de Supabase (très limité en nombre par heure). À tester avec une vraie inscription d'élève ; si besoin, brancher un envoi d'e-mails dédié (comme sur l'Agenda) ou s'appuyer sur la validation admin + `confirm-user-email`.
-3. ❌ Croix « Fermer » rouge (`dialog.tsx`/`sheet.tsx` : 0 occurrence de `text-destructive`) — déjà en attente.
-4. ✂️ Titres jamais tronqués + FitText : 37 fichiers avec `truncate`/`line-clamp`, 0 FitText — déjà en attente (classer titre vs contenu).
-5. ➗ `hyphens: none` sur `body` — déjà en attente (voir plus haut).
-6. 🖼️ Compression des photos avant envoi : pas de `compressImage.ts`, 30 points d'envoi de fichiers — déjà en attente.
-7. 🛟 Filet de sécurité en édition (`useEditUndo` + bouton « revenir à l'origine ») : absent.
-8. ⏳ Action inachevée rappelée dès l'ouverture de l'appli : absent (seul `useDraftRecovery` existe, utilisé dans `AdminHomework`) ; brouillon automatique à étendre aux autres formulaires de création.
-9. 🖼️➡️ Aperçu agrandi défilable des pièces jointes multiples : absent.
-10. ⛔ Confirmation avant suppression : 14 fichiers font un `.delete()` sans `AlertDialog` ni corbeille (ex. `AdminSourateVersets`, `AdminAttendance`, `AdminCommentaireLecon`, `FastingTracker`, `Priere`, `Nourania`, `Invocations`, `Sourates`…) → à passer au cas par cas (certains sont des nettoyages techniques légitimes).
-11. ✅ Confirmation avant validation (cases « fait ») : trackers élèves à vérifier (Priere, FastingTracker…).
-12. ⌨️ Touche Entrée pour valider, 👁️ œil sur les mots de passe (6 écrans à vérifier un par un), 🔔 un interrupteur par notification automatique : à vérifier écran par écran.
-Déjà conformes : corbeille (`trash_items`), boutons ⬆️⬇️ (`ScrollButtons`), page qui s'ouvre en haut (`useScrollToTop`), glisser-déposer appui long (`SortableCardList`), assistant IA admin avec confirmation, pastilles en cascade.
+⚠️ **ACTION EN ATTENTE — décisions de Nadia** :
+- 📧 E-mails d'inscription : avec le service d'e-mails par défaut de Supabase (réservé aux membres de l'équipe du projet, très peu par heure), un nouvel élève risque de ne pas recevoir l'e-mail de confirmation, voire de ne pas pouvoir s'inscrire. Solution durable : service d'envoi (Resend) + SMTP personnalisé dans Supabase Auth (comme prévu pour Colibri). En attendant : confirmer l'adresse à la main quand Nadia signale un nouvel inscrit (`update auth.users set email_confirmed_at = now() where email = '…'`, borné à cette adresse).
+- ✅ Confirmation avant validation : les cases « mémorisé » (versets, invocations, cartes) et les trackers (prières, jeûne) sont cochés très souvent par des enfants → demander à Nadia si elle veut vraiment une confirmation à chaque fois (règle : trackers fréquents = on demande d'abord).
+- 🔔 Interrupteurs de notifications : Paramètres n'a des interrupteurs que pour les rappels de prière et le Ramadan ; les autres notifications automatiques (nouveau message, nouveau devoir, résultat de validation de sourate/Nourania/invocation, commentaire de leçon, nouveau module) n'en ont pas → proposer une carte « Notifications » avec un interrupteur par type (maquette à valider).
+- ⏰ Rappels automatiques jamais actifs (constaté le 2026-09-30, déjà le cas sur Lovable) : aucune tâche planifiée (pg_cron) n'existait → `process-scheduled-notifications` (notifications programmées) et `homework-reminders` (rappels de devoirs) ne se déclenchent jamais tout seuls ; la table `homework_reminder_logs` (migration du 2026-05-20) n'avait jamais été créée. À activer seulement avec l'accord de Nadia (envoi réel aux élèves).
+- ⏳ Autres formulaires de création sans brouillon (notifications programmées, nouveau message admin, flashcards, contenus…) : à ajouter au fil de l'eau au registre `pendingDrafts.ts`.
+
 
 ## ✅ Lien Lovable ↔ GitHub coupé (2026-09-30)
 Fait juste après la bascule Vercel, dans la même séance (Lovable › Paramètres › Git › Disconnect, dépôt `badmust75-coder/dinislam-5e689abf`). La version publiée `dinislam.lovable.app` reste en ligne et redirige vers `dinislam-app.vercel.app`.
@@ -675,25 +677,6 @@ Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section
 - Si le champ persisté est aussi **affiché à l'écran** comme un numéro (ex: `#{display_order}` sur les 99 Noms d'Allah), ne pas utiliser `withResequencedOrder` (pas de 0,10,20...) — resequencer en continu (`i + 1`) pour ne pas casser l'affichage
 - Sur toute carte contenant des champs de texte éditables (Textarea/Input), envelopper ces champs dans un `onPointerDown={(e) => e.stopPropagation()}` pour ne pas gêner la sélection de texte/saisie (voir `AdminRamadanManager.tsx`, cartes de question de quiz)
 
-## ✂️ ⚠️ ACTION EN ATTENTE — Titres/sous-titres jamais tronqués par "..." (demandé 2026-08-19)
-
-Nadia a demandé que tous les titres/sous-titres de cartes (pas les descriptions/contenus en aperçu, ni les noms de fichiers/URLs/emails) soient toujours visibles en entier, sans "...". Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "✂️ Titres et sous-titres jamais tronqués"). Déjà fait sur Agenda Nadia (audit complet, retrait de `truncate`/`line-clamp-N` sur tous les titres/noms/sous-titres factuels courts, remplacés par `[overflow-wrap:anywhere]` + `min-w-0` sur le parent flex si besoin). Pas encore fait sur Dinislam — à auditer à la prochaine session (`grep -rn "truncate\|line-clamp-1\b" src`, classer titre vs contenu, corriger).
-
-## ➗ ⚠️ ACTION EN ATTENTE — Ne jamais couper un mot en plein milieu (demandé 2026-09-01, RÉVISÉ 2026-09-21)
-Règle globale révisée le 2026-09-21 : **plus AUCUNE césure**, même à la syllabe → `hyphens: none` + `-webkit-hyphens: none` sur `body` (jamais `hyphens: auto`) ; un mot qui ne tient pas passe entier à la ligne suivante. Vérifié le 2026-09-30 : aucune règle `hyphens` dans `src/index.css` → à ajouter, puis vérifier sur mobile.
-
 ## 🖼️ Un contenu incohérent avec son rôle → s'arrêter et demander (ajoutée 2026-09-01)
 Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Demander en cas de doute" → "🖼️ Cas particulier — un contenu qui ne correspond pas à ce qu'il est censé être"). Quand une image/un champ/un libellé/une valeur montré par Nadia ne colle pas à ce qu'il devrait être (ex : écriture manuscrite scannée là où on attend une photo de plat), **le signaler et demander AVANT d'exécuter la demande à la lettre** — ne pas foncer.
 
-## ❌ ⚠️ ACTION EN ATTENTE — Croix "Fermer" rouge et bien visible (demandé 2026-09-01)
-Règle absolue (voir `~/Projets Claude Code/CLAUDE.md`, section "❌ Croix Fermer ROUGE"). Toute croix `X` de fermeture doit être **rouge (`text-destructive`), `h-5 w-5`, `strokeWidth={2.75}`**. Reste à faire ici : passer la croix par défaut de `src/components/ui/dialog.tsx` + `sheet.tsx` en rouge visible (+ prop `hideCloseButton`), puis auditer les croix custom (réf. `Agenda Nadia/src/components/ui/dialog.tsx`).
-
-## 🖼️ ⚠️ ACTION EN ATTENTE — Compression automatique des images avant upload (demandé 2026-08-18)
-
-Nadia a demandé que toute photo envoyée par un utilisateur soit compressée côté client avant l'upload (sans perte de qualité visible), pour garder l'appli légère. Déjà fait sur Agenda Nadia (`src/lib/compressImage.ts`, utilitaire sans dépendance, `compressPhoto`/`compressDocument`) — voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "🖼️ Compression automatique des images avant upload").
-
-**Pas encore fait sur Dinislam.** À la prochaine session de travail sur ce projet :
-1. Copier/adapter `compressImage.ts` depuis Agenda Nadia vers `src/lib/compressImage.ts`
-2. Câbler `compressPhoto`/`compressDocument` dans tous les points d'upload du projet (chercher `.storage.from(...).upload(` dans `src/`) — choisir le preset selon le contexte (documents à lire type devoirs/récitations vs photos casuelles)
-3. Ne PAS toucher aux photos déjà stockées (uniquement les futurs envois)
-4. Vérifier `npx tsc --noEmit -p .` propre avant de proposer le commit/push
