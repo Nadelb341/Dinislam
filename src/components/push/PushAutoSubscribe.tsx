@@ -39,21 +39,11 @@ const PushAutoSubscribe = () => {
           }
         }
 
-        const { data: dbRow } = await supabase
-          .from('push_subscriptions')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        console.log('[PushAuto] permission:', Notification.permission, 'browserSub:', hasBrowserSub, 'dbRow:', !!dbRow);
-
-        if (!hasBrowserSub && dbRow) {
-          console.log('[PushAuto] Cleaning stale DB subscription after reinstall');
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('user_id', user.id);
-        }
+        // ⚠️ Ne JAMAIS supprimer ici les abonnements enregistrés en base : ils peuvent appartenir à un
+        // AUTRE appareil de la même personne (téléphone + tablette + ordinateur). Avant le 2026-09-30,
+        // ouvrir l'appli sur un appareil non abonné effaçait les notifications de tous les autres.
+        // Les abonnements vraiment périmés sont retirés automatiquement par send-push-notification (erreur 404/410).
+        console.log('[PushAuto] permission:', Notification.permission, 'browserSub:', hasBrowserSub);
 
         if (!permissionGranted || !hasBrowserSub) {
           setNeedsSubscription(true);

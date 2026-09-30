@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
 
 const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
@@ -22,11 +23,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentHour = now.getUTCHours().toString().padStart(2, '0');
-    const currentMinute = now.getUTCMinutes().toString().padStart(2, '0');
-    const currentTime = `${currentHour}:${currentMinute}`;
+    // L'heure saisie par l'admin est l'heure de Paris (avant : comparée à l'heure UTC → 2 h de décalage)
+    const now = parisNow();
+    const today = now.day;
+    const currTotal = now.hour * 60 + now.minute;
 
     // Fetch active scheduled notifications for today
     const { data: notifications, error } = await supabase
@@ -44,12 +44,12 @@ serve(async (req) => {
       const sendTime = notif.send_time?.substring(0, 5);
       if (!sendTime) continue;
 
-      // Strict time check (±5 min)
+      // Déclenché toutes les 5 min par pg_cron : on envoie dans les 5 min qui suivent l'heure prévue,
+      // une seule fois par jour (last_sent_on) — avant, la fenêtre ±5 min pouvait envoyer 2 ou 3 fois.
       const [sendHour, sendMinute] = sendTime.split(':').map(Number);
-      const [currHour, currMinute] = currentTime.split(':').map(Number);
-      const sendTotal = sendHour * 60 + sendMinute;
-      const currTotal = currHour * 60 + currMinute;
-      if (Math.abs(sendTotal - currTotal) > 5) continue;
+      const diff = currTotal - (sendHour * 60 + sendMinute);
+      if (diff < 0 || diff >= 5) continue;
+      if (notif.last_sent_on === today) continue;
 
       // Call the send-push-notification edge function (now VAPID-based)
       const pushBody: any = {
@@ -67,15 +67,15 @@ serve(async (req) => {
         pushBody.sendToAll = true;
       }
 
-      // Call the VAPID-based send function internally
-      const { data: pushResult, error: pushError } = await supabase.functions.invoke(
-        'send-push-notification',
-        { body: pushBody }
-      );
+      // Marquer AVANT l'envoi : si deux passages se chevauchent, un seul envoie
+      const { data: claimed } = await supabase
+        .from('scheduled_notifications').update({ last_sent_on: today })
+        .eq('id', notif.id).or(`last_sent_on.is.null,last_sent_on.neq.${today}`).select('id');
+      if (!claimed?.length) continue;
 
+      const pushResult = await sendPushInternal(pushBody);
       const sent = pushResult?.sent || 0;
       totalSent += sent;
-
       console.log(`Scheduled notification ${notif.id}: sent to ${sent} recipients`);
     }
 

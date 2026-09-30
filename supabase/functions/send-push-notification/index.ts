@@ -246,7 +246,11 @@ serve(async (req) => {
     let isServiceCall = false;
     let callerId: string | null = null;
 
-    if (authHeader) {
+    // Appel interne (rappels de devoirs, notifications programmées) : secret partagé entre fonctions
+    const internalSecret = Deno.env.get('INTERNAL_CALL_SECRET');
+    if (internalSecret && req.headers.get('x-internal-secret') === internalSecret) {
+      isServiceCall = true;
+    } else if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       // Check if this is an internal service call
       if (token === supabaseServiceKey) {
