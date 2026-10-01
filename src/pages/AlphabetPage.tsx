@@ -9,11 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Check, Volume2, FileText, Video, Image as ImageIcon, File } from 'lucide-react';
 import { FitText } from '@/components/shared/FitText';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { LetterVoiceRecorder } from '@/components/alphabet/LetterVoiceRecorder';
 import type { Tables } from '@/integrations/supabase/types';
 
 const AlphabetPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { askValidation, validationDialog } = useConfirmValidation();
   const [selectedLetter, setSelectedLetter] = useState<Tables<'alphabet_letters'> | null>(null);
 
   const { data: letters = [], isLoading } = useQuery({
@@ -169,13 +172,34 @@ const AlphabetPage = () => {
                   </div>
                 </div>
 
-                {/* Audio */}
-                {selectedLetter.audio_url && (
-                  <div className="bg-muted/30 rounded-xl p-3 flex items-center gap-3">
-                    <Volume2 className="h-5 w-5 text-primary" />
-                    <audio src={selectedLetter.audio_url} controls className="flex-1 h-8" />
+                {/* Audios : la lettre seule, puis avec ses voyelles */}
+                {([
+                  { field: 'audio_url' as const, label: 'La lettre', url: selectedLetter.audio_url },
+                  { field: 'audio_vowels_url' as const, label: 'Avec les voyelles (a, i, ou)', url: selectedLetter.audio_vowels_url },
+                ]).map(({ field, label, url }) => (url || isAdmin) && (
+                  <div key={field} className="space-y-2">
+                    {url && (
+                      <div className="bg-muted/30 rounded-xl p-3 space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+                        <div className="flex items-center gap-3">
+                          <Volume2 className="h-5 w-5 text-primary shrink-0" />
+                          <audio key={url} src={url} controls className="flex-1 min-w-0 h-8" />
+                        </div>
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <LetterVoiceRecorder
+                        letter={selectedLetter}
+                        field={field}
+                        currentUrl={url}
+                        onReplaced={(newUrl) => {
+                          setSelectedLetter((l) => (l ? { ...l, [field]: newUrl } : l));
+                          queryClient.invalidateQueries({ queryKey: ['alphabet-letters-page'] });
+                        }}
+                      />
+                    )}
                   </div>
-                )}
+                ))}
 
                 {/* Multimedia content */}
                 {selectedContents.length > 0 && (
@@ -218,7 +242,11 @@ const AlphabetPage = () => {
                     <Button
                       className="w-full gap-2"
                       variant={isValidated ? 'outline' : 'default'}
-                      onClick={() => toggleValidatedMutation.mutate({ letterId: selectedLetter.id, isValidated: !isValidated })}
+                      onClick={() => {
+                        const run = () => toggleValidatedMutation.mutate({ letterId: selectedLetter.id, isValidated: !isValidated });
+                        if (isValidated) run();
+                        else askValidation('Valider cette lettre ?', `${selectedLetter.name_french} (${selectedLetter.letter_arabic}) sera marquée comme apprise.`, run);
+                      }}
                     >
                       {isValidated ? <><Check className="h-4 w-4 text-green-500" /> Apprise ✅</> : '✏️ Marquer comme apprise'}
                     </Button>
@@ -228,6 +256,7 @@ const AlphabetPage = () => {
             </DialogContent>
           </Dialog>
         )}
+        {validationDialog}
       </div>
     </AppLayout>
   );

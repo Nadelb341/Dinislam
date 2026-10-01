@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio";
 
 export interface TrashItem {
   id: string;
@@ -21,7 +21,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -73,7 +73,24 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
-  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft">];
+  // Audio d'une lettre remplacé : on remet l'ancien, et celui en place part à son tour dans la corbeille
+  if (item.item_type === "alphabet_letter_audio") {
+    const d = item.item_data as { letter_id?: number; field?: "audio_url" | "audio_vowels_url"; audio_url?: string } | null;
+    if (!d?.letter_id || !d.audio_url) return false;
+    const field = d.field === "audio_vowels_url" ? "audio_vowels_url" : "audio_url";
+    const { data: letter } = await supabase.from("alphabet_letters").select("*").eq("id", d.letter_id).maybeSingle();
+    if (!letter) return false;
+    const current = letter[field];
+    if (current && current !== d.audio_url) {
+      const ok = await moveToTrash(item.user_id, "alphabet_letter_audio", String(d.letter_id), item.label, { ...d, audio_url: current });
+      if (!ok) return false;
+    }
+    const { error } = await supabase.from("alphabet_letters").update({ [field]: d.audio_url }).eq("id", d.letter_id);
+    if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio">];
   if (!table) return false;
   const { error } = await untypedDb.from(table).insert(item.item_data);
   if (error) return false;

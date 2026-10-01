@@ -201,6 +201,7 @@ export type Database = {
       alphabet_letters: {
         Row: {
           audio_url: string | null
+          audio_vowels_url: string | null
           created_at: string | null
           display_order: number | null
           id: number
@@ -214,6 +215,7 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          audio_vowels_url?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
@@ -227,6 +229,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          audio_vowels_url?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
