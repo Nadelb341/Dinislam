@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { saveDraft } from "@/hooks/useDraftRecovery";
+import { untypedDb } from "@/lib/untypedDb";
 
 export type TrashItemType =
   | "learning_module" | "module_content" | "prayer_card_content" | "sourate_content" | "alphabet_content"
@@ -73,7 +74,7 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   }
   const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft">];
   if (!table) return false;
-  const { error } = await supabase.from(table as any).insert(item.item_data as any);
+  const { error } = await untypedDb.from(table).insert(item.item_data);
   if (error) return false;
   await supabase.from("trash_items").delete().eq("id", item.id);
   return true;

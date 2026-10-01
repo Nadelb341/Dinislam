@@ -150,8 +150,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   // Sync maxErrorsInput with settings
   useEffect(() => {
-    if (settings && (settings as any).max_errors != null) {
-      setMaxErrorsInput(String((settings as any).max_errors));
+    if (settings && settings.max_errors != null) {
+      setMaxErrorsInput(String(settings.max_errors));
     }
   }, [settings]);
 
@@ -230,7 +230,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
 
   const getQuizzesForDay = (dayId: string) => quizzes.filter(q => q.day_id === dayId).sort((a, b) => a.question_order - b.question_order);
   const getVideosForDay = (dayId: string) => dayVideos.filter(v => v.day_id === dayId);
-  const getActivitiesForDay = (dayId: string) => dayActivities.filter(a => (a as any).day_id === dayId);
+  const getActivitiesForDay = (dayId: string) => dayActivities.filter(a => a.day_id === dayId);
   const getExceptionsForDay = (dayId: string) => dayExceptions.filter(e => e.day_id === dayId && e.is_unlocked);
   const currentDayData = days.find(d => d.id === selectedDay);
   const currentQuizzes = selectedDay ? getQuizzesForDay(selectedDay) : [];
@@ -679,7 +679,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
     mutationFn: async (maxErrors: number) => {
       const { error } = await supabase
         .from('ramadan_settings')
-        .update({ max_errors: maxErrors, updated_at: new Date().toISOString() } as any)
+        .update({ max_errors: maxErrors, updated_at: new Date().toISOString() })
         .eq('id', settings?.id);
       if (error) throw error;
     },
@@ -718,8 +718,8 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       setQuestions(existing.map(q => ({
         question: q.question,
         options: q.options,
-        correctOptions: (q as any).correct_options?.length > 0 
-          ? (q as any).correct_options 
+        correctOptions: q.correct_options?.length > 0 
+          ? q.correct_options 
           : (q.correct_option !== null ? [q.correct_option] : []),
         explanation: q.explanation || '',
         existingId: q.id,
@@ -936,7 +936,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            ⚠️ Actuellement : si un élève fait {(settings as any)?.max_errors ?? 3} erreur(s) ou plus, sa journée n'est pas validée.
+            ⚠️ Actuellement : si un élève fait {settings?.max_errors ?? 3} erreur(s) ou plus, sa journée n'est pas validée.
           </p>
         </CardContent>
       </Card>

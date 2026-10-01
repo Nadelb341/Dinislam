@@ -462,7 +462,7 @@ const Invocations = () => {
 
   const validatedCount = progress.filter((p) => p.is_validated).length;
 
-  const handleCardClick = (invocation: any, index: number) => {
+  const handleCardClick = (invocation, index) => {
     if (!isCardUnlocked(index)) {
       toast.info('🔒 Cette invocation sera débloquée après validation de l\'invocation précédente par l\'admin.');
       return;

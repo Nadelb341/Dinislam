@@ -76,7 +76,7 @@ export const useQuranVerses = (sourateNumber: number | null) => {
 
         const [arData, frData, transData] = json.data;
 
-        const combined: QuranVerse[] = (arData.ayahs || []).map((ayah: any, i: number) => ({
+        const combined: QuranVerse[] = (arData.ayahs || []).map((ayah, i) => ({
           id: ayah.numberInSurah,
           text_arabic: ayah.text || '',
           transliteration: transData.ayahs?.[i]?.text || '',

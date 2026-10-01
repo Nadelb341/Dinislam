@@ -1998,6 +1998,7 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean | null
+          max_errors: number
           start_date: string | null
           start_enabled: boolean | null
           started_at: string | null
@@ -2009,6 +2010,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          max_errors?: number
           start_date?: string | null
           start_enabled?: boolean | null
           started_at?: string | null
@@ -2020,6 +2022,7 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean | null
+          max_errors?: number
           start_date?: string | null
           start_enabled?: boolean | null
           started_at?: string | null
@@ -2893,6 +2896,7 @@ export type Database = {
           context: string
           created_at: string | null
           id: string
+          is_memorized: boolean
           is_validated: boolean | null
           progress_percentage: number | null
           sourate_id: string
@@ -2903,6 +2907,7 @@ export type Database = {
           context?: string
           created_at?: string | null
           id?: string
+          is_memorized?: boolean
           is_validated?: boolean | null
           progress_percentage?: number | null
           sourate_id: string
@@ -2913,6 +2918,7 @@ export type Database = {
           context?: string
           created_at?: string | null
           id?: string
+          is_memorized?: boolean
           is_validated?: boolean | null
           progress_percentage?: number | null
           sourate_id?: string

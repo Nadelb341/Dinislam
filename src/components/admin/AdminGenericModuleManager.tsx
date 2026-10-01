@@ -63,12 +63,12 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     queryKey: ['admin-module-card-contents', moduleId],
     queryFn: async () => {
       if (!cards.length) return [];
-      const cardIds = (cards as any[]).map((c) => c.id);
+      const cardIds = cards.map((c) => c.id);
       const { data, error } = await supabase.from('module_card_content').select('*').in('card_id', cardIds).order('display_order');
       if (error) throw error;
       return data || [];
     },
-    enabled: (cards as any[]).length > 0,
+    enabled: cards.length > 0,
   });
 
   const saveMutation = useMutation({
@@ -85,7 +85,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
         const { error } = await supabase.from('module_cards').update(payload).eq('id', editingCard.id);
         if (error) throw error;
       } else {
-        const maxOrder = (cards as any[]).reduce((max: number, c: any) => Math.max(max, c.display_order ?? 0), -1);
+        const maxOrder = cards.reduce((max: number, c) => Math.max(max, c.display_order ?? 0), -1);
         const { error } = await supabase.from('module_cards').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
       }
@@ -131,7 +131,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
-      const content = (contents as any[]).find((c) => c.id === contentId);
+      const content = contents.find((c) => c.id === contentId);
       if (content) {
         try {
           const url = new URL(content.file_url);
@@ -157,7 +157,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
-      const existingCount = (contents as any[]).filter((c) => c.card_id === cardId).length;
+      const existingCount = contents.filter((c) => c.card_id === cardId).length;
       const ext = file.name.split('.').pop();
       const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: false });
@@ -174,7 +174,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       toast.success('Contenu ajouté ✅');
 
       // Génération automatique des flashcards en arrière-plan
-      const card = (cards as any[]).find((c) => c.id === cardId);
+      const card = cards.find((c) => c.id === cardId);
       if (card) {
         const toastId = `fc-${cardId}-${Date.now()}`;
         toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
@@ -210,7 +210,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
-      const existingCount = (contents as any[]).filter((c) => c.card_id === cardId).length;
+      const existingCount = contents.filter((c) => c.card_id === cardId).length;
       const { error } = await supabase.from('module_card_content').insert({
         card_id: cardId, content_type: 'youtube', file_url: embedUrl,
         file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
@@ -221,7 +221,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       toast.success('Lien YouTube ajouté ✅');
 
       // Génération automatique des flashcards en arrière-plan
-      const card = (cards as any[]).find((c) => c.id === cardId);
+      const card = cards.find((c) => c.id === cardId);
       if (card) {
         const toastId = `fc-${cardId}-${Date.now()}`;
         toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
@@ -312,7 +312,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}</div>
-      ) : (cards as any[]).length === 0 ? (
+      ) : cards.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <p className="font-medium">Aucune carte</p>
           <p className="text-sm">Cliquez sur "Ajouter une carte" pour commencer.</p>
@@ -323,8 +323,8 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
             items={cards as any[]}
             onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
             renderItem={(card: any, { ref, style, isDragging, ...dragAttrs }) => {
-                const index = (cards as any[]).findIndex((c) => c.id === card.id);
-                const cardContents = (contents as any[]).filter((c) => c.card_id === card.id);
+                const index = cards.findIndex((c) => c.id === card.id);
+                const cardContents = contents.filter((c) => c.card_id === card.id);
                 const isThisUploading = isUploading && uploadingCardId === card.id;
                 return (
                   <div key={card.id} ref={ref} style={style} {...dragAttrs} className={isDragging ? 'opacity-60' : ''}>

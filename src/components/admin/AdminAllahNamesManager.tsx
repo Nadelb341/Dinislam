@@ -57,7 +57,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     },
   });
 
-  const getNameMedia = (nameId: number) => (allMedia as any[]).filter((m) => m.name_id === nameId);
+  const getNameMedia = (nameId: number) => allMedia.filter((m) => m.name_id === nameId);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -72,7 +72,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         const { error } = await supabase.from('allah_names').update(payload).eq('id', editingName.id);
         if (error) throw error;
       } else {
-        const maxOrder = (names as any[]).reduce((max: number, n: any) => Math.max(max, n.display_order ?? 0), 0);
+        const maxOrder = names.reduce((max: number, n) => Math.max(max, n.display_order ?? 0), 0);
         const { error } = await supabase.from('allah_names').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
       }
@@ -89,7 +89,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const nameItem = (names as any[]).find((n) => n.id === id);
+      const nameItem = names.find((n) => n.id === id);
       const { error } = await supabase.from('allah_names').delete().eq('id', id);
       if (error) throw error;
       if (nameItem && user?.id) await moveToTrash(user.id, 'allah_name', String(id), nameItem.name_french || nameItem.name_arabic, nameItem);
@@ -105,7 +105,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   const deleteMediaMutation = useMutation({
     mutationFn: async (mediaId: string) => {
-      const media = (allMedia as any[]).find((m) => m.id === mediaId);
+      const media = allMedia.find((m) => m.id === mediaId);
       const { error } = await supabase.from('allah_name_media').delete().eq('id', mediaId);
       if (error) throw error;
       if (media && user?.id) await moveToTrash(user.id, 'allah_name_media', mediaId, media.file_name || 'Média', media);
@@ -247,7 +247,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       <div>
         <h2 className="text-xl font-bold" style={{ color: 'hsl(220 70% 25%)' }}>99 Noms d'Allah</h2>
         <p className="text-sm" style={{ color: 'hsl(220 20% 55%)' }}>
-          {(names as any[]).length} noms • Glissez pour réordonner
+          {names.length} noms • Glissez pour réordonner
         </p>
       </div>
 

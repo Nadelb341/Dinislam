@@ -538,7 +538,7 @@ const Admin = () => {
                if (item.type === 'static') {
                   const card = STATIC_CARDS.find(c => c.key === item.key);
                   if (!card) return null;
-                  const hasMultipleActions = !!(card as any).manageView;
+                  const hasMultipleActions = !!card.manageView;
 
                   if (hasMultipleActions) {
                     return (
@@ -569,7 +569,7 @@ const Admin = () => {
                             </button>
                             <button
                               className="flex items-center gap-2 w-full rounded-md px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
-                              onClick={() => setCurrentView((card as any).manageView)}
+                              onClick={() => setCurrentView(card.manageView)}
                             >
                               <Wrench className="h-4 w-4 text-muted-foreground" />
                               ⚙️ Gérer le contenu

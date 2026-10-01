@@ -120,7 +120,7 @@ const GrammaireConjugaisonPage = () => {
     enabled: cards.length > 0,
   });
 
-  const sections = (cards as any[]).reduce((acc: Record<string, any[]>, card: any) => {
+  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
     const key = card.section || '_root';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -128,7 +128,7 @@ const GrammaireConjugaisonPage = () => {
   }, {});
 
   const selectedContents = selectedCard
-    ? (cardContents as any[]).filter((c) => c.card_id === selectedCard.id)
+    ? cardContents.filter((c) => c.card_id === selectedCard.id)
     : [];
 
   const { data: selectedFlashcards = [] } = useQuery({
@@ -205,11 +205,11 @@ const GrammaireConjugaisonPage = () => {
                 )}
 
                 {/* Cartes chapitres */}
-                {(sectionCards as any[]).map((card) => {
+                {sectionCards.map((card) => {
                   globalChapterIndex++;
                   const chNum = globalChapterIndex;
                   const color = COLORS[(chNum - 1) % COLORS.length];
-                  const contents = (cardContents as any[]).filter((c) => c.card_id === card.id);
+                  const contents = cardContents.filter((c) => c.card_id === card.id);
                   const hasVideo   = contents.some(c => c.content_type === 'video' || c.content_type === 'youtube');
                   const hasPdf     = contents.some(c => c.content_type === 'pdf' || c.content_type === 'document');
                   const hasAudio   = contents.some(c => c.content_type === 'audio');
@@ -280,7 +280,7 @@ const GrammaireConjugaisonPage = () => {
 
       {/* Dialog détail chapitre */}
       {selectedCard && (() => {
-        const chapterNum = (cards as any[]).findIndex((c) => c.id === selectedCard.id) + 1;
+        const chapterNum = cards.findIndex((c) => c.id === selectedCard.id) + 1;
         const color = COLORS[(chapterNum - 1) % COLORS.length];
         return (
           <Dialog open onOpenChange={() => setSelectedCard(null)}>
@@ -406,7 +406,7 @@ const GrammaireConjugaisonPage = () => {
 
                   {/* ── EXERCICES ── */}
                   {activeTab === 'exercices' && (
-                    (selectedFlashcards as any[]).length > 0 ? (
+                    selectedFlashcards.length > 0 ? (
                       <div className="space-y-3">
                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Flashcards</h4>
                         <FlashcardPlayer cards={selectedFlashcards as any[]} />

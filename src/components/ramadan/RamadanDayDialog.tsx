@@ -135,7 +135,7 @@ const RamadanDayDialog = ({
   // Web Audio: lazy-init AudioContext on first user interaction
   const getAudioCtx = useCallback(() => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
     return audioCtxRef.current;
   }, []);
@@ -721,14 +721,14 @@ const RamadanDayDialog = ({
                           const vid = videoRef.current;
                           if (!vid) return;
                           const isTablet = window.innerWidth >= 768;
-                          if (isTablet && (vid as any).webkitEnterFullscreen) {
-                            (vid as any).webkitEnterFullscreen();
+                          if (isTablet && vid.webkitEnterFullscreen) {
+                            vid.webkitEnterFullscreen();
                           } else if (vid.requestFullscreen) {
                             vid.requestFullscreen().catch(() => {});
-                          } else if ((vid as any).webkitRequestFullscreen) {
-                            (vid as any).webkitRequestFullscreen();
-                          } else if ((vid as any).webkitEnterFullscreen) {
-                            (vid as any).webkitEnterFullscreen();
+                          } else if (vid.webkitRequestFullscreen) {
+                            vid.webkitRequestFullscreen();
+                          } else if (vid.webkitEnterFullscreen) {
+                            vid.webkitEnterFullscreen();
                           }
                         }}
                       />

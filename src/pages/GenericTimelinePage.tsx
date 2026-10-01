@@ -119,7 +119,7 @@ const GenericTimelinePage = () => {
   });
 
   // Group cards by section
-  const sections = (cards as any[]).reduce((acc: Record<string, any[]>, card: any) => {
+  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
     const key = card.section || '_root';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -127,7 +127,7 @@ const GenericTimelinePage = () => {
   }, {});
 
   const selectedContents = selectedCard
-    ? (cardContents as any[]).filter((c) => c.card_id === selectedCard.id)
+    ? cardContents.filter((c) => c.card_id === selectedCard.id)
     : [];
 
   const { data: selectedFlashcards = [] } = useQuery({
@@ -145,7 +145,7 @@ const GenericTimelinePage = () => {
   });
 
   const hasContent = (cardId: string) =>
-    (cardContents as any[]).some((c) => c.card_id === cardId);
+    cardContents.some((c) => c.card_id === cardId);
 
   return (
     <AppLayout title={config.title}>
@@ -201,8 +201,8 @@ const GenericTimelinePage = () => {
 
                   {/* Timeline items */}
                   <div className="relative">
-                    {(sectionCards as any[]).map((card: any, cardIdx: number) => {
-                      const isLast = cardIdx === (sectionCards as any[]).length - 1 && isLastSection;
+                    {sectionCards.map((card, cardIdx) => {
+                      const isLast = cardIdx === sectionCards.length - 1 && isLastSection;
                       const hasMedia = hasContent(card.id);
 
                       return (
@@ -246,7 +246,7 @@ const GenericTimelinePage = () => {
                               <div className="flex items-center gap-1 shrink-0">
                                 {hasMedia && (
                                   <span className="flex items-center gap-1">
-                                    {(cardContents as any[]).filter((c) => c.card_id === card.id).map((c) => {
+                                    {cardContents.filter((c) => c.card_id === card.id).map((c) => {
                                       if (c.content_type === 'video') return <Video key={c.id} className="h-3.5 w-3.5 text-blue-500" />;
                                       if (c.content_type === 'audio') return <Volume2 key={c.id} className="h-3.5 w-3.5 text-teal-500" />;
                                       if (c.content_type === 'pdf') return <FileText key={c.id} className="h-3.5 w-3.5 text-red-500" />;
@@ -295,7 +295,7 @@ const GenericTimelinePage = () => {
                 </div>
               )}
 
-              {(selectedFlashcards as any[]).length > 0 && (
+              {selectedFlashcards.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Exercice — Flashcards</h4>
                   <FlashcardPlayer cards={selectedFlashcards as any[]} />

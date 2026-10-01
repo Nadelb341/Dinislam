@@ -70,7 +70,7 @@ const Ramadan = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from('ramadan_days').select('*').order('day_number');
       if (error) throw error;
-      return (data as any[]).map(d => ({ ...d, is_locked: d.is_locked ?? true })) as RamadanDay[];
+      return data.map(d => ({ ...d, is_locked: d.is_locked ?? true })) as RamadanDay[];
     },
   });
 
@@ -94,7 +94,7 @@ const Ramadan = () => {
       return data.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-        correct_options: Array.isArray((q as any).correct_options) ? (q as any).correct_options : [],
+        correct_options: Array.isArray(q.correct_options) ? q.correct_options : [],
       })) as unknown as Quiz[];
     },
   });
@@ -247,7 +247,7 @@ const Ramadan = () => {
 
   const handleQuizSubmit = (allCorrect: boolean, wrongCount: number) => {
     if (!openDay) return;
-    const maxErrors = (settings as any)?.max_errors ?? 3;
+    const maxErrors = settings?.max_errors ?? 3;
     // Seuil : moins de maxErrors erreurs requis pour valider
     if (wrongCount < maxErrors) {
       fireSuccess();
@@ -328,7 +328,7 @@ const Ramadan = () => {
             quizzes={getQuizzesForDay(openDay.id)}
             quizCompleted={!!getDayProgress(openDay.id)?.quiz_completed}
             videoWatched={!!getDayProgress(openDay.id)?.video_watched}
-            maxErrors={(settings as any)?.max_errors ?? 3}
+            maxErrors={settings?.max_errors ?? 3}
             onMarkVideoWatched={() => markProgressMutation.mutate({ dayId: openDay.id, field: 'video_watched' })}
             onSubmitQuiz={handleQuizSubmit}
             onSaveQuizResponse={(quizId, selectedOption, attemptNumber, isCorrect) => saveQuizResponseMutation.mutate({ quizId, selectedOption, attemptNumber, isCorrect })}

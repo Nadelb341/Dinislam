@@ -105,7 +105,7 @@ export default function PushDiagnostic() {
     if (hasSW) {
       try {
         registration = await navigator.serviceWorker.ready;
-        existingSub = await (registration as any).pushManager?.getSubscription();
+        existingSub = await registration.pushManager?.getSubscription();
         update(5, {
           status: existingSub ? 'ok' : 'pending',
           detail: existingSub ? `oui — ${existingSub.endpoint.substring(0, 50)}...` : 'aucun abonnement'
@@ -132,7 +132,7 @@ export default function PushDiagnostic() {
             await existingSub.unsubscribe();
           }
           const keyArray = urlBase64ToUint8Array(vapidKey);
-          newSub = await (registration as any).pushManager.subscribe({
+          newSub = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: keyArray
           });

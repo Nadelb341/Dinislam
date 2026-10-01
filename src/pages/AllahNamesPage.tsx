@@ -50,14 +50,14 @@ const AllahNamesPage = () => {
     },
   });
 
-  const validatedIds = new Set((progress as any[]).filter((p) => p.is_validated).map((p) => p.name_id));
+  const validatedIds = new Set(progress.filter((p) => p.is_validated).map((p) => p.name_id));
   const validatedCount = validatedIds.size;
   const totalCount = names.length;
 
   const isNameAccessible = (index: number): boolean => {
     if (isAdmin || isOver20) return true;
     if (index === 0) return true;
-    const prevName = (names as any[])[index - 1];
+    const prevName = names[index - 1];
     return validatedIds.has(prevName?.id);
   };
 
@@ -83,7 +83,7 @@ const AllahNamesPage = () => {
   const getMedia = (type: string) => selectedMedia.find((m) => m.media_type === type);
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
 
-  const openName = (name: any, index: number) => {
+  const openName = (name, index) => {
     if (!isNameAccessible(index)) {
       toast.info('Mémorise le nom précédent d\'abord ! 🔒');
       return;
@@ -149,7 +149,7 @@ const AllahNamesPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {(names as any[]).map((name: any, index: number) => {
+              {names.map((name, index) => {
                 const accessible = isNameAccessible(index);
                 const validated = validatedIds.has(name.id);
                 return (

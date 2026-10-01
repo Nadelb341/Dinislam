@@ -278,9 +278,9 @@ const Index = () => {
   // Check notification permission and show banner with smart logic
   useEffect(() => {
     if (user && 'Notification' in window && profile) {
-      const dismissed = (profile as any).notification_prompt_dismissed;
-      const laterCount = (profile as any).notification_prompt_later_count || 0;
-      const laterAt = (profile as any).notification_prompt_later_at;
+      const dismissed = profile.notification_prompt_dismissed;
+      const laterCount = profile.notification_prompt_later_count || 0;
+      const laterAt = profile.notification_prompt_later_at;
 
       if (dismissed === 'accepted' || Notification.permission === 'granted') {
         setShowNotifBanner(false);
@@ -326,7 +326,7 @@ const Index = () => {
   const handleDismissNotifBanner = async () => {
     if (!user) return;
     setShowNotifBanner(false);
-    const laterCount = ((profile as any)?.notification_prompt_later_count || 0) + 1;
+    const laterCount = (profile?.notification_prompt_later_count || 0) + 1;
     await supabase.from('profiles').update({
       notification_prompt_dismissed: 'later',
       notification_prompt_later_count: laterCount,

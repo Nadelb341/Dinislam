@@ -102,7 +102,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
         const { error } = await supabase.from('invocations').update(payload).eq('id', editingInvocation.id);
         if (error) throw error;
       } else {
-        const maxOrder = invocations.reduce((max: number, inv: any) => Math.max(max, inv.display_order ?? 0), -1);
+        const maxOrder = invocations.reduce((max: number, inv) => Math.max(max, inv.display_order ?? 0), -1);
         const { error } = await supabase.from('invocations').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
       }

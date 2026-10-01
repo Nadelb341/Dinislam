@@ -220,11 +220,11 @@ const SourateDetailDialog = ({
 
       supabase
         .from('sourates')
-        .select('video_url' as any)
+        .select('video_url')
         .eq('id', dbId)
         .maybeSingle()
         .then(({ data }) => {
-          setVideoUrl((data as any)?.video_url || null);
+          setVideoUrl(data?.video_url || null);
         });
 
       // Mark targeted content as viewed

@@ -58,7 +58,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!front.trim()) throw new Error('Le texte français est requis');
-      const maxOrder = list.reduce((max: number, f: any) => Math.max(max, f.display_order ?? 0), -1);
+      const maxOrder = list.reduce((max: number, f) => Math.max(max, f.display_order ?? 0), -1);
       const { error } = await supabase.from('module_flashcards').insert({
         module_card_id: cardId,
         front_text: front.trim(),
@@ -138,7 +138,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
         toast.error('Aucun modèle disponible pour ce sujet — ajoute les flashcards manuellement.');
         return;
       }
-      const maxOrder = list.reduce((max: number, f: any) => Math.max(max, f.display_order ?? 0), -1);
+      const maxOrder = list.reduce((max: number, f) => Math.max(max, f.display_order ?? 0), -1);
       const rows = templates.map((t, i) => ({
         module_card_id: cardId,
         front_text: t.front_text,
@@ -219,7 +219,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
           {/* Liste */}
           {list.length > 0 && (
             <div className="space-y-1.5 max-h-96 overflow-y-auto">
-              {list.map((f: any, i: number) => (
+              {list.map((f, i) => (
                 editingId === f.id ? (
                   /* Mode édition */
                   <div key={f.id} className="bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700 rounded-lg p-2 space-y-1.5">

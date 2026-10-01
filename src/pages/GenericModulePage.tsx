@@ -69,7 +69,7 @@ const GenericModulePage = () => {
   };
 
   // Group cards by section
-  const sections = cards.reduce((acc: Record<string, any[]>, card: any) => {
+  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
     const key = card.section || '';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -125,7 +125,7 @@ const GenericModulePage = () => {
                   </h3>
                 )}
                 <div className="grid grid-cols-3 gap-2">
-                  {(sectionCards as any[]).map((card: any, index: number) => {
+                  {sectionCards.map((card, index) => {
                     const hasContent = cardContents.some((c) => c.card_id === card.id);
                     return (
                       <button
@@ -178,7 +178,7 @@ const GenericModulePage = () => {
                   <Badge variant="outline">{selectedCard.section}</Badge>
                 )}
 
-                {(selectedFlashcards as any[]).length > 0 && (
+                {selectedFlashcards.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">🃏 Exercice — Flashcards</h4>
                     <FlashcardPlayer cards={selectedFlashcards as any[]} />

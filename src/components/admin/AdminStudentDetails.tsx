@@ -464,7 +464,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 <Button
                   type="button"
                   size="sm"
-                  variant={(student as any).gender === 'garcon' ? 'default' : 'outline'}
+                  variant={student.gender === 'garcon' ? 'default' : 'outline'}
                   className="text-xs px-2 py-1 h-7"
                   onClick={async () => {
                     await supabase.from('profiles').update({ gender: 'garcon' }).eq('user_id', student.user_id);
@@ -477,7 +477,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                 <Button
                   type="button"
                   size="sm"
-                  variant={(student as any).gender === 'fille' ? 'default' : 'outline'}
+                  variant={student.gender === 'fille' ? 'default' : 'outline'}
                   className="text-xs px-2 py-1 h-7"
                   onClick={async () => {
                     await supabase.from('profiles').update({ gender: 'fille' }).eq('user_id', student.user_id);

@@ -210,7 +210,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
       const publicUrl = await uploadToStorage(file, extraCard.id);
       const { error } = await supabase.from('module_card_content').insert({
         card_id: extraCard.id, content_type: type, file_url: publicUrl,
-        file_name: file.name, display_order: (extraContents as any[]).length, uploaded_by: user.id,
+        file_name: file.name, display_order: extraContents.length, uploaded_by: user.id,
       });
       if (error) throw error;
       await refetchExtra();
@@ -229,7 +229,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     try {
       const { error } = await supabase.from('module_card_content').insert({
         card_id: extraCard.id, content_type: 'youtube', file_url: embedUrl,
-        file_name: 'Vidéo YouTube', display_order: (extraContents as any[]).length, uploaded_by: user.id,
+        file_name: 'Vidéo YouTube', display_order: extraContents.length, uploaded_by: user.id,
       });
       if (error) throw error;
       await refetchExtra();
@@ -243,7 +243,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
 
   // Supprimer un contenu extra
   const handleDeleteExtra = useCallback(async (id: string) => {
-    const item = (extraContents as any[]).find(c => c.id === id);
+    const item = extraContents.find(c => c.id === id);
     if (!item) return;
     try {
       if (item.content_type !== 'youtube') await removeFromStorage(item.file_url);
@@ -383,9 +383,9 @@ const AdminCoranContent = ({ onBack }: Props) => {
         </h3>
 
         {/* Liste des contenus existants */}
-        {(extraContents as any[]).length > 0 && (
+        {extraContents.length > 0 && (
           <div className="space-y-2">
-            {(extraContents as any[]).map((c) => (
+            {extraContents.map((c) => (
               <div key={c.id} className="flex items-center gap-3 bg-muted/40 rounded-lg p-2.5">
                 {contentTypeIcon(c.content_type)}
                 <div className="flex-1 min-w-0">

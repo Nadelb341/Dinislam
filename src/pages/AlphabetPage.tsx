@@ -47,7 +47,7 @@ const AlphabetPage = () => {
   const toggleValidatedMutation = useMutation({
     mutationFn: async ({ letterId, isValidated }: { letterId: number; isValidated: boolean }) => {
       if (!user) throw new Error('Non connecté');
-      const existing = (progress as any[]).find((p) => p.letter_id === letterId);
+      const existing = progress.find((p) => p.letter_id === letterId);
       if (existing) {
         const { error } = await supabase.from('user_alphabet_progress').update({ is_validated: isValidated }).eq('id', existing.id);
         if (error) throw error;
@@ -62,7 +62,7 @@ const AlphabetPage = () => {
     },
   });
 
-  const validatedCount = (progress as any[]).filter((p) => p.is_validated).length;
+  const validatedCount = progress.filter((p) => p.is_validated).length;
   const selectedContents = selectedLetter ? contents.filter((c) => c.letter_id === selectedLetter.id) : [];
 
   const getContentIcon = (type: string) => {
@@ -99,8 +99,8 @@ const AlphabetPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-            {letters.map((letter: any, index: number) => {
-              const letterProgress = (progress as any[]).find((p) => p.letter_id === letter.id);
+            {letters.map((letter, index) => {
+              const letterProgress = progress.find((p) => p.letter_id === letter.id);
               const isValidated = letterProgress?.is_validated ?? false;
               const hasContent = contents.some((c) => c.letter_id === letter.id);
 
@@ -211,7 +211,7 @@ const AlphabetPage = () => {
 
                 {/* Mark as learned */}
                 {(() => {
-                  const letterProgress = (progress as any[]).find((p) => p.letter_id === selectedLetter.id);
+                  const letterProgress = progress.find((p) => p.letter_id === selectedLetter.id);
                   const isValidated = letterProgress?.is_validated ?? false;
                   return (
                     <Button

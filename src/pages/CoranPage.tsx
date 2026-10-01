@@ -47,7 +47,7 @@ const CoranPage = () => {
       progressData?.forEach(p => {
         pMap.set(p.sourate_id, {
           is_validated: p.is_validated,
-          is_memorized: (p as any).is_memorized ?? false,
+          is_memorized: p.is_memorized ?? false,
           progress_percentage: p.progress_percentage,
         });
       });
@@ -55,7 +55,7 @@ const CoranPage = () => {
 
       const vMap = new Map<string, boolean>();
       verseData?.forEach((v) => {
-        vMap.set(`${v.sourate_id}-${v.verse_number}`, (v as any).is_validated ?? v.is_memorized);
+        vMap.set(`${v.sourate_id}-${v.verse_number}`, v.is_memorized);
       });
       setVerseProgress(vMap);
       setSourateContents(contentData || []);

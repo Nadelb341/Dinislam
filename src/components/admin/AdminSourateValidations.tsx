@@ -90,7 +90,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
       });
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
     },
-    onError: (_, __, context: any) => {
+    onError: (_, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-sourate-validations'], context.previous);
       toast({ title: 'Erreur lors de la validation', variant: 'destructive' });
     },
@@ -124,7 +124,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
       });
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
     },
-    onError: (_, __, context: any) => {
+    onError: (_, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-sourate-validations'], context.previous);
       toast({ title: 'Erreur lors du refus', variant: 'destructive' });
     },

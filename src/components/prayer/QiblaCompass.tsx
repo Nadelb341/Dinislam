@@ -37,7 +37,7 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   // Create stable handler
   useEffect(() => {
     handlerRef.current = (e: DeviceOrientationEvent) => {
-      const heading: number = (e as any).webkitCompassHeading ?? e.alpha ?? 0;
+      const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
       targetHeadingRef.current = heading;
       setDeviceHeading(heading);
     };
@@ -49,7 +49,7 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
     if (typeof DOE?.requestPermission !== 'function' && window.DeviceOrientationEvent) {
       // Android / desktop — start immediately
       const handler = (e: DeviceOrientationEvent) => {
-        const heading: number = (e as any).webkitCompassHeading ?? e.alpha ?? 0;
+        const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
         targetHeadingRef.current = heading;
         setDeviceHeading(heading);
       };
@@ -78,11 +78,13 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   // Synchronous onClick handler for iOS permission
   const handleActivateCompass = async () => {
     try {
-      if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        const permission = await (DeviceOrientationEvent as any).requestPermission();
+      // iOS 13+ : autorisation demandée par une fonction absente des types standards
+      const OrientationEvent = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<PermissionState> };
+      if (typeof OrientationEvent.requestPermission === 'function') {
+        const permission = await OrientationEvent.requestPermission();
         if (permission === 'granted') {
           const handler = (e: DeviceOrientationEvent) => {
-            const heading: number = (e as any).webkitCompassHeading ?? e.alpha ?? 0;
+            const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
             targetHeadingRef.current = heading;
             setDeviceHeading(heading);
           };

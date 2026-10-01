@@ -79,11 +79,11 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
           <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
             🎵 Audio complet de la sourate
           </p>
-          {(sourate as any).audio_complet_url ? (
+          {sourate.audio_complet_url ? (
             <div className="flex items-center gap-2">
-              <audio src={(sourate as any).audio_complet_url} controls className="flex-1" style={{ height: '32px' }} />
+              <audio src={sourate.audio_complet_url} controls className="flex-1" style={{ height: '32px' }} />
               <button
-                onClick={() => handleDeleteAudioComplet(sourate.id, (sourate as any).audio_complet_path)}
+                onClick={() => handleDeleteAudioComplet(sourate.id, sourate.audio_complet_path)}
                 className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: '#fee2e2' }}
               >

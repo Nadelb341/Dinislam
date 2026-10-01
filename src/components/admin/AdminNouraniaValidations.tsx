@@ -120,7 +120,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },
-    onError: (err: any, __, context: any) => {
+    onError: (err, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-nourania-validations'], context.previous);
       toast({ title: 'Erreur lors de la validation', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
@@ -162,7 +162,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },
-    onError: (err: any, __, context: any) => {
+    onError: (err, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-nourania-validations'], context.previous);
       toast({ title: 'Erreur lors du refus', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
