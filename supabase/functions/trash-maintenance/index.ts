@@ -66,7 +66,7 @@ serve(async () => {
     }
 
     return new Response(JSON.stringify({ success: true, purged: toPurge.length, warned: warned.length }), { headers: { 'Content-Type': 'application/json' } });
-  } catch (e: any) {
+  } catch (e) {
     console.error('trash-maintenance', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

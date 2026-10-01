@@ -96,7 +96,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
       .limit(1);
 
     const startOrder = existing?.length ? (existing[0].display_order + 1) : 0;
-    const rows = flashcards.slice(0, 10).map((f: any, i: number) => ({
+    const rows = flashcards.slice(0, 10).map((f, i) => ({
       module_card_id: card_id,
       front_text: String(f.front_text || '').trim(),
       back_arabic: f.back_arabic ? String(f.back_arabic).trim() : null,
@@ -111,7 +111,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
       headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, 
     });
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('generate-flashcards error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,

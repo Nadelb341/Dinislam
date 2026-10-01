@@ -307,7 +307,7 @@ const SouratesPage = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, dbSourates, fireSuccess]);
+  }, [user, dbSourates, fireSuccess, fireConfetti, toast]);
 
   const isSourateAccessible = (sourateNumber: number): boolean => {
     if (isOver20 || isAdmin) return true;

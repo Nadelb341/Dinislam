@@ -21,7 +21,7 @@ const checkAppVersion = async () => {
     } else {
       localStorage.setItem('dinislam_app_version', version);
     }
-  } catch {}
+  } catch { /* fichier de version indisponible : on réessaiera à la prochaine ouverture */ }
 };
 checkAppVersion();
 

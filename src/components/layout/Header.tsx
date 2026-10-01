@@ -52,7 +52,7 @@ const Header = ({
       const newUrl = location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search]);
+  }, [location.search, location.pathname, clearNewMessageFlag]);
 
   const handleOpenMessaging = () => {
     clearNewMessageFlag();

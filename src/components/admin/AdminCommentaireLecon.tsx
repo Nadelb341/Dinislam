@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -26,29 +26,24 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
   const [adminUnlocks, setAdminUnlocks] = useState<string[]>([]); // lesson_ids déverrouillés pour cet élève
   const [loadingUnlock, setLoadingUnlock] = useState<string | null>(null);
 
-  useEffect(() => {
-    chargerEleves();
-    chargerCommentaires();
-    chargerLecons();
-  }, [leconId]);
 
-  const chargerEleves = async () => {
+  const chargerEleves = useCallback(async () => {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('user_id, full_name')
       .eq('is_approved', true);
     setEleves((profiles || []).map(p => ({ id: p.user_id, full_name: p.full_name })));
-  };
+  }, []);
 
-  const chargerLecons = async () => {
+  const chargerLecons = useCallback(async () => {
     const { data } = await supabase
       .from('nourania_lessons')
       .select('id, lesson_number, title_french')
       .order('lesson_number');
     setLessons(data || []);
-  };
+  }, []);
 
-  const chargerCommentaires = async () => {
+  const chargerCommentaires = useCallback(async () => {
     const { data } = await supabase
       .from('nourania_commentaires_eleves')
       .select('*')
@@ -72,7 +67,13 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
     } else {
       setCommentairesExistants([]);
     }
-  };
+  }, [leconId]);
+
+  useEffect(() => {
+    chargerEleves();
+    chargerCommentaires();
+    chargerLecons();
+  }, [chargerEleves, chargerCommentaires, chargerLecons]);
 
   const chargerUnlocksEleve = async (studentId: string) => {
     const { data } = await supabase

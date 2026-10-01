@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Lock, Check } from 'lucide-react';
 import charGirlReading from '@/assets/char-girl-reading.png';
@@ -60,13 +60,13 @@ const SouratePathView = ({
 }: SouratePathViewProps) => {
   const currentRef = useRef<HTMLDivElement>(null);
 
-  const getNodeState = (sourateNum: number) => {
+  const getNodeState = useCallback((sourateNum: number) => {
     const dbId = dbSourates.get(sourateNum);
     const progress = dbId ? sourateProgress.get(dbId) : undefined;
     const accessible = isSourateAccessible(sourateNum);
     const isValidated = !!progress?.is_validated;
     return { isValidated, accessible };
-  };
+  }, [dbSourates, sourateProgress, isSourateAccessible]);
 
   // Node positions
   const nodes = useMemo(() => {
@@ -111,7 +111,7 @@ const SouratePathView = ({
       if (accessible && !isValidated) return i;
     }
     return 0;
-  }, [sourates, dbSourates, sourateProgress, isSourateAccessible]);
+  }, [sourates, getNodeState]);
 
   // Auto-scroll to current
   useEffect(() => {

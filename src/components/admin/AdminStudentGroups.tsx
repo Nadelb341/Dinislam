@@ -422,7 +422,7 @@ const AdminStudentGroups = () => {
                     key={s.user_id}
                     onClick={() => {
                       const next = new Set(selectedStudents);
-                      next.has(s.user_id) ? next.delete(s.user_id) : next.add(s.user_id);
+                      if (next.has(s.user_id)) next.delete(s.user_id); else next.add(s.user_id);
                       setSelectedStudents(next);
                     }}
                     className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors"

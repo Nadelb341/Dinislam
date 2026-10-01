@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,11 +91,11 @@ const Settings = () => {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [emptyTrashConfirm, setEmptyTrashConfirm] = useState(false);
 
-  const loadTrash = async () => {
+  const loadTrash = useCallback(async () => {
     if (!user) return;
     const items = await fetchTrash(user.id);
     setTrashItems(items);
-  };
+  }, [user]);
 
   const handleRestore = async (item: TrashItem) => {
     const ok = await restoreTrashItem(item);
@@ -146,10 +146,6 @@ const Settings = () => {
     }
   };
 
-  useEffect(() => {
-    loadPreferences();
-    loadTrash();
-  }, [user, isSubscribed]);
 
   // Ouverture depuis la fenêtre du profil : aller directement à la section demandée
   useEffect(() => {
@@ -159,7 +155,7 @@ const Settings = () => {
     return () => clearTimeout(t);
   }, []);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -184,7 +180,12 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isSubscribed]);
+
+  useEffect(() => {
+    loadPreferences();
+    loadTrash();
+  }, [loadPreferences, loadTrash]);
 
 
   const handleEnableNotifications = async () => {

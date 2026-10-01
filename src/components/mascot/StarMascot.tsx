@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,20 +82,8 @@ const StarMascot = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [user]);
 
-  // Welcome message when opening
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const welcomeMessage = getWelcomeMessage();
-      setMessages([{
-        id: Date.now().toString(),
-        text: welcomeMessage,
-        type: 'mascot',
-        timestamp: new Date()
-      }]);
-    }
-  }, [isOpen, userAge]);
 
-  const getWelcomeMessage = () => {
+  const getWelcomeMessage = useCallback(() => {
     const name = user?.user_metadata?.full_name || 'mon petit élève';
     
     if (!userAge) {
@@ -109,7 +97,20 @@ const StarMascot = () => {
     } else {
       return `✨ Salam ${name} ! Je peux t'aider à réviser, naviguer dans l'app ou même faire des recherches éducatives !`;
     }
-  };
+  }, [user, userAge]);
+
+  // Welcome message when opening
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      const welcomeMessage = getWelcomeMessage();
+      setMessages([{
+        id: Date.now().toString(),
+        text: welcomeMessage,
+        type: 'mascot',
+        timestamp: new Date()
+      }]);
+    }
+  }, [isOpen, messages.length, getWelcomeMessage]);
 
   const getQuickActions = (): MascotAction[] => {
     const actions: MascotAction[] = [];

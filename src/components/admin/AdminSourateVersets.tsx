@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -42,18 +42,18 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
 
   const nbVersets = sourate.verses_count || NB_VERSETS[sourate.number] || 7;
 
-  const chargerVersets = async () => {
+  const chargerVersets = useCallback(async () => {
     const { data } = await supabase
       .from('sourate_versets_audio')
       .select('*')
       .eq('sourate_id', sourate.id)
       .order('verset_number', { ascending: true });
     setVersets(data || []);
-  };
+  }, [sourate.id]);
 
   useEffect(() => {
     if (ouvert) chargerVersets();
-  }, [sourate.id, ouvert]);
+  }, [ouvert, chargerVersets]);
 
   const getVersetAudio = (versetNum: number) =>
     versets.find((v) => v.verset_number === versetNum);

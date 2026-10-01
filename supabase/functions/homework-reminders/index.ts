@@ -89,7 +89,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true, totalSent }), { headers: { 'Content-Type': 'application/json' } });
-  } catch (e: any) {
+  } catch (e) {
     console.error('homework-reminders', e);
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }

@@ -96,7 +96,7 @@ function getHijriDate(): string {
     if (day && month && year) {
       return `${day} ${HIJRI_MONTHS[parseInt(month) - 1] ?? ''} ${year}`;
     }
-  } catch {}
+  } catch { /* stockage indisponible : ignoré */ }
   return '';
 }
 
@@ -107,7 +107,7 @@ function getSavedCity(): CityOption {
       const parsed = JSON.parse(saved);
       if (parsed && parsed.lat && parsed.lon) return parsed;
     }
-  } catch {}
+  } catch { /* stockage indisponible : ignoré */ }
   return CITIES.find(c => c.label.includes('Montpellier')) ?? CITIES[0];
 }
 

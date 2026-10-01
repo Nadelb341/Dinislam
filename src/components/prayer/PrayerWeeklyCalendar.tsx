@@ -33,9 +33,12 @@ const DAYS_FR = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 const PrayerWeeklyCalendar = ({ prayerData }: PrayerWeeklyCalendarProps) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  // Recalcule la semaine quand le jour change (avant : calculée une seule fois, restait bloquée après minuit)
+  const todayDate = today.toDateString();
 
   // Build the 7-day week (Mon to Sun of current week)
   const weekDays = useMemo(() => {
+    const today = new Date(todayDate);
     const days: Date[] = [];
     const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
     // Monday offset
@@ -48,7 +51,7 @@ const PrayerWeeklyCalendar = ({ prayerData }: PrayerWeeklyCalendarProps) => {
       days.push(d);
     }
     return days;
-  }, []);
+  }, [todayDate]);
 
   const toKey = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

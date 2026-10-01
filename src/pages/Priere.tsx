@@ -19,7 +19,7 @@ function getSavedCity(): CityOption {
       const parsed = JSON.parse(saved);
       if (parsed?.label && typeof parsed.lat === 'number' && typeof parsed.lon === 'number') return parsed;
     }
-  } catch {}
+  } catch { /* stockage indisponible : ignoré */ }
   return MONTPELLIER;
 }
 import SunArcDisplay from '@/components/prayer/SunArcDisplay';

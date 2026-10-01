@@ -157,7 +157,7 @@ const RamadanDayDialog = ({
         osc.start(ctx.currentTime + i * 0.12);
         osc.stop(ctx.currentTime + i * 0.12 + 0.5);
       });
-    } catch (_) {}
+    } catch { /* son indisponible sur cet appareil : ignoré */ }
   }, [getAudioCtx]);
 
   // Boing sound – playful spring for wrong answers
@@ -176,7 +176,7 @@ const RamadanDayDialog = ({
       osc.connect(gain);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.7);
-    } catch (_) {}
+    } catch { /* son indisponible sur cet appareil : ignoré */ }
   }, [getAudioCtx]);
 
   // Cleanup audio ctx on unmount
@@ -330,7 +330,7 @@ const RamadanDayDialog = ({
         video_id: videoId,
       }, { onConflict: 'user_id,video_id' });
       queryClient.invalidateQueries({ queryKey: ['ramadan-video-watched', user.id, dayId] });
-    } catch {}
+    } catch { /* enregistrement facultatif : ignoré */ }
   }, [watchedVideoIds, user, dayId, queryClient]);
 
   // Track video progress — mark as watched at 80%

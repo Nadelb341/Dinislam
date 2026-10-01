@@ -99,7 +99,7 @@ serve(async (req) => {
       JSON.stringify({ classement, groupMembers, myGroupId, isAdmin }),
       { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
-  } catch (err: any) {
+  } catch (err) {
     return new Response(
       JSON.stringify({ error: err.message }),
       { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }

@@ -643,7 +643,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                       key={p.user_id}
                       onClick={() => {
                         const next = new Set(groupMsgSelected);
-                        next.has(p.user_id) ? next.delete(p.user_id) : next.add(p.user_id);
+                        if (next.has(p.user_id)) next.delete(p.user_id); else next.add(p.user_id);
                         setGroupMsgSelected(next);
                       }}
                       className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -692,7 +692,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                         key={g.id}
                         onClick={() => {
                           const next = new Set(groupMsgSelectedGroups);
-                          next.has(g.id) ? next.delete(g.id) : next.add(g.id);
+                          if (next.has(g.id)) next.delete(g.id); else next.add(g.id);
                           setGroupMsgSelectedGroups(next);
                         }}
                         className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50 transition-colors"

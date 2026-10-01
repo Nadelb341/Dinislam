@@ -40,20 +40,22 @@ const GrammaireConjugaisonPage = () => {
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } =
     useScrollToTop();
 
+  const selectedCardId = selectedCard?.id;
+  const userId = user?.id;
   useEffect(() => {
-    if (!selectedCard || !user) return;
-    const uid = user.id;
-    const lesson    = localStorage.getItem(tabLsKey('lecon',     selectedCard.id, uid)) === 'true';
-    const exercices = localStorage.getItem(tabLsKey('exercices', selectedCard.id, uid)) === 'true';
+    if (!selectedCardId || !userId) return;
+    const uid = userId;
+    const lesson    = localStorage.getItem(tabLsKey('lecon',     selectedCardId, uid)) === 'true';
+    const exercices = localStorage.getItem(tabLsKey('exercices', selectedCardId, uid)) === 'true';
     setLessonOpened(lesson);
     setExercicesOpened(exercices);
     setActiveTab('lecon');
     setWarningTab(null);
     if (!lesson) {
-      localStorage.setItem(tabLsKey('lecon', selectedCard.id, uid), 'true');
+      localStorage.setItem(tabLsKey('lecon', selectedCardId, uid), 'true');
       setLessonOpened(true);
     }
-  }, [selectedCard?.id, user?.id]);
+  }, [selectedCardId, userId]);
 
   const handleTabClick = (tab: TabId) => {
     const locked =

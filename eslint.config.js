@@ -19,7 +19,16 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // Avertissement réservé au rechargement à chaud pendant le développement : ces exports « non-composants »
+      // sont voulus (variantes shadcn/ui, hooks de contexte, petites fonctions utilitaires partagées).
+      "react-refresh/only-export-components": ["warn", {
+        allowConstantExport: true,
+        allowExportNames: [
+          "badgeVariants", "buttonVariants", "toggleVariants", "navigationMenuTriggerStyle", "useFormField",
+          "useSidebar", "toast", "useAuth", "rectSortingStrategy", "withResequencedOrder",
+          "convertYoutubeToEmbed", "extractYoutubeVideoId", "isYoutubeUrl",
+        ],
+      }],
       "@typescript-eslint/no-unused-vars": "off",
     },
   },

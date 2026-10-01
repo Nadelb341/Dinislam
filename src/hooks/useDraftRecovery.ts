@@ -1,7 +1,7 @@
 export function saveDraft<T>(key: string, data: T): void {
   try {
     localStorage.setItem(`draft_${key}`, JSON.stringify(data));
-  } catch {}
+  } catch { /* stockage indisponible (navigation privée) : brouillon non sauvegardé */ }
 }
 
 export function loadDraft<T>(key: string): T | null {

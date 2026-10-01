@@ -91,7 +91,7 @@ export function getSavedMethod(): PrayerMethod {
       const found = PRAYER_METHODS.find(m => m.id === id);
       if (found) return found;
     }
-  } catch {}
+  } catch { /* stockage indisponible : ville par défaut */ }
   return PRAYER_METHODS[0]; // MWL par défaut
 }
 

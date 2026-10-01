@@ -58,13 +58,8 @@ const AdminMoonAssistant = () => {
   }, [messages]);
 
   // Load conversations when panel opens
-  useEffect(() => {
-    if (isOpen && user) {
-      loadConversations();
-    }
-  }, [isOpen, user]);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     if (!user) return;
     setLoadingConversations(true);
     try {
@@ -84,7 +79,13 @@ const AdminMoonAssistant = () => {
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      loadConversations();
+    }
+  }, [isOpen, user, loadConversations]);
 
   const saveConversation = async (convId: string, msgs: Message[], topic?: string) => {
     if (!user) return;
@@ -261,7 +262,7 @@ const AdminMoonAssistant = () => {
       let pendingAction = null;
       const actionMatch = responseText.match(/```action\n([\s\S]*?)\n```/);
       if (actionMatch) {
-        try { pendingAction = JSON.parse(actionMatch[1]); } catch {}
+        try { pendingAction = JSON.parse(actionMatch[1]); } catch { /* action mal formée : ignorée */ }
       }
 
       const assistantMsg: Message = {

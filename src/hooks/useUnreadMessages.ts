@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,9 +93,9 @@ export const useUnreadMessages = () => {
     };
   }, [user, isAdmin, queryClient]);
 
-  const clearNewMessageFlag = () => {
+  const clearNewMessageFlag = useCallback(() => {
     setHasNewMessage(false);
-  };
+  }, []);
 
   return { unreadCount, hasNewMessage, clearNewMessageFlag };
 };

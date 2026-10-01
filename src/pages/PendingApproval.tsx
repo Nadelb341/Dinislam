@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ const PendingApproval = () => {
   const { user, signOut } = useAuth();
   const [checking, setChecking] = useState(false);
 
-  const checkApproval = async () => {
+  const checkApproval = useCallback(async () => {
     if (!user) return;
     setChecking(true);
     try {
@@ -27,7 +27,7 @@ const PendingApproval = () => {
       console.error('Check approval error:', err);
     }
     setChecking(false);
-  };
+  }, [user]);
 
   // Poll every 5 seconds + realtime subscription
   useEffect(() => {
@@ -53,7 +53,7 @@ const PendingApproval = () => {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, checkApproval]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-primary via-royal-dark to-primary pattern-islamic">

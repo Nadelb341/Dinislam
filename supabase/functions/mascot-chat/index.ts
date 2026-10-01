@@ -177,7 +177,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Mascot chat error:', error);
 
-    let fallbackResponse = '😅 Désolée, je n\'ai pas bien compris. Peux-tu reformuler ?';
+    const fallbackResponse = '😅 Désolée, je n\'ai pas bien compris. Peux-tu reformuler ?';
 
     return new Response(
       JSON.stringify({ response: fallbackResponse }),

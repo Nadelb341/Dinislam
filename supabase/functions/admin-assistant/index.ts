@@ -272,7 +272,7 @@ async function gatherAppContext(supabase: any): Promise<string> {
   return sections.join('\n');
 }
 
-async function executeAction(supabase: any, action: any): Promise<string> {
+async function executeAction(supabase: any, action): Promise<string> {
   const { type, params } = action;
 
   try {
@@ -323,7 +323,7 @@ async function executeAction(supabase: any, action: any): Promise<string> {
       default:
         return `🌙 Action "${type}" non reconnue.`;
     }
-  } catch (err: any) {
+  } catch (err) {
     return `🌙 Erreur lors de l'exécution: ${err.message}`;
   }
 }

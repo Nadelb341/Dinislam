@@ -127,7 +127,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
       const url = new URL(fileUrl);
       const parts = url.pathname.split('/object/public/module-cards/');
       if (parts[1]) await supabase.storage.from('module-cards').remove([decodeURIComponent(parts[1])]);
-    } catch {}
+    } catch { /* fichier déjà absent : rien à faire */ }
   };
 
   // Upload PDF du Coran
