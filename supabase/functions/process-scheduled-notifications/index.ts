@@ -52,7 +52,7 @@ serve(async (req) => {
       if (notif.last_sent_on === today) continue;
 
       // Call the send-push-notification edge function (now VAPID-based)
-      const pushBody: any = {
+      const pushBody: Record<string, unknown> = {
         title: `📅 ${notif.module}`,
         body: notif.message,
         tag: `scheduled-${notif.id}`,

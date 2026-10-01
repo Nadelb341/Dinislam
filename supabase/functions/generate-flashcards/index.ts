@@ -75,7 +75,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide de 10 objets, sans markdown, san
     const rawText = (aiData.choices?.[0]?.message?.content || '').trim();
     const jsonText = rawText.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
 
-    let flashcards: any[];
+    let flashcards: { front_text: string; back_arabic?: string; back_transliteration?: string }[];
     try {
       flashcards = JSON.parse(jsonText);
     } catch {

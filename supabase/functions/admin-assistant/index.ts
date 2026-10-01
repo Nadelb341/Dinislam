@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
@@ -133,7 +133,7 @@ Types d'actions :
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...(conversationHistory || []).map((m: any) => ({
+      ...((conversationHistory || []) as { type: string; text: string }[]).map((m) => ({
         role: m.type === 'user' ? 'user' : 'assistant',
         content: m.text
       })),
@@ -192,7 +192,7 @@ Types d'actions :
   }
 });
 
-async function gatherAppContext(supabase: any): Promise<string> {
+async function gatherAppContext(supabase: SupabaseClient): Promise<string> {
   const sections: string[] = [];
 
   try {
@@ -209,13 +209,13 @@ async function gatherAppContext(supabase: any): Promise<string> {
       .order('created_at', { ascending: false })
       .limit(5);
     if (recentProfiles?.length) {
-      sections.push(`👥 DERNIERS INSCRITS: ${recentProfiles.map((p: any) => `${p.full_name || p.email} (${p.is_approved ? '✅' : '⏳'})`).join(', ')}`);
+      sections.push(`👥 DERNIERS INSCRITS: ${recentProfiles.map((p: { full_name: string | null; email: string | null; is_approved: boolean | null }) => `${p.full_name || p.email} (${p.is_approved ? '✅' : '⏳'})`).join(', ')}`);
     }
 
     // Modules
     const { data: modules } = await supabase.from('learning_modules').select('title, is_active, display_order').order('display_order');
     if (modules?.length) {
-      sections.push(`📚 MODULES: ${modules.map((m: any) => `${m.title} (${m.is_active ? 'actif' : 'inactif'})`).join(', ')}`);
+      sections.push(`📚 MODULES: ${modules.map((m: { title: string; is_active: boolean | null }) => `${m.title} (${m.is_active ? 'actif' : 'inactif'})`).join(', ')}`);
     }
 
     // Sourates count
@@ -232,7 +232,7 @@ async function gatherAppContext(supabase: any): Promise<string> {
 
     // Ramadan days
     const { data: ramadanDays } = await supabase.from('ramadan_days').select('id, day_number, is_unlocked, theme');
-    const unlockedDays = ramadanDays?.filter((d: any) => d.is_unlocked)?.length || 0;
+    const unlockedDays = ramadanDays?.filter((d: { is_unlocked?: boolean | null }) => d.is_unlocked)?.length || 0;
     sections.push(`🌙 RAMADAN: ${ramadanDays?.length || 0} jours configurés, ${unlockedDays} débloqués`);
 
     // Pending validations
@@ -248,7 +248,7 @@ async function gatherAppContext(supabase: any): Promise<string> {
     // Student groups
     const { data: groups } = await supabase.from('student_groups').select('name').order('name');
     if (groups?.length) {
-      sections.push(`👨‍👩‍👧‍👦 GROUPES: ${groups.map((g: any) => g.name).join(', ')}`);
+      sections.push(`👨‍👩‍👧‍👦 GROUPES: ${groups.map((g: { name: string }) => g.name).join(', ')}`);
     }
 
     // Top students
@@ -258,10 +258,10 @@ async function gatherAppContext(supabase: any): Promise<string> {
       .order('total_points', { ascending: false })
       .limit(5);
     if (topStudents?.length) {
-      const userIds = topStudents.map((s: any) => s.user_id);
+      const userIds = topStudents.map((s: { user_id: string }) => s.user_id);
       const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
-      const nameMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p.full_name]));
-      sections.push(`🏆 TOP ÉLÈVES: ${topStudents.map((s: any) => `${nameMap[s.user_id] || 'Inconnu'} (${s.total_points} pts)`).join(', ')}`);
+      const nameMap = Object.fromEntries((profiles || []).map((p: { user_id: string; full_name: string | null }) => [p.user_id, p.full_name]));
+      sections.push(`🏆 TOP ÉLÈVES: ${topStudents.map((s: { user_id: string; total_points: number }) => `${nameMap[s.user_id] || 'Inconnu'} (${s.total_points} pts)`).join(', ')}`);
     }
 
   } catch (err) {
@@ -272,7 +272,7 @@ async function gatherAppContext(supabase: any): Promise<string> {
   return sections.join('\n');
 }
 
-async function executeAction(supabase: any, action): Promise<string> {
+async function executeAction(supabase: SupabaseClient, action: { type: string; params: Record<string, unknown> }): Promise<string> {
   const { type, params } = action;
 
   try {

@@ -71,14 +71,14 @@ serve(async (req) => {
       .from('student_group_members')
       .select('group_id, user_id');
 
-    const myMembership = (membres || []).find((m: any) => m.user_id === caller.id);
+    const myMembership = (membres || []).find((m: { user_id: string }) => m.user_id === caller.id);
     const myGroupId = myMembership?.group_id || null;
 
-    const groupMembers: any[] = [];
+    const groupMembers: { user_id: string | null; display_name: string; total: number; is_me: boolean }[] = [];
     for (const groupe of (groupes || [])) {
       const membreIds = (membres || [])
-        .filter((m: any) => m.group_id === groupe.id)
-        .map((m: any) => m.user_id);
+        .filter((m: { group_id: string }) => m.group_id === groupe.id)
+        .map((m: { user_id: string }) => m.user_id);
       for (const uid of membreIds) {
         const profile = profiles.find((p) => p.user_id === uid);
         groupMembers.push({

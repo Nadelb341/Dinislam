@@ -321,14 +321,14 @@ serve(async (req) => {
 
     if (sendToAll) {
       const { data: allSubs } = await supabase.from('push_subscriptions').select('user_id').eq('is_active', true);
-      targetIds = [...new Set((allSubs || []).map((r: any) => r.user_id))];
+      targetIds = [...new Set((allSubs || []).map((r: { user_id: string }) => r.user_id))];
     } else if (userIds && Array.isArray(userIds)) {
       targetIds = userIds;
     } else if (userId) {
       targetIds = [userId];
     } else if (type === 'admin') {
       const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
-      targetIds = (adminRoles || []).map((r: any) => r.user_id);
+      targetIds = (adminRoles || []).map((r: { user_id: string }) => r.user_id);
     }
 
     if (targetIds.length === 0) {
@@ -362,8 +362,8 @@ serve(async (req) => {
         .in('user_id', targetIds);
       const blocked = new Set(
         (prefs || [])
-          .filter((p: any) => p[prefColumn] === false || (p.quiet_mode === true && inQuiet(p.quiet_start ?? 21, p.quiet_end ?? 8)))
-          .map((p: any) => p.user_id)
+          .filter((p: Record<string, unknown> & { quiet_mode?: boolean; quiet_start?: number; quiet_end?: number }) => p[prefColumn] === false || (p.quiet_mode === true && inQuiet(p.quiet_start ?? 21, p.quiet_end ?? 8)))
+          .map((p: { user_id: string }) => p.user_id)
       );
       targetIds = targetIds.filter(id => !blocked.has(id));
       if (targetIds.length === 0) {
@@ -406,8 +406,8 @@ serve(async (req) => {
     // Réglage « Silencieux (vibration seulement) »
     const { data: silentPrefs } = await supabase
       .from('notification_preferences').select('user_id').eq('notif_silent', true)
-      .in('user_id', subscriptions.map((s: any) => s.user_id));
-    const silentIds = new Set((silentPrefs || []).map((p: any) => p.user_id));
+      .in('user_id', subscriptions.map((s: { user_id: string }) => s.user_id));
+    const silentIds = new Set((silentPrefs || []).map((p: { user_id: string }) => p.user_id));
 
     const results = await Promise.all(
       subscriptions.map(async (sub) => {

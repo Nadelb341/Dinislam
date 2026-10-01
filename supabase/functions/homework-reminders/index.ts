@@ -41,17 +41,17 @@ serve(async (req) => {
     if (!devoirs?.length) return new Response(JSON.stringify({ success: true, totalSent: 0 }), { headers: { 'Content-Type': 'application/json' } });
 
     const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
-    const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
+    const adminIds = new Set((adminRoles || []).map((r: { user_id: string }) => r.user_id));
 
     let totalSent = 0;
     for (const devoir of devoirs) {
       let studentIds: string[] = [];
       if (devoir.assigned_to === 'all') {
         const { data: profiles } = await supabase.from('profiles').select('user_id').eq('is_approved', true);
-        studentIds = (profiles || []).map((p: any) => p.user_id).filter((id: string) => !adminIds.has(id));
+        studentIds = (profiles || []).map((p: { user_id: string }) => p.user_id).filter((id: string) => !adminIds.has(id));
       } else if (devoir.assigned_to === 'group' && devoir.group_id) {
         const { data: members } = await supabase.from('student_group_members').select('user_id').eq('group_id', devoir.group_id);
-        studentIds = (members || []).map((m: any) => m.user_id).filter((id: string) => !adminIds.has(id));
+        studentIds = (members || []).map((m: { user_id: string }) => m.user_id).filter((id: string) => !adminIds.has(id));
       } else if (devoir.assigned_to === 'student' && devoir.student_id) {
         if (!adminIds.has(devoir.student_id)) studentIds = [devoir.student_id];
       }
@@ -60,7 +60,7 @@ serve(async (req) => {
       // Exclure ceux qui ont déjà rendu (rendu ou corrigé)
       const { data: rendus } = await supabase
         .from('devoirs_rendus').select('student_id').eq('devoir_id', devoir.id).in('statut', ['rendu', 'corrige']);
-      const rendusIds = new Set((rendus || []).map((r: any) => r.student_id));
+      const rendusIds = new Set((rendus || []).map((r: { student_id: string }) => r.student_id));
       const pendingIds = studentIds.filter((id) => !rendusIds.has(id));
       if (!pendingIds.length) continue;
 
@@ -68,7 +68,7 @@ serve(async (req) => {
       const { data: logs } = await supabase
         .from('homework_reminder_logs').select('student_id, last_sent_at')
         .eq('devoir_id', devoir.id).in('student_id', pendingIds);
-      const sentToday = new Set((logs || []).filter((l: any) => parisDay(new Date(l.last_sent_at)) === today).map((l: any) => l.student_id));
+      const sentToday = new Set((logs || []).filter((l: { last_sent_at: string }) => parisDay(new Date(l.last_sent_at)) === today).map((l: { student_id: string }) => l.student_id));
       const toNotify = pendingIds.filter((id) => !sentToday.has(id));
       if (!toNotify.length) continue;
 

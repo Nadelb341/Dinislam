@@ -29,31 +29,31 @@ serve(async () => {
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
-    const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
+    const adminIds = new Set((adminRoles || []).map((r: { user_id: string }) => r.user_id));
     const now = Date.now();
 
     // 1. Vidage : éléments d'élèves de plus de 61 jours
     const purgeBefore = new Date(now - KEEP_DAYS * DAY).toISOString();
     const { data: old } = await supabase.from('trash_items').select('id, user_id, item_type, item_data').lt('deleted_at', purgeBefore);
-    const toPurge = (old || []).filter((t: any) => !adminIds.has(t.user_id));
+    const toPurge = (old || []).filter((t: { user_id: string }) => !adminIds.has(t.user_id));
     const audioPaths = toPurge
-      .filter((t: any) => t.item_type === 'sourate_recitation')
-      .map((t: any) => (String(t.item_data?.audio_url || '').match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/) || [])[1])
+      .filter((t: { item_type: string }) => t.item_type === 'sourate_recitation')
+      .map((t: { item_data: { audio_url?: string } | null }) => (String(t.item_data?.audio_url || '').match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/) || [])[1])
       .filter(Boolean)
       .map((p: string) => decodeURIComponent(p));
     if (audioPaths.length) await supabase.storage.from('recitations').remove(audioPaths);
-    if (toPurge.length) await supabase.from('trash_items').delete().in('id', toPurge.map((t: any) => t.id));
+    if (toPurge.length) await supabase.from('trash_items').delete().in('id', toPurge.map((t: { id: string }) => t.id));
 
     // 2. Alerte : éléments qui seront vidés dans 3 jours (fenêtre d'un jour → une seule alerte par élément)
     const warnFrom = new Date(now - (KEEP_DAYS - WARN_DAYS + 1) * DAY).toISOString();
     const warnTo = new Date(now - (KEEP_DAYS - WARN_DAYS) * DAY).toISOString();
     const { data: soon } = await supabase.from('trash_items').select('user_id').gte('deleted_at', warnFrom).lt('deleted_at', warnTo);
-    const candidates = [...new Set((soon || []).map((t: any) => t.user_id))].filter(id => !adminIds.has(id));
+    const candidates = [...new Set((soon || []).map((t: { user_id: string }) => t.user_id))].filter(id => !adminIds.has(id));
     let warned: string[] = [];
     if (candidates.length) {
       const { data: profiles } = await supabase.from('profiles').select('user_id, date_of_birth, age').in('user_id', candidates);
       // Âge inconnu → on prévient quand même (mieux vaut une alerte de trop qu'une perte sans prévenir)
-      warned = (profiles || []).filter((p: any) => { const a = ageOf(p); return a === null || a > 12; }).map((p: any) => p.user_id);
+      warned = (profiles || []).filter((p: { user_id: string; date_of_birth: string | null; age: number | null }) => { const a = ageOf(p); return a === null || a > 12; }).map((p: { user_id: string }) => p.user_id);
       if (warned.length) {
         await sendPushInternal({
           userIds: warned,
