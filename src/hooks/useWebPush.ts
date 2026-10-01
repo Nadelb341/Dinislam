@@ -74,7 +74,7 @@ export function useWebPush() {
     try {
       // ── Step 0: iOS standalone check ──
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isStandalone = (window.navigator as any).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
       console.log('[WebPush] Step 0 — iOS:', isIOS, 'standalone:', isStandalone);
       if (isIOS && !isStandalone) {
         throw new Error('❌ Sur iOS, ajoute l\'app à l\'écran d\'accueil d\'abord (Partager → Sur l\'écran d\'accueil)');

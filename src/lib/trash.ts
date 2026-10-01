@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { saveDraft } from "@/hooks/useDraftRecovery";
 import { untypedDb } from "@/lib/untypedDb";
+import type { Json } from '@/integrations/supabase/types';
 
 export type TrashItemType =
   | "learning_module" | "module_content" | "prayer_card_content" | "sourate_content" | "alphabet_content"
@@ -14,7 +15,7 @@ export interface TrashItem {
   id: string;
   user_id: string;
   item_type: string;
-  item_data: any;
+  item_data: Json;
   original_id: string;
   label: string;
   deleted_at: string;
@@ -47,10 +48,10 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
   sourate_recitation: "sourate_recitations",
 };
 
-export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: any) {
+export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: unknown) {
   const { error } = await supabase
     .from("trash_items")
-    .insert({ user_id: userId, item_type: type, original_id: originalId, label, item_data: data });
+    .insert({ user_id: userId, item_type: type, original_id: originalId, label, item_data: data as Json });
   return !error;
 }
 
@@ -86,7 +87,7 @@ export const STUDENT_TRASH_DAYS = 61;
 /** Fichier audio d'une récitation mise à la corbeille (gardé pour pouvoir la restaurer) */
 function recitationFilePath(item: TrashItem): string | null {
   if (item.item_type !== "sourate_recitation") return null;
-  const url: string = item.item_data?.audio_url || "";
+  const url: string = (item.item_data as { audio_url?: string } | null)?.audio_url || "";
   const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
   return m ? decodeURIComponent(m[1]) : null;
 }

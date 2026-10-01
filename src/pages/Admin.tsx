@@ -47,6 +47,7 @@ import { Badge } from '@/components/ui/badge';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Tables } from '@/integrations/supabase/types';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   FileText, List, Video, BookOpen, Star, Heart, Bell, Calendar, Image, Music,
@@ -61,7 +62,7 @@ interface CardItem {
   type: 'static' | 'dynamic';
   key: string;
   order: number;
-  dynamicCard?: any;
+  dynamicCard?: Tables<'dashboard_cards'>;
 }
 
 // Wrapper appui long — appliqué sur toute la carte, pas de poignée dédiée
@@ -84,10 +85,10 @@ const Admin = () => {
   const [pendingNourania, setPendingNourania] = useState(0);
   const [pendingInvocations, setPendingInvocations] = useState(0);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<any>(null);
+  const [editingCard, setEditingCard] = useState<Tables<'dashboard_cards'> | null>(null);
   const [deleteCardOpen, setDeleteCardOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
-  const [selectedDynamicCard, setSelectedDynamicCard] = useState<any>(null);
+  const [selectedDynamicCard, setSelectedDynamicCard] = useState<Tables<'dashboard_cards'> | null>(null);
   const [genericModuleManage, setGenericModuleManage] = useState<GenericModuleManageState | null>(null);
   const [deleteModuleOpen, setDeleteModuleOpen] = useState(false);
   const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { Lock, Unlock } from 'lucide-react';
+import type { Tables } from '@/integrations/supabase/types';
 
 const COMMENTAIRE_DEFAULT = "📌 Pour le prochain cours, Tu dois réviser :\n✅ Page : \n✅ Ligne n° : ";
 
@@ -13,16 +14,16 @@ interface Props {
 
 const AdminCommentaireLecon = ({ leconId }: Props) => {
   const { user } = useAuth();
-  const [eleves, setEleves] = useState<any[]>([]);
+  const [eleves, setEleves] = useState<{ id: string; full_name: string | null }[]>([]);
   const [eleveSelectionne, setEleveSelectionne] = useState('');
   const [commentaire, setCommentaire] = useState('');
-  const [commentairesExistants, setCommentairesExistants] = useState<any[]>([]);
+  const [commentairesExistants, setCommentairesExistants] = useState<(Tables<'nourania_commentaires_eleves'> & { full_name: string })[]>([]);
 
   // Mode : 'suivi' ou 'debloquer'
   const [mode, setMode] = useState<'suivi' | 'debloquer'>('suivi');
 
   // Pour le déverrouillage
-  const [lessons, setLessons] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<Pick<Tables<'nourania_lessons'>, 'id' | 'lesson_number' | 'title_french'>[]>([]);
   const [adminUnlocks, setAdminUnlocks] = useState<string[]>([]); // lesson_ids déverrouillés pour cet élève
   const [loadingUnlock, setLoadingUnlock] = useState<string | null>(null);
 

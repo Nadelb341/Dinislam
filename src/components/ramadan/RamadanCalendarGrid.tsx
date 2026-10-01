@@ -3,7 +3,11 @@ import { Check, Lock, Moon } from "lucide-react";
 
 type DayState = "completed" | "current" | "available" | "locked" | "next-locked";
 
-function getDayState(day: any, studentProgress: any[], allDays: any[]): DayState {
+/** Champs utilisés par la grille (la page Ramadan passe ses propres objets) */
+type RamadanDayLike = { id: string; day_number: number; is_locked: boolean };
+type RamadanProgressLike = { day_id: string; quiz_completed: boolean };
+
+function getDayState(day: RamadanDayLike, studentProgress: RamadanProgressLike[], allDays: RamadanDayLike[]): DayState {
   const progress = studentProgress.find((p) => p.day_id === day.id);
 
   // Completed
@@ -28,7 +32,7 @@ function getDayState(day: any, studentProgress: any[], allDays: any[]): DayState
   return "locked";
 }
 
-function DayCell({ day, state, onClick, onNextDayClick }: { day: any; state: DayState; onClick: () => void; onNextDayClick: () => void }) {
+function DayCell({ day, state, onClick, onNextDayClick }: { day: RamadanDayLike; state: DayState; onClick: () => void; onNextDayClick: () => void }) {
   const base = "relative flex flex-col items-center justify-center rounded-2xl select-none";
 
   if (state === "completed") return (
@@ -71,8 +75,8 @@ function DayCell({ day, state, onClick, onNextDayClick }: { day: any; state: Day
 }
 
 export function RamadanCalendarGrid({ days, studentProgress, onDayClick }: {
-  days: any[];
-  studentProgress: any[];
+  days: RamadanDayLike[];
+  studentProgress: RamadanProgressLike[];
   onDayClick: (day) => void;
 }) {
   const [showPatientMessage, setShowPatientMessage] = useState(false);

@@ -45,7 +45,7 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
 
   // Auto-start on non-iOS (no permission needed)
   useEffect(() => {
-    const DOE = window.DeviceOrientationEvent as any;
+    const DOE = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<PermissionState> } | undefined;
     if (typeof DOE?.requestPermission !== 'function' && window.DeviceOrientationEvent) {
       // Android / desktop — start immediately
       const handler = (e: DeviceOrientationEvent) => {
@@ -144,7 +144,7 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   ];
 
   // Check if iOS needs permission button
-  const needsButton = !compassActive && typeof (window.DeviceOrientationEvent as any)?.requestPermission === 'function';
+  const needsButton = !compassActive && typeof (window.DeviceOrientationEvent as unknown as { requestPermission?: unknown } | undefined)?.requestPermission === 'function';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>

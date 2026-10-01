@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { compressDocument } from '@/lib/compressImage';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 const GROUPS = [
   { key: 'petits', label: 'Petits', labelAr: 'الصغار' },
@@ -55,8 +56,8 @@ const getGroupLabel = (key: string): string => {
 const PrayerModuleCards = () => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedCard, setSelectedCard] = useState<any>(null);
-  const [editingCard, setEditingCard] = useState<any>(null);
+  const [selectedCard, setSelectedCard] = useState<Tables<'prayer_cards'> | null>(null);
+  const [editingCard, setEditingCard] = useState<Tables<'prayer_cards'> | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -161,7 +162,8 @@ const PrayerModuleCards = () => {
 
   const updateCardMutation = useMutation({
     mutationFn: async ({ id, title, image_url }: { id: string; title?: string; image_url?: string }) => {
-      const updates: any = { updated_at: new Date().toISOString() };
+      // prayer_cards n'a pas de colonne updated_at : l'envoyer faisait échouer toute modification (corrigé le 2026-10-01)
+      const updates: TablesUpdate<'prayer_cards'> = {};
       if (title !== undefined) updates.title = title;
       if (image_url !== undefined) updates.image_url = image_url;
       const { error } = await supabase.from('prayer_cards').update(updates).eq('id', id);

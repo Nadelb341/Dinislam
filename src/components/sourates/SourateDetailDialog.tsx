@@ -17,6 +17,7 @@ import SourateRecitationPanel from './SourateRecitationPanel';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import type { Tables } from '@/integrations/supabase/types';
 
 function LecteurVerset({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -190,7 +191,7 @@ interface SourateDetailDialogProps {
   dbId: string | undefined;
   verseProgress: Map<string, boolean>;
   sourateProgress: { is_validated: boolean; is_memorized: boolean; progress_percentage: number } | undefined;
-  contents: any[];
+  contents: Tables<'sourate_content'>[];
   onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
 }
 
@@ -206,7 +207,7 @@ const SourateDetailDialog = ({
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
   const { askValidation, validationDialog } = useConfirmValidation();
-  const [versetsAudio, setVersetsAudio] = useState<any[]>([]);
+  const [versetsAudio, setVersetsAudio] = useState<Tables<'sourate_versets_audio'>[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
   useEffect(() => {

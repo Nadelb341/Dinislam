@@ -18,7 +18,7 @@ export function sendPushNotification(params: {
   data?: Record<string, string>;
 }) {
   // Map legacy 'broadcast' type to sendToAll
-  const body: any = { ...params };
+  const body: Record<string, unknown> = { ...params };
   if (params.type === 'broadcast' && !params.sendToAll) {
     body.sendToAll = true;
   }

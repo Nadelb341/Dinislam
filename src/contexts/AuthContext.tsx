@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 
 interface AuthContextType {
@@ -177,7 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { data: { user: newUser } } = await supabase.auth.getUser();
       if (newUser) {
-        const updateData: any = { full_name: fullName, gender };
+        const updateData: TablesUpdate<'profiles'> = { full_name: fullName, gender };
         if (dateOfBirth) { updateData.date_of_birth = dateOfBirth; updateData.dob_set_by_user = true; }
         await supabase.from('profiles').update(updateData).eq('user_id', newUser.id);
         supabase.functions.invoke('send-push-notification', {

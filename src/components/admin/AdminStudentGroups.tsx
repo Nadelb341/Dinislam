@@ -234,7 +234,7 @@ const AdminStudentGroups = () => {
     if (!error) {
       toast.success('Groupe supprimé');
       if (group && user?.id) {
-        const { memberCount, members, ...groupRow } = group as any;
+        const { memberCount, members, ...groupRow } = group;
         await moveToTrash(user.id, 'student_group', groupId, group.name || 'Groupe', groupRow);
       }
     } else {

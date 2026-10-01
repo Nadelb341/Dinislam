@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { Json } from '@/integrations/supabase/types';
 
 const MODULES = [
   { value: 'general', label: '🌐 Général' },
@@ -36,7 +37,7 @@ interface ScheduledNotification {
   start_date: string;
   end_date: string;
   send_time: string;
-  recipients: any;
+  recipients: Json;
   is_active: boolean;
   require_confirmation: boolean;
   created_at: string;
@@ -179,7 +180,7 @@ const ScheduledNotifications = () => {
     setEndDate(n.end_date);
     setSendTime(n.send_time?.substring(0, 5) || '08:00');
     setRecipientMode(n.recipients === 'all' ? 'all' : 'select');
-    setSelectedStudents(Array.isArray(n.recipients) ? n.recipients : []);
+    setSelectedStudents(Array.isArray(n.recipients) ? n.recipients.filter((r): r is string => typeof r === 'string') : []);
     setIsActive(n.is_active);
     setRequireConfirmation(n.require_confirmation);
     setDialogOpen(true);
@@ -236,7 +237,7 @@ const ScheduledNotifications = () => {
                       <p className="text-sm mt-1 line-clamp-2">{n.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {n.start_date} → {n.end_date} • {n.send_time?.substring(0, 5)} • {getRecipientsLabel(n.recipients)}
-                        {n.require_confirmation && ` • ${(confirmationCounts as any)[n.id] || 0} confirmation(s)`}
+                        {n.require_confirmation && ` • ${(confirmationCounts as Record<string, number>)[n.id] || 0} confirmation(s)`}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">

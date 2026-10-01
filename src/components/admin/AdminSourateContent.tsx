@@ -12,8 +12,25 @@ import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminSourateVersets from './AdminSourateVersets';
 import { compressDocument } from '@/lib/compressImage';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
-function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, uploadToStorage, handleAddYoutube, handleUploadAudioComplet, handleDeleteAudioComplet, chargerSourates, isUploading, profiles }: any) {
+interface SourateAdminCardProps {
+  sourate: Tables<'sourates'>;
+  sourateContents: Tables<'sourate_content'>[];
+  mapContentType: (type: string) => ContentType;
+  setDeleteContentId: (id: string | null) => void;
+  updateTitleMutation: { mutate: (vars: { id: string; title: string }) => void };
+  deleteMutation: { isPending: boolean };
+  handleAddYoutube: (id: string, embedUrl: string, targetUserId?: string) => Promise<void>;
+  isUploading: boolean;
+  profiles: { user_id: string; full_name: string | null; email: string | null }[];
+  uploadToStorage: (sourateId: string, file: File, contentType: string, targetUserId?: string) => Promise<void>;
+  handleUploadAudioComplet: (sourateId: string, sourateNumber: number, file: File) => Promise<void>;
+  handleDeleteAudioComplet: (sourateId: string, filePath: string | null) => Promise<void>;
+  chargerSourates: () => void;
+}
+
+function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, uploadToStorage, handleAddYoutube, handleUploadAudioComplet, handleDeleteAudioComplet, chargerSourates, isUploading, profiles }: SourateAdminCardProps) {
   const [lienVideo, setLienVideo] = useState(sourate.video_url || '');
   const [targetStudent, setTargetStudent] = useState<string>('');
 
@@ -228,7 +245,7 @@ const AdminSourateContent = () => {
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('sourate-content').getPublicUrl(filePath);
       const defaultTitle = contentType === 'audio' ? 'Audio' : file.name;
-      const insertData: any = {
+      const insertData: TablesInsert<'sourate_content'> = {
         sourate_id: sourateId, content_type: contentType, file_url: urlData.publicUrl,
         file_name: defaultTitle, display_order: existingCount, uploaded_by: user.id,
       };
@@ -247,7 +264,7 @@ const AdminSourateContent = () => {
     setIsUploading(true);
     try {
       const existingCount = contents.filter(c => c.sourate_id === sourateId).length;
-      const insertData: any = {
+      const insertData: TablesInsert<'sourate_content'> = {
         sourate_id: sourateId, content_type: 'youtube', file_url: embedUrl,
         file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
       };

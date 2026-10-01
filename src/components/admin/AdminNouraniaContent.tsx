@@ -12,8 +12,23 @@ import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminCommentaireLecon from './AdminCommentaireLecon';
 import { compressDocument } from '@/lib/compressImage';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
-function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, handleUploadFile, handleAddYoutube, handleUploadAudio, isUploading, profiles }: any) {
+interface NouraniaLessonCardProps {
+  lesson: Tables<'nourania_lessons'>;
+  lessonContents: Tables<'nourania_lesson_content'>[];
+  mapContentType: (type: string) => ContentType;
+  setDeleteContentId: (id: string | null) => void;
+  updateTitleMutation: { mutate: (vars: { id: string; title: string }) => void };
+  deleteMutation: { isPending: boolean };
+  handleAddYoutube: (id: string, embedUrl: string, targetUserId?: string) => Promise<void>;
+  isUploading: boolean;
+  profiles: { user_id: string; full_name: string | null; email: string | null }[];
+  handleUploadFile: (lessonId: string, file: File, targetUserId?: string) => Promise<void>;
+  handleUploadAudio: (lessonId: string, file: File, targetUserId?: string) => Promise<void>;
+}
+
+function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, handleUploadFile, handleAddYoutube, handleUploadAudio, isUploading, profiles }: NouraniaLessonCardProps) {
   const [targetStudent, setTargetStudent] = useState<string>('');
   return (
     <Card key={lesson.id}>
@@ -145,7 +160,7 @@ const AdminNouraniaContent = () => {
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
       const contentType = getContentTypeFromFile(file);
-      const insertData: any = {
+      const insertData: TablesInsert<'nourania_lesson_content'> = {
         lesson_id: lessonId, content_type: contentType, file_url: urlData.publicUrl,
         file_name: getDefaultTitle(contentType, file.name), display_order: existingCount, uploaded_by: user.id,
       };
@@ -164,7 +179,7 @@ const AdminNouraniaContent = () => {
     setIsUploading(true);
     try {
       const existingCount = contents.filter(c => c.lesson_id === lessonId).length;
-      const insertData: any = {
+      const insertData: TablesInsert<'nourania_lesson_content'> = {
         lesson_id: lessonId, content_type: 'youtube', file_url: embedUrl,
         file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
       };
@@ -189,7 +204,7 @@ const AdminNouraniaContent = () => {
       const { error: uploadError } = await supabase.storage.from('nourania-content').upload(filePath, await compressDocument(file), { cacheControl: '3600', upsert: false });
       if (uploadError) { toast.error(`Erreur upload: ${uploadError.message}`); return; }
       const { data: urlData } = supabase.storage.from('nourania-content').getPublicUrl(filePath);
-      const insertData: any = {
+      const insertData: TablesInsert<'nourania_lesson_content'> = {
         lesson_id: lessonId, content_type: 'audio', file_url: urlData.publicUrl,
         file_name: 'Audio', display_order: existingCount, uploaded_by: user.id,
       };

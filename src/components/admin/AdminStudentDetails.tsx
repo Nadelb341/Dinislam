@@ -291,7 +291,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
         body: { user_id: pwdDialogStudent.id, new_password: newPassword },
       });
       if (res.error) throw new Error(res.error.message || 'Erreur');
-      const body = res.data as any;
+      const body = res.data as { error?: string } | null;
       if (body?.error) throw new Error(body.error);
 
       toast.success('Mot de passe mis à jour ✓');

@@ -48,7 +48,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
     enabled: expanded,
   });
 
-  const list = flashcards as any[];
+  const list = flashcards;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-flashcards', cardId] });
@@ -77,7 +77,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, front_text, back_arabic, back_transliteration }: any) => {
+    mutationFn: async ({ id, front_text, back_arabic, back_transliteration }: { id: string; front_text: string; back_arabic: string | null; back_transliteration: string | null }) => {
       if (!front_text.trim()) throw new Error('Le texte français est requis');
       const { error } = await supabase.from('module_flashcards').update({
         front_text: front_text.trim(),

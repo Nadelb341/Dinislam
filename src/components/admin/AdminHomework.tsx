@@ -19,6 +19,7 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
 type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; };
@@ -86,10 +87,10 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       const [{ data: profiles }, { data: groups }] = await Promise.all([
         studentIds.length
           ? supabase.from('profiles').select('user_id, full_name').in('user_id', studentIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as { user_id: string; full_name: string | null }[] }),
         groupIds.length
           ? supabase.from('student_groups').select('id, name').in('id', groupIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
       ]);
 
       return data.map(d => ({
@@ -155,7 +156,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   const createDevoir = useMutation({
     mutationFn: async () => {
       if (!form.titre) throw new Error('Le titre est obligatoire');
-      const payload: any = {
+      const payload: TablesInsert<'devoirs'> = {
         titre: form.titre, type: form.type,
         description: form.description || null,
         lien_lecon: form.lien_lecon || null,
@@ -470,7 +471,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         </h3>
         {(() => {
           // Group rendus by student_id directly from rendus data
-          const rendusParEleve: Record<string, { name: string; items: any[] }> = {};
+          const rendusParEleve: Record<string, { name: string; items: (typeof rendus)[number][] }> = {};
           rendus.forEach((r) => {
             if (!rendusParEleve[r.student_id]) {
               rendusParEleve[r.student_id] = { name: r.student_name || 'Inconnu', items: [] };

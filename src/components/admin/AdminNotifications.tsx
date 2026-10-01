@@ -29,6 +29,7 @@ import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import PushToggle from '@/components/settings/PushToggle';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 import { errorMessage } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
 
 const AdminNotifications = () => {
   const { toast } = useToast();
@@ -39,7 +40,7 @@ const AdminNotifications = () => {
   const [testSending, setTestSending] = useState(false);
 
   // État pour statut notifications élèves
-  const [elevesStatut, setElevesStatut] = useState<any[]>([]);
+  const [elevesStatut, setElevesStatut] = useState<{ id: string; full_name: string; notifActive: boolean }[]>([]);
   const [showStatuts, setShowStatuts] = useState(false);
   const [envoiIndividuel, setEnvoiIndividuel] = useState('');
 
@@ -201,7 +202,7 @@ const AdminNotifications = () => {
     },
   ];
 
-  const [abonnements, setAbonnements] = useState<any[]>([]);
+  const [abonnements, setAbonnements] = useState<(Pick<Tables<'push_subscriptions'>, 'user_id' | 'endpoint' | 'p256dh' | 'auth_key' | 'is_active' | 'created_at'> & { role: string })[]>([]);
   const [showAbo, setShowAbo] = useState(false);
 
   const handleVoirAbonnements = async () => {

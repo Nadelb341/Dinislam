@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, RotateCcw, Loader2, Tag, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
 const VersionTab = () => {
   const queryClient = useQueryClient();
@@ -82,7 +83,11 @@ const VersionTab = () => {
       const target = versions.find((v) => v.id === versionId);
       if (!target?.snapshot) throw new Error('Pas de snapshot pour cette version');
 
-      const snapshot = target.snapshot as any;
+      const snapshot = target.snapshot as {
+        learning_modules?: Pick<Tables<'learning_modules'>, 'id' | 'is_active' | 'display_order'>[];
+        ramadan_settings?: TablesInsert<'ramadan_settings'>[];
+        point_settings?: TablesInsert<'point_settings'>[];
+      };
 
       // Restore learning_modules
       if (snapshot.learning_modules) {

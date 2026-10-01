@@ -133,7 +133,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
     .map(([qid, count]) => {
-      const quiz = quizMap.get(qid) as any;
+      const quiz = quizMap.get(qid);
       const dayNumber = quiz ? (dayMap.get(quiz.day_id) as number | undefined) : null;
       return {
         question: (quiz?.question as string) || 'Question inconnue',

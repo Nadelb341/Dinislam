@@ -14,6 +14,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 const UserSettingsDialog = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -102,7 +103,7 @@ const UserSettingsDialog = () => {
     setSavingName(true);
     try {
       // Also save DOB if it's set and not yet locked
-      const updateData: any = { full_name: newName.trim() };
+      const updateData: TablesUpdate<'profiles'> = { full_name: newName.trim() };
       
       if (dobDisplay && !dobSetByUser) {
         const iso = parseDobToISO(dobDisplay);

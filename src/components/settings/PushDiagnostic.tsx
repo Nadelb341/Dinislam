@@ -76,7 +76,7 @@ export default function PushDiagnostic() {
 
     // 4. Standalone
     update(3, { status: 'running' });
-    const isStandalone = (window.navigator as any).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     update(3, {
       status: isStandalone ? 'ok' : (isIOS ? 'fail' : 'ok'),
@@ -101,7 +101,7 @@ export default function PushDiagnostic() {
     // 6. Existing subscription
     update(5, { status: 'running' });
     let registration: ServiceWorkerRegistration | null = null;
-    let existingSub: any = null;
+    let existingSub: PushSubscription | null = null;
     if (hasSW) {
       try {
         registration = await navigator.serviceWorker.ready;
@@ -119,7 +119,7 @@ export default function PushDiagnostic() {
 
     // 7. Subscribe attempt
     update(6, { status: 'running' });
-    let newSub: any = null;
+    let newSub: PushSubscription | null = null;
     if (!registration || !vapidKey || !hasPM) {
       update(6, { status: 'fail', detail: 'Prérequis manquants (SW/VAPID/PushManager)' });
     } else {

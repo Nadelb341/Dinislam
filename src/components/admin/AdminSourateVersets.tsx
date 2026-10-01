@@ -6,6 +6,7 @@ import { compressDocument } from '@/lib/compressImage';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
+import type { Tables } from '@/integrations/supabase/types';
 
 const NB_VERSETS: Record<number, number> = {
   1:7,2:286,3:200,4:176,5:120,6:165,7:206,8:75,9:129,10:109,
@@ -33,7 +34,7 @@ interface AdminSourateVersetsProps {
 }
 
 const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
-  const [versets, setVersets] = useState<any[]>([]);
+  const [versets, setVersets] = useState<Tables<'sourate_versets_audio'>[]>([]);
   const [uploading, setUploading] = useState<number | null>(null);
   const [ouvert, setOuvert] = useState(false);
   const [versetASupprimer, setVersetASupprimer] = useState<number | null>(null);

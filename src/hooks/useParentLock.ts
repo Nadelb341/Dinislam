@@ -36,7 +36,7 @@ export function useParentLock() {
     Promise.all([
       supabase.from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle(),
       supabase.from('parent_lock_settings').select('mode').eq('user_id', user.id).maybeSingle(),
-    ]).then(([{ data: profile }, { data: setting }]: any[]) => {
+    ]).then(([{ data: profile }, { data: setting }]) => {
       const mode = setting?.mode ?? 'auto';
       if (mode === 'on') { setIsChild(true); return; }
       if (mode === 'off') { setIsChild(false); return; }

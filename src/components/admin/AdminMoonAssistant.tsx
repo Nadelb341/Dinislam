@@ -9,13 +9,15 @@ import { moveToTrash } from '@/lib/trash';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Textarea } from '@/components/ui/textarea';
+import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 
 interface Message {
   id: string;
   text: string;
   type: 'user' | 'assistant';
   timestamp: Date;
-  pendingAction?: any;
+  /** Action proposée par l'assistant, à confirmer (description affichée + données envoyées à la fonction) */
+  pendingAction?: { description?: string; [key: string]: unknown };
 }
 
 interface Conversation {
@@ -96,8 +98,8 @@ const AdminMoonAssistant = () => {
     }));
 
     try {
-      const updateData: any = {
-        messages: serializedMsgs,
+      const updateData: TablesUpdate<'admin_conversations'> = {
+        messages: serializedMsgs as unknown as Json,
         updated_at: new Date().toISOString(),
       };
       if (topic) updateData.topic = topic;
@@ -132,7 +134,7 @@ const AdminMoonAssistant = () => {
           admin_id: user.id,
           user_id: user.id,
           topic: 'Nouvelle conversation',
-          messages: [{ ...welcomeMsg, timestamp: welcomeMsg.timestamp.toISOString() }],
+          messages: [{ ...welcomeMsg, timestamp: welcomeMsg.timestamp.toISOString() }] as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .select()
