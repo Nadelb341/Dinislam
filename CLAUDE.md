@@ -66,6 +66,9 @@ Nadia ne veut plus du tout dépendre de Lovable (même méthode que l'Agenda le 
 - **⚠️ Ne plus pousser vers le remote `lovable`** (seulement `origin` = `Nadelb341/Dinislam`, surveillé par Vercel) : depuis le commit `e97382e`, le code pointe vers la nouvelle base.
 - Suivi des comptes Supabase : mémoire `project_comptes_supabase.md`.
 
+## 🚫 RÈGLE ABSOLUE — Rien en attente ni inachevé d'une session à l'autre (Nadia, 2026-10-01)
+Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (« 🏁 Finir maintenant », renforcée le 2026-10-01). Tout ce que je repère dans une session sur Dinislam (bug, alerte du contrôle de code, finition, idée acceptée, ménage, doc) est fini dans la session. Seules exceptions : action/décision de Nadia ou d'un tiers, et surveillance qui demande le passage du temps — notées ici en « ⚠️ ACTION EN ATTENTE » et reprises en début de séance.
+
 ## 🔐 Problèmes de connexion élève — diagnostic rapide (màj 2026-05-08)
 
 Quand un élève ne peut pas se connecter, proposer **immédiatement** ces étapes dans l'ordre :
