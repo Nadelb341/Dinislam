@@ -18,6 +18,7 @@ import { extractYoutubeVideoId } from '@/utils/youtube';
 import { YoutubePlayer } from '@/utils/youtube';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
+import type { Tables } from '@/integrations/supabase/types';
 
 const Nourania = () => {
   const { user, isAdmin } = useAuth();
@@ -162,24 +163,24 @@ const Nourania = () => {
         table: 'nourania_validation_requests',
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
-        if (payload.new && (payload.new as any).status === 'refused') {
+        if (payload.new && (payload.new as Tables<'nourania_validation_requests'>).status === 'refused') {
           queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
-          const refusedLessonId = (payload.new as any).lesson_id;
+          const refusedLessonId = (payload.new as Tables<'nourania_validation_requests'>).lesson_id;
           const lesson = lessons.find(l => l.id === refusedLessonId);
           toast.error(`📖 Ton professeur t'invite à retravailler ${lesson?.title_french || 'ta leçon'}. Continue tes efforts !`);
           // Delete refused request so student can submit again
-          supabase.from('nourania_validation_requests').delete().eq('id', (payload.new as any).id).then(() => {
+          supabase.from('nourania_validation_requests').delete().eq('id', (payload.new as Tables<'nourania_validation_requests'>).id).then(() => {
             queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
           });
         }
-        if (payload.new && (payload.new as any).status === 'approved') {
+        if (payload.new && (payload.new as Tables<'nourania_validation_requests'>).status === 'approved') {
           queryClient.invalidateQueries({ queryKey: ['nourania-progress'] });
           queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
           fireSuccess();
           toast.success('Leçon validée par l\'enseignant ! 🎉');
 
           // Find next lesson to show unlock dialog
-          const approvedLessonId = (payload.new as any).lesson_id;
+          const approvedLessonId = (payload.new as Tables<'nourania_validation_requests'>).lesson_id;
           const currentIndex = lessons.findIndex(l => l.id === approvedLessonId);
           const nextLesson = lessons[currentIndex + 1];
           if (nextLesson) {

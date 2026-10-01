@@ -8,12 +8,13 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Play, FileText, Music, Lock, CheckCircle2, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Tables } from '@/integrations/supabase/types';
 
 const AllahNamesPage = () => {
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<Tables<'allah_names'> | null>(null);
   const [mediaOpen, setMediaOpen] = useState<'video' | 'audio' | 'pdf' | null>(null);
 
   const { data: names = [], isLoading } = useQuery({

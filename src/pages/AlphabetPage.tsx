@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Check, Volume2, FileText, Video, Image as ImageIcon, File } from 'lucide-react';
 import { FitText } from '@/components/shared/FitText';
+import type { Tables } from '@/integrations/supabase/types';
 
 const AlphabetPage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedLetter, setSelectedLetter] = useState<any>(null);
+  const [selectedLetter, setSelectedLetter] = useState<Tables<'alphabet_letters'> | null>(null);
 
   const { data: letters = [], isLoading } = useQuery({
     queryKey: ['alphabet-letters-page'],

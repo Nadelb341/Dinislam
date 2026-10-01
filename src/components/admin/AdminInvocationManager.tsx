@@ -20,6 +20,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
 
 const getDefaultIcon = (title: string) => {
   const t = title.toLowerCase();
@@ -51,7 +52,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   const queryClient = useQueryClient();
 
   // Dialog states
-  const [editingInvocation, setEditingInvocation] = useState<any>(null);
+  const [editingInvocation, setEditingInvocation] = useState<Tables<'invocations'> | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [contentDialogInvId, setContentDialogInvId] = useState<number | null>(null);
   const [deleteInvId, setDeleteInvId] = useState<number | null>(null);
@@ -138,7 +139,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async (newList: any[]) => {
+    mutationFn: async (newList: Tables<'invocations'>[]) => {
       const resequenced = withResequencedOrder(newList);
       await Promise.all(
         resequenced.map((inv) => supabase.from('invocations').update({ display_order: inv.sort_order }).eq('id', inv.id))
@@ -275,7 +276,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
           <SortableCardList
             items={invocations}
             onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
-            renderItem={(inv: any, { ref, style, isDragging, ...dragAttrs }) => {
+            renderItem={(inv, { ref, style, isDragging, ...dragAttrs }) => {
                 const index = invocations.findIndex((i) => i.id === inv.id);
                 const Icon = getDefaultIcon(inv.title_french);
                 const invContents = contents.filter((c) => c.invocation_id === inv.id);

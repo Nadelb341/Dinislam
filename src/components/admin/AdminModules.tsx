@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { TablesInsert } from '@/integrations/supabase/types';
+import type { TablesInsert, Tables } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import { sendPushNotification } from '@/lib/pushHelper';
@@ -39,11 +39,11 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingModule, setEditingModule] = useState<any>(null);
+  const [editingModule, setEditingModule] = useState<Tables<'learning_modules'> | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
-  const [selectedModule, setSelectedModule] = useState<any>(null);
+  const [selectedModule, setSelectedModule] = useState<Tables<'learning_modules'> | null>(null);
   const [contentTitle, setContentTitle] = useState('');
   const [contentType, setContentType] = useState('pdf');
   const [contentUrl, setContentUrl] = useState('');
@@ -118,7 +118,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async (newModules: any[]) => {
+    mutationFn: async (newModules: Tables<'learning_modules'>[]) => {
       const resequenced = withResequencedOrder(newModules);
       await Promise.all(
         resequenced.map((m) => supabase.from('learning_modules').update({ display_order: m.sort_order }).eq('id', m.id))

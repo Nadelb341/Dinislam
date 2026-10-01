@@ -17,6 +17,7 @@ import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import type { Tables } from '@/integrations/supabase/types';
 
 const getCategoryColor = (category: string | null) => {
   switch (category) {
@@ -39,10 +40,10 @@ const getCategoryLabel = (category: string | null) => {
 };
 
 interface InvocationDetailDialogProps {
-  invocation: any;
-  contents: any[];
-  progress: any;
-  validationRequest: any;
+  invocation: Tables<'invocations'>;
+  contents: Tables<'invocation_content'>[];
+  progress: Tables<'user_invocation_progress'> | undefined;
+  validationRequest: Tables<'invocation_validation_requests'> | null | undefined;
   onClose: () => void;
   onMarkMemorized: (invocationId: number, isMemorized: boolean) => void;
   onRequestValidation: (invocationId: number) => void;
@@ -268,7 +269,7 @@ const Invocations = () => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isOver20 = useIsOver20();
-  const [selectedInvocation, setSelectedInvocation] = useState<any>(null);
+  const [selectedInvocation, setSelectedInvocation] = useState<Tables<'invocations'> | null>(null);
 
   const { data: invocations = [], isLoading } = useQuery({
     queryKey: ['invocations-list'],

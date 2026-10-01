@@ -12,10 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText, Video, Volume2, Image as ImageIcon, File } from 'lucide-react';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
+import type { Tables } from '@/integrations/supabase/types';
 
 const GenericModulePage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
-  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
 
   const { data: module } = useQuery({
     queryKey: ['learning-module', moduleId],
@@ -69,7 +70,7 @@ const GenericModulePage = () => {
   };
 
   // Group cards by section
-  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
+  const sections = cards.reduce((acc: Record<string, (typeof cards)[number][]>, card) => {
     const key = card.section || '';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -181,7 +182,7 @@ const GenericModulePage = () => {
                 {selectedFlashcards.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">🃏 Exercice — Flashcards</h4>
-                    <FlashcardPlayer cards={selectedFlashcards as any[]} />
+                    <FlashcardPlayer cards={selectedFlashcards} />
                   </div>
                 )}
                 {selectedCard.description && (

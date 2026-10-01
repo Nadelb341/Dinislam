@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
+import type { Tables } from '@/integrations/supabase/types';
 
 type TabId = 'lecon' | 'exercices' | 'evaluation';
 
@@ -31,7 +32,7 @@ const COLORS = [
 
 const GrammaireConjugaisonPage = () => {
   const { user } = useAuth();
-  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
   const [activeTab, setActiveTab]             = useState<TabId>('lecon');
   const [lessonOpened, setLessonOpened]       = useState(false);
   const [exercicesOpened, setExercicesOpened] = useState(false);
@@ -122,7 +123,7 @@ const GrammaireConjugaisonPage = () => {
     enabled: cards.length > 0,
   });
 
-  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
+  const sections = cards.reduce((acc: Record<string, (typeof cards)[number][]>, card) => {
     const key = card.section || '_root';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -215,7 +216,7 @@ const GrammaireConjugaisonPage = () => {
                   const hasVideo   = contents.some(c => c.content_type === 'video' || c.content_type === 'youtube');
                   const hasPdf     = contents.some(c => c.content_type === 'pdf' || c.content_type === 'document');
                   const hasAudio   = contents.some(c => c.content_type === 'audio');
-                  const hasFlash   = (flashcardCounts as any)[card.id] > 0;
+                  const hasFlash   = (flashcardCounts as Record<string, number>)[card.id] > 0;
 
                   return (
                     <button
@@ -411,7 +412,7 @@ const GrammaireConjugaisonPage = () => {
                     selectedFlashcards.length > 0 ? (
                       <div className="space-y-3">
                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Flashcards</h4>
-                        <FlashcardPlayer cards={selectedFlashcards as any[]} />
+                        <FlashcardPlayer cards={selectedFlashcards} />
                       </div>
                     ) : (
                       <div className="text-center py-10 text-muted-foreground">

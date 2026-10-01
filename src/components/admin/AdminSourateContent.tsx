@@ -318,7 +318,7 @@ const AdminSourateContent = () => {
       .from('sourates-versets')
       .getPublicUrl(fileName);
     await supabase.from('sourates')
-      .update({ audio_complet_url: urlData.publicUrl, audio_complet_path: fileName } as any)
+      .update({ audio_complet_url: urlData.publicUrl, audio_complet_path: fileName })
       .eq('id', sourateId);
     toast.success('✅ Audio complet uploadé');
     chargerSourates();
@@ -329,7 +329,7 @@ const AdminSourateContent = () => {
       await supabase.storage.from('sourates-versets').remove([filePath]);
     }
     await supabase.from('sourates')
-      .update({ audio_complet_url: null, audio_complet_path: null } as any)
+      .update({ audio_complet_url: null, audio_complet_path: null })
       .eq('id', sourateId);
     toast.success('Audio supprimé');
     chargerSourates();

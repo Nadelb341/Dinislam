@@ -451,6 +451,8 @@ serve(async (req) => {
         type: type || 'push',
         target_type: sendToAll ? 'all' : (userId ? 'user' : 'group'),
         target_user_id: userId || null,
+        successful_sends: successCount,
+        total_recipients: subscriptions.length,
       }).then(({ error: histErr }) => {
         if (histErr) console.error('HISTORY_INSERT_ERROR', histErr.message);
       });

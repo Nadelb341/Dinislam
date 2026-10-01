@@ -50,7 +50,7 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: any) {
   const { error } = await supabase
     .from("trash_items")
-    .insert({ user_id: userId, item_type: type, original_id: originalId, label, item_data: data } as any);
+    .insert({ user_id: userId, item_type: type, original_id: originalId, label, item_data: data });
   return !error;
 }
 

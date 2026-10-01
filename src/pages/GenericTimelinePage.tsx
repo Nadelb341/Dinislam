@@ -13,6 +13,7 @@ import { FileText, Video, Volume2, BookOpen, ChevronRight, Play, Image as ImageI
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
+import type { Tables } from '@/integrations/supabase/types';
 
 interface ModuleConfig {
   gradientFrom: string;
@@ -66,7 +67,7 @@ const GenericTimelinePage = () => {
   const location = useLocation();
   // Extract slug from path: /module/vocabulaire -> vocabulaire
   const moduleSlug = location.pathname.replace('/module/', '').replace('/', '');
-  const [selectedCard, setSelectedCard] = useState<any>(null);
+  const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
 
   const config = MODULE_CONFIGS[moduleSlug || ''] || {
     gradientFrom: '#1e40af', gradientTo: '#2563eb',
@@ -119,7 +120,7 @@ const GenericTimelinePage = () => {
   });
 
   // Group cards by section
-  const sections = cards.reduce((acc: Record<string, any[]>, card) => {
+  const sections = cards.reduce((acc: Record<string, (typeof cards)[number][]>, card) => {
     const key = card.section || '_root';
     if (!acc[key]) acc[key] = [];
     acc[key].push(card);
@@ -298,7 +299,7 @@ const GenericTimelinePage = () => {
               {selectedFlashcards.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">🃏 Exercice — Flashcards</h4>
-                  <FlashcardPlayer cards={selectedFlashcards as any[]} />
+                  <FlashcardPlayer cards={selectedFlashcards} />
                 </div>
               )}
 

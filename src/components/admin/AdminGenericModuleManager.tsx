@@ -26,6 +26,7 @@ import FlashcardManager from './FlashcardManager';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
 
 interface Props {
   moduleId: string;
@@ -38,7 +39,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   const queryClient = useQueryClient();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<any>(null);
+  const [editingCard, setEditingCard] = useState<Tables<'module_cards'> | null>(null);
   const [deleteCardId, setDeleteCardId] = useState<string | null>(null);
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -117,7 +118,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async (newList: any[]) => {
+    mutationFn: async (newList: Tables<'module_cards'>[]) => {
       const resequenced = withResequencedOrder(newList);
       await Promise.all(
         resequenced.map((c) => supabase.from('module_cards').update({ display_order: c.sort_order }).eq('id', c.id))
@@ -320,9 +321,9 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       ) : (
         <div className="space-y-2">
           <SortableCardList
-            items={cards as any[]}
+            items={cards}
             onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
-            renderItem={(card: any, { ref, style, isDragging, ...dragAttrs }) => {
+            renderItem={(card, { ref, style, isDragging, ...dragAttrs }) => {
                 const index = cards.findIndex((c) => c.id === card.id);
                 const cardContents = contents.filter((c) => c.card_id === card.id);
                 const isThisUploading = isUploading && uploadingCardId === card.id;

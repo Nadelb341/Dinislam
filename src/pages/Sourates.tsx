@@ -16,6 +16,7 @@ import { Search, ChevronRight, X } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import type { Tables } from '@/integrations/supabase/types';
 
 // Complete list of 114 Surahs
 const SOURATES_DATA = [
@@ -161,7 +162,7 @@ const SouratesPage = () => {
   const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
   const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
   const [adminUnlocks, setAdminUnlocks] = useState<Set<string>>(new Set());
-  const [sourateContents, setSourateContents] = useState<any[]>([]);
+  const [sourateContents, setSourateContents] = useState<Tables<'sourate_content'>[]>([]);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; sourateName: string; sourateNumber: number }>({ open: false, sourateName: '', sourateNumber: 0 });
   const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
 
@@ -240,7 +241,7 @@ const SouratesPage = () => {
         table: 'sourate_validation_requests',
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
-        const newRecord = payload.new as any;
+        const newRecord = payload.new as Tables<'sourate_validation_requests'>;
         if (newRecord.status === 'refused') {
           // Admin refused - notify student and delete request so they can retry
           let sourateName = '';

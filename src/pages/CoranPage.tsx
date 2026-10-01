@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
 import { Search, BookOpen, Download } from 'lucide-react';
 import { CORAN_ORDERED, type SourateData } from '@/data/sourates';
+import type { Tables } from '@/integrations/supabase/types';
 
 const CoranPage = () => {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ const CoranPage = () => {
   const [selectedSourate, setSelectedSourate] = useState<SourateData | null>(null);
   const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
   const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
-  const [sourateContents, setSourateContents] = useState<any[]>([]);
+  const [sourateContents, setSourateContents] = useState<Tables<'sourate_content'>[]>([]);
   const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 

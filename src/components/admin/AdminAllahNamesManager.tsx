@@ -15,13 +15,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import {
   Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
-  Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus,
-} from 'lucide-react';
+  Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus, type LucideIcon } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
 
 interface Props { onBack: () => void; }
 
@@ -29,7 +29,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
-  const [editingName, setEditingName] = useState<any>(null);
+  const [editingName, setEditingName] = useState<Tables<'allah_names'> | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<{ nameId: number; type: string } | null>(null);
@@ -119,7 +119,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const reorderMutation = useMutation({
     // display_order est affiché tel quel à l'écran (#1, #2...) — on garde une numérotation
     // continue à partir de 1 (pas le pas de 10 habituel de withResequencedOrder) pour rester cohérent visuellement.
-    mutationFn: async (newList: any[]) => {
+    mutationFn: async (newList: Tables<'allah_names'>[]) => {
       const resequenced = newList.map((n, i) => ({ ...n, display_order: i + 1 }));
       await Promise.all(
         resequenced.map((n) => supabase.from('allah_names').update({ display_order: n.display_order }).eq('id', n.id))
@@ -183,7 +183,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     setFormOpen(true);
   };
 
-  const MediaUploadRow = ({ nameId, type, label, icon: Icon }: { nameId: number; type: 'video' | 'audio' | 'pdf'; label: string; icon: any }) => {
+  const MediaUploadRow = ({ nameId, type, label, icon: Icon }: { nameId: number; type: 'video' | 'audio' | 'pdf'; label: string; icon: LucideIcon }) => {
     const existing = getNameMedia(nameId).find((m) => m.media_type === type);
     const isUploading = uploadingMedia?.nameId === nameId && uploadingMedia?.type === type;
     return (
@@ -256,9 +256,9 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       ) : (
         <div className="space-y-2">
           <SortableCardList
-            items={names as any[]}
+            items={names}
             onReorder={(newList) => reorderMutation.mutate(newList)}
-            renderItem={(name: any, { ref, style, isDragging, ...dragAttrs }) => (
+            renderItem={(name, { ref, style, isDragging, ...dragAttrs }) => (
                 <div
                   key={name.id}
                   ref={ref}

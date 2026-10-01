@@ -207,6 +207,10 @@ export type Database = {
           letter_arabic: string
           name_arabic: string
           name_french: string
+          position_final: string | null
+          position_initial: string | null
+          position_isolated: string | null
+          position_medial: string | null
         }
         Insert: {
           audio_url?: string | null
@@ -216,6 +220,10 @@ export type Database = {
           letter_arabic: string
           name_arabic: string
           name_french: string
+          position_final?: string | null
+          position_initial?: string | null
+          position_isolated?: string | null
+          position_medial?: string | null
         }
         Update: {
           audio_url?: string | null
@@ -225,6 +233,10 @@ export type Database = {
           letter_arabic?: string
           name_arabic?: string
           name_french?: string
+          position_final?: string | null
+          position_initial?: string | null
+          position_isolated?: string | null
+          position_medial?: string | null
         }
         Relationships: []
       }
@@ -1076,9 +1088,11 @@ export type Database = {
           created_at: string | null
           id: string
           sent_by: string | null
+          successful_sends: number | null
           target_type: string | null
           target_user_id: string | null
           title: string
+          total_recipients: number | null
           type: string | null
         }
         Insert: {
@@ -1086,9 +1100,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           sent_by?: string | null
+          successful_sends?: number | null
           target_type?: string | null
           target_user_id?: string | null
           title: string
+          total_recipients?: number | null
           type?: string | null
         }
         Update: {
@@ -1096,9 +1112,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           sent_by?: string | null
+          successful_sends?: number | null
           target_type?: string | null
           target_user_id?: string | null
           title?: string
+          total_recipients?: number | null
           type?: string | null
         }
         Relationships: []

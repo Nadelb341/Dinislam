@@ -62,7 +62,7 @@ const FastingTracker = () => {
     if (existing) {
       await supabase
         .from('user_ramadan_fasting')
-        .update({ has_fasted: true } as any)
+        .update({ has_fasted: true })
         .eq('id', existing.id);
     } else {
       const { error: insertError } = await supabase

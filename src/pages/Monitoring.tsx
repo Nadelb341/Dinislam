@@ -28,6 +28,7 @@ import {
 } from 'recharts';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { errorMessage } from '@/lib/utils';
+import type { Tables } from '@/integrations/supabase/types';
 
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {
@@ -56,7 +57,7 @@ const Monitoring = () => {
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcasting, setBroadcasting] = useState(false);
-  const [notifHistory, setNotifHistory] = useState<any[]>([]);
+  const [notifHistory, setNotifHistory] = useState<Tables<'notification_history'>[]>([]);
 
   // Push status
   const [pushStatus, setPushStatus] = useState<{ permission: string; subscribed: boolean }>({ permission: '...', subscribed: false });
@@ -64,8 +65,7 @@ const Monitoring = () => {
 
    // Section 3: Activity
   const [onlineCount, setOnlineCount] = useState(0);
-  const [recentActions, setRecentActions] = useState<any[]>([]);
-  const [activityChart, setActivityChart] = useState<any[]>([]);
+  const [activityChart, setActivityChart] = useState<{ day: string; connexions: number }[]>([]);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
 
   // Section 4: DB Health
@@ -75,7 +75,7 @@ const Monitoring = () => {
   });
 
   // Section 5: Logs
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<Tables<'app_logs'>[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [clearingLogs, setClearingLogs] = useState(false);
 
@@ -128,7 +128,7 @@ const Monitoring = () => {
     const { count: online } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo);
     setOnlineCount(online || 0);
 
-    const days = [];
+    const days: { day: string; connexions: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const day = subDays(new Date(), i);
       const dayStr = format(day, 'yyyy-MM-dd');
@@ -564,7 +564,7 @@ const Monitoring = () => {
                       </Badge>
                       <span className="text-muted-foreground">{format(new Date(log.created_at), 'dd/MM HH:mm:ss')}</span>
                     </div>
-                    <p className="mt-1">{log.message}</p>
+                    <p className="mt-1 [overflow-wrap:anywhere]">{log.action}</p>
                   </div>
                 ))}
               </div>
