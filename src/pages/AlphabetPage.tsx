@@ -99,7 +99,7 @@ const AlphabetPage = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          <div dir="rtl" className="grid grid-cols-4 gap-2 sm:grid-cols-5">
             {letters.map((letter, index) => {
               const letterProgress = progress.find((p) => p.letter_id === letter.id);
               const isValidated = letterProgress?.is_validated ?? false;
@@ -115,14 +115,14 @@ const AlphabetPage = () => {
                       : 'bg-card border-border hover:shadow-md'
                   }`}
                 >
-                  <span className="absolute top-1 left-1.5 text-[9px] text-muted-foreground">#{index + 1}</span>
+                  <span className="absolute top-1 start-1.5 text-[9px] text-muted-foreground">#{index + 1}</span>
                   {isValidated && (
-                    <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="absolute top-1 end-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
                       <Check className="h-2 w-2 text-white" />
                     </span>
                   )}
                   {hasContent && !isValidated && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+                    <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full" />
                   )}
                   <div className="flex-1 flex items-center justify-center">
                     <span className="font-arabic text-3xl text-foreground">{letter.letter_arabic}</span>
@@ -154,7 +154,7 @@ const AlphabetPage = () => {
                 {/* Positions */}
                 <div>
                   <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Formes de la lettre</h4>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div dir="rtl" className="grid grid-cols-4 gap-2">
                     {[
                       { label: 'Isolée', value: selectedLetter.position_isolated },
                       { label: 'Début', value: selectedLetter.position_initial },
