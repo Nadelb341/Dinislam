@@ -124,7 +124,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       return data.map((r) => ({
         ...r,
         student_name: profiles?.find(p => p.user_id === r.student_id)?.full_name || 'Inconnu',
-        devoir_titre: devoirsList?.find((d: any) => d.id === r.devoir_id)?.titre || '',
+        devoir_titre: devoirsList?.find((d) => d.id === r.devoir_id)?.titre || '',
       }));
     },
   });
@@ -227,13 +227,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       setShowForm(false);
       setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   // Delete devoir
   const deleteDevoir = useMutation({
     mutationFn: async (id: string) => {
-      const devoir = devoirs.find((d: any) => d.id === id);
+      const devoir = devoirs.find((d) => d.id === id);
       const { error } = await supabase.from('devoirs').delete().eq('id', id);
       if (error) throw error;
       if (devoir && user?.id) await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir', devoir);
@@ -369,7 +369,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
                 className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
                 <option value="">Sélectionner un groupe...</option>
-                {groupes.map((g: any) => (
+                {groupes.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
@@ -378,7 +378,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Sélectionner les groupes :</p>
                 <div className="flex flex-wrap gap-2">
-                  {groupes.map((g: any) => {
+                  {groupes.map((g) => {
                     const selected = form.group_ids.includes(g.id);
                     return (
                       <button
@@ -410,7 +410,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
                 className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
                 <option value="">Sélectionner un élève...</option>
-                {eleves.map((e: any) => (
+                {eleves.map((e) => (
                   <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
                 ))}
               </select>
@@ -442,7 +442,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               </button>
               {ouvert && (
                 <div className="px-3 pb-3 space-y-2">
-                  {devoirsEleve.map((d: any) => (
+                  {devoirsEleve.map((d) => (
                     <div key={d.id} className="bg-background rounded-xl p-3 flex items-center justify-between shadow-sm">
                       <div>
                         <p className="font-semibold text-foreground text-sm">{d.titre}</p>
@@ -466,12 +466,12 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       {/* Rendus grouped by student */}
       <div>
         <h3 className="font-semibold text-foreground mb-2">
-          Rendus à corriger ({rendus.filter((r: any) => r.statut === 'rendu').length})
+          Rendus à corriger ({rendus.filter((r) => r.statut === 'rendu').length})
         </h3>
         {(() => {
           // Group rendus by student_id directly from rendus data
           const rendusParEleve: Record<string, { name: string; items: any[] }> = {};
-          rendus.forEach((r: any) => {
+          rendus.forEach((r) => {
             if (!rendusParEleve[r.student_id]) {
               rendusParEleve[r.student_id] = { name: r.student_name || 'Inconnu', items: [] };
             }
@@ -511,7 +511,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 </button>
                 {ouvert && (
                   <div className="px-3 pb-3 space-y-2">
-                    {items.map((r: any) => (
+                    {items.map((r) => (
                       <div key={r.id} className={`rounded-xl p-3 ${
                         r.statut === 'corrige'
                           ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800'

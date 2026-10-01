@@ -45,6 +45,8 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
     },
   });
 
+  type PendingRequest = NonNullable<typeof requests>[number];
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-nourania-validation-requests')
@@ -61,7 +63,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
   }, [queryClient]);
 
   const approveMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       // 1. Mark request as approved
       const { error: updateError } = await supabase
         .from('nourania_validation_requests')
@@ -95,12 +97,12 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         if (error) throw error;
       }
     },
-    onMutate: async (request) => {
+    onMutate: async (request: PendingRequest) => {
       setProcessingId(request.id);
       await queryClient.cancelQueries({ queryKey: ['admin-nourania-validations'] });
       const previous = queryClient.getQueryData(['admin-nourania-validations']);
-      queryClient.setQueryData(['admin-nourania-validations'], (old: any) =>
-        (old || []).filter((r: any) => r.id !== request.id)
+      queryClient.setQueryData<PendingRequest[]>(['admin-nourania-validations'], (old) =>
+        (old || []).filter((r) => r.id !== request.id)
       );
       return { previous };
     },
@@ -126,7 +128,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
   });
 
   const refuseMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       const { error } = await supabase
         .from('nourania_validation_requests')
         .update({
@@ -137,12 +139,12 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         .eq('id', request.id);
       if (error) throw error;
     },
-    onMutate: async (request) => {
+    onMutate: async (request: PendingRequest) => {
       setProcessingId(request.id);
       await queryClient.cancelQueries({ queryKey: ['admin-nourania-validations'] });
       const previous = queryClient.getQueryData(['admin-nourania-validations']);
-      queryClient.setQueryData(['admin-nourania-validations'], (old: any) =>
-        (old || []).filter((r: any) => r.id !== request.id)
+      queryClient.setQueryData<PendingRequest[]>(['admin-nourania-validations'], (old) =>
+        (old || []).filter((r) => r.id !== request.id)
       );
       return { previous };
     },

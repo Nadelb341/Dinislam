@@ -10,6 +10,7 @@ import ContentUploadTabs from './ContentUploadTabs';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { ArrowLeft, FileText, CheckCircle, Upload, X, BookOpen, Film, Music, Link } from 'lucide-react';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 interface Props {
   onBack: () => void;
@@ -32,7 +33,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
   const { data: module } = useQuery({
     queryKey: ['coran-module'],
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('learning_modules')
         .select('id')
         .eq('builtin_path', '/coran')
@@ -46,14 +47,14 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryKey: ['coran-pdf-card', module?.id],
     enabled: !!module?.id,
     queryFn: async () => {
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from('module_cards')
         .select('id')
         .eq('module_id', module.id)
         .eq('section', CORAN_PDF_SECTION)
         .limit(1);
       if (existing?.length) return existing[0];
-      const { data: created } = await (supabase as any)
+      const { data: created } = await supabase
         .from('module_cards')
         .insert({ module_id: module.id, title: 'Coran PDF', section: CORAN_PDF_SECTION, display_order: 0 })
         .select('id')
@@ -67,14 +68,14 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryKey: ['coran-extra-card', module?.id],
     enabled: !!module?.id,
     queryFn: async () => {
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from('module_cards')
         .select('id')
         .eq('module_id', module.id)
         .eq('section', CORAN_EXTRA_SECTION)
         .limit(1);
       if (existing?.length) return existing[0];
-      const { data: created } = await (supabase as any)
+      const { data: created } = await supabase
         .from('module_cards')
         .insert({ module_id: module.id, title: 'Coran Contenu Extra', section: CORAN_EXTRA_SECTION, display_order: 1 })
         .select('id')
@@ -88,7 +89,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryKey: ['coran-pdf-content', pdfCard?.id],
     enabled: !!pdfCard?.id,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('module_card_content')
         .select('id, file_url, file_name')
         .eq('card_id', pdfCard.id)
@@ -103,7 +104,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryKey: ['coran-extra-contents', extraCard?.id],
     enabled: !!extraCard?.id,
     queryFn: async () => {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('module_card_content')
         .select('id, file_url, file_name, content_type')
         .eq('card_id', extraCard.id)
@@ -137,10 +138,10 @@ const AdminCoranContent = ({ onBack }: Props) => {
       // Supprimer l'ancien PDF si existant
       if (pdfContent) {
         await removeFromStorage(pdfContent.file_url);
-        await (supabase as any).from('module_card_content').delete().eq('id', pdfContent.id);
+        await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
       }
       const publicUrl = await uploadToStorage(file, pdfCard.id);
-      const { error } = await (supabase as any).from('module_card_content').insert({
+      const { error } = await supabase.from('module_card_content').insert({
         card_id: pdfCard.id, content_type: 'fichier', file_url: publicUrl,
         file_name: file.name, display_order: 0, uploaded_by: user.id,
       });
@@ -148,8 +149,8 @@ const AdminCoranContent = ({ onBack }: Props) => {
       await refetchPdf();
       queryClient.invalidateQueries({ queryKey: ['coran-pdf-content'] });
       toast.success('✅ PDF du Coran uploadé avec succès !');
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur upload');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur upload');
     } finally {
       setIsUploadingPdf(false);
     }
@@ -169,9 +170,9 @@ const AdminCoranContent = ({ onBack }: Props) => {
     try {
       if (pdfContent) {
         await removeFromStorage(pdfContent.file_url);
-        await (supabase as any).from('module_card_content').delete().eq('id', pdfContent.id);
+        await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
       }
-      const { error } = await (supabase as any).from('module_card_content').insert({
+      const { error } = await supabase.from('module_card_content').insert({
         card_id: pdfCard.id, content_type: 'fichier', file_url: url,
         file_name: 'Coran PDF', display_order: 0, uploaded_by: user.id,
       });
@@ -180,8 +181,8 @@ const AdminCoranContent = ({ onBack }: Props) => {
       await refetchPdf();
       queryClient.invalidateQueries({ queryKey: ['coran-pdf-content'] });
       toast.success('✅ Lien PDF enregistré !');
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur');
     } finally {
       setIsUploadingPdf(false);
     }
@@ -192,7 +193,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     if (!pdfContent) return;
     try {
       await removeFromStorage(pdfContent.file_url);
-      await (supabase as any).from('module_card_content').delete().eq('id', pdfContent.id);
+      await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
       if (user?.id) await moveToTrash(user.id, 'module_content', pdfContent.id, pdfContent.file_name || 'PDF du Coran', pdfContent);
       await refetchPdf();
       toast.success('PDF supprimé');
@@ -207,15 +208,15 @@ const AdminCoranContent = ({ onBack }: Props) => {
     setIsUploadingExtra(true);
     try {
       const publicUrl = await uploadToStorage(file, extraCard.id);
-      const { error } = await (supabase as any).from('module_card_content').insert({
+      const { error } = await supabase.from('module_card_content').insert({
         card_id: extraCard.id, content_type: type, file_url: publicUrl,
         file_name: file.name, display_order: (extraContents as any[]).length, uploaded_by: user.id,
       });
       if (error) throw error;
       await refetchExtra();
       toast.success('Contenu ajouté ✅');
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur upload');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur upload');
     } finally {
       setIsUploadingExtra(false);
     }
@@ -226,15 +227,15 @@ const AdminCoranContent = ({ onBack }: Props) => {
     if (!user?.id || !extraCard?.id) return;
     setIsUploadingExtra(true);
     try {
-      const { error } = await (supabase as any).from('module_card_content').insert({
+      const { error } = await supabase.from('module_card_content').insert({
         card_id: extraCard.id, content_type: 'youtube', file_url: embedUrl,
         file_name: 'Vidéo YouTube', display_order: (extraContents as any[]).length, uploaded_by: user.id,
       });
       if (error) throw error;
       await refetchExtra();
       toast.success('Vidéo YouTube ajoutée ✅');
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur');
     } finally {
       setIsUploadingExtra(false);
     }
@@ -246,7 +247,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     if (!item) return;
     try {
       if (item.content_type !== 'youtube') await removeFromStorage(item.file_url);
-      await (supabase as any).from('module_card_content').delete().eq('id', id);
+      await supabase.from('module_card_content').delete().eq('id', id);
       if (user?.id) await moveToTrash(user.id, 'module_content', id, item.file_name || 'Contenu', item);
       await refetchExtra();
       toast.success('Contenu supprimé');
@@ -384,7 +385,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
         {/* Liste des contenus existants */}
         {(extraContents as any[]).length > 0 && (
           <div className="space-y-2">
-            {(extraContents as any[]).map((c: any) => (
+            {(extraContents as any[]).map((c) => (
               <div key={c.id} className="flex items-center gap-3 bg-muted/40 rounded-lg p-2.5">
                 {contentTypeIcon(c.content_type)}
                 <div className="flex-1 min-w-0">

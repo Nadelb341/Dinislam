@@ -32,7 +32,7 @@ const AdminPrayerGroupManager = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['admin-prayer-group-students'],
     queryFn: async () => {
-      const { data: profiles, error } = await (supabase as any)
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('user_id, full_name, email, date_of_birth, prayer_group')
         .eq('is_approved', true)
@@ -57,7 +57,7 @@ const AdminPrayerGroupManager = () => {
 
   const updateGroupMutation = useMutation({
     mutationFn: async ({ userId, group }: { userId: string; group: string | null }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('profiles')
         .update({ prayer_group: group })
         .eq('user_id', userId);

@@ -19,11 +19,11 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
     queryKey: ['admin-ramadan-student-detail', studentId],
     queryFn: async () => {
       const [daysRes, progressRes, responsesRes, quizzesRes, logsRes] = await Promise.all([
-        (supabase as any).from('ramadan_days').select('*').order('day_number'),
-        (supabase as any).from('user_ramadan_progress').select('*').eq('user_id', studentId),
-        (supabase as any).from('quiz_responses').select('quiz_id, is_correct, attempt_number, selected_option, created_at').eq('user_id', studentId),
-        (supabase as any).from('ramadan_quizzes').select('id, day_id, question, correct_option, options'),
-        (supabase as any).from('connexion_logs').select('login_at').eq('user_id', studentId),
+        supabase.from('ramadan_days').select('*').order('day_number'),
+        supabase.from('user_ramadan_progress').select('*').eq('user_id', studentId),
+        supabase.from('quiz_responses').select('quiz_id, is_correct, attempt_number, selected_answer, created_at').eq('user_id', studentId),
+        supabase.from('ramadan_quizzes').select('id, day_id, question, correct_option, options'),
+        supabase.from('connexion_logs').select('login_at').eq('user_id', studentId),
       ]);
 
       const days = daysRes.data || [];
@@ -33,16 +33,16 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
       const logs = logsRes.data || [];
 
       // Build quiz maps
-      const quizToDayMap: Record<string, number> = {};
-      const quizMap: Record<string, any> = {};
-      quizzes.forEach((q: any) => {
+      const quizToDayMap: Record<string, string> = {};
+      const quizMap: Record<string, (typeof quizzes)[number]> = {};
+      quizzes.forEach((q) => {
         quizToDayMap[q.id] = q.day_id;
         quizMap[q.id] = q;
       });
 
       // Group responses by day_id
-      const responsesByDay: Record<number, any[]> = {};
-      responses.forEach((r: any) => {
+      const responsesByDay: Record<string, (typeof responses)[number][]> = {};
+      responses.forEach((r) => {
         const dayId = quizToDayMap[r.quiz_id];
         if (dayId != null) {
           if (!responsesByDay[dayId]) responsesByDay[dayId] = [];
@@ -51,41 +51,44 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
       });
 
       // Build progress map by day_id
-      const progressByDay: Record<number, any> = {};
-      progress.forEach((p: any) => { progressByDay[p.day_id] = p; });
+      const progressByDay: Record<string, (typeof progress)[number]> = {};
+      progress.forEach((p) => { progressByDay[p.day_id] = p; });
 
       // Stats
-      const totalQuizCompleted = progress.filter((p: any) => p.quiz_completed).length;
-      const totalVideoWatched = progress.filter((p: any) => p.video_watched).length;
+      const totalQuizCompleted = progress.filter((p) => p.quiz_completed).length;
+      const totalVideoWatched = progress.filter((p) => p.video_watched).length;
       const totalConnections = logs.length;
 
       // Errors
-      const errorResponses = responses.filter((r: any) => !r.is_correct);
+      const errorResponses = responses.filter((r) => !r.is_correct);
       const totalErrors = errorResponses.length;
 
       // Build error details with day info
-      const dayById: Record<number, any> = {};
-      days.forEach((d: any) => { dayById[d.id] = d; });
+      const dayById: Record<string, (typeof days)[number]> = {};
+      days.forEach((d) => { dayById[d.id] = d; });
 
-      const errorDetails = errorResponses.map((r: any) => {
+      const errorDetails = errorResponses.map((r) => {
         const quiz = quizMap[r.quiz_id];
         const dayId = quizToDayMap[r.quiz_id];
         const day = dayId != null ? dayById[dayId] : null;
-        const options = quiz?.options || [];
+        const options = Array.isArray(quiz?.options) ? (quiz.options as string[]) : [];
+        // La réponse est enregistrée dans selected_answer (numéro de l'option, en texte) ; avant le 2026-10-01
+        // l'écran lisait une colonne selected_option inexistante → le détail des erreurs était toujours vide.
+        const selectedIndex = Number(r.selected_answer);
         return {
           dayNumber: day?.day_number || '?',
           question: quiz?.question || '—',
-          selectedOption: typeof r.selected_option === 'number' && options[r.selected_option] ? options[r.selected_option] : `Option ${r.selected_option}`,
+          selectedOption: Number.isInteger(selectedIndex) && options[selectedIndex] ? options[selectedIndex] : `Option ${r.selected_answer}`,
           correctOption: typeof quiz?.correct_option === 'number' && options[quiz.correct_option] ? options[quiz.correct_option] : '—',
         };
       });
 
       // Build rows
-      const rows = days.map((day: any) => {
+      const rows = days.map((day) => {
         const p = progressByDay[day.id];
         const dayResponses = responsesByDay[day.id] || [];
         const attempts = dayResponses.length;
-        const correctCount = dayResponses.filter((r: any) => r.is_correct).length;
+        const correctCount = dayResponses.filter((r) => r.is_correct).length;
         const successRate = attempts > 0 ? Math.round((correctCount / attempts) * 100) : null;
 
         return {
@@ -180,7 +183,7 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
               <p className="text-center text-muted-foreground py-4">Aucune erreur 🎉</p>
             ) : (
               <div className="space-y-2">
-                {errorDetails.map((err: any, i: number) => (
+                {errorDetails.map((err, i) => (
                   <div key={i} className="rounded-lg border p-3 space-y-1 text-sm">
                     <p className="font-medium text-foreground">Jour {err.dayNumber}</p>
                     <p className="text-muted-foreground">{err.question}</p>
@@ -196,7 +199,7 @@ const AdminRamadanStudentDetail = ({ studentId, studentName, onBack }: Props) =>
 
       {/* Day-by-day cards */}
       <div className="space-y-3">
-        {rows.map((row: any) => (
+        {rows.map((row) => (
           <Card
             key={row.dayNumber}
             className={

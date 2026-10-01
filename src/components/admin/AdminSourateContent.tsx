@@ -29,7 +29,7 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
       return;
     }
     const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    const { error } = await supabase.from('sourates').update({ video_url: embedUrl } as any).eq('id', sourateId);
+    const { error } = await supabase.from('sourates').update({ video_url: embedUrl }).eq('id', sourateId);
     if (error) { toast.error('Erreur: ' + error.message); return; }
     toast.success('✅ Vidéo sauvegardée');
     chargerSourates();
@@ -63,7 +63,7 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
           {sourate.video_url && (
             <button
               onClick={async () => {
-                await supabase.from('sourates').update({ video_url: null } as any).eq('id', sourate.id);
+                await supabase.from('sourates').update({ video_url: null }).eq('id', sourate.id);
                 setLienVideo('');
                 chargerSourates();
               }}
@@ -114,9 +114,9 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
         </div>
         {sourateContents.length > 0 && (
           <div className="space-y-1.5">
-            {sourateContents.map((content: any) => {
+            {sourateContents.map((content) => {
               const studentName = content.target_user_id
-                ? (profiles || []).find((p: any) => p.user_id === content.target_user_id)?.full_name || 'Élève'
+                ? (profiles || []).find((p) => p.user_id === content.target_user_id)?.full_name || 'Élève'
                 : null;
               return (
                 <div key={content.id}>
@@ -158,7 +158,7 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
             onChange={(e) => setTargetStudent(e.target.value)}
           >
             <option value="">Tous les élèves (global)</option>
-            {(profiles || []).map((p: any) => (
+            {(profiles || []).map((p) => (
               <option key={p.user_id} value={p.user_id}>{p.full_name || p.email || 'Élève'}</option>
             ))}
           </select>
@@ -236,7 +236,7 @@ const AdminSourateContent = () => {
       const { error: insertError } = await supabase.from('sourate_content').insert(insertData);
       if (insertError) { toast.error(`Erreur: ${insertError.message}`); return; }
       await refetchContents();
-      const studentName = targetUserId ? profiles.find((p: any) => p.user_id === targetUserId)?.full_name : null;
+      const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Contenu envoyé à ${studentName} ✅` : 'Contenu ajouté ✅');
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
@@ -255,7 +255,7 @@ const AdminSourateContent = () => {
       const { error } = await supabase.from('sourate_content').insert(insertData);
       if (error) { toast.error(error.message); return; }
       await refetchContents();
-      const studentName = targetUserId ? profiles.find((p: any) => p.user_id === targetUserId)?.full_name : null;
+      const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Lien envoyé à ${studentName} ✅` : 'Lien YouTube ajouté ✅');
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }

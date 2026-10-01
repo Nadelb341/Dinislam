@@ -8,6 +8,7 @@ import { ArrowLeft, Upload, Trash2, FileText, Video, List, Loader2, ExternalLink
 import { YoutubePlayer, extractYoutubeVideoId } from '@/utils/youtube';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 interface DashboardCard {
   id: string;
@@ -55,8 +56,8 @@ const AdminDynamicCardContent = ({ card, onBack }: Props) => {
 
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
       toast.success('Fichier ajouté');
-    } catch (err: any) {
-      toast.error('Erreur: ' + err.message);
+    } catch (err) {
+      toast.error('Erreur: ' + errorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -70,8 +71,8 @@ const AdminDynamicCardContent = ({ card, onBack }: Props) => {
         .eq('id', card.id);
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
       toast.success('Fichier supprimé');
-    } catch (err: any) {
-      toast.error('Erreur: ' + err.message);
+    } catch (err) {
+      toast.error('Erreur: ' + errorMessage(err));
     }
     setDeleteFileOpen(false);
   };

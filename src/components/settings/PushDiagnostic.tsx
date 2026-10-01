@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search } from 'lucide-react';
+import { errorMessage } from '@/lib/utils';
 
 interface DiagStep {
   label: string;
@@ -67,8 +68,8 @@ export default function PushDiagnostic() {
         try {
           const result = await Notification.requestPermission();
           update(2, { status: result === 'granted' ? 'ok' : 'fail', detail: `${perm} → ${result}` });
-        } catch (e: any) {
-          update(2, { status: 'fail', detail: `requestPermission error: ${e?.message}` });
+        } catch (e) {
+          update(2, { status: 'fail', detail: `requestPermission error: ${errorMessage(e)}` });
         }
       }
     }
@@ -93,8 +94,8 @@ export default function PushDiagnostic() {
         status: vapidKey ? 'ok' : 'fail',
         detail: vapidKey ? `oui (${vapidKey.substring(0, 10)}...)` : 'clé non reçue'
       });
-    } catch (e: any) {
-      update(4, { status: 'fail', detail: e?.message || String(e) });
+    } catch (e) {
+      update(4, { status: 'fail', detail: errorMessage(e) || String(e) });
     }
 
     // 6. Existing subscription
@@ -109,8 +110,8 @@ export default function PushDiagnostic() {
           status: existingSub ? 'ok' : 'pending',
           detail: existingSub ? `oui — ${existingSub.endpoint.substring(0, 50)}...` : 'aucun abonnement'
         });
-      } catch (e: any) {
-        update(5, { status: 'fail', detail: e?.message || String(e) });
+      } catch (e) {
+        update(5, { status: 'fail', detail: errorMessage(e) || String(e) });
       }
     } else {
       update(5, { status: 'fail', detail: 'SW non disponible' });
@@ -141,8 +142,8 @@ export default function PushDiagnostic() {
             detail: `succès — endpoint: ${newSub.endpoint.substring(0, 50)}... p256dh=${!!keys?.p256dh} auth=${!!keys?.auth}`
           });
         }
-      } catch (e: any) {
-        update(6, { status: 'fail', detail: e?.message || String(e) });
+      } catch (e) {
+        update(6, { status: 'fail', detail: errorMessage(e) || String(e) });
       }
     }
 
@@ -153,7 +154,7 @@ export default function PushDiagnostic() {
     } else {
       try {
         const keys = newSub.toJSON().keys;
-        const { error: upsertErr } = await (supabase as any)
+        const { error: upsertErr } = await supabase
           .from('push_subscriptions')
           .upsert({
             user_id: user.id,
@@ -176,8 +177,8 @@ export default function PushDiagnostic() {
             detail: row ? `✅ Ligne trouvée en DB (id: ${row.id.substring(0, 8)}...)` : '❌ Ligne non trouvée après upsert'
           });
         }
-      } catch (e: any) {
-        update(7, { status: 'fail', detail: e?.message || String(e) });
+      } catch (e) {
+        update(7, { status: 'fail', detail: errorMessage(e) || String(e) });
       }
     }
 

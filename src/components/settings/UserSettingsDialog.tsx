@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
+import { errorMessage } from '@/lib/utils';
 
 const UserSettingsDialog = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -124,8 +125,8 @@ const UserSettingsDialog = () => {
       if (profileError) throw profileError;
 
       toast.success('Profil mis à jour ✓');
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la mise à jour');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur lors de la mise à jour');
     } finally {
       setSavingName(false);
     }
@@ -147,8 +148,8 @@ const UserSettingsDialog = () => {
       toast.success('Mot de passe mis à jour ✓');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la mise à jour du mot de passe');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur lors de la mise à jour du mot de passe');
     } finally {
       setSavingPassword(false);
     }

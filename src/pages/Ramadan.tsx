@@ -79,7 +79,7 @@ const Ramadan = () => {
     queryKey: ['ramadan-day-exceptions', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*').eq('user_id', user.id).eq('is_unlocked', true);
+      const { data, error } = await supabase.from('ramadan_day_exceptions').select('*').eq('user_id', user.id).eq('is_unlocked', true);
       if (error) throw error;
       return data as unknown as { id: string; user_id: string; day_id: string; is_unlocked: boolean }[];
     },
@@ -202,12 +202,12 @@ const Ramadan = () => {
       if (!user?.id) throw new Error('Non connecté');
       const existingProgress = userProgress.find(p => p.day_id === dayId);
       if (existingProgress) {
-        const { error } = await (supabase as any).from('user_ramadan_progress')
+        const { error } = await supabase.from('user_ramadan_progress')
           .update({ [field]: true })
           .eq('id', existingProgress.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any).from('user_ramadan_progress')
+        const { error } = await supabase.from('user_ramadan_progress')
           .insert({ user_id: user.id, day_id: dayId, [field]: true });
         if (error) throw error;
       }
@@ -218,7 +218,7 @@ const Ramadan = () => {
   const saveQuizResponseMutation = useMutation({
     mutationFn: async ({ quizId, selectedOption, attemptNumber, isCorrect }: { quizId: string; selectedOption: number; attemptNumber: number; isCorrect: boolean }) => {
       if (!user?.id) throw new Error('Non connecté');
-      const { error } = await (supabase as any).from('quiz_responses')
+      const { error } = await supabase.from('quiz_responses')
         .insert({ user_id: user.id, quiz_id: quizId, selected_answer: String(selectedOption), attempt_number: attemptNumber, is_correct: isCorrect });
       if (error) throw error;
     },

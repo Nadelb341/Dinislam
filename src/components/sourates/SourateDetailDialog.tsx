@@ -212,7 +212,7 @@ const SourateDetailDialog = ({
   useEffect(() => {
     if (open && dbId) {
       supabase
-        .from('sourate_versets_audio' as any)
+        .from('sourate_versets_audio')
         .select('*')
         .eq('sourate_id', dbId)
         .order('verset_number', { ascending: true })
@@ -228,9 +228,9 @@ const SourateDetailDialog = ({
         });
 
       // Mark targeted content as viewed
-      const targetedIds = contents.filter((c: any) => c.target_user_id && !c.viewed_at).map((c: any) => c.id);
+      const targetedIds = contents.filter((c) => c.target_user_id && !c.viewed_at).map((c) => c.id);
       if (targetedIds.length > 0) {
-        (supabase as any).from('sourate_content')
+        supabase.from('sourate_content')
           .update({ viewed_at: new Date().toISOString() })
           .in('id', targetedIds)
           .then(() => {});
@@ -565,7 +565,7 @@ const SourateDetailDialog = ({
           {contents.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Ressources</p>
-              {contents.map((content: any) => (
+              {contents.map((content) => (
                 <div key={content.id}>
                   {content.content_type === 'audio' && (
                     <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3">

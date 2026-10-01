@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { FileText, List, Video, File, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 interface DashboardCard {
   id: string;
@@ -149,8 +150,8 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
       setFileUrl(publicUrl);
       setFileName(file.name);
       toast.success('Fichier uploadé');
-    } catch (err: any) {
-      toast.error('Erreur upload: ' + err.message);
+    } catch (err) {
+      toast.error('Erreur upload: ' + errorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -221,7 +222,7 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
       toast.success(editCard ? 'Carte modifiée' : 'Carte créée');
       onOpenChange(false);
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast.error('Erreur: ' + err.message);
     },
   });

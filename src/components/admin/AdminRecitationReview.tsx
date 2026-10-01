@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Mic, MicOff, Send, CheckCircle, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/utils';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
@@ -41,7 +42,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   const { data: recitations, isLoading } = useQuery({
     queryKey: ['admin-recitations', filter],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('sourate_recitations')
         .select('*')
         .eq('status', filter)
@@ -51,8 +52,8 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       const recs = data || [];
       if (recs.length === 0) return [];
 
-      const studentIds = [...new Set(recs.map((r: any) => r.student_id))];
-      const sourateIds = [...new Set(recs.map((r: any) => r.sourate_id))];
+      const studentIds = [...new Set(recs.map((r) => r.student_id))];
+      const sourateIds = [...new Set(recs.map((r) => r.sourate_id))];
 
       const [{ data: profiles }, { data: sourates }] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name, email').in('user_id', studentIds as string[]),
@@ -60,10 +61,10 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       ]);
 
       // Génère des URLs signées pour tous les audios (contourne cache et restrictions iOS)
-      return Promise.all(recs.map(async (r: any) => ({
+      return Promise.all(recs.map(async (r) => ({
         ...r,
-        profile: profiles?.find((p: any) => p.user_id === r.student_id),
-        sourate: sourates?.find((s: any) => s.id === r.sourate_id),
+        profile: profiles?.find((p) => p.user_id === r.student_id),
+        sourate: sourates?.find((s) => s.id === r.sourate_id),
         audio_url: await toSignedUrl(r.audio_url),
         admin_audio_url: await toSignedUrl(r.admin_audio_url),
       })));
@@ -115,8 +116,8 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
     setAdminComment('');
     setAdminAudio(null);
     setAdminAudioUrl(null);
-    queryClient.setQueryData(['admin-recitations', filter], (old: any) =>
-      (old || []).filter((r: any) => r.id !== recitationId)
+    queryClient.setQueryData<NonNullable<typeof recitations>>(['admin-recitations', filter], (old) =>
+      (old || []).filter((r) => r.id !== recitationId)
     );
 
     setSaving(true);
@@ -133,7 +134,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         audioPublicUrl = publicUrl;
       }
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('sourate_recitations')
         .update({
           status: newStatus,
@@ -146,13 +147,13 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
 
       toast.success(newStatus === 'validated' ? 'Récitation validée ✅' : 'Correction envoyée 📝');
       queryClient.invalidateQueries({ queryKey: ['admin-recitations'] });
-    } catch (e: any) {
+    } catch (e) {
       // Rollback en cas d'erreur
       queryClient.setQueryData(['admin-recitations', filter], previousData);
       setResponding(recitationId);
       setAdminComment(savedComment);
       setAdminAudio(savedAudio);
-      toast.error(e.message || 'Erreur');
+      toast.error(errorMessage(e) || 'Erreur');
     } finally {
       setSaving(false);
     }
@@ -206,7 +207,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       )}
 
       <div className="space-y-3">
-        {recitations?.map((r: any) => (
+        {recitations?.map((r) => (
           <Card key={r.id}>
             <CardContent className="p-4 space-y-3">
               {/* Header */}

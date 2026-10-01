@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -82,6 +82,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      allah_name_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          file_name: string | null
+          file_url: string
+          id: string
+          media_type: string
+          name_id: number
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          file_name?: string | null
+          file_url: string
+          id?: string
+          media_type: string
+          name_id: number
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          media_type?: string
+          name_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allah_name_media_name_id_fkey"
+            columns: ["name_id"]
+            isOneToOne: false
+            referencedRelation: "allah_names"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       allah_names: {
         Row: {
@@ -538,6 +576,32 @@ export type Database = {
         }
         Relationships: []
       }
+      homework_reminder_logs: {
+        Row: {
+          devoir_id: string
+          last_sent_at: string
+          student_id: string
+        }
+        Insert: {
+          devoir_id: string
+          last_sent_at?: string
+          student_id: string
+        }
+        Update: {
+          devoir_id?: string
+          last_sent_at?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_reminder_logs_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homework_submissions: {
         Row: {
           assignment_id: string
@@ -679,6 +743,8 @@ export type Database = {
       invocations: {
         Row: {
           category: string | null
+          content_arabic: string | null
+          content_french: string | null
           created_at: string | null
           display_order: number | null
           id: number
@@ -689,6 +755,8 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          content_arabic?: string | null
+          content_french?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
@@ -699,6 +767,8 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          content_arabic?: string | null
+          content_french?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
@@ -1064,7 +1134,23 @@ export type Database = {
           id: string
           isha_reminder: boolean | null
           maghrib_reminder: boolean | null
+          notif_act: boolean
+          notif_adm_hw: boolean
+          notif_adm_msg: boolean
+          notif_adm_reg: boolean
+          notif_adm_valid: boolean
+          notif_hw_new: boolean
+          notif_hw_rem: boolean
+          notif_hw_res: boolean
+          notif_lesson: boolean
+          notif_msg: boolean
+          notif_rec: boolean
+          notif_sched: boolean
+          notif_silent: boolean
           prayer_reminders: boolean | null
+          quiet_end: number
+          quiet_mode: boolean
+          quiet_start: number
           ramadan_activities: boolean | null
           updated_at: string | null
           user_id: string
@@ -1078,7 +1164,23 @@ export type Database = {
           id?: string
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
+          notif_act?: boolean
+          notif_adm_hw?: boolean
+          notif_adm_msg?: boolean
+          notif_adm_reg?: boolean
+          notif_adm_valid?: boolean
+          notif_hw_new?: boolean
+          notif_hw_rem?: boolean
+          notif_hw_res?: boolean
+          notif_lesson?: boolean
+          notif_msg?: boolean
+          notif_rec?: boolean
+          notif_sched?: boolean
+          notif_silent?: boolean
           prayer_reminders?: boolean | null
+          quiet_end?: number
+          quiet_mode?: boolean
+          quiet_start?: number
           ramadan_activities?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -1092,7 +1194,23 @@ export type Database = {
           id?: string
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
+          notif_act?: boolean
+          notif_adm_hw?: boolean
+          notif_adm_msg?: boolean
+          notif_adm_reg?: boolean
+          notif_adm_valid?: boolean
+          notif_hw_new?: boolean
+          notif_hw_rem?: boolean
+          notif_hw_res?: boolean
+          notif_lesson?: boolean
+          notif_msg?: boolean
+          notif_rec?: boolean
+          notif_sched?: boolean
+          notif_silent?: boolean
           prayer_reminders?: boolean | null
+          quiet_end?: number
+          quiet_mode?: boolean
+          quiet_start?: number
           ramadan_activities?: boolean | null
           updated_at?: string | null
           user_id?: string
@@ -1292,6 +1410,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parent_lock_settings: {
+        Row: {
+          mode: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          mode?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          mode?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       point_settings: {
         Row: {
@@ -1514,6 +1650,7 @@ export type Database = {
           notification_prompt_later_count: number | null
           phone: string | null
           points: number | null
+          prayer_group: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1536,6 +1673,7 @@ export type Database = {
           notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
+          prayer_group?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1558,6 +1696,7 @@ export type Database = {
           notification_prompt_later_count?: number | null
           phone?: string | null
           points?: number | null
+          prayer_group?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1636,7 +1775,7 @@ export type Database = {
       }
       ramadan_day_activities: {
         Row: {
-          activity_type: string
+          activity_type: string | null
           created_at: string | null
           day_id: string
           description: string | null
@@ -1650,7 +1789,7 @@ export type Database = {
           type: string | null
         }
         Insert: {
-          activity_type: string
+          activity_type?: string | null
           created_at?: string | null
           day_id: string
           description?: string | null
@@ -1664,7 +1803,7 @@ export type Database = {
           type?: string | null
         }
         Update: {
-          activity_type?: string
+          activity_type?: string | null
           created_at?: string | null
           day_id?: string
           description?: string | null
@@ -1792,7 +1931,7 @@ export type Database = {
       }
       ramadan_quizzes: {
         Row: {
-          correct_answer: string
+          correct_answer: string | null
           correct_option: number | null
           correct_options: Json | null
           created_at: string | null
@@ -1800,8 +1939,8 @@ export type Database = {
           display_order: number | null
           explanation: string | null
           id: string
-          option_a: string
-          option_b: string
+          option_a: string | null
+          option_b: string | null
           option_c: string | null
           option_d: string | null
           options: Json | null
@@ -1809,7 +1948,7 @@ export type Database = {
           question_order: number | null
         }
         Insert: {
-          correct_answer: string
+          correct_answer?: string | null
           correct_option?: number | null
           correct_options?: Json | null
           created_at?: string | null
@@ -1817,8 +1956,8 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           id?: string
-          option_a: string
-          option_b: string
+          option_a?: string | null
+          option_b?: string | null
           option_c?: string | null
           option_d?: string | null
           options?: Json | null
@@ -1826,7 +1965,7 @@ export type Database = {
           question_order?: number | null
         }
         Update: {
-          correct_answer?: string
+          correct_answer?: string | null
           correct_option?: number | null
           correct_options?: Json | null
           created_at?: string | null
@@ -1834,8 +1973,8 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           id?: string
-          option_a?: string
-          option_b?: string
+          option_a?: string | null
+          option_b?: string | null
           option_c?: string | null
           option_d?: string | null
           options?: Json | null
@@ -1897,6 +2036,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_sent: boolean | null
+          last_sent_on: string | null
           message: string | null
           module: string | null
           recipients: Json | null
@@ -1917,6 +2057,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_sent?: boolean | null
+          last_sent_on?: string | null
           message?: string | null
           module?: string | null
           recipients?: Json | null
@@ -1937,6 +2078,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_sent?: boolean | null
+          last_sent_on?: string | null
           message?: string | null
           module?: string | null
           recipients?: Json | null
@@ -2235,6 +2377,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          position: number | null
         }
         Insert: {
           color?: string | null
@@ -2243,6 +2386,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          position?: number | null
         }
         Update: {
           color?: string | null
@@ -2251,6 +2395,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          position?: number | null
         }
         Relationships: []
       }
@@ -2286,6 +2431,68 @@ export type Database = {
           week_points?: number | null
         }
         Relationships: []
+      }
+      trash_items: {
+        Row: {
+          deleted_at: string
+          id: string
+          item_data: Json
+          item_type: string
+          label: string
+          original_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          id?: string
+          item_data: Json
+          item_type: string
+          label: string
+          original_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          item_data?: Json
+          item_type?: string
+          label?: string
+          original_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_allah_name_progress: {
+        Row: {
+          id: string
+          is_validated: boolean
+          name_id: number
+          user_id: string
+          validated_at: string | null
+        }
+        Insert: {
+          id?: string
+          is_validated?: boolean
+          name_id: number
+          user_id: string
+          validated_at?: string | null
+        }
+        Update: {
+          id?: string
+          is_validated?: boolean
+          name_id?: number
+          user_id?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_allah_name_progress_name_id_fkey"
+            columns: ["name_id"]
+            isOneToOne: false
+            referencedRelation: "allah_names"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_alphabet_progress: {
         Row: {
@@ -2621,6 +2828,7 @@ export type Database = {
       user_ramadan_video_watched: {
         Row: {
           created_at: string | null
+          day_id: string | null
           id: string
           user_id: string
           video_id: string
@@ -2628,6 +2836,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          day_id?: string | null
           id?: string
           user_id: string
           video_id: string
@@ -2635,12 +2844,20 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          day_id?: string | null
           id?: string
           user_id?: string
           video_id?: string
           watched_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_ramadan_video_watched_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "ramadan_days"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_ramadan_video_watched_video_id_fkey"
             columns: ["video_id"]
@@ -2673,6 +2890,7 @@ export type Database = {
       }
       user_sourate_progress: {
         Row: {
+          context: string
           created_at: string | null
           id: string
           is_validated: boolean | null
@@ -2682,6 +2900,7 @@ export type Database = {
           validated_at: string | null
         }
         Insert: {
+          context?: string
           created_at?: string | null
           id?: string
           is_validated?: boolean | null
@@ -2691,6 +2910,7 @@ export type Database = {
           validated_at?: string | null
         }
         Update: {
+          context?: string
           created_at?: string | null
           id?: string
           is_validated?: boolean | null
@@ -2711,6 +2931,7 @@ export type Database = {
       }
       user_sourate_verse_progress: {
         Row: {
+          context: string
           created_at: string | null
           id: string
           is_memorized: boolean | null
@@ -2719,6 +2940,7 @@ export type Database = {
           verse_number: number
         }
         Insert: {
+          context?: string
           created_at?: string | null
           id?: string
           is_memorized?: boolean | null
@@ -2727,6 +2949,7 @@ export type Database = {
           verse_number: number
         }
         Update: {
+          context?: string
           created_at?: string | null
           id?: string
           is_memorized?: boolean | null
@@ -2795,12 +3018,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2824,11 +3047,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2849,11 +3072,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2874,11 +3097,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2891,11 +3114,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

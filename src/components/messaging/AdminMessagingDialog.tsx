@@ -99,9 +99,9 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
         .select(`id, name, color, student_group_members ( user_id )`)
         .order('created_at', { ascending: false });
       if (error) { console.error('Error fetching student_groups:', error); return []; }
-      return (groups || []).map((g: any) => ({
+      return (groups || []).map((g) => ({
         ...g,
-        memberIds: (g.student_group_members || []).map((m: any) => m.user_id),
+        memberIds: (g.student_group_members || []).map((m) => m.user_id),
       }));
     },
     enabled: groupMsgOpen,
@@ -208,7 +208,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       });
 
       setReplyMessage(''); refetchMessages();
-    } catch (err: any) { toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
+    } catch (err) { toast({ title: 'Erreur', description: (errorMessage(err) || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
     finally { setIsSending(false); }
   };
 
@@ -236,7 +236,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       });
 
       toast({ title: 'Audio envoyé ✓' }); refetchMessages();
-    } catch (err: any) { toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
+    } catch (err) { toast({ title: 'Erreur', description: (errorMessage(err) || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
     finally { setIsSending(false); }
   };
 
@@ -289,8 +289,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       setSelectedConversation(conv);
 
       toast({ title: 'Message envoyé ✓' });
-    } catch (err: any) {
-      toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erreur', description: (errorMessage(err) || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' });
     } finally {
       setNewMsgSending(false);
     }
@@ -357,8 +357,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
       refetch();
 
       toast({ title: `✅ Message envoyé à ${targets.length} élève${targets.length > 1 ? 's' : ''} !` });
-    } catch (err: any) {
-      toast({ title: 'Erreur', description: (err?.message || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erreur', description: (errorMessage(err) || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' });
     } finally {
       setGroupMsgSending(false);
     }
@@ -687,7 +687,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
                   <p className="text-xs text-muted-foreground text-center py-3">Aucun groupe créé. Allez dans Élèves pour en créer.</p>
                 ) : (
                   <div className="border rounded-lg divide-y">
-                    {studentGroups.map((g: any) => (
+                    {studentGroups.map((g) => (
                       <div
                         key={g.id}
                         onClick={() => {
@@ -744,5 +744,6 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
 // Need Label import
 import { Label } from '@/components/ui/label';
 import { compressPhoto } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 export default AdminMessagingDialog;

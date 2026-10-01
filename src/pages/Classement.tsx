@@ -71,7 +71,7 @@ const Classement = () => {
       .select('user_id, total_points')
       .limit(500);
     const rankingMap = new Map<string, number>(
-      (rankingData || []).map((r: any) => [r.user_id, r.total_points ?? 0])
+      (rankingData || []).map((r) => [r.user_id, r.total_points ?? 0])
     );
 
     // 2. Source de vérité : TOUS les élèves approuvés
@@ -82,7 +82,7 @@ const Classement = () => {
         .from('user_roles')
         .select('user_id')
         .eq('role', 'admin');
-      const adminIds = new Set<string>((adminRoles || []).map((r: any) => r.user_id));
+      const adminIds = new Set<string>((adminRoles || []).map((r) => r.user_id));
 
       const { data } = await supabase
         .from('profiles')

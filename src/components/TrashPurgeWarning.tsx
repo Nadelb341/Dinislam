@@ -22,14 +22,14 @@ const TrashPurgeWarning = () => {
     const today = new Date().toISOString().slice(0, 10);
     try { if (localStorage.getItem('trash_warning_hidden') === today) { setHidden(true); return; } } catch { /* stockage indisponible */ }
     (async () => {
-      const { data: profile } = await (supabase as any).from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle();
       let age: number | null = profile?.age ?? null;
       if (profile?.date_of_birth) {
         const b = new Date(profile.date_of_birth); const n = new Date();
         age = n.getFullYear() - b.getFullYear() - (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate()) ? 1 : 0);
       }
       if (age !== null && age <= 12) return;
-      const { data: items } = await (supabase as any).from('trash_items').select('deleted_at').eq('user_id', user.id).order('deleted_at', { ascending: true }).limit(1);
+      const { data: items } = await supabase.from('trash_items').select('deleted_at').eq('user_id', user.id).order('deleted_at', { ascending: true }).limit(1);
       if (!items?.length) return;
       const purgeAt = new Date(items[0].deleted_at).getTime() + STUDENT_TRASH_DAYS * DAY;
       const left = Math.ceil((purgeAt - Date.now()) / DAY);

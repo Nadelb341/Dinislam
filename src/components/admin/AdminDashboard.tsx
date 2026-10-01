@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Users, BookMarked, Moon, Sparkles, Hand, BookOpen, Bell, Send } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { errorMessage } from '@/lib/utils';
 
 const TITLE_TO_DEVOIR_TYPE: Record<string, string> = {
   'Sourates': 'sourate',
@@ -32,8 +33,8 @@ const AdminDashboard = () => {
         .select('id, type')
         .in('id', devoirIds);
       const counts: Record<string, number> = {};
-      data.forEach((r: any) => {
-        const type = devoirs?.find((d: any) => d.id === r.devoir_id)?.type;
+      data.forEach((r) => {
+        const type = devoirs?.find((d) => d.id === r.devoir_id)?.type;
         if (type) counts[type] = (counts[type] || 0) + 1;
       });
       return counts;
@@ -56,8 +57,8 @@ const AdminDashboard = () => {
       } else {
         toast({ title: '⚠️ Aucun abonnement trouvé', description: `Total: ${data?.total || 0}, Expirés: ${data?.expired || 0}`, variant: 'destructive' });
       }
-    } catch (err: any) {
-      toast({ title: '❌ Erreur', description: err?.message || String(err), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: '❌ Erreur', description: errorMessage(err) || String(err), variant: 'destructive' });
     } finally {
       setTestingSend(false);
     }

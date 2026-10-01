@@ -75,7 +75,7 @@ const Nourania = () => {
     queryKey: ['nourania-personal-comments', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('nourania_commentaires_eleves')
         .select('lecon_id, commentaire')
         .eq('student_id', user.id);
@@ -108,12 +108,12 @@ const Nourania = () => {
     queryKey: ['nourania-admin-unlocks', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('nourania_admin_unlocks')
         .select('lesson_id')
         .eq('student_id', user.id);
       if (error) throw error;
-      return (data || []).map((r: any) => r.lesson_id as string);
+      return (data || []).map((r) => r.lesson_id as string);
     },
     enabled: !!user?.id,
   });
@@ -280,7 +280,7 @@ const Nourania = () => {
 
       if (existing) throw new Error('Demande déjà envoyée');
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('nourania_validation_requests')
         .insert({ user_id: user.id, lesson_id: lessonId });
       if (error) throw error;
@@ -353,7 +353,7 @@ const Nourania = () => {
         .filter(c => c.lesson_id === lesson.id && c.target_user_id === user.id && !c.viewed_at)
         .map(c => c.id);
       if (targetedIds.length > 0) {
-        (supabase as any).from('nourania_lesson_content')
+        supabase.from('nourania_lesson_content')
           .update({ viewed_at: new Date().toISOString() })
           .in('id', targetedIds)
           .then(() => {});
@@ -488,7 +488,7 @@ const Nourania = () => {
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
                     {/* Personal teacher comment */}
                     {(() => {
-                      const personalComment = personalComments.find((c: any) => c.lecon_id === lesson.id);
+                      const personalComment = personalComments.find((c) => c.lecon_id === lesson.id);
                       return personalComment?.commentaire ? (
                         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 mb-4">
                           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">

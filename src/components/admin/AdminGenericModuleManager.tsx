@@ -25,6 +25,7 @@ import ContentItemCard, { ContentType } from './ContentItemCard';
 import FlashcardManager from './FlashcardManager';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 interface Props {
   moduleId: string;
@@ -62,7 +63,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     queryKey: ['admin-module-card-contents', moduleId],
     queryFn: async () => {
       if (!cards.length) return [];
-      const cardIds = (cards as any[]).map((c: any) => c.id);
+      const cardIds = (cards as any[]).map((c) => c.id);
       const { data, error } = await supabase.from('module_card_content').select('*').in('card_id', cardIds).order('display_order');
       if (error) throw error;
       return data || [];
@@ -96,12 +97,12 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       setFormOpen(false);
       setEditingCard(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const card = cards.find((c: any) => c.id === id);
+      const card = cards.find((c) => c.id === id);
       const { error } = await supabase.from('module_cards').delete().eq('id', id);
       if (error) throw error;
       if (card && user?.id) await moveToTrash(user.id, 'module_card', id, card.title || 'Carte', card);
@@ -130,7 +131,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
-      const content = (contents as any[]).find((c: any) => c.id === contentId);
+      const content = (contents as any[]).find((c) => c.id === contentId);
       if (content) {
         try {
           const url = new URL(content.file_url);
@@ -156,7 +157,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
-      const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
+      const existingCount = (contents as any[]).filter((c) => c.card_id === cardId).length;
       const ext = file.name.split('.').pop();
       const path = `card-${cardId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: false });
@@ -173,7 +174,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       toast.success('Contenu ajouté ✅');
 
       // Génération automatique des flashcards en arrière-plan
-      const card = (cards as any[]).find((c: any) => c.id === cardId);
+      const card = (cards as any[]).find((c) => c.id === cardId);
       if (card) {
         const toastId = `fc-${cardId}-${Date.now()}`;
         toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
@@ -196,8 +197,8 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
           .catch(() => toast.dismiss(toastId));
         });
       }
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur upload');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur upload');
     } finally {
       setIsUploading(false);
       setUploadingCardId(null);
@@ -209,7 +210,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploading(true);
     setUploadingCardId(cardId);
     try {
-      const existingCount = (contents as any[]).filter((c: any) => c.card_id === cardId).length;
+      const existingCount = (contents as any[]).filter((c) => c.card_id === cardId).length;
       const { error } = await supabase.from('module_card_content').insert({
         card_id: cardId, content_type: 'youtube', file_url: embedUrl,
         file_name: 'Vidéo YouTube', display_order: existingCount, uploaded_by: user.id,
@@ -220,7 +221,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       toast.success('Lien YouTube ajouté ✅');
 
       // Génération automatique des flashcards en arrière-plan
-      const card = (cards as any[]).find((c: any) => c.id === cardId);
+      const card = (cards as any[]).find((c) => c.id === cardId);
       if (card) {
         const toastId = `fc-${cardId}-${Date.now()}`;
         toast.loading('✨ Génération des flashcards…', { id: toastId, duration: 15000 });
@@ -243,7 +244,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
           .catch(() => toast.dismiss(toastId));
         });
       }
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
     finally { setIsUploading(false); setUploadingCardId(null); }
   }, [user, contents, cards, queryClient, moduleId, moduleTitle]);
 
@@ -270,8 +271,8 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-cards', moduleId] });
       toast.success('Image mise à jour ✅');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
     setIsUploadingImage(false);
   }, [queryClient, moduleId]);
@@ -282,7 +283,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setFormOpen(true);
   };
 
-  const openEdit = (card: any) => {
+  const openEdit = (card) => {
     setEditingCard(card);
     setFormTitle(card.title || '');
     setFormTitleAr(card.title_arabic || '');
@@ -322,8 +323,8 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
             items={cards as any[]}
             onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
             renderItem={(card: any, { ref, style, isDragging, ...dragAttrs }) => {
-                const index = (cards as any[]).findIndex((c: any) => c.id === card.id);
-                const cardContents = (contents as any[]).filter((c: any) => c.card_id === card.id);
+                const index = (cards as any[]).findIndex((c) => c.id === card.id);
+                const cardContents = (contents as any[]).filter((c) => c.card_id === card.id);
                 const isThisUploading = isUploading && uploadingCardId === card.id;
                 return (
                   <div key={card.id} ref={ref} style={style} {...dragAttrs} className={isDragging ? 'opacity-60' : ''}>
@@ -372,7 +373,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
                         {/* Content list */}
                         {cardContents.length > 0 && (
                           <div className="ml-14 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
-                            {cardContents.map((content: any) => (
+                            {cardContents.map((content) => (
                               <ContentItemCard
                                 key={content.id}
                                 id={content.id}

@@ -19,6 +19,7 @@ import {
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 const getDefaultIcon = (title: string) => {
   const t = title.toLowerCase();
@@ -113,12 +114,12 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       setFormOpen(false);
       setEditingInvocation(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const inv = invocations.find((i: any) => i.id === id);
+      const inv = invocations.find((i) => i.id === id);
       // Corbeille d'abord : si l'envoi en corbeille échoue, rien n'est supprimé
       if (inv && user?.id) {
         const ok = await moveToTrash(user.id, 'invocation', String(id), inv.title_french || inv.title_arabic || 'Invocation', inv);
@@ -151,7 +152,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
-      const content = contents.find((c: any) => c.id === contentId);
+      const content = contents.find((c) => c.id === contentId);
       if (content) {
         try {
           const url = new URL(content.file_url);
@@ -178,7 +179,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     setIsUploading(true);
     setUploadingInvId(invocationId);
     try {
-      const existingCount = contents.filter((c: any) => c.invocation_id === invocationId).length;
+      const existingCount = contents.filter((c) => c.invocation_id === invocationId).length;
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const ext = file.name.split('.').pop();
@@ -200,8 +201,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocation-contents-all'] });
       toast.success(`${files.length} fichier(s) téléversé(s) ✅`);
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur upload');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur upload');
     } finally {
       setIsUploading(false);
       setUploadingInvId(null);
@@ -223,8 +224,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocations-list'] });
       toast.success('Image mise à jour ✅');
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
     setIsUploadingImage(false);
   }, [queryClient]);
@@ -235,7 +236,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     setFormOpen(true);
   };
 
-  const openEdit = (inv: any) => {
+  const openEdit = (inv) => {
     setEditingInvocation(inv);
     setFormTitle(inv.title_french || '');
     setFormTitleAr(inv.title_arabic || '');
@@ -275,9 +276,9 @@ const AdminInvocationManager = ({ onBack }: Props) => {
             items={invocations}
             onReorder={(newOrder) => reorderMutation.mutate(newOrder)}
             renderItem={(inv: any, { ref, style, isDragging, ...dragAttrs }) => {
-                const index = invocations.findIndex((i: any) => i.id === inv.id);
+                const index = invocations.findIndex((i) => i.id === inv.id);
                 const Icon = getDefaultIcon(inv.title_french);
-                const invContents = contents.filter((c: any) => c.invocation_id === inv.id);
+                const invContents = contents.filter((c) => c.invocation_id === inv.id);
                 const isThisUploading = isUploading && uploadingInvId === inv.id;
 
                 return (
@@ -341,7 +342,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                         {/* Content list */}
                         {invContents.length > 0 && (
                           <div className="ml-14 space-y-1" onPointerDown={(e) => e.stopPropagation()}>
-                            {invContents.map((content: any) => (
+                            {invContents.map((content) => (
                               <div key={content.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   {getContentIcon(content.content_type)}

@@ -32,7 +32,7 @@ const VersionTab = () => {
     },
   });
 
-  const currentVersion = (versions ?? []).find((v: any) => v.is_current);
+  const currentVersion = (versions ?? []).find((v) => v.is_current);
 
   const createVersion = useMutation({
     mutationFn: async () => {
@@ -79,7 +79,7 @@ const VersionTab = () => {
 
   const restoreVersion = useMutation({
     mutationFn: async (versionId: string) => {
-      const target = versions.find((v: any) => v.id === versionId);
+      const target = versions.find((v) => v.id === versionId);
       if (!target?.snapshot) throw new Error('Pas de snapshot pour cette version');
 
       const snapshot = target.snapshot as any;
@@ -198,7 +198,7 @@ const VersionTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {(versions ?? []).map((v: any) => (
+          {(versions ?? []).map((v) => (
             <div
               key={v.id}
               className={`rounded-lg border p-3 ${v.is_current ? 'border-primary/50 bg-primary/5' : ''}`}

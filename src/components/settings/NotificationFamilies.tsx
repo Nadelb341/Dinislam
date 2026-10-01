@@ -3,6 +3,7 @@ import { Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield }
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 /**
@@ -99,7 +100,7 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
 
   useEffect(() => {
     if (!user) return;
-    (supabase as any).from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle()
+    supabase.from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle()
       .then(({ data }: { data: Prefs | null }) => { if (data) setPrefs(data); });
   }, [user]);
 
@@ -110,10 +111,10 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
     if (!user) return;
     const next = { ...prefs, ...changes };
     setPrefs(next);
-    const row: Record<string, unknown> = { user_id: user.id, ...changes };
+    const row: TablesInsert<'notification_preferences'> = { user_id: user.id, ...changes };
     // Le rappel de prière général suit les 5 prières (utilisé par usePrayerTimes)
     if (PRAYER_KEYS.some(k => k in changes)) row.prayer_reminders = PRAYER_KEYS.some(k => next[k] !== false);
-    const { error } = await (supabase as any).from('notification_preferences').upsert(row, { onConflict: 'user_id' });
+    const { error } = await supabase.from('notification_preferences').upsert(row, { onConflict: 'user_id' });
     if (error) {
       setPrefs(prefs);
       toast.error("Réglage non enregistré, réessaie");

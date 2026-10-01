@@ -33,9 +33,9 @@ const CoranPage = () => {
         { data: contentData },
         { data: souratesDb },
       ] = await Promise.all([
-        (supabase as any).from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
-        (supabase as any).from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
-        (supabase as any).from('sourate_content').select('*').order('display_order'),
+        supabase.from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
+        supabase.from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
+        supabase.from('sourate_content').select('*').order('display_order'),
         supabase.from('sourates').select('id, number'),
       ]);
 
@@ -54,7 +54,7 @@ const CoranPage = () => {
       setSourateProgress(pMap);
 
       const vMap = new Map<string, boolean>();
-      verseData?.forEach((v: any) => {
+      verseData?.forEach((v) => {
         vMap.set(`${v.sourate_id}-${v.verse_number}`, (v as any).is_validated ?? v.is_memorized);
       });
       setVerseProgress(vMap);
@@ -73,21 +73,21 @@ const CoranPage = () => {
   // Charger le PDF — d'abord depuis la base, sinon le fichier intégré à l'app
   useEffect(() => {
     const fetchPdf = async () => {
-      const { data: mod } = await (supabase as any)
+      const { data: mod } = await supabase
         .from('learning_modules')
         .select('id')
         .eq('builtin_path', '/coran')
         .maybeSingle();
       if (mod) {
-        const { data: cards } = await (supabase as any)
+        const { data: cards } = await supabase
           .from('module_cards')
           .select('id')
           .eq('module_id', mod.id)
           .order('display_order')
           .limit(5);
         if (cards?.length) {
-          const cardIds = cards.map((c: any) => c.id);
-          const { data: contents } = await (supabase as any)
+          const cardIds = cards.map((c) => c.id);
+          const { data: contents } = await supabase
             .from('module_card_content')
             .select('file_url')
             .in('card_id', cardIds)
@@ -120,7 +120,7 @@ const CoranPage = () => {
     });
 
     try {
-      await (supabase as any)
+      await supabase
         .from('user_sourate_verse_progress')
         .upsert(
           { user_id: user.id, sourate_id: sourateDbId, verse_number: verseNumber, is_memorized: newValue, context: 'coran' },
@@ -137,7 +137,7 @@ const CoranPage = () => {
       const percentage = Math.round((validatedVerses / versesCount) * 100);
       const allValidated = validatedVerses === versesCount;
 
-      await (supabase as any)
+      await supabase
         .from('user_sourate_progress')
         .upsert(
           {
@@ -160,7 +160,7 @@ const CoranPage = () => {
       // Auto-validation sans demande admin pour la carte Coran
       if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
         setSelectedSourate(null);
-        await (supabase as any)
+        await supabase
           .from('user_sourate_progress')
           .upsert(
             { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'coran' },
@@ -314,7 +314,7 @@ const CoranPage = () => {
           dbId={selectedDbId}
           verseProgress={verseProgress}
           sourateProgress={selectedDbId ? sourateProgress.get(selectedDbId) : undefined}
-          contents={sourateContents.filter((c: any) => c.sourate_id === selectedDbId)}
+          contents={sourateContents.filter((c) => c.sourate_id === selectedDbId)}
           onVerseToggle={handleVerseToggle}
         />
       )}

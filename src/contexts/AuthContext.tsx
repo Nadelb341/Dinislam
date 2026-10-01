@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           // Update last_seen silently
-          (supabase as any).from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
+          supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
         } else {
           setSession(null);
           setUser(null);

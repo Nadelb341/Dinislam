@@ -27,19 +27,19 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
   const { data: students = [], isLoading: loadingStudents } = useQuery({
     queryKey: ['admin-students-unlock-list'],
     queryFn: async () => {
-      const { data: profiles } = await (supabase as any)
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
         .eq('is_approved', true)
         .order('full_name');
 
-      const { data: adminRoles } = await (supabase as any)
+      const { data: adminRoles } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('role', 'admin');
 
-      const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
-      return (profiles || []).filter((s: any) => !adminIds.has(s.user_id));
+      const adminIds = new Set((adminRoles || []).map((r) => r.user_id));
+      return (profiles || []).filter((s) => !adminIds.has(s.user_id));
     },
     enabled: open,
   });
@@ -50,52 +50,52 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
     enabled: open,
     queryFn: async () => {
       if (moduleType === 'sourates') {
-        const { data: sourates } = await (supabase as any).from('sourates').select('id');
+        const { data: sourates } = await supabase.from('sourates').select('id');
         const totalCount = sourates?.length || 0;
         if (!totalCount) return [];
-        const { data: progress } = await (supabase as any)
+        const { data: progress } = await supabase
           .from('user_sourate_progress')
           .select('user_id')
           .eq('context', 'sourates')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
-        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
         return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
       } else if (moduleType === 'nourania') {
-        const { data: lessons } = await (supabase as any).from('nourania_lessons').select('id');
+        const { data: lessons } = await supabase.from('nourania_lessons').select('id');
         const totalCount = lessons?.length || 0;
         if (!totalCount) return [];
-        const { data: progress } = await (supabase as any)
+        const { data: progress } = await supabase
           .from('user_nourania_progress')
           .select('user_id')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
-        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
         return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
       } else if (moduleType === 'invocations') {
-        const { data: invocations } = await (supabase as any).from('invocations').select('id');
+        const { data: invocations } = await supabase.from('invocations').select('id');
         const totalCount = invocations?.length || 0;
         if (!totalCount) return [];
-        const { data: progress } = await (supabase as any)
+        const { data: progress } = await supabase
           .from('user_invocation_progress')
           .select('user_id')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
-        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
         return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
       } else if (moduleType === 'allah-names') {
-        const { data: names } = await (supabase as any).from('allah_names').select('id');
+        const { data: names } = await supabase.from('allah_names').select('id');
         const totalCount = names?.length || 0;
         if (!totalCount) return [];
-        const { data: progress } = await (supabase as any)
+        const { data: progress } = await supabase
           .from('user_allah_name_progress')
           .select('user_id')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
-        (progress || []).forEach((r: any) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
         return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
       }
       return [];
@@ -128,10 +128,10 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
     mutationFn: async () => {
       if (moduleType === 'sourates') {
         if (toUnlock.length > 0) {
-          const { data: sourates, error } = await (supabase as any).from('sourates').select('id');
+          const { data: sourates, error } = await supabase.from('sourates').select('id');
           if (error) throw error;
           const progressRows = toUnlock.flatMap((userId: string) =>
-            (sourates || []).map((s: any) => ({
+            (sourates || []).map((s) => ({
               user_id: userId,
               sourate_id: s.id,
               is_validated: true,
@@ -139,13 +139,13 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
               context: 'sourates',
             }))
           );
-          const { error: progressErr } = await (supabase as any)
+          const { error: progressErr } = await supabase
             .from('user_sourate_progress')
             .upsert(progressRows, { onConflict: 'user_id,sourate_id,context' });
           if (progressErr) throw progressErr;
         }
         for (const userId of toLock) {
-          const { error } = await (supabase as any)
+          const { error } = await supabase
             .from('user_sourate_progress')
             .delete()
             .eq('user_id', userId)
@@ -155,57 +155,57 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
 
       } else if (moduleType === 'nourania') {
         if (toUnlock.length > 0) {
-          const { data: lessons, error } = await (supabase as any).from('nourania_lessons').select('id');
+          const { data: lessons, error } = await supabase.from('nourania_lessons').select('id');
           if (error) throw error;
           for (const userId of toUnlock) {
-            await (supabase as any).from('user_nourania_progress').delete().eq('user_id', userId);
-            const rows = (lessons || []).map((l: any) => ({
+            await supabase.from('user_nourania_progress').delete().eq('user_id', userId);
+            const rows = (lessons || []).map((l) => ({
               user_id: userId, lesson_id: l.id, is_validated: true, is_completed: true,
             }));
-            const { error: insErr } = await (supabase as any).from('user_nourania_progress').insert(rows);
+            const { error: insErr } = await supabase.from('user_nourania_progress').insert(rows);
             if (insErr) throw insErr;
           }
         }
         for (const userId of toLock) {
-          await (supabase as any).from('user_nourania_progress').delete().eq('user_id', userId);
+          await supabase.from('user_nourania_progress').delete().eq('user_id', userId);
         }
 
       } else if (moduleType === 'invocations') {
         if (toUnlock.length > 0) {
-          const { data: invocations, error } = await (supabase as any).from('invocations').select('id');
+          const { data: invocations, error } = await supabase.from('invocations').select('id');
           if (error) throw error;
           for (const userId of toUnlock) {
-            await (supabase as any).from('user_invocation_progress').delete().eq('user_id', userId);
-            const rows = (invocations || []).map((i: any) => ({
+            await supabase.from('user_invocation_progress').delete().eq('user_id', userId);
+            const rows = (invocations || []).map((i) => ({
               user_id: userId, invocation_id: i.id, is_validated: true, is_memorized: true,
             }));
-            const { error: insErr } = await (supabase as any).from('user_invocation_progress').insert(rows);
+            const { error: insErr } = await supabase.from('user_invocation_progress').insert(rows);
             if (insErr) throw insErr;
-            await (supabase as any)
+            await supabase
               .from('invocation_validation_requests').delete()
               .eq('user_id', userId).eq('status', 'pending');
           }
         }
         for (const userId of toLock) {
-          await (supabase as any).from('user_invocation_progress').delete().eq('user_id', userId);
+          await supabase.from('user_invocation_progress').delete().eq('user_id', userId);
         }
 
       } else if (moduleType === 'allah-names') {
         if (toUnlock.length > 0) {
-          const { data: names, error } = await (supabase as any).from('allah_names').select('id');
+          const { data: names, error } = await supabase.from('allah_names').select('id');
           if (error) throw error;
           for (const userId of toUnlock) {
-            await (supabase as any).from('user_allah_name_progress').delete().eq('user_id', userId);
-            const rows = (names || []).map((n: any) => ({
+            await supabase.from('user_allah_name_progress').delete().eq('user_id', userId);
+            const rows = (names || []).map((n) => ({
               user_id: userId, name_id: n.id, is_validated: true,
               validated_at: new Date().toISOString(),
             }));
-            const { error: insErr } = await (supabase as any).from('user_allah_name_progress').insert(rows);
+            const { error: insErr } = await supabase.from('user_allah_name_progress').insert(rows);
             if (insErr) throw insErr;
           }
         }
         for (const userId of toLock) {
-          await (supabase as any).from('user_allah_name_progress').delete().eq('user_id', userId);
+          await supabase.from('user_allah_name_progress').delete().eq('user_id', userId);
         }
       }
 
@@ -224,13 +224,13 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
       toast.success(`✅ ${parts.join(' · ')}`);
       setOpen(false);
     },
-    onError: (e: any) => toast.error(e.message || 'Erreur'),
+    onError: (e) => toast.error(e.message || 'Erreur'),
   });
 
   const allSelected = students.length > 0 && selectedIds.length === students.length;
 
   const toggleAll = (checked: boolean | 'indeterminate') => {
-    setSelectedIds(checked === true ? students.map((s: any) => s.user_id) : []);
+    setSelectedIds(checked === true ? students.map((s) => s.user_id) : []);
   };
 
   const toggle = (userId: string) => {
@@ -291,7 +291,7 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
               ) : students.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-4">Aucun élève trouvé</p>
               ) : (
-                students.map((s: any) => {
+                students.map((s) => {
                   const isChecked = selectedIds.includes(s.user_id);
                   const wasUnlocked = originallyUnlockedIds.includes(s.user_id);
                   return (

@@ -49,7 +49,7 @@ const DynamicModule = () => {
 
   const isLoading = moduleLoading || contentsLoading;
 
-  const renderContent = (item: any) => {
+  const renderContent = (item) => {
     const Icon = CONTENT_ICONS[item.content_type] || FileText;
 
     if (item.content_type === 'video') {
@@ -126,7 +126,7 @@ const DynamicModule = () => {
 
             {contents && contents.length > 0 ? (
               <div className="space-y-4">
-                {contents.map((item: any) => (
+                {contents.map((item) => (
                   <Card key={item.id} className="overflow-hidden">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center gap-2">

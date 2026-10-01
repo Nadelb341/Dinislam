@@ -9,6 +9,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import { generateFromTemplate } from '@/data/flashcard-templates';
+import { errorMessage } from '@/lib/utils';
 
 interface Props {
   cardId: string;
@@ -36,7 +37,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
   const { data: flashcards = [] } = useQuery({
     queryKey: ['admin-flashcards', cardId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('module_flashcards')
         .select('*')
         .eq('module_card_id', cardId)
@@ -58,7 +59,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
     mutationFn: async () => {
       if (!front.trim()) throw new Error('Le texte français est requis');
       const maxOrder = list.reduce((max: number, f: any) => Math.max(max, f.display_order ?? 0), -1);
-      const { error } = await (supabase as any).from('module_flashcards').insert({
+      const { error } = await supabase.from('module_flashcards').insert({
         module_card_id: cardId,
         front_text: front.trim(),
         back_arabic: arabic.trim() || null,
@@ -72,13 +73,13 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
       setFront(''); setArabic(''); setTranslit('');
       toast.success('Flashcard ajoutée ✅');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, front_text, back_arabic, back_transliteration }: any) => {
       if (!front_text.trim()) throw new Error('Le texte français est requis');
-      const { error } = await (supabase as any).from('module_flashcards').update({
+      const { error } = await supabase.from('module_flashcards').update({
         front_text: front_text.trim(),
         back_arabic: back_arabic?.trim() || null,
         back_transliteration: back_transliteration?.trim() || null,
@@ -90,13 +91,13 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
       setEditingId(null);
       toast.success('Flashcard modifiée ✅');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const card = flashcards.find((f: any) => f.id === id);
-      const { error } = await (supabase as any).from('module_flashcards').delete().eq('id', id);
+      const card = flashcards.find((f) => f.id === id);
+      const { error } = await supabase.from('module_flashcards').delete().eq('id', id);
       if (error) throw error;
       if (card && user?.id) await moveToTrash(user.id, 'flashcard', id, card.front_text || 'Flashcard', card);
     },
@@ -110,19 +111,19 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
 
   const moveMutation = useMutation({
     mutationFn: async ({ id, direction }: { id: string; direction: 'up' | 'down' }) => {
-      const idx = list.findIndex((f: any) => f.id === id);
+      const idx = list.findIndex((f) => f.id === id);
       const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= list.length) return;
       const current = list[idx];
       const swap = list[swapIdx];
-      await (supabase as any).from('module_flashcards').update({ display_order: swap.display_order }).eq('id', current.id);
-      await (supabase as any).from('module_flashcards').update({ display_order: current.display_order }).eq('id', swap.id);
+      await supabase.from('module_flashcards').update({ display_order: swap.display_order }).eq('id', current.id);
+      await supabase.from('module_flashcards').update({ display_order: current.display_order }).eq('id', swap.id);
     },
     onSuccess: invalidate,
     onError: () => toast.error('Erreur lors du déplacement'),
   });
 
-  const startEdit = (f: any) => {
+  const startEdit = (f) => {
     setEditingId(f.id);
     setEditFront(f.front_text);
     setEditArabic(f.back_arabic || '');
@@ -145,12 +146,12 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
         back_transliteration: t.back_transliteration || null,
         display_order: maxOrder + 1 + i,
       }));
-      const { error } = await (supabase as any).from('module_flashcards').insert(rows);
+      const { error } = await supabase.from('module_flashcards').insert(rows);
       if (error) throw error;
       toast.success(`✨ ${rows.length} flashcards générées !`);
       invalidate();
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur lors de la génération');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur lors de la génération');
     } finally {
       setIsGenerating(false);
     }

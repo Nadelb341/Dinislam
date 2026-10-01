@@ -4,7 +4,7 @@ import { Check, Lock, Moon } from "lucide-react";
 type DayState = "completed" | "current" | "available" | "locked" | "next-locked";
 
 function getDayState(day: any, studentProgress: any[], allDays: any[]): DayState {
-  const progress = studentProgress.find((p: any) => p.day_id === day.id);
+  const progress = studentProgress.find((p) => p.day_id === day.id);
 
   // Completed
   if (progress?.quiz_completed) return "completed";
@@ -14,9 +14,9 @@ function getDayState(day: any, studentProgress: any[], allDays: any[]): DayState
 
   // Find max completed day number
   const completedDayNumbers = studentProgress
-    .filter((p: any) => p.quiz_completed)
-    .map((p: any) => {
-      const d = allDays.find((dd: any) => dd.id === p.day_id);
+    .filter((p) => p.quiz_completed)
+    .map((p) => {
+      const d = allDays.find((dd) => dd.id === p.day_id);
       return d?.day_number ?? 0;
     });
   const maxCompleted = completedDayNumbers.length > 0 ? Math.max(...completedDayNumbers) : 0;
@@ -73,7 +73,7 @@ function DayCell({ day, state, onClick, onNextDayClick }: { day: any; state: Day
 export function RamadanCalendarGrid({ days, studentProgress, onDayClick }: {
   days: any[];
   studentProgress: any[];
-  onDayClick: (day: any) => void;
+  onDayClick: (day) => void;
 }) {
   const [showPatientMessage, setShowPatientMessage] = useState(false);
 

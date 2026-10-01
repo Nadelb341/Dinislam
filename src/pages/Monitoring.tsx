@@ -27,6 +27,7 @@ import {
   Line, ComposedChart, Cell, LabelList
 } from 'recharts';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { errorMessage } from '@/lib/utils';
 
 
 const StatusDot = ({ ok }: { ok: boolean | null }) => {
@@ -216,9 +217,9 @@ const Monitoring = () => {
         });
         loadPushData();
       }
-    } catch (e: any) {
-      setTestResult({ status: 0, body: e.message });
-      toast({ title: '❌ Erreur', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      setTestResult({ status: 0, body: errorMessage(e) });
+      toast({ title: '❌ Erreur', description: errorMessage(e), variant: 'destructive' });
     }
     setTestingSend(false);
   };
@@ -243,8 +244,8 @@ const Monitoring = () => {
       });
       setBroadcastTitle(''); setBroadcastBody('');
       loadPushData();
-    } catch (e: any) {
-      toast({ title: '❌ Erreur', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: '❌ Erreur', description: errorMessage(e), variant: 'destructive' });
     }
     setBroadcasting(false);
   };

@@ -177,8 +177,8 @@ const SouratesPage = () => {
         { data: contentData },
         { data: souratesDb },
       ] = await Promise.all([
-        (supabase as any).from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
-        (supabase as any).from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
+        supabase.from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
+        supabase.from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
         supabase.from('sourate_admin_unlocks').select('*').eq('user_id', user.id),
         supabase.from('sourate_content').select('*').order('display_order'),
         supabase.from('sourates').select('id, number'),
@@ -339,7 +339,7 @@ const SouratesPage = () => {
     });
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_sourate_verse_progress')
         .upsert({
           user_id: user.id,
@@ -363,7 +363,7 @@ const SouratesPage = () => {
 
       // Update progress percentage, preserving existing is_validated and is_memorized
       const existing = sourateProgress.get(sourateDbId);
-      await (supabase as any)
+      await supabase
         .from('user_sourate_progress')
         .upsert({
           user_id: user.id,
@@ -386,7 +386,7 @@ const SouratesPage = () => {
         if (isOver20) {
           // Auto-validation pour les +20 ans — pas besoin de l'admin
           await supabase
-            .from('user_sourate_progress' as any)
+            .from('user_sourate_progress')
             .upsert(
               { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'sourates' },
               { onConflict: 'user_id,sourate_id,context' }
@@ -399,7 +399,7 @@ const SouratesPage = () => {
           toast({ title: 'بارك الله فيك 🎉', description: 'Sourate validée ! Bonne continuation.' });
         } else {
           // Validation par l'admin pour les -20 ans
-          await (supabase as any)
+          await supabase
             .from('sourate_validation_requests')
             .insert({
               user_id: user.id,

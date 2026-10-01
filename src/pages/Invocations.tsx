@@ -354,7 +354,7 @@ const Invocations = () => {
   const toggleMemorizedMutation = useMutation({
     mutationFn: async ({ invocationId, isMemorized }: { invocationId: number; isMemorized: boolean }) => {
       if (!user) throw new Error('Non connecté');
-      const existing = progress.find((p: any) => p.invocation_id === invocationId);
+      const existing = progress.find((p) => p.invocation_id === invocationId);
       if (existing) {
         const { error } = await supabase
           .from('user_invocation_progress')
@@ -382,7 +382,7 @@ const Invocations = () => {
 
       if (isOver20) {
         // Auto-validation pour les +20 ans
-        const existing = progress.find((p: any) => p.invocation_id === invocationId);
+        const existing = progress.find((p) => p.invocation_id === invocationId);
         if (existing) {
           const { error } = await supabase
             .from('user_invocation_progress')
@@ -436,7 +436,7 @@ const Invocations = () => {
 
   // Build the set of validated invocation IDs for determining unlock state
   const validatedInvocationIds = new Set(
-    progress.filter((p: any) => p.is_validated).map((p: any) => p.invocation_id)
+    progress.filter((p) => p.is_validated).map((p) => p.invocation_id)
   );
 
   // Determine which cards are unlocked:
@@ -452,15 +452,15 @@ const Invocations = () => {
 
   const getCardValidationRequest = (invocationId: number) => {
     // Return the most recent relevant request
-    const reqs = validationRequests.filter((r: any) => r.invocation_id === invocationId);
-    const pending = reqs.find((r: any) => r.status === 'pending');
+    const reqs = validationRequests.filter((r) => r.invocation_id === invocationId);
+    const pending = reqs.find((r) => r.status === 'pending');
     if (pending) return pending;
-    const refused = reqs.find((r: any) => r.status === 'refused');
+    const refused = reqs.find((r) => r.status === 'refused');
     if (refused) return refused;
     return reqs[0] || null;
   };
 
-  const validatedCount = progress.filter((p: any) => p.is_validated).length;
+  const validatedCount = progress.filter((p) => p.is_validated).length;
 
   const handleCardClick = (invocation: any, index: number) => {
     if (!isCardUnlocked(index)) {
@@ -502,7 +502,7 @@ const Invocations = () => {
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
             {invocations.map((invocation, index) => {
-              const invProgress = progress.find((p: any) => p.invocation_id === invocation.id);
+              const invProgress = progress.find((p) => p.invocation_id === invocation.id);
               const isValidated = invProgress?.is_validated ?? false;
               const unlocked = isCardUnlocked(index);
               const valReq = getCardValidationRequest(invocation.id);
@@ -580,8 +580,8 @@ const Invocations = () => {
       {selectedInvocation && (
         <InvocationDetailDialog
           invocation={selectedInvocation}
-          contents={contents.filter((c: any) => c.invocation_id === selectedInvocation.id)}
-          progress={progress.find((p: any) => p.invocation_id === selectedInvocation.id)}
+          contents={contents.filter((c) => c.invocation_id === selectedInvocation.id)}
+          progress={progress.find((p) => p.invocation_id === selectedInvocation.id)}
           validationRequest={getCardValidationRequest(selectedInvocation.id)}
           onClose={() => setSelectedInvocation(null)}
           onMarkMemorized={(id, mem) => toggleMemorizedMutation.mutate({ invocationId: id, isMemorized: mem })}

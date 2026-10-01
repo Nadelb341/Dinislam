@@ -63,7 +63,7 @@ const PushAutoSubscribe = () => {
 
     const checkInvitation = async () => {
       try {
-        const { data } = await (supabase as any)
+        const { data } = await supabase
           .from('notification_invitations')
           .select('show_banner')
           .eq('user_id', user.id)
@@ -71,7 +71,7 @@ const PushAutoSubscribe = () => {
 
         if (data?.show_banner) {
           setForceBanner(true);
-          await (supabase as any)
+          await supabase
             .from('notification_invitations')
             .update({ show_banner: false })
             .eq('user_id', user.id);

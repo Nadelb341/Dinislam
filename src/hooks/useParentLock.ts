@@ -34,8 +34,8 @@ export function useParentLock() {
   useEffect(() => {
     if (!user || isAdmin) { setIsChild(false); return; }
     Promise.all([
-      (supabase as any).from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle(),
-      (supabase as any).from('parent_lock_settings').select('mode').eq('user_id', user.id).maybeSingle(),
+      supabase.from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle(),
+      supabase.from('parent_lock_settings').select('mode').eq('user_id', user.id).maybeSingle(),
     ]).then(([{ data: profile }, { data: setting }]: any[]) => {
       const mode = setting?.mode ?? 'auto';
       if (mode === 'on') { setIsChild(true); return; }

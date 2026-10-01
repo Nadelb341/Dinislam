@@ -9,7 +9,7 @@ import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { usePrayerTimesCity, CITIES, CityOption, getSavedMethod } from '@/hooks/usePrayerTimesCity';
-import { cn } from '@/lib/utils';
+import { cn, errorMessage } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWebPush } from '@/hooks/useWebPush';
@@ -144,7 +144,7 @@ const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; bgColor: string }> 
   "registre-presence": { emoji: "✅", bgColor: "#f0fdf4" },
 };
 
-const getModuleSlug = (mod: any): string => {
+const getModuleSlug = (mod): string => {
   if (mod.builtin_path) return mod.builtin_path.replace(/^\//, '');
   return (mod.title || '').toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
@@ -183,7 +183,7 @@ const Index = () => {
   const { data: visibilityRows, refetch: refetchVisibility } = useQuery({
     queryKey: ['module-visibility'],
     queryFn: async () => {
-      const { data } = await (supabase as any).from('module_visibility').select('*');
+      const { data } = await supabase.from('module_visibility').select('*');
       return (data || []) as { module_id: string; visibility_type: string; user_ids: string[]; group_ids: string[] }[];
     }
   });
@@ -317,8 +317,8 @@ const Index = () => {
         toast.info('Permission refusée');
       }
       setShowNotifBanner(false);
-    } catch (e: any) {
-      toast.error('Erreur : ' + e.message);
+    } catch (e) {
+      toast.error('Erreur : ' + errorMessage(e));
     }
     setActivatingNotif(false);
   };
@@ -335,7 +335,7 @@ const Index = () => {
     queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
   };
 
-const handleModuleClick = (mod: any) => {
+const handleModuleClick = (mod) => {
     if (mod.is_builtin && mod.builtin_path) {
       navigate(mod.builtin_path);
     } else {

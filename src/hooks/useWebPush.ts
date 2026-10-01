@@ -138,7 +138,7 @@ export function useWebPush() {
 
       // ── Step 6: Upsert to DB ──
       console.log('[WebPush] Step 6 — Sauvegarde en base...');
-      const { error: upsertError } = await (supabase as any)
+      const { error: upsertError } = await supabase
         .from('push_subscriptions')
         .upsert({
           user_id: user.id,

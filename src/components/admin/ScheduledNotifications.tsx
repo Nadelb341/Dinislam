@@ -95,7 +95,7 @@ const ScheduledNotifications = () => {
         .from('notification_confirmations')
         .select('notification_id');
       const counts: Record<string, number> = {};
-      (data || []).forEach((c: any) => {
+      (data || []).forEach((c) => {
         counts[c.notification_id] = (counts[c.notification_id] || 0) + 1;
       });
       return counts;
@@ -129,12 +129,12 @@ const ScheduledNotifications = () => {
       toast({ title: editingId ? '✅ Notification modifiée' : '✅ Notification programmée' });
       resetForm();
     },
-    onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
+    onError: (e) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const notif = notifications.find((n: any) => n.id === id);
+      const notif = notifications.find((n) => n.id === id);
       // Corbeille d'abord : si l'envoi en corbeille échoue, rien n'est supprimé
       if (notif && user?.id) {
         const ok = await moveToTrash(user.id, 'scheduled_notification', id, notif.message || notif.module || 'Notification', notif);
@@ -193,7 +193,7 @@ const ScheduledNotifications = () => {
     return { label: '🟢 Actif', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' };
   };
 
-  const getRecipientsLabel = (r: any) => {
+  const getRecipientsLabel = (r) => {
     if (r === 'all') return 'Tous';
     if (Array.isArray(r)) return `${r.length} élève(s)`;
     return 'Tous';

@@ -26,12 +26,12 @@ const AdminGlobalStats = ({ onBack }: Props) => {
         { data: quizResponses },
         { data: quizzes },
       ] = await Promise.all([
-        (supabase as any).from('user_ramadan_progress').select('user_id, day_id, quiz_completed, video_watched, pdf_read').limit(1000),
-        (supabase as any).from('profiles').select('user_id, full_name').eq('is_approved', true).limit(500),
-        (supabase as any).from('connexion_logs').select('user_id, login_at').order('login_at', { ascending: false }).limit(2000),
-        (supabase as any).from('ramadan_days').select('id, day_number'),
-        (supabase as any).from('quiz_responses').select('quiz_id, is_correct, user_id').eq('is_correct', false).limit(2000),
-        (supabase as any).from('ramadan_quizzes').select('id, question, day_id'),
+        supabase.from('user_ramadan_progress').select('user_id, day_id, quiz_completed, video_watched, pdf_read').limit(1000),
+        supabase.from('profiles').select('user_id, full_name').eq('is_approved', true).limit(500),
+        supabase.from('connexion_logs').select('user_id, login_at').order('login_at', { ascending: false }).limit(2000),
+        supabase.from('ramadan_days').select('id, day_number'),
+        supabase.from('quiz_responses').select('quiz_id, is_correct, user_id').eq('is_correct', false).limit(2000),
+        supabase.from('ramadan_quizzes').select('id, question, day_id'),
       ]);
       return {
         progress: progress || [],
@@ -59,29 +59,29 @@ const AdminGlobalStats = ({ onBack }: Props) => {
   const totalEntries = progress.length;
 
   // SECTION 1 — Taux moyens
-  const quizRate = totalEntries > 0 ? Math.round((progress.filter((p: any) => p.quiz_completed).length / totalEntries) * 100) : 0;
-  const videoRate = totalEntries > 0 ? Math.round((progress.filter((p: any) => p.video_watched).length / totalEntries) * 100) : 0;
-  const pdfRate = totalEntries > 0 ? Math.round((progress.filter((p: any) => p.pdf_read).length / totalEntries) * 100) : 0;
+  const quizRate = totalEntries > 0 ? Math.round((progress.filter((p) => p.quiz_completed).length / totalEntries) * 100) : 0;
+  const videoRate = totalEntries > 0 ? Math.round((progress.filter((p) => p.video_watched).length / totalEntries) * 100) : 0;
+  const pdfRate = totalEntries > 0 ? Math.round((progress.filter((p) => p.pdf_read).length / totalEntries) * 100) : 0;
 
   // SECTION 2 — Actifs vs Inactifs
   const activeUserIds = new Set([
-    ...progress.map((p: any) => p.user_id),
-    ...connexions.map((c: any) => c.user_id),
+    ...progress.map((p) => p.user_id),
+    ...connexions.map((c) => c.user_id),
   ]);
   const totalStudents = profiles.length;
-  const activeCount = profiles.filter((p: any) => activeUserIds.has(p.user_id)).length;
+  const activeCount = profiles.filter((p) => activeUserIds.has(p.user_id)).length;
   const inactiveCount = totalStudents - activeCount;
   const activePercent = totalStudents > 0 ? Math.round((activeCount / totalStudents) * 100) : 0;
 
   // SECTION 3 — Top élèves
   const quizByUser = new Map<string, { quiz: number; video: number }>();
-  progress.forEach((p: any) => {
+  progress.forEach((p) => {
     const cur = quizByUser.get(p.user_id) || { quiz: 0, video: 0 };
     if (p.quiz_completed) cur.quiz++;
     if (p.video_watched) cur.video++;
     quizByUser.set(p.user_id, cur);
   });
-  const profileMap = new Map(profiles.map((p: any) => [p.user_id, p.full_name || 'Sans nom']));
+  const profileMap = new Map(profiles.map((p) => [p.user_id, p.full_name || 'Sans nom']));
   const topStudents = Array.from(quizByUser.entries())
     .map(([uid, stats]) => ({ name: profileMap.get(uid) || 'Sans nom', ...stats }))
     .sort((a, b) => b.quiz - a.quiz)
@@ -90,7 +90,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
 
   // SECTION 4 — Connexions par jour
   const connexionsByDay = new Map<string, number>();
-  connexions.forEach((c: any) => {
+  connexions.forEach((c) => {
     const day = c.login_at?.substring(0, 10);
     if (day) connexionsByDay.set(day, (connexionsByDay.get(day) || 0) + 1);
   });
@@ -103,10 +103,10 @@ const AdminGlobalStats = ({ onBack }: Props) => {
     }));
 
   // SECTION 5 — Progression jour par jour
-  const dayMap = new Map(days.map((d: any) => [d.id, d.day_number]));
-  const totalStudentsForProgress = new Set(progress.map((p: any) => p.user_id)).size || 1;
+  const dayMap = new Map(days.map((d) => [d.id, d.day_number]));
+  const totalStudentsForProgress = new Set(progress.map((p) => p.user_id)).size || 1;
   const quizByDay = new Map<number, number>();
-  progress.forEach((p: any) => {
+  progress.forEach((p) => {
     if (p.quiz_completed) {
       const dn = dayMap.get(p.day_id) as number | undefined;
       if (dn) quizByDay.set(dn, (quizByDay.get(dn) || 0) + 1);
@@ -125,10 +125,10 @@ const AdminGlobalStats = ({ onBack }: Props) => {
 
   // SECTION 6 — Erreurs les plus fréquentes
   const errorsByQuiz = new Map<string, number>();
-  quizResponses.forEach((r: any) => {
+  quizResponses.forEach((r) => {
     errorsByQuiz.set(r.quiz_id, (errorsByQuiz.get(r.quiz_id) || 0) + 1);
   });
-  const quizMap = new Map(quizzes.map((q: any) => [q.id, q]));
+  const quizMap = new Map(quizzes.map((q) => [q.id, q]));
   const topErrors = Array.from(errorsByQuiz.entries())
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)

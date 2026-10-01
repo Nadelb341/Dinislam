@@ -12,7 +12,7 @@ const usePresenceHeartbeat = () => {
 
   const updatePresence = useCallback(async () => {
     if (!user) return;
-    await (supabase as any)
+    await supabase
       .from('profiles')
       .update({ last_seen: new Date().toISOString() })
       .eq('user_id', user.id);
@@ -38,7 +38,7 @@ const usePresenceHeartbeat = () => {
     startHeartbeat();
 
     // Log connexion (once per session)
-    (supabase as any)
+    supabase
       .from('connexion_logs')
       .insert({ user_id: user.id, user_agent: navigator.userAgent.slice(0, 300) })
       .then(() => {});
@@ -59,7 +59,7 @@ const usePresenceHeartbeat = () => {
       const headers = {
         'Content-Type': 'application/json',
         'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        'Authorization': `Bearer ${(supabase as any).auth?.['currentSession']?.access_token || ''}`,
+        'Authorization': `Bearer ${supabase.auth?.['currentSession']?.access_token || ''}`,
         'Prefer': 'return=minimal',
       };
 

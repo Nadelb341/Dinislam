@@ -48,14 +48,14 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft">, string> = {
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: any) {
   const { error } = await supabase
-    .from("trash_items" as any)
+    .from("trash_items")
     .insert({ user_id: userId, item_type: type, original_id: originalId, label, item_data: data } as any);
   return !error;
 }
 
 export async function fetchTrash(userId: string): Promise<TrashItem[]> {
   const { data } = await supabase
-    .from("trash_items" as any)
+    .from("trash_items")
     .select("*")
     .eq("user_id", userId)
     .order("deleted_at", { ascending: false });
@@ -68,14 +68,14 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     const d = item.item_data as { key?: string; data?: unknown } | null;
     if (!d?.key) return false;
     saveDraft(d.key, d.data);
-    await supabase.from("trash_items" as any).delete().eq("id", item.id);
+    await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
   const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft">];
   if (!table) return false;
   const { error } = await supabase.from(table as any).insert(item.item_data as any);
   if (error) return false;
-  await supabase.from("trash_items" as any).delete().eq("id", item.id);
+  await supabase.from("trash_items").delete().eq("id", item.id);
   return true;
 }
 
@@ -96,12 +96,12 @@ async function removeFiles(items: TrashItem[]) {
 }
 
 export async function permanentlyDeleteTrashItem(id: string) {
-  const { data } = await supabase.from("trash_items" as any).select("*").eq("id", id).maybeSingle();
+  const { data } = await supabase.from("trash_items").select("*").eq("id", id).maybeSingle();
   if (data) await removeFiles([data as unknown as TrashItem]);
-  await supabase.from("trash_items" as any).delete().eq("id", id);
+  await supabase.from("trash_items").delete().eq("id", id);
 }
 
 export async function emptyTrash(userId: string) {
   await removeFiles(await fetchTrash(userId));
-  await supabase.from("trash_items" as any).delete().eq("user_id", userId);
+  await supabase.from("trash_items").delete().eq("user_id", userId);
 }

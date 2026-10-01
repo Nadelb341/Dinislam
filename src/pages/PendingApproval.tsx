@@ -42,7 +42,7 @@ const PendingApproval = () => {
         schema: 'public',
         table: 'profiles',
         filter: `user_id=eq.${user.id}`,
-      }, (payload: any) => {
+      }, (payload) => {
         if (payload.new?.is_approved) {
           window.location.reload();
         }

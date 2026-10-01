@@ -24,7 +24,7 @@ const Ressources = () => {
     },
   });
 
-  const renderCardContent = (card: any) => {
+  const renderCardContent = (card) => {
     switch (card.content_type) {
       case 'text':
         return <p className="text-sm whitespace-pre-wrap">{card.content || 'Aucun contenu'}</p>;

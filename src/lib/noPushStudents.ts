@@ -10,14 +10,14 @@ export const NO_PUSH_GRACE_UNTIL = new Date('2026-10-07T00:00:00+02:00').getTime
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 export async function fetchNoPushStudents(): Promise<{ all: Set<string>; overdue: Set<string> }> {
-  const db = supabase as any;
+  const db = supabase;
   const [{ data: profiles }, { data: admins }, { data: subs }] = await Promise.all([
     db.from('profiles').select('user_id, created_at').eq('is_approved', true),
     db.from('user_roles').select('user_id').eq('role', 'admin'),
     db.from('push_subscriptions').select('user_id').eq('is_active', true),
   ]);
-  const adminIds = new Set((admins || []).map((a: any) => a.user_id));
-  const withPush = new Set((subs || []).map((s: any) => s.user_id));
+  const adminIds = new Set((admins || []).map((a) => a.user_id));
+  const withPush = new Set((subs || []).map((s) => s.user_id));
   const all = new Set<string>();
   const overdue = new Set<string>();
   const now = Date.now();

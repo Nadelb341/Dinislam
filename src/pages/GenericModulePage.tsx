@@ -46,7 +46,7 @@ const GenericModulePage = () => {
     queryKey: ['module-card-contents', moduleId],
     queryFn: async () => {
       if (!cards.length) return [];
-      const cardIds = cards.map((c: any) => c.id);
+      const cardIds = cards.map((c) => c.id);
       const { data, error } = await supabase
         .from('module_card_content')
         .select('*')
@@ -76,12 +76,12 @@ const GenericModulePage = () => {
     return acc;
   }, {});
 
-  const selectedContents = selectedCard ? cardContents.filter((c: any) => c.card_id === selectedCard.id) : [];
+  const selectedContents = selectedCard ? cardContents.filter((c) => c.card_id === selectedCard.id) : [];
 
   const { data: selectedFlashcards = [] } = useQuery({
     queryKey: ['flashcards', selectedCard?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('module_flashcards')
         .select('*')
         .eq('module_card_id', selectedCard!.id)
@@ -126,7 +126,7 @@ const GenericModulePage = () => {
                 )}
                 <div className="grid grid-cols-3 gap-2">
                   {(sectionCards as any[]).map((card: any, index: number) => {
-                    const hasContent = cardContents.some((c: any) => c.card_id === card.id);
+                    const hasContent = cardContents.some((c) => c.card_id === card.id);
                     return (
                       <button
                         key={card.id}
@@ -192,7 +192,7 @@ const GenericModulePage = () => {
                 {selectedContents.length > 0 ? (
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ressources</h4>
-                    {selectedContents.map((content: any) => (
+                    {selectedContents.map((content) => (
                       <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                         {content.content_type === 'video' && (
                           <video src={content.file_url} controls className="w-full" />

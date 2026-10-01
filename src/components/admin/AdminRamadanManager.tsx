@@ -220,7 +220,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const { data: dayExceptions = [] } = useQuery({
     queryKey: ['admin-ramadan-day-exceptions'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('ramadan_day_exceptions').select('*');
+      const { data, error } = await supabase.from('ramadan_day_exceptions').select('*');
       if (error) throw error;
       return data as { id: string; user_id: string; day_id: string; is_unlocked: boolean; created_at: string }[];
     },
@@ -274,7 +274,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       toast({ title: 'Vidéo téléversée avec succès' });
       setUploading(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error('Upload error:', error);
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
       setUploading(false);
@@ -284,7 +284,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete video mutation
   const deleteVideoMutation = useMutation({
     mutationFn: async (videoId: string) => {
-      const video = dayVideos.find((v: any) => v.id === videoId);
+      const video = dayVideos.find((v) => v.id === videoId);
       const { error } = await supabase.from('ramadan_day_videos').delete().eq('id', videoId);
       if (error) throw error;
       if (video && user?.id) await moveToTrash(user.id, 'ramadan_day_video', videoId, video.file_name || 'Vidéo Ramadan', video);
@@ -348,7 +348,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       toast({ title: 'Thème enregistré' });
       setSavingTheme(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
       setSavingTheme(false);
     },
@@ -394,7 +394,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
             skippedCount++;
             continue;
           }
-          const { error } = await (supabase as any)
+          const { error } = await supabase
             .from('ramadan_quizzes')
             .insert({
               day_id: dayId,
@@ -421,7 +421,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
         toast({ title: 'Quiz enregistré avec succès' });
       }
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
     },
   });
@@ -429,7 +429,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete quiz mutation
   const deleteQuizMutation = useMutation({
     mutationFn: async (quizId: string) => {
-      const quiz = quizzes.find((q: any) => q.id === quizId);
+      const quiz = quizzes.find((q) => q.id === quizId);
       await supabase.from('quiz_responses').delete().eq('quiz_id', quizId);
       const { error } = await supabase.from('ramadan_quizzes').delete().eq('id', quizId);
       if (error) throw error;
@@ -481,7 +481,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       else if (file.type.startsWith('image/')) type = 'document';
 
       const existingActivities = getActivitiesForDay(dayId);
-      const { error: insertError } = await (supabase as any)
+      const { error: insertError } = await supabase
         .from('ramadan_day_activities')
         .insert({
           day_id: dayId,
@@ -498,7 +498,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       toast({ title: 'Activité ajoutée avec succès' });
       setUploadingActivity(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       console.error('Upload activity error:', error);
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
       setUploadingActivity(false);
@@ -508,7 +508,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete activity mutation
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: string) => {
-      const activity = dayActivities.find((a: any) => a.id === activityId);
+      const activity = dayActivities.find((a) => a.id === activityId);
       const { error } = await supabase.from('ramadan_day_activities').delete().eq('id', activityId);
       if (error) throw error;
       if (activity && user?.id) await moveToTrash(user.id, 'ramadan_day_activity', activityId, activity.file_name || 'Activité Ramadan', activity);
@@ -537,7 +537,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Add per-student exception
   const addExceptionMutation = useMutation({
     mutationFn: async ({ userId, dayId }: { userId: string; dayId: string }) => {
-      const { error } = await (supabase as any).from('ramadan_day_exceptions').upsert({ user_id: userId, day_id: dayId, is_unlocked: true }, { onConflict: 'user_id,day_id' });
+      const { error } = await supabase.from('ramadan_day_exceptions').upsert({ user_id: userId, day_id: dayId, is_unlocked: true }, { onConflict: 'user_id,day_id' });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -550,7 +550,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Delete exception
   const deleteExceptionMutation = useMutation({
     mutationFn: async (exceptionId: string) => {
-      const { error } = await (supabase as any).from('ramadan_day_exceptions').delete().eq('id', exceptionId);
+      const { error } = await supabase.from('ramadan_day_exceptions').delete().eq('id', exceptionId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -586,7 +586,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       queryClient.invalidateQueries({ queryKey: ['ramadan-quiz-responses'] });
       toast({ title: '🔄 Calendrier réinitialisé pour tous les utilisateurs' });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
     },
   });
@@ -641,7 +641,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-days-manager'] });
       toast({ title: newValue ? '🚀 Top départ activé ! Jour 1 déverrouillé.' : 'Top départ désactivé. Jour 1 reverrouillé.' });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
     },
   });
@@ -668,7 +668,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       toast({ title: '📅 Date de début Ramadan enregistrée' });
       setSavingStartDate(false);
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
       setSavingStartDate(false);
     },
@@ -687,7 +687,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       queryClient.invalidateQueries({ queryKey: ['ramadan-settings'] });
       toast({ title: `✅ Seuil mis à jour : ${maxErrorsInput} erreur(s) max` });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: `Erreur : ${error?.message || String(error)}`, variant: 'destructive' });
     },
   });
@@ -1343,7 +1343,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                 onAddYoutubeLink={(embedUrl) => {
                   if (selectedDay) {
                     // Save YouTube link as activity
-                    (supabase as any).from('ramadan_day_activities').insert({
+                    supabase.from('ramadan_day_activities').insert({
                       day_id: selectedDay,
                       type: 'youtube',
                       file_url: embedUrl,

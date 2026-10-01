@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
+import { errorMessage } from '@/lib/utils';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -126,8 +127,8 @@ const AdminStudents = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-students'] });
       setPasswordStudent(null);
       setNewPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la modification');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur lors de la modification');
     } finally {
       setSavingPassword(false);
     }

@@ -37,6 +37,7 @@ import {
 } from '@/lib/trash';
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
+import { errorMessage } from '@/lib/utils';
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
   learning_module: 'Module',
@@ -138,8 +139,8 @@ const Settings = () => {
       } else {
         toast({ title: '⚠️ Aucun abonnement trouvé', description: `Total: ${data?.total || 0}, Expirés: ${data?.expired || 0}`, variant: 'destructive' });
       }
-    } catch (err: any) {
-      toast({ title: '❌ Erreur', description: err?.message || String(err), variant: 'destructive' });
+    } catch (err) {
+      toast({ title: '❌ Erreur', description: errorMessage(err) || String(err), variant: 'destructive' });
     } finally {
       setTestingSend(false);
     }
@@ -200,11 +201,11 @@ const Settings = () => {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error enabling notifications:', error);
       toast({
         title: 'Erreur',
-        description: error?.message || 'Impossible d\'activer les notifications',
+        description: errorMessage(error) || 'Impossible d\'activer les notifications',
         variant: 'destructive',
       });
     }

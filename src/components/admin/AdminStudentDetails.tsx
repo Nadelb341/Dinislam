@@ -29,6 +29,8 @@ import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
 import { fetchNoPushStudents } from '@/lib/noPushStudents';
+import { untypedDb } from '@/lib/untypedDb';
+import { errorMessage } from '@/lib/utils';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -167,17 +169,17 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       ]);
 
       return {
-        sourates: (sourateRows || []).map((r: any) => ({
+        sourates: (sourateRows || []).map((r) => ({
           progressId: r.id,
           itemId: r.sourate_id,
           label: `${r.sourates?.number} — ${r.sourates?.name_french}`,
         })),
-        nourania: (nouraniaRows || []).map((r: any) => ({
+        nourania: (nouraniaRows || []).map((r) => ({
           progressId: r.id,
           itemId: r.lesson_id,
           label: `Leçon ${r.nourania_lessons?.lesson_number} — ${r.nourania_lessons?.title_french}`,
         })),
-        invocations: (invocationRows || []).map((r: any) => ({
+        invocations: (invocationRows || []).map((r) => ({
           progressId: r.id,
           itemId: r.invocation_id,
           label: r.invocations?.title_french,
@@ -191,7 +193,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       if (!selectedStudent) throw new Error('Aucun élève sélectionné');
 
       // 1. Mettre is_validated = false dans la table de progression
-      const { error: progressError } = await (supabase as any)
+      const { error: progressError } = await untypedDb
         .from(target.table)
         .update({ is_validated: false })
         .eq('user_id', selectedStudent.id)
@@ -199,7 +201,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       if (progressError) throw progressError;
 
       // 2. Supprimer la demande de validation (pour que l'élève puisse re-soumettre)
-      await (supabase as any)
+      await untypedDb
         .from(target.requestTable)
         .delete()
         .eq('user_id', selectedStudent.id)
@@ -211,7 +213,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       queryClient.invalidateQueries({ queryKey: ['student-validated-details', selectedStudent?.id] });
       setRetrogradeTarget(null);
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast.error(err.message || 'Erreur lors de la rétrogradation');
     },
   });
@@ -240,7 +242,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     return `${year}-${month}-${day}`;
   };
 
-  const openDobDialog = (student: any) => {
+  const openDobDialog = (student) => {
     setDobDialogStudent({ id: student.user_id, full_name: student.full_name });
     if (student.date_of_birth) {
       const [y, m, d] = student.date_of_birth.split('-');
@@ -267,14 +269,14 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       toast.success('Date de naissance mise à jour ✓');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
       setDobDialogStudent(null);
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur');
     } finally {
       setSavingDob(false);
     }
   };
 
-  const openPasswordDialog = (student: any) => {
+  const openPasswordDialog = (student) => {
     setPwdDialogStudent({ id: student.user_id, full_name: student.full_name });
     setNewPassword('');
     setShowCurrentPwd(false);
@@ -296,8 +298,8 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
       setPwdDialogStudent(null);
       setNewPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur');
     } finally {
       setSavingPwd(false);
     }
@@ -312,8 +314,8 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       if (data?.error) throw new Error(data.error);
       toast.success('Élève supprimé ✅');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la suppression');
+    } catch (err) {
+      toast.error(errorMessage(err) || 'Erreur lors de la suppression');
     }
     setDeleteConfirm({ open: false, userId: '', name: '' });
   };
@@ -465,7 +467,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   variant={(student as any).gender === 'garcon' ? 'default' : 'outline'}
                   className="text-xs px-2 py-1 h-7"
                   onClick={async () => {
-                    await supabase.from('profiles').update({ gender: 'garcon' } as any).eq('user_id', student.user_id);
+                    await supabase.from('profiles').update({ gender: 'garcon' }).eq('user_id', student.user_id);
                     queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
                     toast.success('Genre mis à jour : Garçon ✓');
                   }}
@@ -478,7 +480,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   variant={(student as any).gender === 'fille' ? 'default' : 'outline'}
                   className="text-xs px-2 py-1 h-7"
                   onClick={async () => {
-                    await supabase.from('profiles').update({ gender: 'fille' } as any).eq('user_id', student.user_id);
+                    await supabase.from('profiles').update({ gender: 'fille' }).eq('user_id', student.user_id);
                     queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
                     toast.success('Genre mis à jour : Fille ✓');
                   }}

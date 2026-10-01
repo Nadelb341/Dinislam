@@ -68,15 +68,16 @@ const AdminMoonAssistant = () => {
     if (!user) return;
     setLoadingConversations(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('admin_conversations')
         .select('*')
         .eq('admin_id', user.id)
         .order('updated_at', { ascending: false });
       if (error) throw error;
-      setConversations((data || []).map((c: any) => ({
+      setConversations((data || []).map((c) => ({
         ...c,
-        messages: (c.messages || []).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }))
+        messages: (Array.isArray(c.messages) ? (c.messages as unknown as (Omit<Message, 'timestamp'> & { timestamp: string })[]) : [])
+          .map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
       })));
     } catch (err) {
       console.error('Error loading conversations:', err);
@@ -124,7 +125,7 @@ const AdminMoonAssistant = () => {
         timestamp: new Date()
       };
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('admin_conversations')
         .insert({
           admin_id: user.id,

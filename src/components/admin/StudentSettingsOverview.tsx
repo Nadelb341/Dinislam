@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { childAge } from '@/hooks/useParentLock';
 
 /**
@@ -32,33 +33,33 @@ function deviceOf(ua: string | null): string {
 
 const StudentSettingsOverview = ({ userId }: { userId: string }) => {
   const [devices, setDevices] = useState<number | null>(null);
-  const [prefs, setPrefs] = useState<Record<string, any> | null>(null);
+  const [prefs, setPrefs] = useState<Partial<Tables<'notification_preferences'>> | null>(null);
   const [age, setAge] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>('auto');
   const [logins, setLogins] = useState<{ login_at: string; user_agent: string | null }[] | null>(null);
 
   useEffect(() => {
-    const db = supabase as any;
+    const db = supabase;
     db.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('user_id', userId)
-      .then(({ count }: { count: number | null }) => setDevices(count ?? 0));
+      .then(({ count }) => setDevices(count ?? 0));
     db.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle()
-      .then(({ data }: { data: Record<string, any> | null }) => setPrefs(data ?? {}));
+      .then(({ data }) => setPrefs(data ?? {}));
     db.from('profiles').select('date_of_birth, age').eq('user_id', userId).maybeSingle()
-      .then(({ data }: { data: any }) => setAge(childAge(data)));
+      .then(({ data }) => setAge(childAge(data)));
     db.from('parent_lock_settings').select('mode').eq('user_id', userId).maybeSingle()
-      .then(({ data }: { data: { mode: Mode } | null }) => setMode(data?.mode ?? 'auto'));
+      .then(({ data }) => setMode((data?.mode as Mode | undefined) ?? 'auto'));
     db.from('connexion_logs').select('login_at, user_agent').eq('user_id', userId).order('login_at', { ascending: false }).limit(8)
-      .then(({ data }: { data: { login_at: string; user_agent: string | null }[] | null }) => setLogins(data ?? []));
+      .then(({ data }) => setLogins(data ?? []));
   }, [userId]);
 
   const changeMode = async (m: Mode) => {
     const previous = mode;
     setMode(m);
-    const { error } = await (supabase as any).from('parent_lock_settings').upsert({ user_id: userId, mode: m, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    const { error } = await supabase.from('parent_lock_settings').upsert({ user_id: userId, mode: m, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
     if (error) { setMode(previous); toast.error('Réglage non enregistré'); } else toast.success('Espace parents mis à jour');
   };
 
-  const off = prefs ? Object.keys(LABELS).filter(k => prefs[k] === false).map(k => LABELS[k]) : [];
+  const off = prefs ? Object.keys(LABELS).filter(k => (prefs as Record<string, unknown>)[k] === false).map(k => LABELS[k]) : [];
   const autoLocked = age !== null && age < 12;
 
   return (

@@ -11,6 +11,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { moveToTrash } from '@/lib/trash';
+import { errorMessage } from '@/lib/utils';
 
 interface SourateRecitationPanelProps {
   sourateId: string;
@@ -66,14 +67,14 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     queryKey: ['student-recitations', sourateId, user?.id],
     enabled: !!user && !!sourateId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('sourate_recitations')
         .select('*')
         .eq('sourate_id', sourateId)
         .eq('student_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return Promise.all((data || []).map(async (r: any) => ({
+      return Promise.all((data || []).map(async (r) => ({
         ...r,
         audio_url: await toSignedUrl(r.audio_url),
         admin_audio_url: await toSignedUrl(r.admin_audio_url),
@@ -82,28 +83,28 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   });
 
   const deleteRecitationMutation = useMutation({
-    mutationFn: async (r: any) => {
+    mutationFn: async (r: { id: string }) => {
       // Corbeille d'abord ; le fichier audio est gardé pour pouvoir restaurer la récitation
       if (!user?.id) throw new Error('Non connecté');
-      const { data: row } = await (supabase as any).from('sourate_recitations').select('*').eq('id', r.id).maybeSingle();
+      const { data: row } = await supabase.from('sourate_recitations').select('*').eq('id', r.id).maybeSingle();
       if (row) {
         const ok = await moveToTrash(user.id, 'sourate_recitation', String(r.id), 'Récitation envoyée le ' + new Date(row.created_at).toLocaleDateString('fr-FR'), row);
         if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
       }
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('sourate_recitations').delete().eq('id', r.id);
       if (error) throw error;
     },
-    onMutate: async (r: any) => {
+    onMutate: async (r: { id: string }) => {
       await queryClient.cancelQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
       const previous = queryClient.getQueryData(['student-recitations', sourateId, user?.id]);
       queryClient.setQueryData(['student-recitations', sourateId, user?.id],
-        (old: any[]) => (old || []).filter((item: any) => item.id !== r.id)
+        (old: { id: string }[] | undefined) => (old || []).filter((item) => item.id !== r.id)
       );
       return { previous };
     },
     onSuccess: () => toast.success('Récitation mise dans la corbeille (Paramètres)'),
-    onError: (_e: any, _r: any, context: any) => {
+    onError: (_e, _r, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['student-recitations', sourateId, user?.id], context.previous);
       }
@@ -201,7 +202,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
 
       const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
 
-      const { error: insertError } = await (supabase as any)
+      const { error: insertError } = await supabase
         .from('sourate_recitations')
         .insert({
           sourate_id: sourateId,
@@ -215,8 +216,8 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       toast.success('Récitation envoyée à l\'enseignant ✅');
       queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user.id] });
       resetRecording();
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur lors de l\'envoi');
+    } catch (e) {
+      toast.error(errorMessage(e) || 'Erreur lors de l\'envoi');
     } finally {
       setUploading(false);
     }
@@ -284,7 +285,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       {recitations && recitations.length > 0 && (
         <div className="space-y-2 mt-2 border-t pt-3">
           <p className="text-xs font-medium text-muted-foreground">Mes récitations envoyées</p>
-          {recitations.map((r: any) => {
+          {recitations.map((r) => {
             const st = STATUS_LABELS[r.status] || STATUS_LABELS.pending;
             return (
               <div key={r.id} className="bg-background rounded-lg p-3 space-y-2 border">

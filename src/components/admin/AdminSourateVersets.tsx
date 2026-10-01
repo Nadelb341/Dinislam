@@ -44,7 +44,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
 
   const chargerVersets = async () => {
     const { data } = await supabase
-      .from('sourate_versets_audio' as any)
+      .from('sourate_versets_audio')
       .select('*')
       .eq('sourate_id', sourate.id)
       .order('verset_number', { ascending: true });
@@ -56,7 +56,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
   }, [sourate.id, ouvert]);
 
   const getVersetAudio = (versetNum: number) =>
-    versets.find((v: any) => v.verset_number === versetNum);
+    versets.find((v) => v.verset_number === versetNum);
 
   const handleUpload = async (versetNum: number, file: File) => {
     if (!file.type.startsWith('audio/')) {
@@ -86,7 +86,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
       .from('sourates-versets')
       .getPublicUrl(fileName);
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('sourate_versets_audio')
       .upsert({
         sourate_id: sourate.id,
@@ -115,7 +115,7 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
       if (!ok) { toast.error('Mise en corbeille impossible — rien n\'a été supprimé'); return; }
     }
 
-    await (supabase as any)
+    await supabase
       .from('sourate_versets_audio')
       .delete()
       .eq('id', existing.id);

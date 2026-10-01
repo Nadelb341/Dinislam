@@ -25,6 +25,7 @@ import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import { compressPhoto } from '@/lib/compressImage';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
+import { errorMessage } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -179,7 +180,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
 
       if (!adminRoles?.length) return;
 
-      const adminIds = adminRoles.map((r: any) => r.user_id);
+      const adminIds = adminRoles.map((r) => r.user_id);
 
       await supabase.functions.invoke('send-push-notification', {
         body: {
@@ -209,9 +210,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       toast({ title: 'Message envoyé ✓' });
       setMessage('');
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending message:', error);
-      toast({ title: 'Erreur', description: (error?.message || 'Erreur inconnue') + (error?.code ? ` | code: ${error.code}` : ''), variant: 'destructive' });
+      toast({ title: 'Erreur', description: (errorMessage(error) || 'Erreur inconnue') + (error?.code ? ` | code: ${error.code}` : ''), variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -241,9 +242,9 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
 
       toast({ title: 'Audio envoyé ✓' });
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error uploading audio:', error);
-      toast({ title: 'Erreur', description: (error?.message || 'Erreur inconnue') + (error?.code ? ` | code: ${error.code}` : ''), variant: 'destructive' });
+      toast({ title: 'Erreur', description: (errorMessage(error) || 'Erreur inconnue') + (error?.code ? ` | code: ${error.code}` : ''), variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }

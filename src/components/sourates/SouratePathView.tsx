@@ -48,7 +48,7 @@ interface SouratePathViewProps {
   dbSourates: Map<number, string>;
   sourateProgress: Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>;
   isSourateAccessible: (num: number) => boolean;
-  onSourateClick: (sourate: any) => void;
+  onSourateClick: (sourate) => void;
 }
 
 const SouratePathView = ({

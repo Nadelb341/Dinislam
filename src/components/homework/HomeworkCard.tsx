@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CheckCircle2, Clock, BookOpen, Sparkles, Hand, BookMarked, Moon, ExternalLink, FileText, Video, Music, Upload, Loader2, Mic, Square, Image as ImageIcon, FolderOpen, Play, Trash2, Send, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, errorMessage } from '@/lib/utils';
 import { compressDocument } from '@/lib/compressImage';
 
 const SUBJECTS: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string; path: string }> = {
@@ -158,8 +158,8 @@ const HomeworkCard = () => {
       } catch (e) {
         console.error('Push notification error:', e);
       }
-    } catch (err: any) {
-      toast.error('Erreur: ' + err.message);
+    } catch (err) {
+      toast.error('Erreur: ' + errorMessage(err));
     } finally {
       setUploadingId(null);
       setRenderDialogId(null);
@@ -215,8 +215,8 @@ const HomeworkCard = () => {
       const audioFile = new File([pendingAudioBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
       await uploadFile(pendingAudioAssignmentId, audioFile);
       clearPendingAudio();
-    } catch (err: any) {
-      toast.error('Erreur: ' + err.message);
+    } catch (err) {
+      toast.error('Erreur: ' + errorMessage(err));
     } finally {
       setIsSendingAudio(false);
     }
@@ -254,7 +254,7 @@ const HomeworkCard = () => {
     navigate(path);
   };
 
-  const renderSubmissionItem = (sub: any) => {
+  const renderSubmissionItem = (sub) => {
     const isAudio = sub.content_type?.startsWith('audio');
     if (isAudio) {
       return (

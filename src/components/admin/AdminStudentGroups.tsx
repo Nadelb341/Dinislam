@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
+import { errorMessage } from '@/lib/utils';
 
 const GROUP_COLORS = [
   { value: 'bg-blue-500', label: 'Bleu', preview: 'bg-blue-500' },
@@ -139,13 +140,14 @@ const AdminStudentGroups = () => {
   const { data: groups = [] } = useQuery({
     queryKey: ['student-groups'],
     queryFn: async () => {
-      const { data: groupsData, error } = await (supabase as any)
+      const { data: groupsData, error } = await supabase
         .from('student_groups')
         .select('*')
+        .order('position', { ascending: true, nullsFirst: false })
         .order('name', { ascending: true });
       if (error) throw error;
 
-      const { data: members } = await (supabase as any)
+      const { data: members } = await supabase
         .from('student_group_members')
         .select('group_id, user_id');
 
@@ -157,14 +159,14 @@ const AdminStudentGroups = () => {
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
-      return (groupsData || []).map((g: any) => {
+      return (groupsData || []).map((g) => {
         const groupMembers = (members || [])
-          .filter((m: any) => m.group_id === g.id)
-          .map((m: any) => {
+          .filter((m) => m.group_id === g.id)
+          .map((m) => {
             const p = profileMap.get(m.user_id);
             return { user_id: m.user_id, full_name: p?.full_name || null, email: p?.email || null };
           });
-        return { ...g, memberCount: groupMembers.length, members: groupMembers } as StudentGroup;
+        return { ...g, color: g.color ?? '', display_order: g.position ?? 0, memberCount: groupMembers.length, members: groupMembers } satisfies StudentGroup;
       });
     },
   });
@@ -173,14 +175,14 @@ const AdminStudentGroups = () => {
   const { data: allStudents = [] } = useQuery({
     queryKey: ['all-students-for-groups'],
     queryFn: async () => {
-      const { data: profiles } = await (supabase as any)
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name, email, gender, date_of_birth')
         .eq('is_approved', true)
         .order('full_name');
       const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
       const adminIds = new Set((adminRoles || []).map(r => r.user_id));
-      return (profiles || []).filter((p: any) => !adminIds.has(p.user_id));
+      return (profiles || []).filter((p) => !adminIds.has(p.user_id));
     },
     enabled: dialogOpen,
   });
@@ -188,20 +190,20 @@ const AdminStudentGroups = () => {
   const createOrUpdateMutation = useMutation({
     mutationFn: async () => {
       if (editingGroup) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('student_groups')
           .update({ name: groupName, color: groupColor })
           .eq('id', editingGroup.id);
         if (error) throw error;
 
-        await (supabase as any).from('student_group_members').delete().eq('group_id', editingGroup.id);
+        await supabase.from('student_group_members').delete().eq('group_id', editingGroup.id);
         if (selectedStudents.size > 0) {
           const inserts = Array.from(selectedStudents).map(uid => ({ group_id: editingGroup.id, user_id: uid }));
-          const { error: e2 } = await (supabase as any).from('student_group_members').insert(inserts);
+          const { error: e2 } = await supabase.from('student_group_members').insert(inserts);
           if (e2) throw e2;
         }
       } else {
-        const { data: newGroup, error } = await (supabase as any)
+        const { data: newGroup, error } = await supabase
           .from('student_groups')
           .insert({ name: groupName, color: groupColor })
           .select()
@@ -210,7 +212,7 @@ const AdminStudentGroups = () => {
 
         if (selectedStudents.size > 0) {
           const inserts = Array.from(selectedStudents).map(uid => ({ group_id: newGroup.id, user_id: uid }));
-          const { error: e2 } = await (supabase as any).from('student_group_members').insert(inserts);
+          const { error: e2 } = await supabase.from('student_group_members').insert(inserts);
           if (e2) throw e2;
         }
       }
@@ -220,7 +222,7 @@ const AdminStudentGroups = () => {
       toast.success(editingGroup ? 'Groupe modifié' : 'Groupe créé');
       await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
     },
-    onError: (error: any) => toast.error(`Erreur: ${error?.message || error} (${error?.code || 'unknown'})`),
+    onError: (error) => toast.error(`Erreur: ${errorMessage(error)}`),
   });
 
   const handleDeleteGroup = async (groupId: string) => {
@@ -228,7 +230,7 @@ const AdminStudentGroups = () => {
     queryClient.setQueryData(['student-groups'], (old: StudentGroup[] | undefined) =>
       (old || []).filter(g => g.id !== groupId)
     );
-    const { error } = await (supabase as any).from('student_groups').delete().eq('id', groupId);
+    const { error } = await supabase.from('student_groups').delete().eq('id', groupId);
     if (!error) {
       toast.success('Groupe supprimé');
       if (group && user?.id) {
@@ -246,7 +248,7 @@ const AdminStudentGroups = () => {
     queryClient.setQueryData(['student-groups'], resequenced);
     await Promise.all(
       resequenced.map((g) =>
-        (supabase as any)
+        supabase
           .from('student_groups')
           .update({ position: g.sort_order })
           .eq('id', g.id)
@@ -274,7 +276,7 @@ const AdminStudentGroups = () => {
     setDialogOpen(true);
   };
 
-  const filteredStudents = allStudents.filter((s: any) => {
+  const filteredStudents = allStudents.filter((s) => {
     if (studentSearch) {
       const q = studentSearch.toLowerCase();
       if (!s.full_name?.toLowerCase().includes(q) && !s.email?.toLowerCase().includes(q)) return false;
@@ -358,7 +360,7 @@ const AdminStudentGroups = () => {
                   variant="ghost" size="sm" className="text-xs h-7"
                   onClick={() => {
                     if (selectedStudents.size === filteredStudents.length && filteredStudents.length > 0) setSelectedStudents(new Set());
-                    else setSelectedStudents(new Set(filteredStudents.map((s: any) => s.user_id)));
+                    else setSelectedStudents(new Set(filteredStudents.map((s) => s.user_id)));
                   }}
                 >
                   {selectedStudents.size === filteredStudents.length && filteredStudents.length > 0 ? 'Désélectionner' : 'Tout sélectionner'}
@@ -415,7 +417,7 @@ const AdminStudentGroups = () => {
               <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
                 {filteredStudents.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">Aucun élève</p>
-                ) : filteredStudents.map((s: any) => (
+                ) : filteredStudents.map((s) => (
                   <div
                     key={s.user_id}
                     onClick={() => {

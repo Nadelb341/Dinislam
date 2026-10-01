@@ -67,7 +67,7 @@ const PrayerModuleCards = () => {
     queryKey: ['user-profile-prayer', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select('date_of_birth, prayer_group')
         .eq('user_id', user.id)
@@ -151,7 +151,7 @@ const PrayerModuleCards = () => {
 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
-      const content = cardContent.find((c: any) => c.id === contentId);
+      const content = cardContent.find((c) => c.id === contentId);
       const { error } = await supabase.from('prayer_card_content').delete().eq('id', contentId);
       if (error) throw error;
       if (content && user?.id) await moveToTrash(user.id, 'prayer_card_content', contentId, content.file_name || 'Contenu', content);

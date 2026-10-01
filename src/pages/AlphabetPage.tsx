@@ -47,7 +47,7 @@ const AlphabetPage = () => {
   const toggleValidatedMutation = useMutation({
     mutationFn: async ({ letterId, isValidated }: { letterId: number; isValidated: boolean }) => {
       if (!user) throw new Error('Non connecté');
-      const existing = (progress as any[]).find((p: any) => p.letter_id === letterId);
+      const existing = (progress as any[]).find((p) => p.letter_id === letterId);
       if (existing) {
         const { error } = await supabase.from('user_alphabet_progress').update({ is_validated: isValidated }).eq('id', existing.id);
         if (error) throw error;
@@ -62,8 +62,8 @@ const AlphabetPage = () => {
     },
   });
 
-  const validatedCount = (progress as any[]).filter((p: any) => p.is_validated).length;
-  const selectedContents = selectedLetter ? contents.filter((c: any) => c.letter_id === selectedLetter.id) : [];
+  const validatedCount = (progress as any[]).filter((p) => p.is_validated).length;
+  const selectedContents = selectedLetter ? contents.filter((c) => c.letter_id === selectedLetter.id) : [];
 
   const getContentIcon = (type: string) => {
     switch (type) {
@@ -100,9 +100,9 @@ const AlphabetPage = () => {
         ) : (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
             {letters.map((letter: any, index: number) => {
-              const letterProgress = (progress as any[]).find((p: any) => p.letter_id === letter.id);
+              const letterProgress = (progress as any[]).find((p) => p.letter_id === letter.id);
               const isValidated = letterProgress?.is_validated ?? false;
-              const hasContent = contents.some((c: any) => c.letter_id === letter.id);
+              const hasContent = contents.some((c) => c.letter_id === letter.id);
 
               return (
                 <button
@@ -180,7 +180,7 @@ const AlphabetPage = () => {
                 {selectedContents.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ressources</h4>
-                    {selectedContents.map((content: any) => (
+                    {selectedContents.map((content) => (
                       <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                         {content.content_type === 'video' && (
                           <video src={content.file_url} controls className="w-full" controlsList="nodownload" />
@@ -211,7 +211,7 @@ const AlphabetPage = () => {
 
                 {/* Mark as learned */}
                 {(() => {
-                  const letterProgress = (progress as any[]).find((p: any) => p.letter_id === selectedLetter.id);
+                  const letterProgress = (progress as any[]).find((p) => p.letter_id === selectedLetter.id);
                   const isValidated = letterProgress?.is_validated ?? false;
                   return (
                     <Button

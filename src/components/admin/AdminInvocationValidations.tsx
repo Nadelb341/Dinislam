@@ -44,6 +44,8 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
     },
   });
 
+  type PendingRequest = NonNullable<typeof requests>[number];
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-invocation-validation-requests')
@@ -60,7 +62,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
   }, [queryClient]);
 
   const approveMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       const { error: updateError } = await supabase
         .from('invocation_validation_requests')
         .update({
@@ -113,13 +115,13 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-invocations-count'] });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: 'Erreur lors de la validation', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
   });
 
   const refuseMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       const { error } = await supabase
         .from('invocation_validation_requests')
         .update({
@@ -138,7 +140,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-invocations-count'] });
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast({ title: 'Erreur lors du refus', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
   });

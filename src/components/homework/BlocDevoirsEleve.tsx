@@ -347,7 +347,7 @@ export default function BlocDevoirsEleve() {
       .select('user_id')
       .eq('role', 'admin');
 
-    const adminIds = adminRoles?.map((r: any) => r.user_id) || [];
+    const adminIds = adminRoles?.map((r) => r.user_id) || [];
     const devoir = devoirs.find(d => d.id === devoirId);
 
     if (adminIds.length > 0) {

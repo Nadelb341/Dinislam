@@ -60,7 +60,7 @@ const AdminOnlineUsers = () => {
   const { data: users = [] } = useQuery({
     queryKey: ['admin-online-users'],
     queryFn: async () => {
-      const { data: profiles, error: profilesError } = await (supabase as any)
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name, email, last_seen, is_approved')
         .eq('is_approved', true)
@@ -89,7 +89,7 @@ const AdminOnlineUsers = () => {
     queryKey: ['admin-week-connexions'],
     queryFn: async () => {
       const weekStart = getWeekStart();
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('connexion_logs')
         .select('user_id, login_at')
         .gte('login_at', weekStart);

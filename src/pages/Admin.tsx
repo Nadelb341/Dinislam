@@ -307,7 +307,7 @@ const Admin = () => {
       const resequenced = withResequencedOrder(newOrder);
       await Promise.all(
         resequenced.map((item) =>
-          (supabase as any)
+          supabase
             .from('admin_card_order')
             .upsert(
               { card_key: item.id, display_order: item.sort_order, updated_at: new Date().toISOString(), user_id: user?.id },
@@ -323,7 +323,7 @@ const Admin = () => {
 
   const deleteCardMutation = useMutation({
     mutationFn: async (cardId: string) => {
-      const card = dynamicCards?.find((c: any) => c.id === cardId);
+      const card = dynamicCards?.find((c) => c.id === cardId);
       const { error } = await supabase.from('dashboard_cards').delete().eq('id', cardId);
       if (error) throw error;
       // Also remove from ordering
@@ -337,12 +337,12 @@ const Admin = () => {
       setDeleteCardOpen(false);
       setCardToDelete(null);
     },
-    onError: (err: any) => toast.error('Erreur: ' + err.message),
+    onError: (err) => toast.error('Erreur: ' + err.message),
   });
 
   const deleteModuleMutation = useMutation({
     mutationFn: async (moduleId: string) => {
-      const mod = learningModules?.find((m: any) => m.id === moduleId);
+      const mod = learningModules?.find((m) => m.id === moduleId);
       const { error } = await supabase.from('learning_modules').delete().eq('id', moduleId);
       if (error) throw error;
       if (mod && user?.id) await moveToTrash(user.id, 'learning_module', moduleId, mod.title || 'Module', mod);
@@ -354,7 +354,7 @@ const Admin = () => {
       setDeleteModuleOpen(false);
       setModuleToDelete(null);
     },
-    onError: (err: any) => toast.error('Erreur: ' + err.message),
+    onError: (err) => toast.error('Erreur: ' + err.message),
   });
 
   const toggleModuleActiveMutation = useMutation({
@@ -368,7 +368,7 @@ const Admin = () => {
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       toast.success(is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
     },
-    onError: (err: any) => toast.error('Erreur: ' + err.message),
+    onError: (err) => toast.error('Erreur: ' + err.message),
   });
 
   // Map static card keys to builtin_path for visibility toggle

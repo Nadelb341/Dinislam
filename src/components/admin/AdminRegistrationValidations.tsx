@@ -9,6 +9,7 @@ import { Check, X, User, ArrowLeft, ShieldOff } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { moveToTrash } from '@/lib/trash';
 import { useAuth } from '@/contexts/AuthContext';
+import { errorMessage } from '@/lib/utils';
 
 interface RegistrationUser {
   user_id: string;
@@ -33,7 +34,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
 
   const loadRegistrations = useCallback(async () => {
     setLoadError(null);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('profiles')
       .select('user_id, email, full_name, gender, age, created_at, is_approved')
       .or('is_approved.eq.false,is_approved.is.null')
@@ -47,9 +48,9 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
     const load = async () => {
       try {
         await loadRegistrations();
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erreur chargement inscriptions:', err);
-        setLoadError(err?.message || 'Erreur inconnue');
+        setLoadError(errorMessage(err) || 'Erreur inconnue');
       } finally {
         setIsLoading(false);
       }
@@ -61,7 +62,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
   const handleApprove = async (userId: string) => {
     setProcessingId(userId);
     try {
-      const { data: updatedProfiles, error: updateError } = await (supabase as any)
+      const { data: updatedProfiles, error: updateError } = await supabase
         .from('profiles')
         .update({
           is_approved: true,
@@ -75,7 +76,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         throw new Error("Aucun profil mis à jour. Vérifiez les permissions d'accès.");
       }
 
-      const { error: roleError } = await (supabase as any)
+      const { error: roleError } = await supabase
         .from('user_roles')
         .upsert({ user_id: userId, role: 'student' }, { onConflict: 'user_id,role' });
 
@@ -91,11 +92,11 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         title: 'Inscription approuvée ✅',
         description: "L'élève peut maintenant accéder à l'application.",
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur approbation:', err);
       toast({
         title: 'Erreur',
-        description: err?.message || "Impossible d'approuver l'inscription.",
+        description: errorMessage(err) || "Impossible d'approuver l'inscription.",
         variant: 'destructive',
       });
     }
@@ -107,12 +108,12 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
     try {
       // Corbeille d'abord : la fiche de l'élève refusé peut être restaurée depuis Paramètres
       const reg = registrations.find(r => r.user_id === userId);
-      const { data: profile } = await (supabase as any).from('profiles').select('*').eq('user_id', userId).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
       if (currentUser?.id && profile) {
         const ok = await moveToTrash(currentUser.id, 'registration', userId, `Inscription refusée — ${reg?.full_name || profile.full_name || 'élève'}`, profile);
         if (!ok) throw new Error('Mise en corbeille impossible — rien n\'a été supprimé');
       }
-      await (supabase as any)
+      await supabase
         .from('profiles')
         .delete()
         .eq('user_id', userId);
@@ -122,11 +123,11 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
         title: 'Inscription refusée',
         description: "L'élève ne pourra pas accéder à l'application.",
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur refus:', err);
       toast({
         title: 'Erreur',
-        description: err?.message || "Impossible de refuser l'inscription.",
+        description: errorMessage(err) || "Impossible de refuser l'inscription.",
         variant: 'destructive',
       });
     }

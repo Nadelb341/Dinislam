@@ -29,7 +29,7 @@ const AllahNamesPage = () => {
     queryKey: ['allah-name-progress', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('user_allah_name_progress')
         .select('name_id, is_validated')
         .eq('user_id', user!.id);
@@ -42,7 +42,7 @@ const AllahNamesPage = () => {
     queryKey: ['allah-name-media', selected?.id],
     enabled: !!selected,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('allah_name_media')
+      const { data, error } = await supabase.from('allah_name_media')
         .select('*')
         .eq('name_id', selected.id);
       if (error) throw error;
@@ -50,7 +50,7 @@ const AllahNamesPage = () => {
     },
   });
 
-  const validatedIds = new Set((progress as any[]).filter((p: any) => p.is_validated).map((p: any) => p.name_id));
+  const validatedIds = new Set((progress as any[]).filter((p) => p.is_validated).map((p) => p.name_id));
   const validatedCount = validatedIds.size;
   const totalCount = names.length;
 
@@ -63,7 +63,7 @@ const AllahNamesPage = () => {
 
   const validateMutation = useMutation({
     mutationFn: async (nameId: number) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('user_allah_name_progress')
         .upsert({
           user_id: user!.id,
@@ -77,10 +77,10 @@ const AllahNamesPage = () => {
       queryClient.invalidateQueries({ queryKey: ['allah-name-progress', user?.id] });
       toast.success('Nom mémorisé ! ✅');
     },
-    onError: (e: any) => toast.error(e.message || 'Erreur'),
+    onError: (e) => toast.error(e.message || 'Erreur'),
   });
 
-  const getMedia = (type: string) => selectedMedia.find((m: any) => m.media_type === type);
+  const getMedia = (type: string) => selectedMedia.find((m) => m.media_type === type);
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
 
   const openName = (name: any, index: number) => {

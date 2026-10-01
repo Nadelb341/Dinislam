@@ -45,6 +45,8 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
     },
   });
 
+  type PendingRequest = NonNullable<typeof requests>[number];
+
   useEffect(() => {
     const channel = supabase
       .channel('admin-validation-requests')
@@ -56,7 +58,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
   }, [queryClient]);
 
   const approveMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       const { error: updateError } = await supabase
         .from('sourate_validation_requests')
         .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
@@ -69,12 +71,12 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
           { onConflict: 'user_id,sourate_id,context' });
       if (progressError) throw progressError;
     },
-    onMutate: async (request) => {
+    onMutate: async (request: PendingRequest) => {
       setProcessingId(request.id);
       await queryClient.cancelQueries({ queryKey: ['admin-sourate-validations'] });
       const previous = queryClient.getQueryData(['admin-sourate-validations']);
-      queryClient.setQueryData(['admin-sourate-validations'], (old: any) =>
-        (old || []).filter((r: any) => r.id !== request.id)
+      queryClient.setQueryData<PendingRequest[]>(['admin-sourate-validations'], (old) =>
+        (old || []).filter((r) => r.id !== request.id)
       );
       return { previous };
     },
@@ -96,19 +98,19 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
   });
 
   const refuseMutation = useMutation({
-    mutationFn: async (request: any) => {
+    mutationFn: async (request: PendingRequest) => {
       const { error } = await supabase
         .from('sourate_validation_requests')
         .update({ status: 'refused', reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
         .eq('id', request.id);
       if (error) throw error;
     },
-    onMutate: async (request) => {
+    onMutate: async (request: PendingRequest) => {
       setProcessingId(request.id);
       await queryClient.cancelQueries({ queryKey: ['admin-sourate-validations'] });
       const previous = queryClient.getQueryData(['admin-sourate-validations']);
-      queryClient.setQueryData(['admin-sourate-validations'], (old: any) =>
-        (old || []).filter((r: any) => r.id !== request.id)
+      queryClient.setQueryData<PendingRequest[]>(['admin-sourate-validations'], (old) =>
+        (old || []).filter((r) => r.id !== request.id)
       );
       return { previous };
     },

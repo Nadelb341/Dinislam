@@ -34,7 +34,7 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
     Promise.all([
       supabase.from('profiles').select('user_id, full_name, email').eq('is_approved', true).order('full_name'),
       supabase.from('student_groups').select('id, name, color').order('name'),
-      (supabase as any).from('module_visibility').select('*').eq('module_id', module.id).maybeSingle(),
+      supabase.from('module_visibility').select('*').eq('module_id', module.id).maybeSingle(),
     ]).then(([{ data: mbrs }, { data: grps }, { data: vis }]) => {
       setMembers((mbrs || []) as Member[]);
       setGroups((grps || []) as Group[]);
@@ -67,7 +67,7 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
       return;
     }
     setSaving(true);
-    const { error } = await (supabase as any).from('module_visibility').upsert({
+    const { error } = await supabase.from('module_visibility').upsert({
       module_id: module.id,
       visibility_type: visType,
       user_ids: visType === 'users' ? userIds : [],

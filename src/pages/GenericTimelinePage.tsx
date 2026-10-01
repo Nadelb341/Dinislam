@@ -106,7 +106,7 @@ const GenericTimelinePage = () => {
     queryKey: ['generic-module-contents', module?.id],
     queryFn: async () => {
       if (!cards.length) return [];
-      const cardIds = cards.map((c: any) => c.id);
+      const cardIds = cards.map((c) => c.id);
       const { data, error } = await supabase
         .from('module_card_content')
         .select('*')
@@ -127,13 +127,13 @@ const GenericTimelinePage = () => {
   }, {});
 
   const selectedContents = selectedCard
-    ? (cardContents as any[]).filter((c: any) => c.card_id === selectedCard.id)
+    ? (cardContents as any[]).filter((c) => c.card_id === selectedCard.id)
     : [];
 
   const { data: selectedFlashcards = [] } = useQuery({
     queryKey: ['flashcards', selectedCard?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('module_flashcards')
         .select('*')
         .eq('module_card_id', selectedCard!.id)
@@ -145,7 +145,7 @@ const GenericTimelinePage = () => {
   });
 
   const hasContent = (cardId: string) =>
-    (cardContents as any[]).some((c: any) => c.card_id === cardId);
+    (cardContents as any[]).some((c) => c.card_id === cardId);
 
   return (
     <AppLayout title={config.title}>
@@ -246,7 +246,7 @@ const GenericTimelinePage = () => {
                               <div className="flex items-center gap-1 shrink-0">
                                 {hasMedia && (
                                   <span className="flex items-center gap-1">
-                                    {(cardContents as any[]).filter((c: any) => c.card_id === card.id).map((c: any) => {
+                                    {(cardContents as any[]).filter((c) => c.card_id === card.id).map((c) => {
                                       if (c.content_type === 'video') return <Video key={c.id} className="h-3.5 w-3.5 text-blue-500" />;
                                       if (c.content_type === 'audio') return <Volume2 key={c.id} className="h-3.5 w-3.5 text-teal-500" />;
                                       if (c.content_type === 'pdf') return <FileText key={c.id} className="h-3.5 w-3.5 text-red-500" />;
@@ -305,7 +305,7 @@ const GenericTimelinePage = () => {
               {selectedContents.length > 0 ? (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ressources</h4>
-                  {selectedContents.map((content: any) => (
+                  {selectedContents.map((content) => (
                     <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                       {content.content_type === 'video' && (
                         <video src={content.file_url} controls className="w-full rounded-xl" />

@@ -28,6 +28,7 @@ import {
 import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import PushToggle from '@/components/settings/PushToggle';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
+import { errorMessage } from '@/lib/utils';
 
 const AdminNotifications = () => {
   const { toast } = useToast();
@@ -79,7 +80,7 @@ const AdminNotifications = () => {
 
     try {
       for (const id of cibles) {
-        await (supabase as any)
+        await supabase
           .from('notification_invitations')
           .upsert({ 
             user_id: id, 
@@ -89,8 +90,8 @@ const AdminNotifications = () => {
       }
 
       toast({ title: `✅ Bannière renvoyée à ${cibles.length} élève(s)` });
-    } catch (e: any) {
-      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erreur', description: errorMessage(e), variant: 'destructive' });
     }
   };
 
@@ -114,8 +115,8 @@ const AdminNotifications = () => {
         console.log('Résultat envoi admin:', JSON.stringify(data));
         toast({ title: `Test envoyé: ${data?.sent ?? 0}/${data?.total ?? 0}` });
       }
-    } catch (e: any) {
-      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    } catch (e) {
+      toast({ title: 'Erreur', description: errorMessage(e), variant: 'destructive' });
     } finally {
       setTestSending(false);
     }
@@ -218,8 +219,8 @@ const AdminNotifications = () => {
       toast({ title: 'Erreur: ' + error.message, variant: 'destructive' });
       return;
     }
-    const roleMap = new Map((roles || []).map((r: any) => [r.user_id, r.role]));
-    setAbonnements((data || []).map((a: any) => ({ ...a, role: roleMap.get(a.user_id) || '—' })));
+    const roleMap = new Map((roles || []).map((r) => [r.user_id, r.role]));
+    setAbonnements((data || []).map((a) => ({ ...a, role: roleMap.get(a.user_id) || '—' })));
     setShowAbo(true);
   };
 

@@ -49,14 +49,14 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
   };
 
   const chargerCommentaires = async () => {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('nourania_commentaires_eleves')
       .select('*')
       .eq('lecon_id', leconId);
 
     const comments = data || [];
     if (comments.length > 0) {
-      const ids = comments.map((c: any) => c.student_id);
+      const ids = comments.map((c) => c.student_id);
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -65,7 +65,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       const nameMap: Record<string, string> = {};
       (profiles || []).forEach(p => { nameMap[p.user_id] = p.full_name || ''; });
 
-      setCommentairesExistants(comments.map((c: any) => ({
+      setCommentairesExistants(comments.map((c) => ({
         ...c,
         full_name: nameMap[c.student_id] || 'Élève inconnu',
       })));
@@ -75,16 +75,16 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
   };
 
   const chargerUnlocksEleve = async (studentId: string) => {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('nourania_admin_unlocks')
       .select('lesson_id')
       .eq('student_id', studentId);
-    setAdminUnlocks((data || []).map((r: any) => r.lesson_id));
+    setAdminUnlocks((data || []).map((r) => r.lesson_id));
   };
 
   const handleSelectEleve = (studentId: string) => {
     setEleveSelectionne(studentId);
-    const existant = commentairesExistants.find((c: any) => c.student_id === studentId);
+    const existant = commentairesExistants.find((c) => c.student_id === studentId);
     setCommentaire(existant?.commentaire || COMMENTAIRE_DEFAULT);
     if (studentId) chargerUnlocksEleve(studentId);
   };
@@ -95,7 +95,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       return;
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('nourania_commentaires_eleves')
       .upsert({
         lecon_id: leconId,
@@ -128,7 +128,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
 
     if (isUnlocked) {
       // Verrouiller : supprimer l'entrée
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('nourania_admin_unlocks')
         .delete()
         .eq('student_id', eleveSelectionne)
@@ -142,7 +142,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       }
     } else {
       // Déverrouiller : insérer dans nourania_admin_unlocks
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('nourania_admin_unlocks')
         .upsert({
           student_id: eleveSelectionne,
@@ -211,7 +211,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       >
         <option value="">Sélectionner un élève...</option>
         {eleves.map(e => {
-          const aCommentaire = commentairesExistants.some((c: any) => c.student_id === e.id);
+          const aCommentaire = commentairesExistants.some((c) => c.student_id === e.id);
           return (
             <option key={e.id} value={e.id}>
               {aCommentaire ? '✅ ' : '○ '}{e.full_name}
@@ -317,7 +317,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
           <p className="text-xs font-semibold text-amber-700 mb-1">
             Commentaires enregistrés :
           </p>
-          {commentairesExistants.map((c: any) => (
+          {commentairesExistants.map((c) => (
             <div key={c.id} className="flex items-center justify-between py-1 text-xs">
               <span className="text-amber-800 font-semibold">
                 ✅ {c.full_name}

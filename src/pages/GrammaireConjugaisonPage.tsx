@@ -94,7 +94,7 @@ const GrammaireConjugaisonPage = () => {
     queryKey: ['grammaire-card-contents', module?.id],
     queryFn: async () => {
       if (!cards.length) return [];
-      const cardIds = cards.map((c: any) => c.id);
+      const cardIds = cards.map((c) => c.id);
       const { data, error } = await supabase
         .from('module_card_content').select('*').in('card_id', cardIds).order('display_order');
       if (error) throw error;
@@ -108,11 +108,11 @@ const GrammaireConjugaisonPage = () => {
     queryKey: ['grammaire-flashcard-counts', module?.id],
     queryFn: async () => {
       if (!cards.length) return {};
-      const cardIds = cards.map((c: any) => c.id);
-      const { data } = await (supabase as any)
+      const cardIds = cards.map((c) => c.id);
+      const { data } = await supabase
         .from('module_flashcards').select('module_card_id').in('module_card_id', cardIds);
       const counts: Record<string, number> = {};
-      (data || []).forEach((r: any) => {
+      (data || []).forEach((r) => {
         counts[r.module_card_id] = (counts[r.module_card_id] || 0) + 1;
       });
       return counts;
@@ -128,13 +128,13 @@ const GrammaireConjugaisonPage = () => {
   }, {});
 
   const selectedContents = selectedCard
-    ? (cardContents as any[]).filter((c: any) => c.card_id === selectedCard.id)
+    ? (cardContents as any[]).filter((c) => c.card_id === selectedCard.id)
     : [];
 
   const { data: selectedFlashcards = [] } = useQuery({
     queryKey: ['flashcards', selectedCard?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('module_flashcards').select('*').eq('module_card_id', selectedCard!.id).order('display_order');
       if (error) throw error;
       return data || [];
@@ -205,11 +205,11 @@ const GrammaireConjugaisonPage = () => {
                 )}
 
                 {/* Cartes chapitres */}
-                {(sectionCards as any[]).map((card: any) => {
+                {(sectionCards as any[]).map((card) => {
                   globalChapterIndex++;
                   const chNum = globalChapterIndex;
                   const color = COLORS[(chNum - 1) % COLORS.length];
-                  const contents = (cardContents as any[]).filter((c: any) => c.card_id === card.id);
+                  const contents = (cardContents as any[]).filter((c) => c.card_id === card.id);
                   const hasVideo   = contents.some(c => c.content_type === 'video' || c.content_type === 'youtube');
                   const hasPdf     = contents.some(c => c.content_type === 'pdf' || c.content_type === 'document');
                   const hasAudio   = contents.some(c => c.content_type === 'audio');
@@ -280,7 +280,7 @@ const GrammaireConjugaisonPage = () => {
 
       {/* Dialog détail chapitre */}
       {selectedCard && (() => {
-        const chapterNum = (cards as any[]).findIndex((c: any) => c.id === selectedCard.id) + 1;
+        const chapterNum = (cards as any[]).findIndex((c) => c.id === selectedCard.id) + 1;
         const color = COLORS[(chapterNum - 1) % COLORS.length];
         return (
           <Dialog open onOpenChange={() => setSelectedCard(null)}>
@@ -361,7 +361,7 @@ const GrammaireConjugaisonPage = () => {
                       {selectedContents.length > 0 ? (
                         <div className="space-y-3">
                           <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Ressources</h4>
-                          {selectedContents.map((content: any) => (
+                          {selectedContents.map((content) => (
                             <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                               {content.content_type === 'video' && (
                                 <video src={content.file_url} controls className="w-full" />

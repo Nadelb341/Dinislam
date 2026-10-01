@@ -21,6 +21,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 interface Props { onBack: () => void; }
 
@@ -50,13 +51,13 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const { data: allMedia = [] } = useQuery({
     queryKey: ['admin-allah-name-media'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('allah_name_media').select('*');
+      const { data, error } = await supabase.from('allah_name_media').select('*');
       if (error) throw error;
       return data || [];
     },
   });
 
-  const getNameMedia = (nameId: number) => (allMedia as any[]).filter((m: any) => m.name_id === nameId);
+  const getNameMedia = (nameId: number) => (allMedia as any[]).filter((m) => m.name_id === nameId);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -83,12 +84,12 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       setFormOpen(false);
       setEditingName(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const nameItem = (names as any[]).find((n: any) => n.id === id);
+      const nameItem = (names as any[]).find((n) => n.id === id);
       const { error } = await supabase.from('allah_names').delete().eq('id', id);
       if (error) throw error;
       if (nameItem && user?.id) await moveToTrash(user.id, 'allah_name', String(id), nameItem.name_french || nameItem.name_arabic, nameItem);
@@ -104,8 +105,8 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   const deleteMediaMutation = useMutation({
     mutationFn: async (mediaId: string) => {
-      const media = (allMedia as any[]).find((m: any) => m.id === mediaId);
-      const { error } = await (supabase as any).from('allah_name_media').delete().eq('id', mediaId);
+      const media = (allMedia as any[]).find((m) => m.id === mediaId);
+      const { error } = await supabase.from('allah_name_media').delete().eq('id', mediaId);
       if (error) throw error;
       if (media && user?.id) await moveToTrash(user.id, 'allah_name_media', mediaId, media.file_name || 'Média', media);
     },
@@ -142,7 +143,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
       queryClient.invalidateQueries({ queryKey: ['allah-names'] });
       toast.success('Image mise à jour ✅');
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
   }, [queryClient]);
 
   const handleUploadMedia = useCallback(async (nameId: number, type: 'video' | 'audio' | 'pdf', file: File) => {
@@ -153,8 +154,8 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-      await (supabase as any).from('allah_name_media').delete().eq('name_id', nameId).eq('media_type', type);
-      const { error } = await (supabase as any).from('allah_name_media').insert({
+      await supabase.from('allah_name_media').delete().eq('name_id', nameId).eq('media_type', type);
+      const { error } = await supabase.from('allah_name_media').insert({
         name_id: nameId,
         media_type: type,
         file_url: urlData.publicUrl,
@@ -163,7 +164,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });
       toast.success(`${type === 'video' ? 'Vidéo' : type === 'audio' ? 'Audio' : 'PDF'} mis à jour ✅`);
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e) { toast.error(errorMessage(e)); }
     finally { setUploadingMedia(null); }
   }, [queryClient]);
 
@@ -173,7 +174,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     setFormOpen(true);
   };
 
-  const openEdit = (name: any) => {
+  const openEdit = (name) => {
     setEditingName(name);
     setFormNameAr(name.name_arabic || '');
     setFormNameFr(name.name_french || '');
@@ -183,7 +184,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   };
 
   const MediaUploadRow = ({ nameId, type, label, icon: Icon }: { nameId: number; type: 'video' | 'audio' | 'pdf'; label: string; icon: any }) => {
-    const existing = getNameMedia(nameId).find((m: any) => m.media_type === type);
+    const existing = getNameMedia(nameId).find((m) => m.media_type === type);
     const isUploading = uploadingMedia?.nameId === nameId && uploadingMedia?.type === type;
     return (
       <div className="flex items-center gap-3 py-1.5">
@@ -304,7 +305,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                         {/* Media badges */}
                         {getNameMedia(name.id).length > 0 && (
                           <div className="flex gap-1 mt-1">
-                            {getNameMedia(name.id).map((m: any) => (
+                            {getNameMedia(name.id).map((m) => (
                               <span
                                 key={m.id}
                                 className="text-[9px] px-2 py-0.5 rounded-full font-semibold"

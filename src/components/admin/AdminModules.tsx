@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import { sendPushNotification } from '@/lib/pushHelper';
@@ -23,6 +24,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { compressDocument } from '@/lib/compressImage';
+import { errorMessage } from '@/lib/utils';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image,
@@ -77,13 +79,14 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (moduleData: any) => {
+    mutationFn: async (moduleData: Omit<TablesInsert<'learning_modules'>, 'display_order' | 'module_type'>) => {
       if (editingModule) {
         const { error } = await supabase.from('learning_modules').update(moduleData).eq('id', editingModule.id);
         if (error) throw error;
       } else {
         const maxOrder = modules?.reduce((max, m) => Math.max(max, m.display_order), -1) ?? -1;
-        const { error } = await supabase.from('learning_modules').insert({ ...moduleData, display_order: maxOrder + 1 });
+        // module_type est obligatoire en base : avant le 2026-10-01 il n'était pas envoyé → créer un module échouait toujours
+        const { error } = await supabase.from('learning_modules').insert({ module_type: 'custom', is_builtin: false, ...moduleData, display_order: maxOrder + 1 });
         if (error) throw error;
       }
     },
@@ -94,12 +97,12 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       setDialogOpen(false);
       setEditingModule(null);
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const mod = modules?.find((m: any) => m.id === id);
+      const mod = modules?.find((m) => m.id === id);
       const { error } = await supabase.from('learning_modules').delete().eq('id', id);
       if (error) throw error;
       if (mod && user) await moveToTrash(user.id, 'learning_module', id, mod.title, mod);
@@ -111,7 +114,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       setDeleteOpen(false);
       setModuleToDelete(null);
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const reorderMutation = useMutation({
@@ -141,12 +144,12 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       setContentTitle('');
       setContentUrl('');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const deleteContentMutation = useMutation({
     mutationFn: async (id: string) => {
-      const content = moduleContents?.find((c: any) => c.id === id);
+      const content = moduleContents?.find((c) => c.id === id);
       const { error } = await supabase.from('module_content').delete().eq('id', id);
       if (error) throw error;
       if (content && user) await moveToTrash(user.id, 'module_content', id, content.title || content.file_name || 'Contenu', content);
@@ -156,7 +159,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       queryClient.invalidateQueries({ queryKey: ['module-content'] });
       toast.success('Contenu supprimé');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const toggleActiveMutation = useMutation({
@@ -180,7 +183,7 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
     },
   });
 
-  const openEditDialog = (mod: any) => {
+  const openEditDialog = (mod) => {
     setEditingModule(mod);
     setTitle(mod.title);
     setTitleArabic(mod.title_arabic);
@@ -220,8 +223,8 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       toast.success('Image importée');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
     setUploading(false);
   };
@@ -236,8 +239,8 @@ const AdminModules = ({ onBack }: AdminModulesProps) => {
       const { data: { publicUrl } } = supabase.storage.from('module-content').getPublicUrl(path);
       const type = file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'audio' : file.type.startsWith('image') ? 'image' : 'pdf';
       addContentMutation.mutate({ module_id: selectedModule.id, title: contentTitle || file.name, content_type: type, file_url: publicUrl, file_name: file.name });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(errorMessage(err));
     }
     setUploading(false);
   };

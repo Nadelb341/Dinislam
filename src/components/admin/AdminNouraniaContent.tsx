@@ -25,9 +25,9 @@ function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteC
         <AdminCommentaireLecon leconId={lesson.id} />
         {lessonContents.length > 0 && (
           <div className="space-y-1.5">
-            {lessonContents.map((content: any) => {
+            {lessonContents.map((content) => {
               const studentName = content.target_user_id
-                ? (profiles || []).find((p: any) => p.user_id === content.target_user_id)?.full_name || 'Élève'
+                ? (profiles || []).find((p) => p.user_id === content.target_user_id)?.full_name || 'Élève'
                 : null;
               return (
                 <div key={content.id}>
@@ -67,7 +67,7 @@ function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteC
             onChange={(e) => setTargetStudent(e.target.value)}
           >
             <option value="">Tous les élèves (global)</option>
-            {(profiles || []).map((p: any) => (
+            {(profiles || []).map((p) => (
               <option key={p.user_id} value={p.user_id}>{p.full_name || p.email || 'Élève'}</option>
             ))}
           </select>
@@ -153,7 +153,7 @@ const AdminNouraniaContent = () => {
       const { error: insertError } = await supabase.from('nourania_lesson_content').insert(insertData);
       if (insertError) { toast.error(`Erreur: ${insertError.message}`); return; }
       await refetchContents();
-      const studentName = targetUserId ? profiles.find((p: any) => p.user_id === targetUserId)?.full_name : null;
+      const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Fichier envoyé à ${studentName} ✅` : 'Fichier téléversé ✅');
     } catch (error) { console.error('Upload error:', error); }
     finally { setIsUploading(false); }
@@ -172,7 +172,7 @@ const AdminNouraniaContent = () => {
       const { error } = await supabase.from('nourania_lesson_content').insert(insertData);
       if (error) { toast.error(error.message); return; }
       await refetchContents();
-      const studentName = targetUserId ? profiles.find((p: any) => p.user_id === targetUserId)?.full_name : null;
+      const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Lien envoyé à ${studentName} ✅` : 'Lien YouTube ajouté ✅');
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
@@ -197,7 +197,7 @@ const AdminNouraniaContent = () => {
       const { error: insertError } = await supabase.from('nourania_lesson_content').insert(insertData);
       if (insertError) { toast.error(`Erreur: ${insertError.message}`); return; }
       await refetchContents();
-      const studentName = targetUserId ? profiles.find((p: any) => p.user_id === targetUserId)?.full_name : null;
+      const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Audio envoyé à ${studentName} ✅` : 'Audio téléversé ✅');
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
