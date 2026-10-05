@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 import { Unlock, Users } from 'lucide-react';
 
 interface Props {
-  moduleType: 'sourates' | 'nourania' | 'invocations' | 'allah-names';
+  moduleType: 'sourates' | 'nourania' | 'invocations' | 'allah-names' | 'alphabet';
 }
 
 const MODULE_LABELS: Record<string, string> = {
@@ -16,9 +17,12 @@ const MODULE_LABELS: Record<string, string> = {
   nourania: 'toutes les leçons Nourania',
   invocations: 'toutes les invocations',
   'allah-names': 'les 99 Noms d\'Allah',
+  alphabet: 'l\'Alphabet (les 28 lettres ouvertes, sans les marquer comme apprises)',
 };
 
 const AdminUnlockAllDialog = ({ moduleType }: Props) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [originallyUnlockedIds, setOriginallyUnlockedIds] = useState<string[]>([]);
@@ -84,6 +88,15 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
         (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
+
+      } else if (moduleType === 'alphabet') {
+        const { data: letters } = await supabase.from('alphabet_letters').select('id');
+        const totalCount = letters?.length || 0;
+        if (!totalCount) return [];
+        const { data: unlocks } = await supabase.from('alphabet_admin_unlocks').select('user_id');
+        const counts: Record<string, number> = {};
+        (unlocks || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
         return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
 
       } else if (moduleType === 'allah-names') {
@@ -190,6 +203,21 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
           await supabase.from('user_invocation_progress').delete().eq('user_id', userId);
         }
 
+      } else if (moduleType === 'alphabet') {
+        // Ouvre les 28 lettres (déblocages admin) sans toucher à ce que l'élève a appris ;
+        // « mode normal » retire seulement ces déblocages, sa progression reste intacte.
+        if (toUnlock.length > 0) {
+          const { data: letters, error } = await supabase.from('alphabet_letters').select('id');
+          if (error) throw error;
+          const rows = toUnlock.flatMap((uid) => (letters || []).map((l) => ({ user_id: uid, letter_id: l.id, created_by: user?.id ?? null })));
+          const { error: upErr } = await supabase.from('alphabet_admin_unlocks').upsert(rows, { onConflict: 'user_id,letter_id', ignoreDuplicates: true });
+          if (upErr) throw upErr;
+        }
+        if (toLock.length > 0) {
+          const { error } = await supabase.from('alphabet_admin_unlocks').delete().in('user_id', toLock);
+          if (error) throw error;
+        }
+
       } else if (moduleType === 'allah-names') {
         if (toUnlock.length > 0) {
           const { data: names, error } = await supabase.from('allah_names').select('id');
@@ -218,6 +246,9 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fully-unlocked-students', moduleType] });
+      queryClient.invalidateQueries({ queryKey: ['alphabet-admin-unlocks'] });
+      queryClient.invalidateQueries({ queryKey: ['alphabet-unlock-student'] });
       const parts = [];
       if (toUnlock.length > 0) parts.push(`${toUnlock.length} élève(s) déverrouillé(s)`);
       if (toLock.length > 0) parts.push(`${toLock.length} élève(s) remis en mode normal`);

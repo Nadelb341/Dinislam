@@ -157,6 +157,38 @@ export type Database = {
         }
         Relationships: []
       }
+      alphabet_admin_unlocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          letter_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          letter_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          letter_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alphabet_admin_unlocks_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "alphabet_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alphabet_content: {
         Row: {
           content_type: string
@@ -197,6 +229,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      alphabet_game_scores: {
+        Row: {
+          created_at: string
+          game: string
+          id: string
+          missed: number[]
+          played_on: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game: string
+          id?: string
+          missed?: number[]
+          played_on?: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game?: string
+          id?: string
+          missed?: number[]
+          played_on?: string
+          score?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       alphabet_letters: {
         Row: {

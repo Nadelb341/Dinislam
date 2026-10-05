@@ -370,3 +370,22 @@
 .invoc-pour       { animation: pour       2s   ease-in-out infinite; display: inline-block; }
 .invoc-pulse      { animation: pulse-soft 1.8s ease-in-out infinite; display: inline-block; }
 .invoc-moon       { animation: moon-glow  2.5s ease-in-out infinite; display: inline-block; }
+
+/* Alphabet : ballons qui montent (jeu « Les ballons ») */
+@keyframes alphabet-balloon-rise {
+  from { transform: translateY(0); }
+  to { transform: translateY(-24rem); }
+}
+@keyframes alphabet-balloon-pop {
+  to { transform: scale(1.6); opacity: 0; }
+}
+.alphabet-balloon {
+  bottom: -5.5rem;
+  animation: alphabet-balloon-rise 8.5s linear forwards;
+}
+.alphabet-balloon-pop {
+  animation: alphabet-balloon-pop 0.3s ease-out forwards !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alphabet-balloon { animation-duration: 16s; }
+}

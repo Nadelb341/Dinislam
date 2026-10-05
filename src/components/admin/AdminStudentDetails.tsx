@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
+import { AlphabetStudentSummary } from '@/components/alphabet/AlphabetStudentSummary';
 import { fetchNoPushStudents } from '@/lib/noPushStudents';
 import { untypedDb } from '@/lib/untypedDb';
 import { errorMessage } from '@/lib/utils';
@@ -524,6 +525,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
 
               {/* Réglages de notifications + Espace parents (2026-09-30) */}
               {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
+              {selectedStudent?.id && <AlphabetStudentSummary userId={selectedStudent.id} />}
 
               {/* Section Rétrograder */}
               <div className="border-t pt-4">
