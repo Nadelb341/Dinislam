@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      // L'appli a déménagé sur Vercel (2026-09-30) : l'ancien lien Lovable renvoie vers la nouvelle adresse
-      if (/lovable\.app$/.test(location.hostname)) {
+      // Une seule adresse officielle : dinislam-app.vercel.app. L'ancien lien Lovable (déménagement du 2026-09-30)
+      // et l'ancienne adresse Vercel dinislam-two (liens « mot de passe oublié » et fonctions serveur cassés) y renvoient.
+      if (/lovable\.app$/.test(location.hostname) || location.hostname === 'dinislam-two.vercel.app') {
         location.replace('https://dinislam-app.vercel.app' + location.pathname + location.search + location.hash);
       }
     </script>

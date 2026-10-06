@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge';
+import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,6 +102,14 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
   });
 
   const { data: noPush } = useQuery({ queryKey: ['admin-no-push-students-list'], queryFn: fetchNoPushStudents });
+  const { data: authStatus } = useQuery({
+    queryKey: ['admin-students-auth-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('admin_students_auth_status');
+      if (error) throw error;
+      return new Map((data || []).map((r) => [r.user_id, r]));
+    },
+  });
 
   const { data: studentProgress } = useQuery({
     queryKey: ['student-progress-details', selectedStudent?.id],
@@ -269,6 +279,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       if (error) throw error;
       toast.success('Date de naissance mise à jour ✓');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+      queryClient.invalidateQueries({ queryKey: ['student-password'] });
       setDobDialogStudent(null);
     } catch (err) {
       toast.error(errorMessage(err) || 'Erreur');
@@ -297,6 +308,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
 
       toast.success('Mot de passe mis à jour ✓');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+      queryClient.invalidateQueries({ queryKey: ['student-password', pwdDialogStudent.id] });
       setPwdDialogStudent(null);
       setNewPassword('');
     } catch (err) {
@@ -430,6 +442,9 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                     <span className={`inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium ${noPush.overdue.has(student.user_id) ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'}`}>
                       🔕 Ne reçoit pas les notifications
                     </span>
+                  )}
+                  {authStatus?.get(student.user_id)?.email_confirmed === false && (
+                    <UnconfirmedEmailBadge userId={student.user_id} name={student.full_name || "l'élève"} />
                   )}
                   <p className="text-sm text-muted-foreground">{student.email}</p>
                   {student.created_at && (
@@ -657,7 +672,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{pwdDialogStudent?.full_name || 'Élève'}</p>
           <div className="space-y-3 mt-2">
-            <p className="text-sm text-muted-foreground rounded-lg bg-muted/50 p-3">🔒 Par sécurité, le mot de passe des élèves n'est plus conservé (depuis le 01/10/2026). Si l'élève l'a oublié, choisis-en un nouveau ci-dessous et donne-le-lui.</p>
+            {pwdDialogStudent && <StudentCurrentPassword userId={pwdDialogStudent.id} />}
             <div>
               <Label>Nouveau mot de passe</Label>
               <div className="relative mt-1">
@@ -665,6 +680,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   type={showNewPwd ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSavePassword(); } }}
                   placeholder="Min. 6 caractères"
                   className="pr-10"
                 />

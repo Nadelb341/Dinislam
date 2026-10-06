@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { authErrorFr } from '@/lib/rememberPassword';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,8 @@ const Auth = () => {
   const { user, loading: authLoading, signIn, signUp, signOut, resetPassword } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(() => new URLSearchParams(window.location.search).get('forgot') === '1');
+  const [resetSentTo, setResetSentTo] = useState<string | null>(null);
   const signedOutRef = useRef(false);
 
   const emailConfirmedParam = new URLSearchParams(window.location.search).get('email_confirmed') === '1';
@@ -107,9 +109,7 @@ const Auth = () => {
     if (error) {
       toast({
         title: "Erreur de connexion",
-        description: error.message === 'Invalid login credentials'
-          ? "Email ou mot de passe incorrect"
-          : error.message,
+        description: authErrorFr(error.message),
         variant: "destructive",
       });
     } else {
@@ -216,20 +216,17 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await resetPassword(resetEmail);
+    const email = resetEmail.trim().toLowerCase();
+    const { error } = await resetPassword(email);
 
     if (error) {
       toast({
         title: "Erreur",
-        description: error.message,
+        description: authErrorFr(error.message),
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Email envoyé",
-        description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe",
-      });
-      setShowForgotPassword(false);
+      setResetSentTo(email);
     }
 
     setLoading(false);
@@ -301,10 +298,30 @@ const Auth = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl text-primary">Mot de passe oublié</CardTitle>
             <CardDescription>
-              Entrez votre email pour recevoir un lien de réinitialisation
+              {resetSentTo ? 'E-mail envoyé ✉️' : 'Tape ton adresse e-mail : tu vas recevoir un e-mail pour choisir un nouveau mot de passe'}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {resetSentTo ? (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-4 space-y-2 text-sm">
+                  <p>Un e-mail a été envoyé à <b className="[overflow-wrap:anywhere]">{resetSentTo}</b> (s'il correspond à un compte Dinislam).</p>
+                  <p>1️⃣ Ouvre l'e-mail « Dinislam : Réinitialisation du mot de passe ».</p>
+                  <p>2️⃣ Touche le bouton : une page s'ouvre pour taper ton nouveau mot de passe deux fois.</p>
+                  <p>🔢 Le bouton ne marche pas ? Tape le code à 6 chiffres de l'e-mail avec le bouton ci-dessous.</p>
+                  <p className="text-muted-foreground">Rien reçu après 5 minutes ? Regarde dans les courriers indésirables (expéditeur : appdinislam@gmail.com), vérifie l'adresse tapée, ou demande à ton enseignante.</p>
+                </div>
+                <Button type="button" className="w-full" onClick={() => { window.location.href = `/reset-password?mode=code&email=${encodeURIComponent(resetSentTo)}`; }}>
+                  🔢 J'ai reçu un code
+                </Button>
+                <Button type="button" variant="outline" className="w-full" onClick={() => setResetSentTo(null)}>
+                  Renvoyer / changer d'adresse
+                </Button>
+                <Button type="button" variant="ghost" className="w-full" onClick={() => { setResetSentTo(null); setShowForgotPassword(false); }}>
+                  Retour à la connexion
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email">Email</Label>
@@ -323,7 +340,7 @@ const Auth = () => {
               </div>
               <Button type="submit" className="w-full bg-primary hover:bg-royal-dark" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Envoyer le lien
+                Envoyer l'e-mail
               </Button>
               <Button
                 type="button"
@@ -334,6 +351,7 @@ const Auth = () => {
                 Retour à la connexion
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
       ) : (

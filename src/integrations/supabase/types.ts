@@ -2488,6 +2488,27 @@ export type Database = {
         }
         Relationships: []
       }
+      student_passwords: {
+        Row: {
+          password: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          password: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          password?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_ranking: {
         Row: {
           created_at: string | null
@@ -3064,6 +3085,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_students_auth_status: {
+        Args: never
+        Returns: {
+          email_confirmed: boolean
+          last_sign_in_at: string
+          user_id: string
+        }[]
+      }
       get_pending_registrations: {
         Args: never
         Returns: {

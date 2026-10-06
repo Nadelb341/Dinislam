@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { authErrorFr, rememberPassword } from '@/lib/rememberPassword';
 import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -146,11 +147,12 @@ const UserSettingsDialog = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
+      rememberPassword(newPassword, 'parametres');
       toast.success('Mot de passe mis à jour ✓');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      toast.error(errorMessage(err) || 'Erreur lors de la mise à jour du mot de passe');
+      toast.error(authErrorFr(errorMessage(err)) || 'Erreur lors de la mise à jour du mot de passe');
     } finally {
       setSavingPassword(false);
     }

@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
+const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'https://dinislam-two.vercel.app', 'http://localhost:8080'];
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('Origin') || '';
@@ -31,6 +31,10 @@ Deno.serve(async (req) => {
     if (new_password.length < 6) throw new Error("Le mot de passe doit contenir au moins 6 caractères");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, { password: new_password });
     if (error) throw error;
+    // Gardé pour que l'enseignante puisse le redonner à l'élève (table lisible par l'admin seulement)
+    const { error: saveErr } = await supabaseAdmin.from("student_passwords")
+      .upsert({ user_id, password: new_password, source: "admin", updated_at: new Date().toISOString() });
+    if (saveErr) throw saveErr;
     return new Response(JSON.stringify({ success: true }), { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } });

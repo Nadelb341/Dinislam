@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { rememberPassword } from '@/lib/rememberPassword';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 
 
@@ -128,6 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
+        // Lien « mot de passe oublié » arrivé ailleurs que sur la page prévue : on y emmène l'élève
+        if (event === 'PASSWORD_RECOVERY' && window.location.pathname !== '/reset-password') {
+          window.location.replace('/reset-password');
+          return;
+        }
+
         setSession(session);
         if (session?.user) {
           setUser(session.user);
@@ -194,6 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      rememberPassword(password, 'connexion');
       return { error: null };
     } catch (error) { return { error: error as Error }; }
   };
@@ -207,7 +215,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        // Toujours l'adresse officielle (une autre adresse n'est pas autorisée par Supabase → le lien menait à l'accueil)
+        redirectTo: `${window.location.hostname === 'localhost' ? window.location.origin : 'https://dinislam-app.vercel.app'}/reset-password`,
       });
       if (error) throw error;
       return { error: null };

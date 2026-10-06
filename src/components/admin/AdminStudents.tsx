@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -125,6 +126,7 @@ const AdminStudents = () => {
       if (response.error) throw new Error(response.error.message);
       toast.success(`Mot de passe de ${passwordStudent.full_name || "l'élève"} modifié ✅`);
       queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+      queryClient.invalidateQueries({ queryKey: ['student-password'] });
       setPasswordStudent(null);
       setNewPassword('');
     } catch (err) {
@@ -245,7 +247,7 @@ const AdminStudents = () => {
             <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" />Mot de passe — {passwordStudent?.full_name || 'Élève'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <p className="text-sm text-muted-foreground rounded-lg bg-muted/50 p-3">🔒 Par sécurité, le mot de passe des élèves n'est plus conservé (depuis le 01/10/2026). Si l'élève l'a oublié, choisis-en un nouveau ci-dessous et donne-le-lui.</p>
+            {passwordStudent && <StudentCurrentPassword userId={passwordStudent.id} />}
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Nouveau mot de passe</p>
               <div className="relative">
