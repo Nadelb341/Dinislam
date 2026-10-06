@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { LoginTroubleBanner } from '@/components/admin/LoginTroubleBanner';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { SortableCardList } from '@/components/shared/SortableCardList';
@@ -128,6 +129,7 @@ const AdminCommandModal = ({
           </div>
 
           <div className="px-4 pb-5 space-y-3">
+            <LoginTroubleBanner onOpenStudents={() => setModalSection('eleves')} />
             {/* Boutons actions — 1 par ligne, maintenir puis glisser pour réordonner */}
             <SortableCardList
               items={boutons}

@@ -309,6 +309,7 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
       toast.success('Mot de passe mis à jour ✓');
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
       queryClient.invalidateQueries({ queryKey: ['student-password', pwdDialogStudent.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-login-trouble'] });
       setPwdDialogStudent(null);
       setNewPassword('');
     } catch (err) {
@@ -446,6 +447,17 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   {authStatus?.get(student.user_id)?.email_confirmed === false && (
                     <UnconfirmedEmailBadge userId={student.user_id} name={student.full_name || "l'élève"} />
                   )}
+                  {(() => {
+                    const st = authStatus?.get(student.user_id);
+                    if (!st?.email_confirmed || !st.recovery_sent_at) return null;
+                    const asked = new Date(st.recovery_sent_at).getTime();
+                    const stuck = asked > Date.now() - 14 * 86400000 && (!st.last_sign_in_at || new Date(st.last_sign_in_at).getTime() < asked);
+                    return stuck ? (
+                      <span className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                        🔑 A demandé un nouveau mot de passe le {new Date(st.recovery_sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : ⋮ › Modifier le mot de passe
+                      </span>
+                    ) : null;
+                  })()}
                   <p className="text-sm text-muted-foreground">{student.email}</p>
                   {student.created_at && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">

@@ -23,6 +23,7 @@ export function UnconfirmedEmailBadge({ userId, name }: { userId: string; name: 
       if (res.error || body?.error) throw new Error(body?.error || res.error?.message);
       toast.success(`E-mail de ${name} confirmé ✓ Il peut se connecter.`);
       queryClient.invalidateQueries({ queryKey: ['admin-students-auth-status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-login-trouble'] });
     } catch (e) {
       toast.error(errorMessage(e));
     }

@@ -3090,6 +3090,7 @@ export type Database = {
         Returns: {
           email_confirmed: boolean
           last_sign_in_at: string
+          recovery_sent_at: string
           user_id: string
         }[]
       }
