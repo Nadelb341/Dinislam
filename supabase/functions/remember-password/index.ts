@@ -37,11 +37,19 @@ Deno.serve(async (req) => {
     if (typeof password !== "string" || password.length < 6 || password.length > 72) return json({ error: "Mot de passe invalide" }, 400);
     const src = SOURCES.includes(source) ? source : "connexion";
 
-    // Vérification : le mot de passe doit vraiment ouvrir ce compte
-    const check = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: signed, error: signErr } = await check.auth.signInWithPassword({ email: user.email, password });
-    if (signErr || signed.user?.id !== user.id) return json({ error: "Mot de passe non vérifié" }, 400);
-    await check.auth.signOut({ scope: "local" }); // on ferme tout de suite la session de vérification
+    // Vérification : le mot de passe doit vraiment ouvrir ce compte (vraie connexion, refermée aussitôt)
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, password }),
+    });
+    const signed = await res.json().catch(() => null);
+    if (!res.ok || signed?.user?.id !== user.id) return json({ error: "Mot de passe non vérifié" }, 400);
+    await fetch(`${url}/auth/v1/logout?scope=local`, {
+      method: "POST",
+      headers: { apikey: serviceKey, Authorization: `Bearer ${signed.access_token}` },
+    }).catch(() => {});
 
     const { error } = await admin.from("student_passwords")
       .upsert({ user_id: user.id, password, source: src, updated_at: new Date().toISOString() });
