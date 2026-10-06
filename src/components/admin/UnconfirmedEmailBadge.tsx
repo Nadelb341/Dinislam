@@ -29,8 +29,9 @@ export function UnconfirmedEmailBadge({ userId, name }: { userId: string; name: 
     }
   };
 
+  // Les clics dans la fenêtre de confirmation « remontent » jusqu'à la carte élève (qui ouvrirait sa fiche) : on les arrête ici
   return (
-    <>
+    <span onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
@@ -52,6 +53,6 @@ export function UnconfirmedEmailBadge({ userId, name }: { userId: string; name: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </span>
   );
 }

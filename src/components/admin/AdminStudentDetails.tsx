@@ -229,10 +229,19 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
     },
   });
 
+  // Élèves qui n'arrivent pas à se connecter (badge jaune) : en haut de la liste
+  const hasLoginTrouble = (userId: string) => {
+    const st = authStatus?.get(userId);
+    if (!st) return false;
+    if (!st.email_confirmed) return true;
+    if (!st.recovery_sent_at) return false;
+    const asked = new Date(st.recovery_sent_at).getTime();
+    return asked > Date.now() - 14 * 86400000 && (!st.last_sign_in_at || new Date(st.last_sign_in_at).getTime() < asked);
+  };
   const filteredStudents = students?.filter((s) =>
     s.email?.toLowerCase().includes(search.toLowerCase()) ||
     s.full_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => Number(hasLoginTrouble(b.user_id)) - Number(hasLoginTrouble(a.user_id)));
 
   // DOB helpers
   const handleDobInputChange = (value: string) => {
@@ -450,12 +459,14 @@ const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
                   {(() => {
                     const st = authStatus?.get(student.user_id);
                     if (!st?.email_confirmed || !st.recovery_sent_at) return null;
-                    const asked = new Date(st.recovery_sent_at).getTime();
-                    const stuck = asked > Date.now() - 14 * 86400000 && (!st.last_sign_in_at || new Date(st.last_sign_in_at).getTime() < asked);
-                    return stuck ? (
-                      <span className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                        🔑 A demandé un nouveau mot de passe le {new Date(st.recovery_sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : ⋮ › Modifier le mot de passe
-                      </span>
+                    return hasLoginTrouble(student.user_id) ? (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openPasswordDialog(student); }}
+                        className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-start bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                      >
+                        🔑 A demandé un nouveau mot de passe le {new Date(st.recovery_sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · Lui en donner un
+                      </button>
                     ) : null;
                   })()}
                   <p className="text-sm text-muted-foreground">{student.email}</p>
