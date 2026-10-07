@@ -35,7 +35,7 @@ export function UnconfirmedEmailBadge({ userId, name }: { userId: string; name: 
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
-        className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 text-start"
+        className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-destructive text-destructive-foreground text-start"
       >
         📧 E-mail jamais confirmé : ne peut pas se connecter · Confirmer
       </button>

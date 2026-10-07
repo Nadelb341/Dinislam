@@ -9,9 +9,9 @@ export function LoginTroubleBanner({ onOpenStudents }: { onOpenStudents: () => v
   const { data = [] } = useQuery({ queryKey: ['admin-login-trouble'], queryFn: fetchLoginTrouble, staleTime: 60_000 });
   if (data.length === 0) return null;
   return (
-    <div className="rounded-2xl bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 overflow-hidden">
+    <div className="rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-2 px-4 py-3 text-start">
-        <span className="font-semibold text-sm text-amber-950 dark:text-amber-100">
+        <span className="font-semibold text-sm text-red-900 dark:text-red-100">
           🔐 {data.length} élève{data.length > 1 ? 's' : ''} n'arrive{data.length > 1 ? 'nt' : ''} pas à se connecter
         </span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -28,7 +28,7 @@ export function LoginTroubleBanner({ onOpenStudents }: { onOpenStudents: () => v
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">Dans Élèves : « Confirmer » sur sa carte, ou ⋮ › Modifier le mot de passe pour lui en donner un.</p>
-          <button type="button" onClick={onOpenStudents} className="w-full rounded-xl bg-amber-500 text-white font-semibold py-2 text-sm">
+          <button type="button" onClick={onOpenStudents} className="w-full rounded-xl bg-destructive text-destructive-foreground font-semibold py-2 text-sm">
             👨‍🎓 Ouvrir la liste des élèves
           </button>
         </div>

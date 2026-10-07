@@ -25,8 +25,8 @@ interface AdminCommandModalProps {
   pendingRecitations: number;
   total: number;
   onOpenMessages: () => void;
-  /** Élèves sans notifications depuis plus d'une semaine (pastille sur « Élèves ») */
-  pendingNoPush?: number;
+  /** Élèves qui n'arrivent pas à se connecter (pastille sur « Élèves ») */
+  pendingLoginTrouble?: number;
   /** Écran à ouvrir directement (ex. depuis la carte « À FAIRE ») */
   initialSection?: string;
   /** Recherche pré-remplie dans la liste des élèves */
@@ -57,7 +57,7 @@ const AdminCommandModal = ({
   pendingHomework,
   pendingRecitations,
   pendingMessages,
-  pendingNoPush = 0,
+  pendingLoginTrouble = 0,
   onOpenMessages,
   initialSection,
   initialSearch,
@@ -74,7 +74,7 @@ const AdminCommandModal = ({
     recitations: pendingRecitations,
     inscriptions: pendingRegistrations,
     messages: pendingMessages,
-    eleves: pendingNoPush,
+    eleves: pendingLoginTrouble,
   };
 
   useEffect(() => {

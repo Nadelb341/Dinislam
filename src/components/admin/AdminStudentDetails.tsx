@@ -451,7 +451,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                 <div>
                   <p className="font-medium text-foreground [overflow-wrap:anywhere]">{student.full_name || 'Élève'}</p>
                   {noPush?.all.has(student.user_id) && (
-                    <span className={`inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium ${noPush.overdue.has(student.user_id) ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'}`}>
+                    <span className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200">
                       🔕 Ne reçoit pas les notifications
                     </span>
                   )}
@@ -465,7 +465,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openPasswordDialog(student); }}
-                        className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-start bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                        className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-start bg-destructive text-destructive-foreground"
                       >
                         🔑 A demandé un nouveau mot de passe le {new Date(st.recovery_sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · Lui en donner un
                       </button>
