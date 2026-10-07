@@ -700,6 +700,9 @@ Nouvelle règle globale ajoutée cette session dans `~/Projets Claude Code/CLAUD
 | L16 | [26] | 27 |
 | L17 | [26,27,28] | 27-29 |
 
+### ✅ Correction du 2026-10-07 (signalée par Nadia : « il manque les 3 dernières lignes de la leçon 5 »)
+Les PDF réellement en ligne (envoyés en mai) ne contenaient PAS la page où la leçon déborde : il manquait des lignes dans **8 leçons** (4, 5, 6, 8, 9, 11, 12, 13 ; page 12, 13, 14, 17, 19, 23, 24, 26 du livre). Les PDF ont été refaits depuis le livre complet (désormais `Documents/Cours Arabe Enfants/Nourania/القاعدة النورانية PC-328.pdf`, l'ancien chemin « PDF cours d'arabe/… copie.pdf » n'existe plus) et envoyés sous `nourania-content/lesson-<id>/lecon-NN-complete-2026-10-07.pdf` ; les anciennes lignes `nourania_lesson_content` sont dans la corbeille de l'admin (« Nourania leçon N : ancien PDF incomplet »). Vérifié : les pages des 17 PDF en ligne correspondent page par page au livre (empreinte de chaque page), 0 écart. Le tableau ci-dessus (pages du livre) était juste.
+
 ### Upload dans l'app
 - Bucket Supabase : `nourania-content`, chemin `lesson-{lesson_id}/{timestamp}.pdf`
 - Table : `nourania_lesson_content` (content_type = 'fichier', file_name = 'Cours PDF - Leçon N')
