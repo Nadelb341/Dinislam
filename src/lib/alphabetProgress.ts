@@ -43,7 +43,9 @@ export function computeUnlocked(
   return { unlocked, currentId };
 }
 
-export type GameKey = 'ecoute' | 'ballons' | 'formes' | 'sosies' | 'defi';
+export type GameKey = 'ecoute' | 'ballons' | 'formes' | 'sosies' | 'defi' | 'syllabes' | 'defi_jour' | 'lettre';
+/** Jeux de lecture (consigne écrite → bonne écriture), gérés par ReadingGameDialog */
+export const READING_GAMES: GameKey[] = ['syllabes', 'defi_jour', 'lettre'];
 
 /** Paires de lettres qui se ressemblent à l'oreille (emphatiques et gutturales) */
 export const SOSIES_PAIRS: [string, string][] = [
@@ -64,6 +66,9 @@ export const GAMES: GameInfo[] = [
   { key: 'ballons', title: 'Les ballons', icon: '🎈', tile: 'bg-orange-100 dark:bg-orange-950/40 border-orange-300 dark:border-orange-800', description: 'Éclate le ballon de la lettre que tu entends.' },
   { key: 'formes', title: 'Les formes', icon: '✍️', tile: 'bg-violet-100 dark:bg-violet-950/40 border-violet-300 dark:border-violet-800', description: 'Trouve la lettre écrite au début, au milieu ou à la fin d\'un mot.' },
   { key: 'sosies', title: 'Les sosies', icon: '👯', tile: 'bg-emerald-100 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800', description: 'Deux lettres qui se ressemblent : laquelle entends-tu ?' },
+  { key: 'syllabes', title: 'Les syllabes', icon: '🔤', tile: 'bg-rose-100 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800', description: 'Lis les voyelles, tanouines, soukoune et chadda de tes lettres.' },
+  { key: 'defi_jour', title: 'Défi du jour', icon: '⚡', tile: 'bg-indigo-100 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800', description: 'Une minute chrono, chaque jour.' },
+  { key: 'lettre', title: 'Jeu de la lettre', icon: '🎮', tile: 'bg-slate-100 dark:bg-slate-900/40 border-slate-300 dark:border-slate-700', description: 'Dans la fiche de chaque lettre.' },
   { key: 'defi', title: 'Grand défi', icon: '🏆', tile: 'bg-amber-100 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800', description: 'Les 28 lettres et tous les jeux mélangés.' },
 ];
 
@@ -91,6 +96,9 @@ export function gameStatus(key: GameKey, letters: AlphabetLetterLite[], learned:
       ? { open: true, hint: '' }
       : { open: false, hint: 'Apprends 2 lettres sosies (ex. س et ص)' };
     case 'defi': return n >= letters.length && letters.length > 0 ? { open: true, hint: '' } : { open: false, hint: missing(letters.length) };
+    case 'syllabes':
+    case 'defi_jour':
+    case 'lettre': return n >= 1 ? { open: true, hint: '' } : { open: false, hint: 'Fais valider ta 1ʳᵉ lettre' };
   }
 }
 

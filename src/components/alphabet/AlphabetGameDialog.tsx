@@ -45,7 +45,7 @@ function buildQuestions(game: GameKey, letters: AlphabetLetterLite[], pool: Alph
   for (let i = 0; i < count; i++) {
     const mode: Mode = game === 'defi'
       ? (['ecoute', 'formes', 'sosies', 'ecoute'] as Mode[])[i % 4]
-      : game;
+      : (['ecoute', 'ballons', 'formes', 'sosies'] as GameKey[]).includes(game) ? (game as Mode) : 'ecoute';
     if (mode === 'sosies' && pairs.length > 0) {
       const pair = pairs[Math.floor(Math.random() * pairs.length)];
       const target = pair[Math.floor(Math.random() * 2)];

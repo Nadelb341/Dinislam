@@ -1,0 +1,33 @@
+/** Un mot exemple illustré par lettre (idée bonus 6, 2026-10-07) — l'audio est enregistré par l'enseignante (ligne « mot »). */
+export interface AlphabetWord { word: string; fr: string; emoji: string }
+
+export const ALPHABET_WORDS: Record<string, AlphabetWord> = {
+  'ا': { word: 'أَرْنَب', fr: 'lapin', emoji: '🐇' },
+  'ب': { word: 'بَيْت', fr: 'maison', emoji: '🏠' },
+  'ت': { word: 'تُفَّاحَة', fr: 'pomme', emoji: '🍎' },
+  'ث': { word: 'ثَعْلَب', fr: 'renard', emoji: '🦊' },
+  'ج': { word: 'جَمَل', fr: 'chameau', emoji: '🐪' },
+  'ح': { word: 'حِصَان', fr: 'cheval', emoji: '🐴' },
+  'خ': { word: 'خَرُوف', fr: 'mouton', emoji: '🐑' },
+  'د': { word: 'دُبّ', fr: 'ours', emoji: '🐻' },
+  'ذ': { word: 'ذُرَة', fr: 'maïs', emoji: '🌽' },
+  'ر': { word: 'رِيشَة', fr: 'plume', emoji: '🪶' },
+  'ز': { word: 'زَرَافَة', fr: 'girafe', emoji: '🦒' },
+  'س': { word: 'سَمَكَة', fr: 'poisson', emoji: '🐟' },
+  'ش': { word: 'شَمْس', fr: 'soleil', emoji: '☀️' },
+  'ص': { word: 'صَقْر', fr: 'faucon', emoji: '🦅' },
+  'ض': { word: 'ضِفْدَع', fr: 'grenouille', emoji: '🐸' },
+  'ط': { word: 'طَائِرَة', fr: 'avion', emoji: '✈️' },
+  'ظ': { word: 'ظَرْف', fr: 'enveloppe', emoji: '✉️' },
+  'ع': { word: 'عَيْن', fr: 'œil', emoji: '👁️' },
+  'غ': { word: 'غَيْمَة', fr: 'nuage', emoji: '☁️' },
+  'ف': { word: 'فِيل', fr: 'éléphant', emoji: '🐘' },
+  'ق': { word: 'قَمَر', fr: 'lune', emoji: '🌙' },
+  'ك': { word: 'كِتَاب', fr: 'livre', emoji: '📖' },
+  'ل': { word: 'لَيْمُون', fr: 'citron', emoji: '🍋' },
+  'م': { word: 'مَوْز', fr: 'banane', emoji: '🍌' },
+  'ن': { word: 'نَحْلَة', fr: 'abeille', emoji: '🐝' },
+  'ه': { word: 'هَدِيَّة', fr: 'cadeau', emoji: '🎁' },
+  'و': { word: 'وَرْدَة', fr: 'rose', emoji: '🌹' },
+  'ي': { word: 'يَد', fr: 'main', emoji: '✋' },
+};

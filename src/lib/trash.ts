@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model";
 
 export interface TrashItem {
   id: string;
@@ -21,7 +21,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -91,7 +91,23 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
-  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio">];
+  // Modèle audio d'une ligne remplacé : on remet l'ancien, celui en place part à son tour dans la corbeille
+  if (item.item_type === "alphabet_line_model") {
+    const d = item.item_data as { letter_id?: number; line_key?: string; audio_url?: string } | null;
+    if (!d?.letter_id || !d.line_key || !d.audio_url) return false;
+    const { data: current } = await supabase.from("alphabet_line_models").select("audio_url")
+      .eq("letter_id", d.letter_id).eq("line_key", d.line_key).maybeSingle();
+    if (current?.audio_url && current.audio_url !== d.audio_url) {
+      const ok = await moveToTrash(item.user_id, "alphabet_line_model", item.original_id, item.label, { ...d, audio_url: current.audio_url });
+      if (!ok) return false;
+    }
+    const { error } = await supabase.from("alphabet_line_models")
+      .upsert({ letter_id: d.letter_id, line_key: d.line_key, audio_url: d.audio_url, updated_at: new Date().toISOString() }, { onConflict: "letter_id,line_key" });
+    if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">];
   if (!table) return false;
   const { error } = await untypedDb.from(table).insert(item.item_data);
   if (error) return false;

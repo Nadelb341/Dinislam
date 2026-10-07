@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { AdminAlphabetValidations } from '@/components/admin/AdminAlphabetValidations';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { LoginTroubleBanner } from '@/components/admin/LoginTroubleBanner';
@@ -25,6 +26,8 @@ interface AdminCommandModalProps {
   pendingMessages: number;
   pendingHomework: number;
   pendingRecitations: number;
+  /** Exercices et demandes de validation d'Alphabet en attente */
+  pendingAlphabet?: number;
   total: number;
   onOpenMessages: () => void;
   /** Élèves qui n'arrivent pas à se connecter (pastille sur « Élèves ») */
@@ -37,6 +40,7 @@ interface AdminCommandModalProps {
 
 const BOUTONS_ACTIONS = [
   { id: 'devoirs', label: 'Devoirs à corriger', section: 'cahier-texte', emoji: '📚' },
+  { id: 'alphabet', label: 'Alphabet à valider', section: 'alphabet-validations', emoji: '🔤' },
   { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
   { id: 'sourates', label: 'Sourates à valider', section: 'sourates-validations', emoji: '📖' },
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
@@ -58,6 +62,7 @@ const AdminCommandModal = ({
   pendingNourania,
   pendingHomework,
   pendingRecitations,
+  pendingAlphabet = 0,
   pendingMessages,
   pendingLoginTrouble = 0,
   onOpenMessages,
@@ -89,6 +94,7 @@ const AdminCommandModal = ({
     sourates: pendingSourates,
     nourania: pendingNourania,
     devoirs: pendingHomework,
+    alphabet: pendingAlphabet,
     recitations: pendingRecitations,
     inscriptions: pendingRegistrations,
     messages: pendingMessages,
@@ -100,11 +106,17 @@ const AdminCommandModal = ({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === BOUTONS_ACTIONS.length) {
-          setBoutons(parsed);
-        } else if (Array.isArray(parsed) && parsed.length !== BOUTONS_ACTIONS.length) {
-          // Nouvelle carte ajoutée → reset l'ordre sauvegardé
-          localStorage.removeItem('admin_boutons_order_v4');
+        if (Array.isArray(parsed)) {
+          // On garde l'ordre choisi ; un bouton ajouté depuis (ex. « Alphabet à valider ») est inséré à sa place par défaut
+          const known = (parsed as typeof BOUTONS_ACTIONS).map((b) => BOUTONS_ACTIONS.find((d) => d.id === b.id)).filter((b): b is (typeof BOUTONS_ACTIONS)[number] => !!b);
+          const merged = [...known];
+          BOUTONS_ACTIONS.forEach((b, i) => {
+            if (merged.some((m) => m.id === b.id)) return;
+            const prev = BOUTONS_ACTIONS[i - 1];
+            const at = prev ? merged.findIndex((m) => m.id === prev.id) + 1 : 0;
+            merged.splice(at, 0, b);
+          });
+          setBoutons(merged);
         }
       } catch { /* ignore */ }
     }
@@ -313,6 +325,8 @@ function AdminSectionRenderer({
       return <AdminSourateValidations onBack={onClose} />;
     case 'nourania-validations':
       return <AdminNouraniaValidations onBack={onClose} />;
+    case 'alphabet-validations':
+      return <AdminAlphabetValidations onBack={onClose} />;
     case 'cahier-texte':
     case 'cahier-texte-module':
       return <AdminHomework onBack={onClose} />;

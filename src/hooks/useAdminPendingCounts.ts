@@ -13,7 +13,8 @@ interface AdminPendingCounts {
   messages: number;
   homework: number;
   recitations: number;
-  /** Élèves sans notifications depuis plus d'une semaine */
+  /** Exercices et demandes de validation d'Alphabet en attente */
+  alphabet: number;
   /** Élèves qui n'arrivent pas à se connecter (pastille sur « Élèves ») */
   loginTrouble: number;
   total: number;
@@ -29,18 +30,19 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
   const { data } = useQuery({
     queryKey: ['admin-pending-breakdown'],
     queryFn: async (): Promise<Omit<AdminPendingCounts, 'messages' | 'total' | 'loginTrouble'>> => {
-      if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0 };
+      if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0, alphabet: 0 };
 
-      const [reg, sou, nou, hw, rec] = await Promise.all([
+      const [reg, sou, nou, hw, rec, alpha] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
         supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('devoirs_rendus').select('*', { count: 'exact', head: true }).eq('statut', 'rendu'),
         supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('alphabet_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       const r = reg.count || 0, s = sou.count || 0, n = nou.count || 0, h = hw.count || 0, rc = rec.count || 0;
-      return { registrations: r, sourates: s, nourania: n, invocations: 0, homework: h, recitations: rc };
+      return { registrations: r, sourates: s, nourania: n, invocations: 0, homework: h, recitations: rc, alphabet: alpha.count || 0 };
     },
     enabled: !!user && isAdmin,
     refetchInterval: 30000,
@@ -54,6 +56,10 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nourania_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_recitations' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alphabet_submissions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-alphabet-submissions'] });
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, queryClient]);
@@ -68,11 +74,11 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
   });
   const loginTrouble = loginTroubleData?.length ?? 0;
 
-  const base = data || { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0 };
+  const base = data || { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0, alphabet: 0 };
   return {
     ...base,
     messages: messagesCount,
     loginTrouble,
-    total: base.registrations + base.sourates + base.nourania + base.homework + base.recitations + messagesCount + loginTrouble,
+    total: base.registrations + base.sourates + base.nourania + base.homework + base.recitations + base.alphabet + messagesCount + loginTrouble,
   };
 };

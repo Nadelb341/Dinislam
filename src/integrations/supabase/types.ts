@@ -370,6 +370,88 @@ export type Database = {
         }
         Relationships: []
       }
+      alphabet_line_models: {
+        Row: {
+          audio_url: string
+          id: string
+          letter_id: number
+          line_key: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          id?: string
+          letter_id: number
+          line_key: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          id?: string
+          letter_id?: number
+          line_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alphabet_line_models_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "alphabet_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alphabet_submissions: {
+        Row: {
+          admin_audio_url: string | null
+          admin_comment: string | null
+          audio_url: string | null
+          created_at: string
+          id: string
+          kind: string
+          letter_id: number
+          line_key: string | null
+          reviewed_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          letter_id: number
+          line_key?: string | null
+          reviewed_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          admin_audio_url?: string | null
+          admin_comment?: string | null
+          audio_url?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          letter_id?: number
+          line_key?: string | null
+          reviewed_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alphabet_submissions_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "alphabet_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_logs: {
         Row: {
           action: string
@@ -3158,6 +3240,10 @@ export type Database = {
           recovery_sent_at: string
           user_id: string
         }[]
+      }
+      alphabet_self_validate: {
+        Args: { p_letter_id: number }
+        Returns: undefined
       }
       get_pending_registrations: {
         Args: never

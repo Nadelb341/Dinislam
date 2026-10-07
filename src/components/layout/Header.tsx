@@ -168,6 +168,7 @@ const Header = ({
           pendingMessages={pendingCounts.messages}
           pendingHomework={pendingCounts.homework}
           pendingRecitations={pendingCounts.recitations}
+          pendingAlphabet={pendingCounts.alphabet}
           pendingLoginTrouble={pendingCounts.loginTrouble}
           total={pendingCounts.total}
           onOpenMessages={handleOpenMessaging}

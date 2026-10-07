@@ -1,20 +1,22 @@
-import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Check, Volume2, FileText, Lock } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 import { FitText } from '@/components/shared/FitText';
-import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { useIsOver20 } from '@/hooks/useIsOver20';
-import { LetterVoiceRecorder } from '@/components/alphabet/LetterVoiceRecorder';
+import { AlphabetLetterSheet } from '@/components/alphabet/AlphabetLetterSheet';
+import { ReadingGameDialog, type ReadingMode } from '@/components/alphabet/ReadingGameDialog';
+import type { AlphabetSubmission } from '@/components/alphabet/AlphabetLineRow';
+import { ALPHABET_WORDS } from '@/data/alphabetWords';
+import { buildLines } from '@/lib/alphabetLines';
 import { AlphabetGameDialog } from '@/components/alphabet/AlphabetGameDialog';
 import { AlphabetUnlockDialog } from '@/components/alphabet/AlphabetUnlockDialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
-import { computeUnlocked, gamePool, gameStatus, GAMES, type GameKey } from '@/lib/alphabetProgress';
+import { computeUnlocked, gameStatus, GAMES, READING_GAMES, type GameKey, type AlphabetLetterLite } from '@/lib/alphabetProgress';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Tab = 'apprendre' | 'jouer' | 'progres';
@@ -36,11 +38,11 @@ const AlphabetPage = () => {
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
   const queryClient = useQueryClient();
-  const { askValidation, validationDialog } = useConfirmValidation();
   const [selectedLetter, setSelectedLetter] = useState<Tables<'alphabet_letters'> | null>(null);
   const [tab, setTabState] = useState<Tab>(readTab);
   const [game, setGame] = useState<GameKey | null>(null);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  const [reading, setReading] = useState<{ mode: ReadingMode; letters: AlphabetLetterLite[] } | null>(null);
 
   const setTab = (t: Tab) => {
     setTabState(t);
@@ -113,23 +115,41 @@ const AlphabetPage = () => {
     },
   });
 
-  const toggleValidatedMutation = useMutation({
-    mutationFn: async ({ letterId, isValidated }: { letterId: number; isValidated: boolean }) => {
-      if (!user) throw new Error('Non connecté');
-      const existing = progress.find((p) => p.letter_id === letterId);
-      if (existing) {
-        const { error } = await supabase.from('user_alphabet_progress').update({ is_validated: isValidated }).eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('user_alphabet_progress').insert({ user_id: user.id, letter_id: letterId, is_validated: isValidated });
-        if (error) throw error;
-      }
+  // Envois de l'élève (exercices par ligne + demandes de validation), du plus récent au plus ancien
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['alphabet-submissions', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase.from('alphabet_submissions').select('*')
+        .eq('student_id', user.id).order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as AlphabetSubmission[];
     },
-    onSuccess: (_, { isValidated }) => {
-      queryClient.invalidateQueries({ queryKey: ['user-alphabet-progress-page', user?.id] });
-      toast.success(isValidated ? '✅ Lettre apprise ! La suivante est débloquée.' : 'Marquée comme non apprise');
+    enabled: !!user && !isAdmin,
+  });
+
+  // Modèles audio de l'enseignante (« écoute ton prof et répète ») : clé « idLettre:ligne »
+  const { data: models = new Map<string, string>() } = useQuery({
+    queryKey: ['alphabet-line-models'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('alphabet_line_models').select('letter_id, line_key, audio_url');
+      if (error) throw error;
+      return new Map((data || []).map((m) => [`${m.letter_id}:${m.line_key}`, m.audio_url]));
     },
   });
+
+  // Réponse ou validation de l'enseignante : mise à jour en direct
+  useEffect(() => {
+    if (!user || isAdmin) return;
+    const channel = supabase
+      .channel(`alphabet-submissions-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alphabet_submissions', filter: `student_id=eq.${user.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['alphabet-submissions', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['user-alphabet-progress-page', user.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, isAdmin, queryClient]);
 
   // ── Paliers ────────────────────────────────────────────────────────────────
   const everythingOpen = isAdmin || isOver20;
@@ -142,7 +162,43 @@ const AlphabetPage = () => {
   const currentLetter = letters.find((l) => l.id === currentId);
   // Admin et 20 ans et plus : tout est ouvert, les jeux utilisent les 28 lettres
   const learnedForGames = useMemo(() => (everythingOpen ? new Set(letters.map((l) => l.id)) : learned), [everythingOpen, letters, learned]);
-  const pool = useMemo(() => gamePool(letters, learnedForGames, unlocked), [letters, learnedForGames, unlocked]);
+  // Onglet Jouer = révision : seulement les lettres déjà validées
+  const reviewPool = useMemo(() => letters.filter((l) => learnedForGames.has(l.id)), [letters, learnedForGames]);
+
+  // Étoiles par lettre (idée 3) : une par ligne corrigée par l'enseignante
+  const starsByLetter = useMemo(() => {
+    const seen = new Set<string>();
+    const m = new Map<number, number>();
+    for (const s of submissions) {
+      if (s.kind !== 'exercise' || !s.line_key) continue;
+      const k = `${s.letter_id}:${s.line_key}`;
+      if (seen.has(k)) continue; // seul le dernier envoi de chaque ligne compte
+      seen.add(k);
+      if (s.status === 'corrected') m.set(s.letter_id, (m.get(s.letter_id) ?? 0) + 1);
+    }
+    return m;
+  }, [submissions]);
+  const pendingFinal = useMemo(() => {
+    const seen = new Set<number>();
+    const out = new Set<number>();
+    for (const s of submissions) {
+      if (s.kind !== 'final' || seen.has(s.letter_id)) continue;
+      seen.add(s.letter_id);
+      if (s.status === 'pending') out.add(s.letter_id);
+    }
+    return out;
+  }, [submissions]);
+
+  // Défi du jour (idée 8) : série de jours joués d'affilée
+  const dailyStreak = useMemo(() => {
+    const days = new Set(scores.filter((s) => s.game === 'defi_jour').map((s) => s.played_on));
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    const d = new Date(`${today}T12:00:00`);
+    if (!days.has(today)) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (days.has(d.toLocaleDateString('en-CA'))) { n++; d.setDate(d.getDate() - 1); }
+    return { n, playedToday: days.has(today) };
+  }, [scores]);
 
   // ── Progrès ────────────────────────────────────────────────────────────────
   const missedCount = useMemo(() => {
@@ -172,8 +228,6 @@ const AlphabetPage = () => {
     const gamePts = [...best.values()].reduce((a, b) => a + b, 0) * (pointValues?.reponse ?? 1);
     return learned.size * (pointValues?.lettre ?? 5) + gamePts;
   }, [scores, learned, pointValues]);
-
-  const selectedContents = selectedLetter ? contents.filter((c) => c.letter_id === selectedLetter.id) : [];
 
   const openLetter = (letter: Tables<'alphabet_letters'>) => {
     if (!unlocked.has(letter.id)) {
@@ -261,7 +315,8 @@ const AlphabetPage = () => {
                       key={letter.id}
                       onClick={() => openLetter(letter)}
                       className={`relative flex flex-col items-center justify-between rounded-2xl p-2 border-2 transition-all active:scale-95 min-h-[84px] ${
-                        isLearned ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
+                        (starsByLetter.get(letter.id) ?? 0) >= buildLines(letter).length ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.55)]'
+                          : isLearned ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
                           : isCurrent ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400'
                           : isOpen ? 'bg-card border-border hover:shadow-md'
                           : 'bg-muted/40 border-transparent opacity-60'
@@ -274,11 +329,15 @@ const AlphabetPage = () => {
                         </span>
                       )}
                       {!isOpen && <Lock className="absolute top-1 end-1 h-3 w-3 text-muted-foreground" />}
-                      {hasContent && isOpen && !isLearned && <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full" />}
+                      {hasContent && isOpen && !isLearned && !pendingFinal.has(letter.id) && <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full" />}
+                      {pendingFinal.has(letter.id) && <span className="absolute top-0.5 end-0.5 text-[11px]" aria-label="En attente de validation">⏳</span>}
                       <div className="flex-1 flex items-center justify-center">
                         <span className="font-arabic text-3xl text-foreground">{letter.letter_arabic}</span>
                       </div>
                       <FitText className="text-[10px] font-semibold text-muted-foreground w-full">{letter.name_french}</FitText>
+                      {(starsByLetter.get(letter.id) ?? 0) > 0 && (
+                        <span className="text-[9px] leading-none text-amber-500">{'★'.repeat(starsByLetter.get(letter.id) ?? 0)}</span>
+                      )}
                     </button>
                   );
                 })}
@@ -290,16 +349,21 @@ const AlphabetPage = () => {
         {/* ── Jouer ── */}
         {tab === 'jouer' && (
           <div className="space-y-3">
+            <p className="text-xs text-muted-foreground px-1">🔁 Révision : les jeux utilisent toutes les lettres que ton prof a déjà validées.</p>
             <div className="grid grid-cols-2 gap-2.5">
-              {GAMES.map((g, i) => {
-                const st = gameStatus(g.key, letters, learned, everythingOpen);
+              {GAMES.filter((g) => g.key !== 'lettre').map((g, i, list) => {
+                const st = gameStatus(g.key, letters, learnedForGames, false);
                 const best = bestByGame(g.key);
-                const last = i === GAMES.length - 1;
+                const last = i === list.length - 1;
                 return (
                   <button
                     key={g.key}
                     type="button"
-                    onClick={() => st.open ? setGame(g.key) : toast(`🔒 ${st.hint}`)}
+                    onClick={() => {
+                      if (!st.open) { toast(`🔒 ${st.hint}`); return; }
+                      if (READING_GAMES.includes(g.key)) setReading({ mode: g.key as ReadingMode, letters: reviewPool });
+                      else setGame(g.key);
+                    }}
                     className={`rounded-2xl border-2 p-3 text-start flex flex-col gap-0.5 min-w-0 transition-all active:scale-95 ${last ? 'col-span-2' : ''} ${
                       st.open ? g.tile : 'border-dashed border-border bg-transparent opacity-70'
                     }`}
@@ -308,6 +372,7 @@ const AlphabetPage = () => {
                     <span className="font-bold text-sm [overflow-wrap:anywhere]">{g.title}</span>
                     <span className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
                       {!st.open ? st.hint
+                        : g.key === 'defi_jour' ? (dailyStreak.n > 0 ? `🔥 ${dailyStreak.n} jour${dailyStreak.n > 1 ? 's' : ''} de suite${dailyStreak.playedToday ? ' · fait aujourd\'hui ✓' : ''}` : 'Joue chaque jour !')
                         : best ? `Record : ${best.score}/${best.total} ${'★'.repeat(starsOf(best.score, best.total))}`
                         : 'Nouveau !'}
                     </span>
@@ -348,6 +413,33 @@ const AlphabetPage = () => {
               ))}
             </div>
 
+            {/* Album d'autocollants (idée 7) : un autocollant par lettre validée */}
+            <div className="rounded-2xl border border-border bg-card p-3 space-y-2">
+              <p className="font-semibold text-sm">📒 Mon album d'autocollants · {learned.size}/{letters.length}</p>
+              <div dir="rtl" className="grid grid-cols-7 gap-1.5">
+                {letters.map((l) => {
+                  const got = learned.has(l.id);
+                  const w = ALPHABET_WORDS[l.letter_arabic];
+                  return (
+                    <div
+                      key={l.id}
+                      className={`aspect-square rounded-xl flex flex-col items-center justify-center ${got ? 'bg-amber-50 dark:bg-amber-950/30 animate-scale-in' : 'bg-muted/40'}`}
+                      title={got && w ? `${l.name_french} · ${w.fr}` : l.name_french}
+                    >
+                      {got ? (
+                        <>
+                          <span className="text-xl leading-none">{w?.emoji ?? '⭐'}</span>
+                          <span className="font-arabic text-sm leading-none mt-0.5">{l.letter_arabic}</span>
+                        </>
+                      ) : (
+                        <span className="font-arabic text-base text-muted-foreground/40">{l.letter_arabic}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-border bg-card p-3 space-y-2">
               <p className="font-semibold text-sm">Mes étoiles</p>
               {GAMES.map((g) => {
@@ -377,117 +469,23 @@ const AlphabetPage = () => {
 
         {/* Fiche d'une lettre */}
         {selectedLetter && (
-          <Dialog open onOpenChange={() => setSelectedLetter(null)}>
-            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  <span className="font-arabic text-4xl">{selectedLetter.letter_arabic}</span>
-                  <div>
-                    <p className="text-lg font-bold">{selectedLetter.name_french}</p>
-                    <p className="text-sm text-muted-foreground font-arabic">{selectedLetter.name_arabic}</p>
-                  </div>
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">Formes de la lettre</h4>
-                  <div dir="rtl" className="grid grid-cols-4 gap-2">
-                    {[
-                      { label: 'Isolée', value: selectedLetter.position_isolated },
-                      { label: 'Début', value: selectedLetter.position_initial },
-                      { label: 'Milieu', value: selectedLetter.position_medial },
-                      { label: 'Fin', value: selectedLetter.position_final },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-violet-50 dark:bg-violet-950/20 rounded-xl p-2 text-center">
-                        <p className="font-arabic text-2xl text-foreground">{value || '—'}</p>
-                        <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Audios : la lettre seule, puis avec ses voyelles */}
-                {([
-                  { field: 'audio_url' as const, label: 'La lettre', url: selectedLetter.audio_url },
-                  { field: 'audio_vowels_url' as const, label: 'Avec les voyelles (a, i, ou)', url: selectedLetter.audio_vowels_url },
-                ]).map(({ field, label, url }) => (url || isAdmin) && (
-                  <div key={field} className="space-y-2">
-                    {url && (
-                      <div className="bg-sky-50 dark:bg-sky-950/20 rounded-xl p-3 space-y-1">
-                        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-                        <div className="flex items-center gap-3">
-                          <Volume2 className="h-5 w-5 text-primary shrink-0" />
-                          <audio key={url} src={url} controls className="flex-1 min-w-0 h-8" />
-                        </div>
-                      </div>
-                    )}
-                    {isAdmin && (
-                      <LetterVoiceRecorder
-                        letter={selectedLetter}
-                        field={field}
-                        currentUrl={url}
-                        onReplaced={(newUrl) => {
-                          setSelectedLetter((l) => (l ? { ...l, [field]: newUrl } : l));
-                          queryClient.invalidateQueries({ queryKey: ['alphabet-letters-page'] });
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-
-                {selectedContents.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ressources</h4>
-                    {selectedContents.map((content) => (
-                      <div key={content.id} className="border border-border rounded-xl overflow-hidden">
-                        {content.content_type === 'video' && (
-                          <video src={content.file_url} controls className="w-full" controlsList="nodownload" />
-                        )}
-                        {content.content_type === 'image' && (
-                          <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />
-                        )}
-                        {(content.content_type === 'pdf' || content.content_type === 'document') && (
-                          <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50">
-                            <FileText className="h-5 w-5 text-red-500" />
-                            <span className="text-sm font-medium">{content.file_name}</span>
-                          </a>
-                        )}
-                        {content.content_type === 'audio' && (
-                          <div className="p-3 flex items-center gap-3">
-                            <Volume2 className="h-5 w-5 text-primary" />
-                            <audio src={content.file_url} controls className="flex-1 h-8" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(() => {
-                  const isValidated = learned.has(selectedLetter.id);
-                  return (
-                    <Button
-                      className="w-full gap-2"
-                      variant={isValidated ? 'outline' : 'default'}
-                      onClick={() => {
-                        const run = () => toggleValidatedMutation.mutate({ letterId: selectedLetter.id, isValidated: !isValidated });
-                        if (isValidated) run();
-                        else askValidation('Valider cette lettre ?', `${selectedLetter.name_french} (${selectedLetter.letter_arabic}) sera marquée comme apprise.`, run);
-                      }}
-                    >
-                      {isValidated ? <><Check className="h-4 w-4 text-green-500" /> Apprise ✅</> : '✏️ Marquer comme apprise'}
-                    </Button>
-                  );
-                })()}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <AlphabetLetterSheet
+            letter={selectedLetter}
+            isLearned={learned.has(selectedLetter.id)}
+            directValidation={everythingOpen}
+            isAdmin={isAdmin}
+            submissions={submissions}
+            models={models}
+            contents={contents}
+            onLetterChange={setSelectedLetter}
+            onPlay={(l) => setReading({ mode: 'lettre', letters: [l] })}
+            onClose={() => setSelectedLetter(null)}
+          />
         )}
 
-        <AlphabetGameDialog game={game} letters={letters} pool={pool} learned={learnedForGames} onClose={() => setGame(null)} />
+        <ReadingGameDialog mode={reading?.mode ?? null} letters={reading?.letters ?? []} allLetters={letters} onClose={() => setReading(null)} />
+        <AlphabetGameDialog game={game} letters={letters} pool={reviewPool} learned={learnedForGames} onClose={() => setGame(null)} />
         {isAdmin && <AlphabetUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} letters={letters} />}
-        {validationDialog}
       </div>
     </AppLayout>
   );
