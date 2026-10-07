@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -7,9 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, errorMessage } from '@/lib/utils';
 import { groupColorProps, groupStudents } from '@/lib/studentGroups';
-import { attendanceDates, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { attendanceDates, cycleAttendance, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 type AttendanceStatus = 'present' | 'absent' | 'late';
@@ -110,6 +111,37 @@ const Attendance = () => {
     allRecords.forEach(r => map.set(`${r.user_id}-${r.date}`, r.status as AttendanceStatus));
     return map;
   }, [allRecords]);
+  const recordIds = useMemo(() => new Map(allRecords.map(r => [`${r.user_id}-${r.date}`, r.id])), [allRecords]);
+
+  // Enseignante : toucher un rond note la présence (même règle que le Registre)
+  const queryClient = useQueryClient();
+  const [busyCell, setBusyCell] = useState<string | null>(null);
+  const markCell = async (studentId: string, date: string) => {
+    const key = `${studentId}-${date}`;
+    if (busyCell) return;
+    setBusyCell(key);
+    try {
+      const status = recordMap.get(key);
+      await cycleAttendance(studentId, date, status ? { id: recordIds.get(key)!, status } : undefined, user?.id);
+      await queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance-records'] });
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusyCell(null);
+    }
+  };
+
+  // Deux élèves avec le même prénom (ex. 2 « Lina ») : on ajoute l'initiale du nom
+  const displayName = useMemo(() => {
+    const first = (n: string | null) => (n || 'Sans nom').trim().split(/\s+/)[0];
+    const counts = new Map<string, number>();
+    students.forEach(s => counts.set(first(s.full_name).toLowerCase(), (counts.get(first(s.full_name).toLowerCase()) ?? 0) + 1));
+    return (full: string | null) => {
+      const parts = (full || 'Sans nom').trim().split(/\s+/);
+      return (counts.get(parts[0].toLowerCase()) ?? 0) > 1 && parts[1] ? `${parts[0]} ${parts[1][0].toUpperCase()}.` : parts[0];
+    };
+  }, [students]);
 
   return (
     <AppLayout title="Ma Présence">
@@ -185,6 +217,7 @@ const Attendance = () => {
             <CardContent className="p-4">
               <h3 className="font-semibold text-foreground mb-3">👥 Vue de la classe</h3>
 
+              {isAdmin && <p className="text-xs text-muted-foreground mb-2">Touche un rond pour noter : vide → 🟢 présent → 🔴 absent → 🟡 en retard → vide.</p>}
               {/* Legend */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
                 {Object.entries(STATUS_DISPLAY).map(([key, val]) => (
@@ -255,12 +288,28 @@ const Attendance = () => {
                     >
                       <div className="w-32 shrink-0 px-2 py-2 text-xs text-foreground [overflow-wrap:anywhere] sticky left-0 bg-inherit z-10 flex items-center gap-1">
                         {student.user_id === user?.id && <span className="text-yellow-500">⭐</span>}
-                        {(student.full_name || 'Sans nom').split(' ')[0]}
+                        {displayName(student.full_name)}
                       </div>
                       {dates.slice(-7).map(date => {
                         const status = recordMap.get(`${student.user_id}-${date}`);
                         const display = status ? STATUS_DISPLAY[status] : null;
                         return (
+                          isAdmin ? (
+                            <button
+                              key={date}
+                              type="button"
+                              onClick={() => markCell(student.user_id, date)}
+                              disabled={busyCell === `${student.user_id}-${date}`}
+                              aria-label={`${student.full_name || 'Élève'} le ${format(parseISO(date), 'dd/MM')} : ${display ? display.label : 'pas noté'}`}
+                              className="w-12 shrink-0 flex items-center justify-center border-l border-border py-2 hover:bg-muted/40 active:scale-95"
+                            >
+                              {display ? (
+                                <div className={cn('w-5 h-5 rounded-full', display.color)} />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full border border-muted-foreground/30" />
+                              )}
+                            </button>
+                          ) : (
                           <div key={date} className="w-12 shrink-0 flex items-center justify-center border-l border-border py-2">
                             {display ? (
                               <div className={cn('w-5 h-5 rounded-full', display.color)} />
@@ -268,6 +317,7 @@ const Attendance = () => {
                               <div className="w-5 h-5 rounded-full border border-muted-foreground/20" />
                             )}
                           </div>
+                          )
                         );
                       })}
                       {isAdmin && <div className="w-12 shrink-0 border-l border-border" />}

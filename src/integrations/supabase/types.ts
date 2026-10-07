@@ -2920,6 +2920,32 @@ export type Database = {
         }
         Relationships: []
       }
+      user_flashcard_learned: {
+        Row: {
+          created_at: string
+          flashcard_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          flashcard_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          flashcard_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_flashcard_learned_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "module_flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invocation_progress: {
         Row: {
           completed_at: string | null

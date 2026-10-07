@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { errorMessage } from '@/lib/utils';
 
 interface Flashcard {
   id: string;
@@ -14,6 +20,28 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [isShuffled, setIsShuffled] = useState(false);
+  // « ✅ Je connais ce mot » (2026-10-08) : compte dans le Classement (ligne « Vocabulaire appris » du barème)
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { askValidation, validationDialog } = useConfirmValidation();
+  const { data: learned = new Set<string>() } = useQuery({
+    queryKey: ['flashcard-learned', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_flashcard_learned').select('flashcard_id').eq('user_id', user!.id);
+      if (error) throw error;
+      return new Set((data || []).map((r) => r.flashcard_id));
+    },
+  });
+  const setLearned = async (id: string, value: boolean) => {
+    if (!user) return;
+    const { error } = value
+      ? await supabase.from('user_flashcard_learned').insert({ user_id: user.id, flashcard_id: id })
+      : await supabase.from('user_flashcard_learned').delete().eq('user_id', user.id).eq('flashcard_id', id);
+    if (error) { toast.error(errorMessage(error)); return; }
+    if (value) toast.success('✅ Mot appris, bravo !');
+    queryClient.invalidateQueries({ queryKey: ['flashcard-learned', user.id] });
+  };
 
   useEffect(() => {
     setDeck(cards);
@@ -24,6 +52,8 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
 
   const current = deck[index];
   if (!current) return null;
+  const knows = learned.has(current.id);
+  const learnedCount = cards.filter((c) => learned.has(c.id)).length;
 
   const goTo = (newIndex: number) => {
     setFlipped(false);
@@ -48,7 +78,7 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-foreground">{index + 1} / {deck.length}</span>
+        <span className="text-sm font-semibold text-foreground">{index + 1} / {deck.length}{learnedCount > 0 && <span className="ms-2 text-xs text-emerald-600 font-bold">✅ {learnedCount} appris</span>}</span>
         <Button size="sm" variant="ghost" onClick={isShuffled ? reset : shuffle} className="h-8 text-xs">
           {isShuffled
             ? <><RotateCcw className="h-3.5 w-3.5 mr-1" />Réinitialiser</>
@@ -103,6 +133,20 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
         </div>
       </div>
 
+      {/* Je connais ce mot : confirmation pour valider, aucune pour revenir en arrière */}
+      {user && (
+        <Button
+          type="button"
+          variant={knows ? 'default' : 'outline'}
+          className={`w-full ${knows ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'border-emerald-300 text-emerald-700 dark:text-emerald-300'}`}
+          onClick={() => knows
+            ? setLearned(current.id, false)
+            : askValidation('Valider ce mot ?', `« ${current.front_text} » sera compté comme appris.`, () => setLearned(current.id, true))}
+        >
+          {knows ? '✅ Je connais ce mot' : '☐ Je connais ce mot'}
+        </Button>
+      )}
+
       {/* Navigation */}
       <div className="flex items-center justify-center gap-4">
         <Button
@@ -124,6 +168,7 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
+      {validationDialog}
     </div>
   );
 };

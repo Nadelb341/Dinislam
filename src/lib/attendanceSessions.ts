@@ -40,3 +40,23 @@ export async function deleteAttendanceSession(date: string, userId: string, labe
   const { error: sErr } = await supabase.from('attendance_sessions').delete().eq('date', date);
   if (sErr) throw sErr;
 }
+
+export type AttendanceStatus = 'present' | 'absent' | 'late';
+
+/**
+ * Toucher un rond (enseignante) : vide → présent → absent → en retard → vide.
+ * Même règle dans « Ma Présence » et dans le Registre du bouclier.
+ */
+export async function cycleAttendance(userId: string, date: string, current: { id: string; status: AttendanceStatus } | undefined, markedBy?: string) {
+  if (!current) {
+    const { error } = await supabase.from('attendance_records').insert({ user_id: userId, date, status: 'present', marked_by: markedBy ?? null });
+    if (error) throw error;
+    return;
+  }
+  const next: Record<AttendanceStatus, AttendanceStatus | null> = { present: 'absent', absent: 'late', late: null };
+  const to = next[current.status];
+  const { error } = to
+    ? await supabase.from('attendance_records').update({ status: to }).eq('id', current.id)
+    : await supabase.from('attendance_records').delete().eq('id', current.id);
+  if (error) throw error;
+}

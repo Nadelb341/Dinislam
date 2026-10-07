@@ -9,9 +9,9 @@ import { ArrowLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, errorMessage } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { attendanceDates, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { attendanceDates, cycleAttendance, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 interface AdminAttendanceProps {
@@ -107,48 +107,12 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
 
   const handleClickPresence = async (userId: string, date: string, currentStatus?: AttendanceStatus) => {
     if (msgMode) { await toggleMessage(userId, date); return; }
-    const cycle: Record<string, AttendanceStatus | null> = {
-      present: 'absent',
-      absent: 'late',
-      late: null,
-    };
-
-    if (!currentStatus) {
-      // Empty → Present
-      const { error } = await supabase.from('attendance_records').insert({
-        user_id: userId,
-        date,
-        status: 'present',
-        marked_by: user?.id,
-      });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-    } else {
-      const nextStatus = cycle[currentStatus] ?? null;
+    try {
       const record = recordMap.get(`${userId}-${date}`);
-      if (nextStatus === null && record) {
-        // Late → Delete
-        const { error } = await supabase
-          .from('attendance_records')
-          .delete()
-          .eq('id', record.id);
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-      } else if (record && nextStatus) {
-        // Cycle to next
-        const { error } = await supabase
-          .from('attendance_records')
-          .update({ status: nextStatus })
-          .eq('id', record.id);
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-      }
+      await cycleAttendance(userId, date, currentStatus && record ? { id: record.id, status: currentStatus } : undefined, user?.id);
+    } catch (e) {
+      toast.error(errorMessage(e));
+      return;
     }
     refetchRecords();
     queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
