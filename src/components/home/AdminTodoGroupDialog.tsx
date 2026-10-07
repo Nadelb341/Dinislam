@@ -358,6 +358,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
       assigned_to: ids.length === 1 ? 'student' : ids.length > 1 ? 'students' : group?.id ? 'groups' : 'all',
       group_id: '', student_id: ids.length === 1 ? ids[0] : '', student_ids: ids.length > 1 ? ids : [],
       group_ids: ids.length === 0 && group?.id ? [group.id] : [],
+      // Venant de « 📚 Devoirs à préparer » : la ligne sera cochée toute seule une fois le devoir envoyé
+      source_task_id: task.to_prepare ? task.id : undefined,
     });
     requestDraftResume('dinislam_homework');
     setHomeworkFor(null);
@@ -412,7 +414,14 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
             {task.student_id && <span>👤 {studentName(task.student_id)}</span>}
             {task.recurrence === 'weekly' && <span>🔁 chaque semaine</span>}
             {(task.carried ?? 0) > 0 && !task.done && <span className="font-semibold text-amber-700 dark:text-amber-300">🔁 reportée ×{task.carried}</span>}
+            {task.to_prepare && <span>🗓️ notée le {new Date(task.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>}
           </div>
+          {task.to_prepare && !task.done && (
+            <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => toHomework(task)}
+              className="mt-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 text-xs font-bold">
+              📚 Créer le devoir
+            </button>
+          )}
         </div>
         <input
           type="checkbox"
@@ -521,6 +530,17 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
                 {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
               </Button>
             </div>
+            {/* Modèles prêts de l'onglet « 📚 Devoirs à préparer » : un toucher = ligne ajoutée (gérer dans « ⋯ Plus ») */}
+            {kind === 'preparer' && templates.some((t) => t.to_prepare) && (
+              <div className="flex flex-wrap gap-1.5">
+                {templates.filter((t) => t.to_prepare).map((tpl) => (
+                  <button key={tpl.id} type="button" onClick={() => addFromTemplate(tpl)}
+                    className="rounded-full border border-emerald-300 dark:border-emerald-800 bg-card px-2.5 py-1 text-xs [overflow-wrap:anywhere] text-start">
+                    ⚡ {tpl.title}
+                  </button>
+                ))}
+              </div>
+            )}
             {options.due_date || options.remind_at || options.student_id || options.recurrence || options.urgent ? (
               <p className="text-[11px] text-muted-foreground">Options de « ⋯ Plus » appliquées à la prochaine ligne.</p>
             ) : null}

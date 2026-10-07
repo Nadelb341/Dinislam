@@ -637,6 +637,24 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_reminder_logs: {
+        Row: {
+          created_at: string
+          kind: string
+          sent_on: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          sent_on: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          sent_on?: string
+        }
+        Relationships: []
+      }
       connexion_logs: {
         Row: {
           created_at: string | null
@@ -2379,6 +2397,7 @@ export type Database = {
           target_type: string | null
           target_user_id: string | null
           title: string | null
+          weekdays: number[] | null
         }
         Insert: {
           body?: string | null
@@ -2400,6 +2419,7 @@ export type Database = {
           target_type?: string | null
           target_user_id?: string | null
           title?: string | null
+          weekdays?: number[] | null
         }
         Update: {
           body?: string | null
@@ -2421,6 +2441,7 @@ export type Database = {
           target_type?: string | null
           target_user_id?: string | null
           title?: string | null
+          weekdays?: number[] | null
         }
         Relationships: []
       }

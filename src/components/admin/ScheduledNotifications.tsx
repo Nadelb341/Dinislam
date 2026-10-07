@@ -19,8 +19,18 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Json } from '@/integrations/supabase/types';
 
+/** Jours de la semaine (1 = lundi … 7 = dimanche) ; aucun coché = tous les jours */
+const WEEKDAYS = [
+  { value: 1, short: 'L', label: 'lundi' }, { value: 2, short: 'M', label: 'mardi' }, { value: 3, short: 'M', label: 'mercredi' },
+  { value: 4, short: 'J', label: 'jeudi' }, { value: 5, short: 'V', label: 'vendredi' }, { value: 6, short: 'S', label: 'samedi' },
+  { value: 7, short: 'D', label: 'dimanche' },
+];
+const weekdaysLabel = (w: number[] | null) =>
+  !w || w.length === 0 || w.length === 7 ? 'tous les jours' : `chaque ${w.slice().sort().map((d) => WEEKDAYS[d - 1].label).join(', ')}`;
+
 const MODULES = [
   { value: 'general', label: '🌐 Général' },
+  { value: 'cours', label: "🎒 Cours d'arabe" },
   { value: 'ramadan', label: '🌙 Ramadan' },
   { value: 'sourates', label: '📖 Sourates' },
   { value: 'nourania', label: '✨ Nourania' },
@@ -42,6 +52,7 @@ interface ScheduledNotification {
   require_confirmation: boolean;
   created_at: string;
   created_by: string | null;
+  weekdays: number[] | null;
 }
 
 const ScheduledNotifications = () => {
@@ -60,6 +71,7 @@ const ScheduledNotifications = () => {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [requireConfirmation, setRequireConfirmation] = useState(false);
+  const [weekdays, setWeekdays] = useState<number[]>([]);
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['scheduled-notifications'],
@@ -115,6 +127,7 @@ const ScheduledNotifications = () => {
         recipients: recipientMode === 'all' ? 'all' : selectedStudents,
         is_active: isActive,
         require_confirmation: requireConfirmation,
+        weekdays: weekdays.length ? weekdays : null,
         created_by: user?.id,
       };
       if (editingId) {
@@ -170,6 +183,7 @@ const ScheduledNotifications = () => {
     setSelectedStudents([]);
     setIsActive(true);
     setRequireConfirmation(false);
+    setWeekdays([]);
   };
 
   const openEdit = (n: ScheduledNotification) => {
@@ -183,6 +197,7 @@ const ScheduledNotifications = () => {
     setSelectedStudents(Array.isArray(n.recipients) ? n.recipients.filter((r): r is string => typeof r === 'string') : []);
     setIsActive(n.is_active);
     setRequireConfirmation(n.require_confirmation);
+    setWeekdays(n.weekdays ?? []);
     setDialogOpen(true);
   };
 
@@ -236,7 +251,7 @@ const ScheduledNotifications = () => {
                       </div>
                       <p className="text-sm mt-1 line-clamp-2">{n.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {n.start_date} → {n.end_date} • {n.send_time?.substring(0, 5)} • {getRecipientsLabel(n.recipients)}
+                        {n.start_date} → {n.end_date} • {weekdaysLabel(n.weekdays)} à {n.send_time?.substring(0, 5)} • {getRecipientsLabel(n.recipients)}
                         {n.require_confirmation && ` • ${(confirmationCounts as Record<string, number>)[n.id] || 0} confirmation(s)`}
                       </p>
                     </div>
@@ -301,6 +316,23 @@ const ScheduledNotifications = () => {
               <div>
                 <Label>Heure d'envoi</Label>
                 <Input type="time" value={sendTime} onChange={e => setSendTime(e.target.value)} />
+              </div>
+
+              <div>
+                <Label>Jours d'envoi</Label>
+                <div className="flex gap-1.5 mt-1">
+                  {WEEKDAYS.map((d) => {
+                    const on = weekdays.includes(d.value);
+                    return (
+                      <button key={d.value} type="button" aria-pressed={on} aria-label={d.label} title={d.label}
+                        onClick={() => setWeekdays((w) => (on ? w.filter((x) => x !== d.value) : [...w, d.value]))}
+                        className={`h-9 w-9 rounded-full border text-sm font-bold ${on ? 'bg-primary text-primary-foreground border-primary' : 'border-border'}`}>
+                        {d.short}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Envoyée {weekdaysLabel(weekdays)}{weekdays.length ? '' : ' (aucun jour coché)'}.</p>
               </div>
 
               <div>

@@ -22,7 +22,7 @@ import {
 import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -50,6 +50,8 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     titre: '', type: 'recitation', description: '',
     lien_lecon: '', date_limite: '', assigned_to: 'all',
     group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[],
+    // Ligne « 📚 Devoirs à préparer » d'où vient ce devoir : cochée toute seule une fois le devoir envoyé (2026-10-08)
+    source_task_id: '' as string,
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
 
@@ -58,7 +60,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     if (!draft || !draft.titre.trim()) return;
     if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
       // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [] }));
+      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '' }));
       setShowForm(true);
     } else {
       setHomeworkDraft(draft);
@@ -229,14 +231,21 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         });
       }
 
+      // La ligne « 📚 Devoirs à préparer » d'origine est faite
+      if (form.source_task_id) {
+        const now = new Date().toISOString();
+        await supabase.from('admin_tasks').update({ done: true, done_at: now, updated_at: now }).eq('id', form.source_task_id).eq('done', false);
+      }
+
       return destinataires.length;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
       toast.success(`✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[] });
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '' });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -343,7 +352,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[] }); } setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '' }); } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
         </Button>
       </div>
@@ -656,7 +665,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [] });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '' });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

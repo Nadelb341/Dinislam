@@ -2,6 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
 
+// Titre lisible de la notification (avant : « 📅 general »)
+const MODULE_TITLES: Record<string, string> = {
+  general: '📅 Rappel', cours: "🎒 Cours d'arabe", ramadan: '🌙 Ramadan', sourates: '📖 Sourates', nourania: '✨ Nourania',
+  invocations: '🤲 Invocations', priere: '🕌 Prière', allah_names: "🌟 99 Noms d'Allah", alphabet: '🔤 Alphabet',
+};
+/** Jour de la semaine d'une date AAAA-MM-JJ : 1 = lundi … 7 = dimanche */
+const isoWeekday = (day: string) => { const d = new Date(`${day}T12:00:00Z`).getUTCDay(); return d === 0 ? 7 : d; };
+
 const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
 function getCorsHeaders(req: Request) {
@@ -43,6 +51,8 @@ serve(async (req) => {
     for (const notif of (notifications || [])) {
       const sendTime = notif.send_time?.substring(0, 5);
       if (!sendTime) continue;
+      // Jours choisis (ex. chaque mardi) ; vide = tous les jours
+      if (Array.isArray(notif.weekdays) && notif.weekdays.length && !notif.weekdays.includes(isoWeekday(today))) continue;
 
       // Déclenché toutes les 5 min par pg_cron : on envoie dans les 5 min qui suivent l'heure prévue,
       // une seule fois par jour (last_sent_on) — avant, la fenêtre ±5 min pouvait envoyer 2 ou 3 fois.
@@ -53,7 +63,7 @@ serve(async (req) => {
 
       // Call the send-push-notification edge function (now VAPID-based)
       const pushBody: Record<string, unknown> = {
-        title: `📅 ${notif.module}`,
+        title: MODULE_TITLES[notif.module] ?? `📅 ${notif.module}`,
         body: notif.message,
         tag: `scheduled-${notif.id}`,
         type: 'scheduled',
@@ -110,8 +120,45 @@ serve(async (req) => {
       }
     }
 
+    // La veille du cours (mardi 10 h, heure de Paris) : rappel à l'enseignante s'il reste des « 📚 Devoirs à préparer »
+    let prepReminded = 0;
+    if (isoWeekday(today) === 2 && currTotal >= 10 * 60 && currTotal < 10 * 60 + 5) {
+      const { data: prep } = await supabase.from('admin_tasks').select('id, created_by, group_id').eq('done', false).eq('to_prepare', true);
+      if (prep?.length) {
+        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'devoirs_a_preparer', sent_on: today });
+        if (!logErr) {
+          const { data: groups } = await supabase.from('student_groups').select('id, name');
+          const byOwner = new Map<string, typeof prep>();
+          for (const t of prep) if (t.created_by) byOwner.set(t.created_by, [...(byOwner.get(t.created_by) ?? []), t]);
+          for (const [owner, list] of byOwner) {
+            const perGroup = new Map<string, number>();
+            for (const t of list) {
+              const name = groups?.find((g) => g.id === t.group_id)?.name ?? 'Général';
+              perGroup.set(name, (perGroup.get(name) ?? 0) + 1);
+            }
+            const detail = [...perGroup].map(([g, n]) => `${g} : ${n}`).join(' · ');
+            try {
+              await sendPushInternal({
+                userId: owner,
+                title: '📚 Devoirs à préparer',
+                body: `Demain c'est cours : il te reste ${list.length} devoir${list.length > 1 ? 's' : ''} à préparer (${detail})`,
+                tag: `prep-${today}`,
+                type: 'admin_task',
+                category: 'adm_task',
+                data: { url: '/?open=todo' },
+              });
+              prepReminded++;
+            } catch (e) {
+              console.error('Rappel « devoirs à préparer » non envoyé', e);
+            }
+          }
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      prepReminded,
       processed: (notifications || []).length,
       totalSent,
       tasksReminded,
