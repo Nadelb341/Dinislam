@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfetti } from '@/hooks/useConfetti';
-import { buildLines, cellPrompt, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
+import { askableCells, buildLines, cellPrompt, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
 import { shuffle, type AlphabetLetterLite } from '@/lib/alphabetProgress';
 
 export type ReadingMode = 'lettre' | 'syllabes' | 'defi_jour';
@@ -22,22 +22,21 @@ const DAILY_SECONDS = 60;
 
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
-/** Une question : on lit la consigne (« la voyelle longue « ou » ») et on touche la bonne écriture. */
-function makeQuestion(letter: AlphabetLetterLite, others: AlphabetLetterLite[], forcedLine?: LetterLine['key'], withName = false): Question {
-  const lines = buildLines(letter);
+/** Une question : on lit la consigne (« la voyelle longue « ou » avec la lettre ب (Ba) ») et on touche la bonne écriture. */
+function makeQuestion(letter: AlphabetLetterLite, others: AlphabetLetterLite[], forcedLine?: LetterLine['key']): Question {
+  const lines = buildLines(letter).filter((l) => askableCells(l).length > 0);
   const line = (forcedLine && lines.find((l) => l.key === forcedLine)) || pick(lines);
-  const ci = Math.floor(Math.random() * line.cells.length);
+  const ci = pick(askableCells(line));
   const answer = line.cells[ci].text;
-  // Pièges : d'abord les autres écritures de la même lettre, puis la même voyelle sur une autre lettre
-  const sameLetter = lines.flatMap((l) => l.cells.map((c) => c.text)).filter((t) => t !== answer);
+  // Pièges : d'autres écritures de la même lettre, et la même voyelle sur une autre lettre
+  const sameLetter = buildLines(letter).flatMap((l) => l.cells.map((c) => c.text)).filter((t) => t !== answer);
   const otherLetters = others.filter((o) => o.id !== letter.id).map((o) => {
     const ol = buildLines(o).find((l) => l.key === line.key);
     return ol?.cells[Math.min(ci, ol.cells.length - 1)]?.text;
   }).filter((t): t is string => !!t && t !== answer);
-  const pool = shuffle([...shuffle(sameLetter).slice(0, withName ? 2 : 3), ...shuffle(otherLetters).slice(0, withName ? 2 : 1)]);
+  const pool = [...shuffle(sameLetter).slice(0, 2), ...shuffle(otherLetters).slice(0, 2)];
   const options = shuffle([answer, ...[...new Set(pool)].filter((t) => t !== answer).slice(0, 3)]);
-  const prompt = `${withName ? `${letter.name_french} : ` : ''}${cellPrompt(line, ci)}`;
-  return { prompt, answer, options, letterId: letter.id };
+  return { prompt: cellPrompt(line, ci, letter), answer, options, letterId: letter.id };
 }
 
 interface Props {
@@ -72,7 +71,7 @@ export function ReadingGameDialog({ mode, letters, allLetters, onClose }: Props)
       return Array.from({ length: 10 }, (_, i) => makeQuestion(letters[0], allLetters, order[i % order.length]));
     }
     const count = mode === 'defi_jour' ? 60 : 10;
-    return Array.from({ length: count }, () => makeQuestion(pick(letters), letters.length > 1 ? letters : allLetters, undefined, true));
+    return Array.from({ length: count }, () => makeQuestion(pick(letters), letters.length > 1 ? letters : allLetters));
   }, [mode, letters, allLetters]);
 
   const reset = useCallback(() => {
@@ -171,7 +170,7 @@ export function ReadingGameDialog({ mode, letters, allLetters, onClose }: Props)
                     type="button"
                     onClick={() => answer(opt)}
                     disabled={isWrong}
-                    className={`min-h-[88px] rounded-2xl border-2 font-arabic text-4xl ${hasLowHamza(opt) ? 'leading-[2.4] pb-1.5' : 'leading-[1.6]'} transition-all active:scale-95 ${
+                    className={`min-h-[88px] rounded-2xl border-2 text-4xl ${hasLowHamza(opt) ? 'font-arabic-low leading-[2.2] pb-1.5' : 'font-arabic leading-[1.6]'} transition-all active:scale-95 ${
                       ok ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-950/40'
                         : isWrong ? 'border-rose-300 bg-rose-50 dark:bg-rose-950/30 opacity-50'
                         : 'border-border bg-card hover:shadow-md'

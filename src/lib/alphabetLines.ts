@@ -86,17 +86,29 @@ export function buildLines(l: LetterForLines): LetterLine[] {
   ];
 }
 
-/** Description d'une case pour les jeux de lecture (« Trouve : voyelle longue « ou » ») */
-export function cellPrompt(line: LetterLine, cellIndex: number): string {
+/**
+ * Consigne d'une case pour les jeux de lecture. La lettre est TOUJOURS nommée (demande de Nadia 2026-10-07) :
+ * « la voyelle courte « a » avec la lettre ب (Ba) », sinon fَ ou بَ pourraient tous deux sembler justes.
+ */
+export function cellPrompt(line: LetterLine, cellIndex: number, letter: { letter_arabic: string; name_french: string }): string {
+  const who = `la lettre ${letter.letter_arabic} (${letter.name_french})`;
   const label = line.cells[cellIndex]?.label ?? '';
   switch (line.key) {
-    case 'formes': return ({ Isolée: 'la lettre isolée', Début: "la lettre au début d'un mot", Milieu: "la lettre au milieu d'un mot", Fin: "la lettre à la fin d'un mot" } as Record<string, string>)[label] ?? 'la lettre';
-    case 'courtes': return `la voyelle courte « ${['a', 'i', 'ou'][cellIndex]} »`;
-    case 'longues': return `la voyelle longue « ${['â', 'î', 'oû'][cellIndex]} »`;
-    case 'tanouines': return `le tanouine « ${['an', 'in', 'oun'][cellIndex]} »`;
-    case 'soukoune': return 'la soukoune';
-    case 'chadda': return `la chadda avec « ${['a', 'i', 'ou'][cellIndex]} »`;
+    case 'formes': return ({
+      Isolée: `${who} toute seule`, Début: `${who} au début d'un mot`, Milieu: `${who} au milieu d'un mot`, Fin: `${who} à la fin d'un mot`,
+    } as Record<string, string>)[label] ?? who;
+    case 'courtes': return `la voyelle courte « ${['a', 'i', 'ou'][cellIndex]} » avec ${who}`;
+    case 'longues': return `la voyelle longue « ${['â', 'î', 'oû'][cellIndex]} » avec ${who}`;
+    case 'tanouines': return `le tanouine « ${['an', 'in', 'oun'][cellIndex]} » avec ${who}`;
+    case 'soukoune': return `la soukoune sur ${who}`;
+    case 'chadda': return `la chadda avec « ${['a', 'i', 'ou'][cellIndex]} » sur ${who}`;
   }
+}
+
+/** Cases qu'on peut demander sans ambiguïté : leur écriture n'apparaît qu'une fois dans la ligne
+ *  (ex. pour د, « isolée » et « début » s'écrivent pareil → on ne les demande pas). */
+export function askableCells(line: LetterLine): number[] {
+  return line.cells.map((c, i) => (line.cells.filter((o) => o.text === c.text).length === 1 ? i : -1)).filter((i) => i >= 0);
 }
 
 /** Hamza sous le alif (إ) : la kasra ou le tanouine kasra s'empile dessous → ces cases ont besoin de plus de hauteur */

@@ -8,6 +8,8 @@
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Tajawal:wght@300;400;500;700;800&display=swap');
+/* Noto Naskh Arabic, réduite aux seuls signes de la hamza sous le alif (إ ِ ٍ ي) : avec Amiri la kasra et le tanouine collaient à la hamza */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@700&text=%D8%A5%D9%90%D9%8A%D9%8D%D8%A7%D9%95&display=swap');
 
 @layer base {
   :root {
@@ -388,4 +390,11 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .alphabet-balloon { animation-duration: 16s; }
+}
+
+/* Écritures avec une hamza sous le alif (إِ, إِي, إٍ) : police qui écarte bien la kasra/le tanouine de la hamza */
+.font-arabic-low {
+  font-family: 'Noto Naskh Arabic', 'Amiri', serif;
+  font-weight: 700;
+  direction: rtl;
 }
