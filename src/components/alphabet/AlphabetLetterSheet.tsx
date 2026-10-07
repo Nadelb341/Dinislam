@@ -10,7 +10,6 @@ import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { audioExt } from '@/hooks/useAudioRecorder';
 import { toast } from 'sonner';
 import { Check, FileText, Volume2 } from 'lucide-react';
-import { LetterVoiceRecorder } from './LetterVoiceRecorder';
 import { AdminLineModelRecorder } from './AdminLineModelRecorder';
 import { AlphabetLineRow, type AlphabetSubmission } from './AlphabetLineRow';
 import { LetterTracer } from './LetterTracer';
@@ -164,30 +163,17 @@ export function AlphabetLetterSheet({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Audios de la lettre (+ enregistreurs de l'enseignante) */}
+          {/* Audio de la lettre (les 2 enregistreurs de l'enseignante « Ta voix… » retirés à sa demande le 2026-10-07) */}
           {([
             { field: 'audio_url' as const, label: 'La lettre', url: letter.audio_url },
             { field: 'audio_vowels_url' as const, label: 'Avec les voyelles (a, i, ou)', url: letter.audio_vowels_url },
-          ]).map(({ field, label, url }) => (url || isAdmin) && (
-            <div key={field} className="space-y-2">
-              {url && (
-                <div className="bg-sky-50 dark:bg-sky-950/20 rounded-xl p-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-                  <div className="flex items-center gap-3">
-                    <Volume2 className="h-5 w-5 text-primary shrink-0" />
-                    <audio key={url} src={url} controls className="flex-1 min-w-0 h-8" />
-                  </div>
-                </div>
-              )}
-              {isAdmin && (
-                <LetterVoiceRecorder
-                  letter={letter} field={field} currentUrl={url}
-                  onReplaced={(newUrl) => {
-                    onLetterChange({ ...letter, [field]: newUrl });
-                    queryClient.invalidateQueries({ queryKey: ['alphabet-letters-page'] });
-                  }}
-                />
-              )}
+          ]).filter(({ url }) => !!url).map(({ field, label, url }) => (
+            <div key={field} className="bg-sky-50 dark:bg-sky-950/20 rounded-xl p-3 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+              <div className="flex items-center gap-3">
+                <Volume2 className="h-5 w-5 text-primary shrink-0" />
+                <audio key={url} src={url ?? undefined} controls className="flex-1 min-w-0 h-8" />
+              </div>
             </div>
           ))}
 
@@ -198,7 +184,7 @@ export function AlphabetLetterSheet({
                 <span className="text-4xl shrink-0">{word.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-arabic text-3xl leading-[1.5]" dir="rtl">{word.word}</p>
-                  <p className="text-xs text-muted-foreground">{word.fr}</p>
+                  <p className="text-sm"><span className="font-semibold">« {word.tr} »</span> <span className="text-muted-foreground">· {word.fr}</span></p>
                 </div>
                 {models.get(`${letter.id}:mot`) && (
                   <Button type="button" size="icon" variant="secondary" className="rounded-full shrink-0" aria-label="Écouter le mot"
