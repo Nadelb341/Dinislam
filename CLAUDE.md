@@ -101,6 +101,9 @@ Partout où une liste de NOMS d'élèves s'affiche : ordre alphabétique à la f
 ## ✏️ Renommer un élève (2026-10-07)
 Bouclier › Élèves › ⋮ › « ✏️ Renommer l'élève » (`RenameStudentDialog`) → fonction `rename-user` (admin seulement) qui met à jour `profiles.full_name` ET le nom du compte (`user_metadata.full_name`, lu par la mascotte, Paramètres, le devoir rendu…). L'élève peut toujours le changer lui-même dans ses Paramètres.
 
+## ⚠️ ACTION EN ATTENTE (2026-10-07)
+- **Choix de Nadia** : « 🎒 À faire au prochain cours » dans chaque groupe de la carte À FAIRE — maquette 3 propositions (A onglets dans le groupe / B bandeau doré sur le post-it / C case « pour le prochain cours ») + 10 idées bonus : https://claude.ai/artifact/CEdvbCeJcHjSMjY995bAkJ
+
 ## 🗑️ Corbeille — règles de Nadia (2026-09-30, identiques à l'Agenda)
 - Tout ce qui est supprimé dans l'appli (🗑️ ou croix rouge) va d'abord dans la corbeille de Paramètres (bouton « Corbeille » dans la fenêtre de la roue dentée ⚙️) ; rien n'est supprimé définitivement sauf quand la personne vide elle-même sa corbeille.
 - **Élèves uniquement** : chaque élément est vidé automatiquement au bout de 61 jours (2 mois), un par un (seuls ceux qui ont atteint 2 mois) — fonction `trash-maintenance`, pg_cron `dinislam-trash-maintenance` (tous les jours 9 h UTC). La date de vidage s'affiche sous chaque élément. La corbeille de l'admin n'est JAMAIS vidée automatiquement.
