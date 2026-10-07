@@ -66,6 +66,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   draft: 'Brouillon',
   sourate_recitation: 'Récitation',
   alphabet_letter_audio: 'Audio d\'une lettre',
+  admin_task: 'Tâche « À FAIRE »',
 };
 
 const Settings = () => {

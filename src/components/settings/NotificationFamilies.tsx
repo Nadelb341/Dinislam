@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 type PrefKey =
   | 'notif_msg' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
-  | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg'
+  | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task'
   | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
 
 interface Family {
@@ -81,6 +81,7 @@ const FAMILIES: Family[] = [
       { key: 'notif_adm_hw', label: 'Devoir rendu' },
       { key: 'notif_adm_valid', label: 'Demande de validation' },
       { key: 'notif_adm_reg', label: 'Nouvelle inscription' },
+      { key: 'notif_adm_task', label: 'Rappel d\'une tâche « À FAIRE »' },
     ],
   },
 ];

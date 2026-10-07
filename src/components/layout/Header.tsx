@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
 import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
@@ -38,6 +39,26 @@ const Header = ({
   const { isAdmin } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminInitial, setAdminInitial] = useState<OpenAdminDetail | null>(null);
+  const [groupMessagePrefill, setGroupMessagePrefill] = useState<GroupMessageDetail | null>(null);
+
+  // Ouvertures demandées depuis ailleurs (carte « À FAIRE » de l'accueil…)
+  useEffect(() => {
+    const onOpenAdmin = (e: Event) => {
+      setAdminInitial((e as CustomEvent<OpenAdminDetail>).detail);
+      setShowAdminModal(true);
+    };
+    const onGroupMessage = (e: Event) => {
+      setGroupMessagePrefill((e as CustomEvent<GroupMessageDetail>).detail);
+      setShowMessaging(true);
+    };
+    window.addEventListener(OPEN_ADMIN_EVENT, onOpenAdmin);
+    window.addEventListener(GROUP_MESSAGE_EVENT, onGroupMessage);
+    return () => {
+      window.removeEventListener(OPEN_ADMIN_EVENT, onOpenAdmin);
+      window.removeEventListener(GROUP_MESSAGE_EVENT, onGroupMessage);
+    };
+  }, []);
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
   const pendingCounts = useAdminPendingCounts();
   const monitoringErrors = useMonitoringErrorCount();
@@ -129,7 +150,7 @@ const Header = ({
       </header>
 
       {isAdmin ? (
-        <AdminMessagingDialog open={showMessaging} onOpenChange={setShowMessaging} onMessagesRead={clearNewMessageFlag} />
+        <AdminMessagingDialog open={showMessaging} onOpenChange={(o) => { setShowMessaging(o); if (!o) setGroupMessagePrefill(null); }} onMessagesRead={clearNewMessageFlag} prefillGroupMessage={groupMessagePrefill} />
       ) : (
         <MessagingDialog open={showMessaging} onOpenChange={setShowMessaging} onMessagesRead={clearNewMessageFlag} />
       )}
@@ -137,7 +158,9 @@ const Header = ({
       {isAdmin && (
         <AdminCommandModal
           open={showAdminModal}
-          onOpenChange={setShowAdminModal}
+          onOpenChange={(o) => { setShowAdminModal(o); if (!o) setAdminInitial(null); }}
+          initialSection={adminInitial?.section}
+          initialSearch={adminInitial?.search}
           pendingRegistrations={pendingCounts.registrations}
           pendingSourates={pendingCounts.sourates}
           pendingNourania={pendingCounts.nourania}

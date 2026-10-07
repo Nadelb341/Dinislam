@@ -46,11 +46,13 @@ interface StudentProgress {
 
 interface AdminStudentDetailsProps {
   onBack: () => void;
+  /** Recherche pré-remplie (ex. ouverte depuis une tâche liée à un élève) */
+  initialSearch?: string;
 }
 
-const AdminStudentDetails = ({ onBack }: AdminStudentDetailsProps) => {
+const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps) => {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch ?? '');
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string; email: string; full_name: string | null;
   } | null>(null);

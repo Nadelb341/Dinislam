@@ -43,9 +43,11 @@ interface AdminMessagingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMessagesRead?: () => void;
+  /** Message de groupe pré-rempli (ex. tâche « À FAIRE » transformée en message) */
+  prefillGroupMessage?: { groupIds: string[]; text: string } | null;
 }
 
-const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessagingDialogProps) => {
+const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroupMessage }: AdminMessagingDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -72,6 +74,19 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead }: AdminMessa
   const [groupMsgSelected, setGroupMsgSelected] = useState<Set<string>>(new Set());
   const [groupMsgSearch, setGroupMsgSearch] = useState('');
   const [groupMsgSelectedGroups, setGroupMsgSelectedGroups] = useState<Set<string>>(new Set());
+
+  // Ouverture depuis une tâche « À FAIRE » : message de groupe déjà rempli
+  useEffect(() => {
+    if (!open || !prefillGroupMessage) return;
+    setGroupMsgText(prefillGroupMessage.text);
+    if (prefillGroupMessage.groupIds.length) {
+      setGroupMsgMode('groups');
+      setGroupMsgSelectedGroups(new Set(prefillGroupMessage.groupIds));
+    } else {
+      setGroupMsgMode('all');
+    }
+    setGroupMsgOpen(true);
+  }, [open, prefillGroupMessage]);
 
   // Fetch all profiles for new message / group message dialog
   const { data: allProfiles = [] } = useQuery({

@@ -31,6 +31,10 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Admin › Devoirs', noun: 'nouveau devoir', route: '/admin?section=homework', adminOnly: true,
     labelOf: (d) => text((d as { titre?: string } | null)?.titre),
   },
+  dinislam_admin_task_: {
+    place: 'Accueil › À FAIRE', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
+    labelOf: (d) => text(d),
+  },
   messaging_student_: {
     place: 'Messagerie', noun: 'message pas encore envoyé', route: '/?open=messages', perUser: true,
     labelOf: (d) => text(d),

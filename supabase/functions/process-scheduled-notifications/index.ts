@@ -80,10 +80,41 @@ serve(async (req) => {
       console.log(`Scheduled notification ${notif.id}: sent to ${sent} recipients`);
     }
 
+    // Rappels des tâches « À FAIRE » de l'enseignante (heure choisie atteinte, pas encore rappelées)
+    let tasksReminded = 0;
+    const { data: dueTasks } = await supabase
+      .from('admin_tasks')
+      .select('id, title, created_by, group_id')
+      .eq('done', false)
+      .is('reminded_at', null)
+      .lte('remind_at', new Date().toISOString());
+    for (const task of (dueTasks || [])) {
+      if (!task.created_by) continue;
+      // Marquer AVANT l'envoi : un seul passage envoie le rappel
+      const { data: claimed } = await supabase.from('admin_tasks')
+        .update({ reminded_at: new Date().toISOString() }).eq('id', task.id).is('reminded_at', null).select('id');
+      if (!claimed?.length) continue;
+      try {
+        await sendPushInternal({
+          userId: task.created_by,
+          title: '📝 À FAIRE',
+          body: task.title,
+          tag: `admin-task-${task.id}`,
+          type: 'admin_task',
+          category: 'adm_task',
+          data: { url: '/' },
+        });
+        tasksReminded++;
+      } catch (e) {
+        console.error('Rappel de tâche non envoyé', task.id, e);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       processed: (notifications || []).length,
       totalSent,
+      tasksReminded,
     }), { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('Error:', error);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
@@ -379,6 +380,9 @@ const handleModuleClick = (mod) => {
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </p>
           </div>
+
+          {/* À FAIRE : enseignante seulement */}
+          {isAdmin && <AdminTodoCard />}
 
           {/* Prochaine Prière */}
           <div className="rounded-2xl overflow-hidden shadow-md animate-fade-in">

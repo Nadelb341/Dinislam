@@ -348,7 +348,7 @@ serve(async (req) => {
     const CATEGORY_COLUMNS: Record<string, string> = {
       msg: 'notif_msg', hw_new: 'notif_hw_new', hw_rem: 'notif_hw_rem', hw_res: 'notif_hw_res',
       rec: 'notif_rec', lesson: 'notif_lesson', act: 'notif_act', sched: 'notif_sched',
-      adm_msg: 'notif_adm_msg', adm_hw: 'notif_adm_hw', adm_valid: 'notif_adm_valid', adm_reg: 'notif_adm_reg',
+      adm_msg: 'notif_adm_msg', adm_hw: 'notif_adm_hw', adm_valid: 'notif_adm_valid', adm_reg: 'notif_adm_reg', adm_task: 'notif_adm_task',
     };
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {

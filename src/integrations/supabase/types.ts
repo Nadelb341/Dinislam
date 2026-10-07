@@ -83,6 +83,68 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_tasks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done: boolean
+          done_at: string | null
+          due_date: string | null
+          group_id: string | null
+          id: string
+          position: number
+          recurrence: string | null
+          remind_at: string | null
+          reminded_at: string | null
+          student_id: string | null
+          title: string
+          updated_at: string
+          urgent: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          group_id?: string | null
+          id?: string
+          position?: number
+          recurrence?: string | null
+          remind_at?: string | null
+          reminded_at?: string | null
+          student_id?: string | null
+          title: string
+          updated_at?: string
+          urgent?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          group_id?: string | null
+          id?: string
+          position?: number
+          recurrence?: string | null
+          remind_at?: string | null
+          reminded_at?: string | null
+          student_id?: string | null
+          title?: string
+          updated_at?: string
+          urgent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allah_name_media: {
         Row: {
           created_at: string
@@ -1224,6 +1286,7 @@ export type Database = {
           notif_adm_hw: boolean
           notif_adm_msg: boolean
           notif_adm_reg: boolean
+          notif_adm_task: boolean
           notif_adm_valid: boolean
           notif_hw_new: boolean
           notif_hw_rem: boolean
@@ -1254,6 +1317,7 @@ export type Database = {
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
           notif_adm_reg?: boolean
+          notif_adm_task?: boolean
           notif_adm_valid?: boolean
           notif_hw_new?: boolean
           notif_hw_rem?: boolean
@@ -1284,6 +1348,7 @@ export type Database = {
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
           notif_adm_reg?: boolean
+          notif_adm_task?: boolean
           notif_adm_valid?: boolean
           notif_hw_new?: boolean
           notif_hw_rem?: boolean

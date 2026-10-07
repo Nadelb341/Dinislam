@@ -27,6 +27,10 @@ interface AdminCommandModalProps {
   onOpenMessages: () => void;
   /** Élèves sans notifications depuis plus d'une semaine (pastille sur « Élèves ») */
   pendingNoPush?: number;
+  /** Écran à ouvrir directement (ex. depuis la carte « À FAIRE ») */
+  initialSection?: string;
+  /** Recherche pré-remplie dans la liste des élèves */
+  initialSearch?: string;
 }
 
 const BOUTONS_ACTIONS = [
@@ -55,10 +59,13 @@ const AdminCommandModal = ({
   pendingMessages,
   pendingNoPush = 0,
   onOpenMessages,
+  initialSection,
+  initialSearch,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
+  useEffect(() => { if (open && initialSection) setModalSection(initialSection); }, [open, initialSection]);
 
   const compteurs: Record<string, number> = {
     sourates: pendingSourates,
@@ -253,6 +260,7 @@ const AdminCommandModal = ({
             <div className="p-4" style={{ overflowY: 'auto', overflowX: 'visible', minHeight: '100%' }}>
               <AdminSectionRenderer
                 section={modalSection}
+                initialSearch={initialSearch}
                 onClose={() => setModalSection(null)}
                 onNavigate={(path) => {
                   setModalSection(null);
@@ -270,10 +278,12 @@ const AdminCommandModal = ({
 
 function AdminSectionRenderer({
   section,
+  initialSearch,
   onClose,
   onNavigate,
 }: {
   section: string;
+  initialSearch?: string;
   onClose: () => void;
   onNavigate: (path: string) => void;
 }) {
@@ -306,7 +316,7 @@ function AdminSectionRenderer({
     case 'notifications':
       return <AdminNotifications />;
     case 'eleves':
-      return <AdminStudentDetails onBack={onClose} />;
+      return <AdminStudentDetails onBack={onClose} initialSearch={initialSearch} />;
     case 'registre-presence':
       return <AdminAttendance onBack={onClose} />;
     default:
