@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { groupColorProps, groupStudents } from '@/lib/studentGroups';
+import { attendanceDates, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 type AttendanceStatus = 'present' | 'absent' | 'late';
 
@@ -19,7 +21,9 @@ const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }>
 };
 
 const Attendance = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  // Enseignante : date à modifier (string), ajout (null) ou fenêtre fermée (undefined)
+  const [editDate, setEditDate] = useState<string | null | undefined>(undefined);
 
   // Personal attendance
   const { data: myRecords = [] } = useQuery({
@@ -88,11 +92,13 @@ const Attendance = () => {
     return { present, absent, late, total: myRecords.length };
   }, [myRecords]);
 
-  // Class overview data
-  const dates = useMemo(() => {
-    const dateSet = new Set(allRecords.map(r => r.date));
-    return Array.from(dateSet).sort();
-  }, [allRecords]);
+  // Séances enregistrées (une date peut exister sans présence notée)
+  const { data: sessions = [] } = useQuery({ queryKey: ['attendance-sessions'], queryFn: fetchAttendanceSessions });
+
+  // Class overview data : pour l'enseignante, la date du jour est toujours là (2026-10-07)
+  const savedDates = useMemo(() => attendanceDates(sessions, allRecords, false), [sessions, allRecords]);
+  const dates = useMemo(() => attendanceDates(sessions, allRecords, isAdmin), [sessions, allRecords, isAdmin]);
+  const today = todayIso();
 
   const recordMap = useMemo(() => {
     const map = new Map<string, AttendanceStatus>();
@@ -191,11 +197,26 @@ const Attendance = () => {
                     <div className="w-32 shrink-0 px-2 py-2 font-semibold text-foreground text-xs sticky left-0 bg-card z-10">
                       Élève
                     </div>
-                    {dates.slice(-7).map(date => (
+                    {dates.slice(-7).map(date => isAdmin ? (
+                      <button
+                        key={date}
+                        type="button"
+                        onClick={() => setEditDate(date)}
+                        title="Modifier ou supprimer cette date"
+                        className={cn('w-12 shrink-0 text-center py-1 text-[10px] border-l border-border hover:bg-muted/40', date === today ? 'font-bold text-primary bg-primary/10' : 'text-muted-foreground')}
+                      >
+                        {format(parseISO(date), 'dd/MM', { locale: fr })}
+                        <span className="block text-[9px] leading-none">✏️</span>
+                      </button>
+                    ) : (
                       <div key={date} className="w-12 shrink-0 text-center py-2 text-[10px] text-muted-foreground border-l border-border">
                         {format(parseISO(date), 'dd/MM', { locale: fr })}
                       </div>
                     ))}
+                    {isAdmin && (
+                      <button type="button" onClick={() => setEditDate(null)} title="Ajouter une date de cours"
+                        className="w-12 shrink-0 text-center py-2 text-base font-bold text-primary border-l border-border hover:bg-primary/10">＋</button>
+                    )}
                   </div>
 
                   {/* Rows : par groupe (0, 1, 2…), élèves par ordre alphabétique dans chaque groupe */}
@@ -235,6 +256,7 @@ const Attendance = () => {
                           </div>
                         );
                       })}
+                      {isAdmin && <div className="w-12 shrink-0 border-l border-border" />}
                     </div>
                   ))}
                   </Fragment>
@@ -244,6 +266,9 @@ const Attendance = () => {
               </ScrollArea>
             </CardContent>
           </Card>
+        )}
+        {isAdmin && (
+          <AttendanceDateDialog open={editDate !== undefined} date={editDate ?? null} existing={savedDates} onClose={() => setEditDate(undefined)} />
         )}
       </div>
     </AppLayout>

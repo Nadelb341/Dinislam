@@ -12,18 +12,19 @@ export function AlphabetStudentSummary({ userId }: { userId: string }) {
   const { data } = useQuery({
     queryKey: ['alphabet-student-summary', userId],
     queryFn: async () => {
-      const [{ data: letters }, { data: progress }, { data: scores }, { data: unlocks }] = await Promise.all([
+      const [{ data: letters }, { data: progress }, { data: scores }, { data: unlocks }, { count: traced }] = await Promise.all([
         supabase.from('alphabet_letters').select('id, letter_arabic, name_french, audio_url, position_isolated, position_initial, position_medial, position_final').order('display_order'),
         supabase.from('user_alphabet_progress').select('letter_id').eq('user_id', userId).eq('is_validated', true),
         supabase.from('alphabet_game_scores').select('game, score, total, missed, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(200),
         supabase.from('alphabet_admin_unlocks').select('letter_id').eq('user_id', userId),
+        supabase.from('alphabet_trace_stars').select('letter_id', { count: 'exact', head: true }).eq('user_id', userId),
       ]);
-      return { letters: letters || [], learned: progress?.length ?? 0, scores: scores || [], unlocks: unlocks?.length ?? 0 };
+      return { letters: letters || [], learned: progress?.length ?? 0, scores: scores || [], unlocks: unlocks?.length ?? 0, traced: traced ?? 0 };
     },
   });
 
   if (!data) return null;
-  const { letters, learned, scores, unlocks } = data;
+  const { letters, learned, scores, unlocks, traced } = data;
 
   const missedCount = new Map<number, number>();
   for (const s of scores) for (const id of s.missed) missedCount.set(id, (missedCount.get(id) ?? 0) + 1);
@@ -36,6 +37,7 @@ export function AlphabetStudentSummary({ userId }: { userId: string }) {
         <p className="font-semibold">🔤 Alphabet</p>
         <span className="text-sm font-bold text-primary">{learned} / {letters.length} lettres</span>
       </div>
+      <p className="text-xs text-muted-foreground">✍️ Étoiles de tracé : <b className="text-foreground">{traced} / {letters.length * 4}</b> formes bien tracées</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {GAMES.map((g) => {

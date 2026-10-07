@@ -108,6 +108,18 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
+  // Séance de présence : on recrée la date (même sans aucune présence notée) puis les présences
+  if (item.item_type === "attendance_day") {
+    const rows = Array.isArray(item.item_data) ? item.item_data : [];
+    const { error: sErr } = await supabase.from("attendance_sessions").upsert({ date: item.original_id }, { onConflict: "date", ignoreDuplicates: true });
+    if (sErr) return false;
+    if (rows.length) {
+      const { error } = await untypedDb.from("attendance_records").insert(rows);
+      if (error) return false;
+    }
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
   const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">];
   if (!table) return false;
   const { error } = await untypedDb.from(table).insert(item.item_data);

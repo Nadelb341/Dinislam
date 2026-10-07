@@ -5,14 +5,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
-import { moveToTrash } from '@/lib/trash';
+import { attendanceDates, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 interface AdminAttendanceProps {
   onBack: () => void;
@@ -28,7 +28,8 @@ const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }>
 
 const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const { user } = useAuth();
-  const [dateASupprimer, setDateASupprimer] = useState<string | null>(null);
+  // Date à modifier (string), ajout (null) ou fenêtre fermée (undefined)
+  const [editDate, setEditDate] = useState<string | null | undefined>(undefined);
   // Idée 5 : depuis le Registre, ouvrir le « mode cours » du groupe (carte À FAIRE)
   const [courseGroup, setCourseGroup] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
@@ -67,10 +68,11 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     },
   });
 
-  const dates = useMemo(() => {
-    const dateSet = new Set(records.map(r => r.date));
-    return Array.from(dateSet).sort();
-  }, [records]);
+  // Séances enregistrées + la date du jour toujours présente (2026-10-07)
+  const { data: sessions = [] } = useQuery({ queryKey: ['attendance-sessions'], queryFn: fetchAttendanceSessions });
+  const savedDates = useMemo(() => attendanceDates(sessions, records, false), [sessions, records]);
+  const dates = useMemo(() => attendanceDates(sessions, records, true), [sessions, records]);
+  const today = todayIso();
 
   const recordMap = useMemo(() => {
     const map = new Map<string, { id: string; status: AttendanceStatus }>();
@@ -85,49 +87,6 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     () => groupStudents(students, groupData?.groups ?? [], groupData?.members ?? []),
     [students, groupData],
   );
-
-  const addToday = async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    if (dates.includes(today)) {
-      toast.info("La date d'aujourd'hui existe déjà");
-      return;
-    }
-    if (students.length > 0) {
-      const { error } = await supabase.from('attendance_records').insert({
-        user_id: students[0].user_id,
-        date: today,
-        status: 'present',
-        marked_by: user?.id,
-      });
-      if (error && !error.message.includes('duplicate')) {
-        toast.error('Erreur: ' + error.message);
-        return;
-      }
-    }
-    refetchRecords();
-    queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
-    toast.success('Séance du jour ajoutée');
-  };
-
-  const deleteDate = async (date: string) => {
-    // Corbeille d'abord : toute la séance (présences de tous les élèves) est sauvegardée
-    const { data: rows } = await supabase.from('attendance_records').select('*').eq('date', date);
-    if (user?.id && rows && rows.length > 0) {
-      const ok = await moveToTrash(user.id, 'attendance_day', date, `Séance du ${format(parseISO(date), 'dd/MM/yyyy')}`, rows);
-      if (!ok) { toast.error('Mise en corbeille impossible — rien n\'a été supprimé'); return; }
-    }
-    const { error } = await supabase
-      .from('attendance_records')
-      .delete()
-      .eq('date', date);
-    if (error) {
-      toast.error('Erreur: ' + error.message);
-      return;
-    }
-    refetchRecords();
-    queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
-    toast.success('Séance supprimée');
-  };
 
   const handleClickPresence = async (userId: string, date: string, currentStatus?: AttendanceStatus) => {
     const cycle: Record<string, AttendanceStatus | null> = {
@@ -206,20 +165,20 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                 Élève
               </div>
               {dates.map(date => (
-                <div key={date} className="w-20 shrink-0 text-center py-2 text-xs text-muted-foreground border-l border-border">
-                  <div className="font-semibold">{format(parseISO(date), 'EEE', { locale: fr })}</div>
+                <button
+                  key={date}
+                  type="button"
+                  onClick={() => setEditDate(date)}
+                  title="Modifier ou supprimer cette séance"
+                  className={cn('w-20 shrink-0 text-center py-2 text-xs border-l border-border hover:bg-muted/50', date === today ? 'bg-primary/10 text-primary' : 'text-muted-foreground')}
+                >
+                  <div className="font-semibold">{date === today ? "Aujourd'hui" : format(parseISO(date), 'EEE', { locale: fr })}</div>
                   <div>{format(parseISO(date), 'dd/MM', { locale: fr })}</div>
-                  <button
-                    onClick={() => setDateASupprimer(date)}
-                    className="mt-1 text-destructive hover:text-destructive/80 transition-colors"
-                    title="Supprimer cette séance"
-                  >
-                    <Trash2 className="h-3 w-3 mx-auto" />
-                  </button>
-                </div>
+                  <div className="text-[10px] mt-0.5">✏️</div>
+                </button>
               ))}
               <div className="w-16 shrink-0 flex items-center justify-center border-l border-border">
-                <Button variant="ghost" size="icon" onClick={addToday} className="h-8 w-8">
+                <Button variant="ghost" size="icon" onClick={() => setEditDate(null)} className="h-8 w-8" title="Ajouter une date de cours">
                   <Plus className="h-5 w-5" />
                 </Button>
               </div>
@@ -320,13 +279,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
         </div>
       )}
 
-      <ConfirmDeleteDialog
-        open={dateASupprimer !== null}
-        onOpenChange={(open) => { if (!open) setDateASupprimer(null); }}
-        onConfirm={() => { if (dateASupprimer) deleteDate(dateASupprimer); setDateASupprimer(null); }}
-        title="Supprimer cette séance ?"
-        description={dateASupprimer ? `La séance du ${format(parseISO(dateASupprimer), 'dd/MM/yyyy')} et les présences de tous les élèves iront dans la corbeille (Paramètres), d'où tu pourras les restaurer.` : ''}
-      />
+      <AttendanceDateDialog open={editDate !== undefined} date={editDate ?? null} existing={savedDates} level="nested" onClose={() => setEditDate(undefined)} />
       <CourseModeDialog groupId={courseGroup?.id ?? null} groupName={courseGroup?.name ?? ''} open={!!courseGroup} onClose={() => setCourseGroup(null)} />
     </div>
   );

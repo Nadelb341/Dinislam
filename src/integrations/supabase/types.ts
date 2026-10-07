@@ -488,6 +488,35 @@ export type Database = {
           },
         ]
       }
+      alphabet_trace_stars: {
+        Row: {
+          created_at: string
+          form: number
+          letter_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          form: number
+          letter_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          form?: number
+          letter_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alphabet_trace_stars_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "alphabet_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_logs: {
         Row: {
           action: string
@@ -575,6 +604,24 @@ export type Database = {
           notes?: string | null
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      attendance_sessions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
         }
         Relationships: []
       }
@@ -3311,6 +3358,10 @@ export type Database = {
       is_user_in_group: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
+      }
+      move_attendance_session: {
+        Args: { p_from: string; p_to: string }
+        Returns: undefined
       }
       recalculate_student_points: {
         Args: { p_user_id: string }

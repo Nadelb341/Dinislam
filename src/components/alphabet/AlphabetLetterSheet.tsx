@@ -267,7 +267,7 @@ export function AlphabetLetterSheet({
                   Voir comme un élève de moins de 6 ans (pointillés à suivre)
                 </label>
               )}
-              <LetterTracer key={letter.id} letter={letter.letter_arabic} forms={lines[0].cells} dotted={dotted} />
+              <LetterTracer key={letter.id} letterId={letter.id} letter={letter.letter_arabic} forms={lines[0].cells} dotted={dotted} />
             </div>
           )}
 

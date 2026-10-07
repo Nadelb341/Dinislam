@@ -100,6 +100,13 @@ Partout où une liste de NOMS d'élèves s'affiche : ordre alphabétique à la f
 ## 👥 Élèves rangés par groupe (2026-10-07)
 « Ma Présence » (vue de la classe) et le Registre du bouclier : groupes dans l'ordre 0, 1, 2… (ordre `position` sinon nom, « Groupe 10 » après « Groupe 9 »), élèves par ordre alphabétique dans chaque groupe, « Sans groupe » à la fin — outil commun `src/lib/studentGroups.ts` (`groupStudents`, `sortGroups`). Côté élève, la RPC `attendance_student_groups()` donne seulement « quel élève est dans quel groupe » (un élève ne lit que les membres de son groupe). 🐛 Corrigé au passage : la couleur d'un groupe est une classe (`bg-purple-500`) mais 4 endroits l'utilisaient comme couleur CSS → bandeaux sans couleur (texte blanc invisible) : Registre, Classement par groupes (×2), « Afficher à… » → `groupColorProps`. Libellé « Pink » → « Rose vif ».
 
+## 📅 Dates de présence modifiables + date du jour (2026-10-07)
+- Table `attendance_sessions` (une séance peut exister sans présence ; remplie avec les 5 dates existantes) + RPC admin `move_attendance_session(from, to)` (déplace la séance et ses présences, refuse si la date est prise) ; migration `20261007230000`. Outils `src/lib/attendanceSessions.ts` ; fenêtre `src/components/attendance/AttendanceDateDialog.tsx` (ajouter / changer la date / supprimer → corbeille `attendance_day`, restauration = séance + présences).
+- Pour l'enseignante, « Ma Présence » ET le Registre affichent toujours la date du jour (non enregistrée tant qu'aucune présence n'est notée) ; toucher une date = la modifier ou la supprimer ; ＋ = ajouter une date. Les élèves ne voient que les vraies séances.
+- 🐛 Avant : le ＋ du Registre créait la date en marquant le 1ᵉʳ élève « présent ». ⚠️ Le 14/05 ne contient qu'Assia présente : sans doute ce bug → demandé à Nadia (pas touché).
+- ✍️ Tracé Alphabet (même jour) : son joyeux à la ⭐, ⭐ enregistrées dans `alphabet_trace_stars` (une par lettre et par forme ; « Mes progrès » › « Mes étoiles de tracé » + fiche élève admin), passage tout seul à la forme suivante, « 🎉 Tu as tracé les 4 formes » à la fin.
+- ⏳ EN ATTENTE (choix de Nadia) : message éphémère côté élève après le dernier cours (présent / en retard / absent) — 3 propositions par cas envoyées le 2026-10-07.
+
 ## ✏️ Renommer un élève (2026-10-07)
 Bouclier › Élèves › ⋮ › « ✏️ Renommer l'élève » (`RenameStudentDialog`) → fonction `rename-user` (admin seulement) qui met à jour `profiles.full_name` ET le nom du compte (`user_metadata.full_name`, lu par la mascotte, Paramètres, le devoir rendu…). L'élève peut toujours le changer lui-même dans ses Paramètres.
 

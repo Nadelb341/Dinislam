@@ -151,6 +151,17 @@ const AlphabetPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, isAdmin, queryClient]);
 
+  // Étoiles de tracé (une par forme bien tracée)
+  const { data: traceStars = [] } = useQuery({
+    queryKey: ['alphabet-trace-stars', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('alphabet_trace_stars').select('letter_id, form').eq('user_id', user!.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // ── Paliers ────────────────────────────────────────────────────────────────
   const everythingOpen = isAdmin || isOver20;
   const learned = useMemo(() => new Set(progress.filter((p) => p.is_validated).map((p) => p.letter_id)), [progress]);
@@ -411,6 +422,23 @@ const AlphabetPage = () => {
                   <p className="text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{s.label}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Étoiles de tracé (2026-10-07) : une ⭐ par forme bien tracée (4 par lettre) */}
+            <div className="rounded-2xl border border-violet-200 dark:border-violet-900 bg-violet-50/60 dark:bg-violet-950/20 p-3 space-y-2">
+              <p className="font-semibold text-sm">✍️ Mes étoiles de tracé · {traceStars.length}/{letters.length * 4}</p>
+              <div dir="rtl" className="grid grid-cols-7 gap-1.5">
+                {letters.map((l) => {
+                  const n = traceStars.filter((t) => t.letter_id === l.id).length;
+                  return (
+                    <div key={l.id} className={`rounded-xl py-1 flex flex-col items-center ${n ? 'bg-card' : 'bg-muted/40'}`} title={`${l.name_french} : ${n}/4`}>
+                      <span className={`font-arabic text-base leading-tight ${n ? '' : 'text-muted-foreground/40'}`}>{l.letter_arabic}</span>
+                      <span className="text-[9px] leading-none tabular-nums" dir="ltr">{n ? `⭐${n}` : '·'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Ouvre une lettre › ✍️ Tracer la lettre, et suis le chemin en partant du point ①.</p>
             </div>
 
             {/* Album d'autocollants (idée 7) : un autocollant par lettre validée */}
