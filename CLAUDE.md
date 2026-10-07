@@ -101,6 +101,9 @@ Partout où une liste de NOMS d'élèves s'affiche : ordre alphabétique à la f
 ## ✏️ Renommer un élève (2026-10-07)
 Bouclier › Élèves › ⋮ › « ✏️ Renommer l'élève » (`RenameStudentDialog`) → fonction `rename-user` (admin seulement) qui met à jour `profiles.full_name` ET le nom du compte (`user_metadata.full_name`, lu par la mascotte, Paramètres, le devoir rendu…). L'élève peut toujours le changer lui-même dans ses Paramètres.
 
+## ⚠️ ACTION EN ATTENTE (2026-10-07) : saisie rapide en cours
+Nadia n'est pas satisfaite de la fenêtre du groupe (trop longue à remplir pendant le cours, « je n'ai pas le temps de lire »). Maquette de 5 dispositions jouables (A 3 gros boutons 🎒/🧳/📝, B colonnes « cahier », C une ligne + pastille qui tourne, D micro d'abord, E feuille à lignes avec onglets) — toutes les options rangées derrière « ⋯ Plus » : https://claude.ai/artifact/61qccgR94bufHAUxT1ffUq — attendre son choix puis refaire la fenêtre.
+
 ## 🎒 « À faire au prochain cours » (✅ 2026-10-07, proposition C + idées 3, 4, 5, 6, 7, 8, 10 ; maquette https://claude.ai/artifact/CEdvbCeJcHjSMjY995bAkJ)
 - Dans la fenêtre d'un groupe de la carte À FAIRE (`AdminTodoGroupDialog`) : sous la saisie, cases « 🎒 Pour le prochain cours » et « 🧳 À apporter (élèves) » (aussi dans « Modifier » et via 📌) → colonnes `admin_tasks.next_course`, `to_bring` (à apporter = fait partie du prochain cours). Ces lignes remontent dans un bloc doré « 🎒 Au prochain cours » (à faire puis 🧳 à apporter) ; sur le post-it de l'accueil elles passent en premier (🎒/🧳).
 - **Mode cours** (idée 3, `CourseModeDialog` dans `src/components/home/NextCourse.tsx`) : grand écran pour cocher (avec confirmation) + « ✅ Terminer le cours » → **report automatique** (idée 4) : les lignes pas faites restent pour le cours suivant, `carried` +1, affiché « 🔁 reportée ×n ».
