@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfetti } from '@/hooks/useConfetti';
-import { buildLines, cellPrompt, type LetterLine } from '@/lib/alphabetLines';
+import { buildLines, cellPrompt, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
 import { shuffle, type AlphabetLetterLite } from '@/lib/alphabetProgress';
 
 export type ReadingMode = 'lettre' | 'syllabes' | 'defi_jour';
@@ -171,7 +171,7 @@ export function ReadingGameDialog({ mode, letters, allLetters, onClose }: Props)
                     type="button"
                     onClick={() => answer(opt)}
                     disabled={isWrong}
-                    className={`min-h-[88px] rounded-2xl border-2 font-arabic text-4xl leading-[1.6] transition-all active:scale-95 ${
+                    className={`min-h-[88px] rounded-2xl border-2 font-arabic text-4xl ${hasLowHamza(opt) ? 'leading-[2.4] pb-1.5' : 'leading-[1.6]'} transition-all active:scale-95 ${
                       ok ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-950/40'
                         : isWrong ? 'border-rose-300 bg-rose-50 dark:bg-rose-950/30 opacity-50'
                         : 'border-border bg-card hover:shadow-md'

@@ -98,3 +98,6 @@ export function cellPrompt(line: LetterLine, cellIndex: number): string {
     case 'chadda': return `la chadda avec « ${['a', 'i', 'ou'][cellIndex]} »`;
   }
 }
+
+/** Hamza sous le alif (إ) : la kasra ou le tanouine kasra s'empile dessous → ces cases ont besoin de plus de hauteur */
+export const hasLowHamza = (text: string) => text.includes('\u0625') || text.includes('\u0655');

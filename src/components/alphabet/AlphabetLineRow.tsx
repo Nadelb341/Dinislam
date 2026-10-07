@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, Square, RotateCcw, Send, Loader2 } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { playableUrl } from '@/lib/alphabetAudio';
-import { LINE_TONES, type LetterLine } from '@/lib/alphabetLines';
+import { LINE_TONES, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
 import type { Tables } from '@/integrations/supabase/types';
 
 export type AlphabetSubmission = Tables<'alphabet_submissions'>;
@@ -93,7 +93,7 @@ export function AlphabetLineRow({ line, index, modelUrl, latest, canRecord, send
       <div dir="rtl" className="flex flex-wrap gap-1.5">
         {line.cells.map((c, i) => (
           <div key={i} className="flex-1 min-w-[56px] rounded-xl bg-card px-1 py-1.5 text-center">
-            <span className="block font-arabic text-3xl leading-[1.6]">{c.text}</span>
+            <span className={`block font-arabic text-3xl ${hasLowHamza(c.text) ? 'leading-[2.4] pb-1' : 'leading-[1.6]'}`}>{c.text}</span>
             <span className="block text-[10.5px] text-muted-foreground">{c.label}</span>
           </div>
         ))}
