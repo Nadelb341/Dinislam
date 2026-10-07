@@ -3245,6 +3245,13 @@ export type Database = {
         Args: { p_letter_id: number }
         Returns: undefined
       }
+      attendance_student_groups: {
+        Args: never
+        Returns: {
+          group_id: string
+          user_id: string
+        }[]
+      }
       get_pending_registrations: {
         Args: never
         Returns: {

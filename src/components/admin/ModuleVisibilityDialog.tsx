@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { groupColorProps } from '@/lib/studentGroups';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -139,8 +140,8 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
                       onCheckedChange={() => toggleGroup(g.id)}
                     />
                     <span
-                      className="w-3 h-3 rounded-full shrink-0"
-                      style={{ backgroundColor: g.color || '#94a3b8' }}
+                      className={`w-3 h-3 rounded-full shrink-0 ${groupColorProps(g.color).className}`}
+                      style={groupColorProps(g.color).style}
                     />
                     <span className="text-sm font-medium">{g.name}</span>
                   </label>

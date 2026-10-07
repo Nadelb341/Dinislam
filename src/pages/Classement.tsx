@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { groupColorProps } from '@/lib/studentGroups';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -292,8 +293,8 @@ const Classement = () => {
               <div className="space-y-4">
                 {groupesAvecMembres.map(groupe => (
                   <div key={groupe.group_id} className="rounded-2xl border border-border overflow-hidden">
-                    <div className="px-4 py-2 font-bold text-sm text-white"
-                      style={{ backgroundColor: groupe.group_color || 'hsl(var(--primary))' }}>
+                    <div className={`px-4 py-2 font-bold text-sm text-white ${groupe.group_color ? groupColorProps(groupe.group_color).className : 'bg-primary'}`}
+                      style={groupe.group_color ? groupColorProps(groupe.group_color).style : undefined}>
                       👥 {groupe.group_name} — {groupe.members.length} membre{groupe.members.length > 1 ? 's' : ''}
                     </div>
                     <div className="divide-y divide-border">
@@ -332,8 +333,8 @@ const Classement = () => {
               <p className="text-center text-muted-foreground py-8">Aucun membre dans ton groupe</p>
             ) : (
               <div className="rounded-2xl border border-border overflow-hidden">
-                <div className="px-4 py-2 font-bold text-sm text-white"
-                  style={{ backgroundColor: myGroupMembers[0]?.group_color || 'hsl(var(--primary))' }}>
+                <div className={`px-4 py-2 font-bold text-sm text-white ${myGroupMembers[0]?.group_color ? groupColorProps(myGroupMembers[0].group_color).className : 'bg-primary'}`}
+                  style={myGroupMembers[0]?.group_color ? groupColorProps(myGroupMembers[0].group_color).style : undefined}>
                   👥 {myGroupMembers[0]?.group_name} — {myGroupMembers.length} membre{myGroupMembers.length > 1 ? 's' : ''}
                 </div>
                 <div className="divide-y divide-border">

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { groupColorProps, groupStudents } from '@/lib/studentGroups';
 
 type AttendanceStatus = 'present' | 'absent' | 'late';
 
@@ -62,6 +63,22 @@ const Attendance = () => {
       return data || [];
     },
   });
+
+  // Groupes (Groupe 0, 1, 2…) et appartenance de chaque élève — la fonction ne donne que « qui est dans quel groupe »
+  const { data: groupData } = useQuery({
+    queryKey: ['attendance-groups-overview'],
+    queryFn: async () => {
+      const [{ data: groups }, { data: members }] = await Promise.all([
+        supabase.from('student_groups').select('id, name, color, position'),
+        supabase.rpc('attendance_student_groups'),
+      ]);
+      return { groups: groups || [], members: members || [] };
+    },
+  });
+  const grouped = useMemo(
+    () => groupStudents(students, groupData?.groups ?? [], groupData?.members ?? []),
+    [students, groupData],
+  );
 
   // Personal stats
   const myStats = useMemo(() => {
@@ -181,8 +198,19 @@ const Attendance = () => {
                     ))}
                   </div>
 
-                  {/* Rows */}
-                  {students.map((student, idx) => (
+                  {/* Rows : par groupe (0, 1, 2…), élèves par ordre alphabétique dans chaque groupe */}
+                  {grouped.map((group) => (
+                  <Fragment key={group.groupId ?? '__ungrouped__'}>
+                  {group.groupName && (
+                    <div
+                      className={`sticky left-0 flex items-center gap-2 px-2 py-1 text-[11px] font-bold text-white ${groupColorProps(group.groupColor).className}`}
+                      style={groupColorProps(group.groupColor).style}
+                    >
+                      <span>👥 {group.groupName}</span>
+                      <span className="opacity-80">— {group.members.length}</span>
+                    </div>
+                  )}
+                  {group.members.map((student, idx) => (
                     <div
                       key={student.user_id}
                       className={cn(
@@ -208,6 +236,8 @@ const Attendance = () => {
                         );
                       })}
                     </div>
+                  ))}
+                  </Fragment>
                   ))}
                 </div>
                 <ScrollBar orientation="horizontal" />

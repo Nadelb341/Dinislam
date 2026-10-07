@@ -28,7 +28,7 @@ const GROUP_COLORS = [
   { value: 'bg-purple-500', label: 'Violet', preview: 'bg-purple-500' },
   { value: 'bg-cyan-500', label: 'Cyan', preview: 'bg-cyan-500' },
   { value: 'bg-indigo-500', label: 'Indigo', preview: 'bg-indigo-500' },
-  { value: 'bg-pink-500', label: 'Pink', preview: 'bg-pink-500' },
+  { value: 'bg-pink-500', label: 'Rose vif', preview: 'bg-pink-500' },
 ];
 
 interface StudentGroup {

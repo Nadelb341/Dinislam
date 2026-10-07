@@ -1,4 +1,5 @@
 import { useState, useMemo, Fragment } from 'react';
+import { groupColorProps, groupStudents } from '@/lib/studentGroups';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,7 +46,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const { data: groupData } = useQuery({
     queryKey: ['attendance-group-members'],
     queryFn: async () => {
-      const { data: g } = await supabase.from('student_groups').select('id, name, color').order('name');
+      const { data: g } = await supabase.from('student_groups').select('id, name, color, position').order('name');
       const { data: m } = await supabase.from('student_group_members').select('group_id, user_id');
       return { groups: g || [], members: m || [] };
     },
@@ -76,27 +77,11 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     return map;
   }, [records]);
 
-  // Regroupe les élèves par groupe, élèves sans groupe à la fin
-  const groupedStudents = useMemo(() => {
-    if (!groupData || groupData.groups.length === 0) {
-      return [{ groupId: null, groupName: null, groupColor: null, members: students }];
-    }
-    const memberMap = new Map<string, string>(); // user_id → group_id
-    for (const m of groupData.members) memberMap.set(m.user_id, m.group_id);
-
-    const result: { groupId: string | null; groupName: string | null; groupColor: string | null; members: typeof students }[] = [];
-    for (const group of groupData.groups) {
-      const grpStudents = students.filter(s => memberMap.get(s.user_id) === group.id);
-      if (grpStudents.length > 0) {
-        result.push({ groupId: group.id, groupName: group.name, groupColor: group.color, members: grpStudents });
-      }
-    }
-    const ungrouped = students.filter(s => !memberMap.has(s.user_id));
-    if (ungrouped.length > 0) {
-      result.push({ groupId: null, groupName: 'Sans groupe', groupColor: null, members: ungrouped });
-    }
-    return result;
-  }, [students, groupData]);
+  // Regroupe les élèves par groupe (0, 1, 2…), par ordre alphabétique dans chaque groupe, sans groupe à la fin
+  const groupedStudents = useMemo(
+    () => groupStudents(students, groupData?.groups ?? [], groupData?.members ?? []),
+    [students, groupData],
+  );
 
   const addToday = async () => {
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -243,8 +228,8 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                 {/* Ligne d'en-tête de groupe */}
                 {group.groupName && (
                   <div
-                    className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold text-white select-none"
-                    style={{ backgroundColor: group.groupColor || '#6b7280' }}
+                    className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold text-white select-none ${groupColorProps(group.groupColor).className}`}
+                    style={groupColorProps(group.groupColor).style}
                   >
                     <span>👥 {group.groupName}</span>
                     <span className="opacity-70">— {group.members.length} élève{group.members.length > 1 ? 's' : ''}</span>
