@@ -22,7 +22,7 @@ import {
 import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -49,7 +49,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   const [form, setForm] = useState({
     titre: '', type: 'recitation', description: '',
     lien_lecon: '', date_limite: '', assigned_to: 'all',
-    group_id: '', student_id: '', group_ids: [] as string[],
+    group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[],
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
 
@@ -58,7 +58,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     if (!draft || !draft.titre.trim()) return;
     if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
       // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft }));
+      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [] }));
       setShowForm(true);
     } else {
       setHomeworkDraft(draft);
@@ -170,7 +170,17 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       // Determine recipients for push notification
       let destinataires: string[] = [];
 
-      if (form.assigned_to === 'groups' && form.group_ids.length > 0) {
+      if (form.assigned_to === 'students' && form.student_ids.length > 0) {
+        // Plusieurs élèves précis (2026-10-07) : un devoir par élève coché
+        const insertResults = await Promise.all(
+          form.student_ids.map(studentId =>
+            supabase.from('devoirs').insert({ ...payload, assigned_to: 'student', student_id: studentId })
+          )
+        );
+        const firstError = insertResults.find(r => r.error)?.error;
+        if (firstError) throw firstError;
+        destinataires = [...new Set(form.student_ids)];
+      } else if (form.assigned_to === 'groups' && form.group_ids.length > 0) {
         // Insert one devoir per selected group
         const insertResults = await Promise.all(
           form.group_ids.map(groupId =>
@@ -226,7 +236,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       toast.success(`✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[] });
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[] });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -235,9 +245,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
   const deleteDevoir = useMutation({
     mutationFn: async (id: string) => {
       const devoir = devoirs.find((d) => d.id === id);
+      // Corbeille d'abord : si elle échoue, rien n'est supprimé
+      if (devoir && user?.id) {
+        const ok = await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir', devoir);
+        if (!ok) throw new Error("Le devoir n'a pas pu être mis dans la corbeille, rien n'a été supprimé");
+      }
       const { error } = await supabase.from('devoirs').delete().eq('id', id);
       if (error) throw error;
-      if (devoir && user?.id) await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir', devoir);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
@@ -329,7 +343,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[] }); } setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[] }); } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
         </Button>
       </div>
@@ -359,12 +373,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 <p className="text-xs text-muted-foreground">Les élèves seront rappelés toutes les 2h jusqu'au rendu.</p>
               )}
             </div>
-            <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [] })}
+            <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
               className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
               <option value="all">👥 Tous les élèves</option>
               <option value="group">👨‍👩‍👧 Un groupe</option>
               <option value="groups">👨‍👩‍👧 Plusieurs groupes</option>
               <option value="student">👤 Un élève</option>
+              <option value="students">👥 Plusieurs élèves</option>
             </select>
             {form.assigned_to === 'group' && (
               <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
@@ -416,7 +431,35 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 ))}
               </select>
             )}
-            <Button onClick={() => createDevoir.mutate()} disabled={!form.titre || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0)} className="w-full">
+            {form.assigned_to === 'students' && (
+              <div className="space-y-2 mb-3">
+                <p className="text-xs text-muted-foreground font-medium">Sélectionner les élèves :</p>
+                <div className="flex flex-wrap gap-2">
+                  {eleves.map((e) => {
+                    const selected = form.student_ids.includes(e.user_id);
+                    return (
+                      <button
+                        key={e.user_id}
+                        type="button"
+                        onClick={() => setForm(prev => ({
+                          ...prev,
+                          student_ids: selected ? prev.student_ids.filter(id => id !== e.user_id) : [...prev.student_ids, e.user_id],
+                        }))}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                          selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'
+                        }`}
+                      >
+                        {selected ? '✓ ' : ''}{e.full_name || 'Sans nom'}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.student_ids.length > 0 && (
+                  <p className="text-xs text-primary font-medium">{form.student_ids.length} élève(s) sélectionné(s)</p>
+                )}
+              </div>
+            )}
+            <Button onClick={() => createDevoir.mutate()} disabled={!form.titre || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
               ✅ Assigner le devoir
             </Button>
           </CardContent>
@@ -613,7 +656,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [] });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [] });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

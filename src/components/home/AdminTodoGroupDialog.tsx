@@ -21,7 +21,7 @@ import { moveToTrash } from '@/lib/trash';
 import { openAdminSection, openGroupMessage } from '@/lib/adminBridge';
 import { errorMessage } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Mic, MicOff, Plus } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { courseItems, draftKeyOf, isLate, sortTasks, todayParis, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
 import { AnnounceDialog, CourseModeDialog } from './NextCourse';
 
@@ -41,27 +41,15 @@ const addDays = (date: string, days: number) => {
 interface Options { due_date: string; remind_at: string; student_id: string; recurrence: boolean; urgent: boolean; next_course: boolean; to_bring: boolean }
 const EMPTY_OPTIONS: Options = { due_date: '', remind_at: '', student_id: '', recurrence: false, urgent: false, next_course: false, to_bring: false };
 
-/** Cases « 🎒 Pour le prochain cours » et « 🧳 À apporter » (proposition C + idée 7) : toujours visibles sous la saisie */
-function CourseChips({ value, onChange }: { value: Options; onChange: (v: Options) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={() => onChange({ ...value, next_course: !value.next_course, to_bring: value.next_course ? false : value.to_bring })}
-        className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${value.next_course ? 'bg-amber-100 border-amber-400 dark:bg-amber-950/50' : 'border-border'}`}
-      >
-        🎒 Pour le prochain cours
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange({ ...value, to_bring: !value.to_bring, next_course: !value.to_bring ? true : value.next_course })}
-        className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${value.to_bring ? 'bg-amber-100 border-amber-400 dark:bg-amber-950/50' : 'border-border'}`}
-      >
-        🧳 À apporter (élèves)
-      </button>
-    </div>
-  );
-}
+/** Les 3 onglets de la fenêtre d'un groupe (2026-10-07, montage validé par Nadia) */
+type Kind = 'cours' | 'apporter' | 'note';
+const KINDS: { key: Kind; icon: string; label: string; tone: string }[] = [
+  { key: 'cours', icon: '🎒', label: 'Prochain cours', tone: 'bg-amber-50 dark:bg-amber-950/30' },
+  { key: 'apporter', icon: '🧳', label: 'À apporter', tone: 'bg-violet-50 dark:bg-violet-950/30' },
+  { key: 'note', icon: '📝', label: 'Mémo', tone: 'bg-sky-50 dark:bg-sky-950/30' },
+];
+const kindOf = (t: AdminTask): Kind => (t.to_bring ? 'apporter' : t.next_course ? 'cours' : 'note');
+const flagsOf = (k: Kind) => ({ next_course: k !== 'note', to_bring: k === 'apporter' });
 
 /** Champs supplémentaires d'une tâche (création et modification : mêmes réglages) */
 function TaskOptions({ value, onChange, students }: { value: Options; onChange: (v: Options) => void; students: TodoStudent[] }) {
@@ -86,7 +74,6 @@ function TaskOptions({ value, onChange, students }: { value: Options; onChange: 
           {students.map((s) => <option key={s.user_id} value={s.user_id}>{s.full_name || 'Élève'}</option>)}
         </select>
       </label>
-      <div className="sm:col-span-2"><CourseChips value={value} onChange={onChange} /></div>
       <div className="flex flex-wrap gap-2 sm:col-span-2">
         <button
           type="button"
@@ -134,6 +121,10 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
   const [announceOpen, setAnnounceOpen] = useState(false);
   const [manageTemplates, setManageTemplates] = useState(false);
   const [confirmTemplateDelete, setConfirmTemplateDelete] = useState<{ id: string; title: string } | null>(null);
+  const [kind, setKind] = useState<Kind>('cours');
+  const [spoken, setSpoken] = useState<string | null>(null);
+  const [homeworkFor, setHomeworkFor] = useState<AdminTask | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
 
   // Idée 8 : modèles (lignes qui reviennent souvent), communs à tous les groupes
   const { data: templates = [] } = useQuery({
@@ -154,6 +145,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     setOptions(EMPTY_OPTIONS);
     setShowOptions(false);
     setShowOld(false);
+    setKind('cours');
+    setSpoken(null);
   }, [group]);
   useEffect(() => {
     if (!draftKey) return;
@@ -194,10 +187,10 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     try {
       const minPos = Math.min(0, ...tasks.map((t) => t.position));
       const { error } = await supabase.from('admin_tasks').insert({
-        group_id: group.id, title, position: minPos - 10, ...toRow(options),
+        group_id: group.id, title, position: minPos - 10, ...toRow({ ...options, ...flagsOf(kind) }),
       });
       if (error) throw error;
-      setText(''); clearDraft(draftKey); setOptions((o) => ({ ...EMPTY_OPTIONS, next_course: o.next_course, to_bring: false })); setShowOptions(false);
+      setText(''); clearDraft(draftKey); setOptions(EMPTY_OPTIONS);
       refresh();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -214,17 +207,36 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     rec.continuous = false;
     rec.interimResults = true;
     rec.lang = 'fr-FR';
-    const before = text ? `${text.trim()} ` : '';
+    // Micro d'abord : la phrase dite s'affiche, puis un tap sur 🎒 / 🧳 / 📝 la range
+    setSpoken('');
     rec.onresult = (event) => {
       let said = '';
       for (let i = 0; i < event.results.length; i++) said += event.results[i][0].transcript;
-      setText(before + said);
+      setSpoken(said);
     };
     rec.onerror = () => setListening(false);
     rec.onend = () => setListening(false);
     recognitionRef.current = rec;
     rec.start();
     setListening(true);
+  };
+
+  const addSpoken = async (k: Kind) => {
+    const title = (spoken ?? '').trim();
+    if (!group || !title) return;
+    const minPos = Math.min(0, ...tasks.map((t) => t.position));
+    const { error } = await supabase.from('admin_tasks').insert({ group_id: group.id, title, position: minPos - 10, ...flagsOf(k) });
+    if (error) { toast.error(errorMessage(error)); return; }
+    setSpoken(null);
+    setKind(k);
+    refresh();
+  };
+
+  const moveTo = async (task: AdminTask, k: Kind) => {
+    const { error } = await supabase.from('admin_tasks')
+      .update({ ...flagsOf(k), carried: k === 'note' ? 0 : task.carried, updated_at: new Date().toISOString() })
+      .eq('id', task.id);
+    if (error) toast.error(errorMessage(error)); else { refresh(); toast.success(`Déplacé vers ${KINDS.find((x) => x.key === k)?.label}`); }
   };
 
   const setDone = async (task: AdminTask, value: boolean) => {
@@ -267,14 +279,6 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
   const toggleUrgent = async (task: AdminTask) => {
     const { error } = await supabase.from('admin_tasks').update({ urgent: !task.urgent, updated_at: new Date().toISOString() }).eq('id', task.id);
-    if (error) toast.error(errorMessage(error)); else refresh();
-  };
-
-  const toggleCourse = async (task: AdminTask) => {
-    const on = !task.next_course;
-    const { error } = await supabase.from('admin_tasks')
-      .update({ next_course: on, to_bring: on ? task.to_bring : false, carried: on ? task.carried : 0, updated_at: new Date().toISOString() })
-      .eq('id', task.id);
     if (error) toast.error(errorMessage(error)); else refresh();
   };
 
@@ -336,13 +340,23 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     refresh();
   };
 
+  // « En faire un devoir » : choisir un ou plusieurs élèves du groupe (ou tout le groupe), le formulaire s'ouvre rempli
   const toHomework = (task: AdminTask) => {
+    setHomeworkFor(task);
+    setPicked(new Set(task.student_id ? [task.student_id] : []));
+  };
+  const confirmHomework = (allGroup: boolean) => {
+    const task = homeworkFor;
+    if (!task) return;
+    const ids = allGroup ? [] : [...picked];
     saveDraft('dinislam_homework', {
       titre: task.title, type: 'autre', description: '', lien_lecon: '', date_limite: task.due_date ?? '',
-      assigned_to: task.student_id ? 'student' : group?.id ? 'groups' : 'all',
-      group_id: '', student_id: task.student_id ?? '', group_ids: !task.student_id && group?.id ? [group.id] : [],
+      assigned_to: ids.length === 1 ? 'student' : ids.length > 1 ? 'students' : group?.id ? 'groups' : 'all',
+      group_id: '', student_id: ids.length === 1 ? ids[0] : '', student_ids: ids.length > 1 ? ids : [],
+      group_ids: ids.length === 0 && group?.id ? [group.id] : [],
     });
     requestDraftResume('dinislam_homework');
+    setHomeworkFor(null);
     onClose();
     openAdminSection({ section: 'cahier-texte' });
   };
@@ -373,9 +387,11 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
           <DropdownMenuContent align="start" className="z-[700]">
             <DropdownMenuItem onClick={() => startEdit(task)}>✏️ Modifier</DropdownMenuItem>
             {!task.done && <DropdownMenuItem onClick={() => toggleUrgent(task)}>{task.urgent ? '☆ Plus urgent' : '⭐ Urgent'}</DropdownMenuItem>}
-            {!task.done && <DropdownMenuItem onClick={() => toggleCourse(task)}>{task.next_course ? '🎒 Retirer du prochain cours' : '🎒 Pour le prochain cours'}</DropdownMenuItem>}
+            {!task.done && KINDS.filter((k) => k.key !== kindOf(task)).map((k) => (
+              <DropdownMenuItem key={k.key} onClick={() => moveTo(task, k.key)}>{k.icon} Déplacer vers « {k.label} »</DropdownMenuItem>
+            ))}
             <DropdownMenuItem onClick={() => saveAsTemplate(task)}>⚡ Enregistrer comme modèle</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toHomework(task)}>📚 En faire un devoir</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toHomework(task)}>📚 En faire un devoir…</DropdownMenuItem>
             <DropdownMenuItem onClick={() => toMessage(task)}>✉️ En faire un message au groupe</DropdownMenuItem>
             {task.student_id && <DropdownMenuItem onClick={() => toStudent(task)}>👤 Voir la fiche de {studentName(task.student_id)}</DropdownMenuItem>}
             <DropdownMenuSeparator />
@@ -391,7 +407,6 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
             {task.remind_at && !task.done && <span>⏰ {new Date(task.remind_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
             {task.student_id && <span>👤 {studentName(task.student_id)}</span>}
             {task.recurrence === 'weekly' && <span>🔁 chaque semaine</span>}
-            {task.to_bring && <span>🧳 à apporter</span>}
             {(task.carried ?? 0) > 0 && !task.done && <span className="font-semibold text-amber-700 dark:text-amber-300">🔁 reportée ×{task.carried}</span>}
           </div>
         </div>
@@ -413,104 +428,134 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
         <div ref={scrollRef} onScroll={handleScroll} className="max-h-[85vh] overflow-y-auto p-5 space-y-4">
-          <DialogTitle className="flex items-center gap-2 pe-8">
-            <span className={`h-3 w-3 rounded-full shrink-0 ${group.color}`} />
-            <span className="[overflow-wrap:anywhere]">{group.name}</span>
-          </DialogTitle>
+          <div className="flex items-center gap-2 pe-9">
+            <DialogTitle className="flex items-center gap-2 min-w-0 flex-1">
+              <span className={`h-3 w-3 rounded-full shrink-0 ${group.color}`} />
+              <span className="[overflow-wrap:anywhere]">{group.name}</span>
+            </DialogTitle>
+            <Button type="button" size="sm" variant="outline" className="shrink-0 h-8 rounded-full" onClick={() => setShowOptions((v) => !v)} aria-expanded={showOptions}>
+              ⋯ Plus
+            </Button>
+          </div>
 
-          {/* Ajouter */}
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-                placeholder="Nouvelle tâche…"
-                aria-label="Nouvelle tâche"
-                autoFocus
-              />
-              <Button type="button" variant={listening ? 'destructive' : 'outline'} size="icon" onClick={toggleMic} aria-label="Dicter la tâche">
-                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              <Button type="button" size="icon" onClick={add} disabled={saving || !text.trim()} aria-label="Ajouter">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <CourseChips value={options} onChange={setOptions} />
-            {templates.length > 0 && (
+          {/* ⋯ Plus : options de la prochaine ligne, modèles, tâches faites */}
+          {showOptions && (
+            <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground">Pour la prochaine ligne que tu ajoutes :</p>
+              <TaskOptions value={options} onChange={setOptions} students={groupStudents} />
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-semibold text-muted-foreground">⚡ Modèles :</span>
+                {templates.length === 0 && <span className="text-[11px] text-muted-foreground">aucun pour l'instant (📌 › « Enregistrer comme modèle »)</span>}
                 {templates.map((tpl) => (
-                  <span key={tpl.id} className="inline-flex items-center rounded-full border border-border bg-muted/40 text-xs">
+                  <span key={tpl.id} className="inline-flex items-center rounded-full border border-border bg-card text-xs">
                     <button type="button" onClick={() => addFromTemplate(tpl)} className="px-2.5 py-1 [overflow-wrap:anywhere] text-start">
-                      {tpl.to_bring ? '🧳 ' : tpl.next_course ? '🎒 ' : ''}{tpl.title}
+                      {tpl.to_bring ? '🧳 ' : tpl.next_course ? '🎒 ' : '📝 '}{tpl.title}
                     </button>
                     {manageTemplates && (
                       <button type="button" onClick={() => setConfirmTemplateDelete({ id: tpl.id, title: tpl.title })} className="pe-2 text-destructive font-bold" aria-label={`Supprimer le modèle ${tpl.title}`}>✕</button>
                     )}
                   </span>
                 ))}
-                <button type="button" onClick={() => setManageTemplates((m) => !m)} className="text-[11px] font-semibold text-primary">
-                  {manageTemplates ? 'Terminé' : 'Gérer'}
-                </button>
+                {templates.length > 0 && (
+                  <button type="button" onClick={() => setManageTemplates((m) => !m)} className="text-[11px] font-semibold text-primary">
+                    {manageTemplates ? 'Terminé' : 'Gérer'}
+                  </button>
+                )}
               </div>
-            )}
-            <button type="button" onClick={() => setShowOptions(!showOptions)} className="text-xs font-semibold text-primary">
-              {showOptions ? '− Moins d\'options' : '+ Date, rappel, élève, chaque semaine, urgent'}
-            </button>
-            {showOptions && <TaskOptions value={options} onChange={setOptions} students={groupStudents} />}
+              {recentDone.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground">✅ Fait cette semaine</p>
+                  {recentDone.map((t) => renderTask(t))}
+                </div>
+              )}
+              {oldDone.length > 0 && (
+                <div className="space-y-1.5">
+                  <button type="button" onClick={() => setShowOld(!showOld)} className="text-xs font-semibold text-muted-foreground">
+                    {showOld ? '▾' : '▸'} Faites plus tôt ({oldDone.length})
+                  </button>
+                  {showOld && oldDone.map((t) => renderTask(t))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Les 3 onglets de couleur */}
+          <div role="tablist" className="grid grid-cols-3 gap-1">
+            {KINDS.map((k) => {
+              const count = k.key === 'cours' ? course.todo.length : k.key === 'apporter' ? course.bring.length : open.length;
+              const active = kind === k.key;
+              return (
+                <button
+                  key={k.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setKind(k.key)}
+                  className={`min-w-0 rounded-t-2xl px-1 py-2 flex flex-col items-center gap-0.5 transition-opacity ${k.tone} ${active ? 'opacity-100' : 'opacity-55'}`}
+                >
+                  <span className="text-xl leading-none">{k.icon}</span>
+                  <span className="text-[12px] font-bold leading-tight text-center">{k.label}</span>
+                  {count > 0 && <span className="rounded-full bg-card px-1.5 text-[10px] font-bold">{count}</span>}
+                </button>
+              );
+            })}
           </div>
 
-          {/* 🎒 Au prochain cours (proposition C) */}
-          {(course.todo.length > 0 || course.bring.length > 0) && (
-            <div className="rounded-2xl p-3 space-y-2 bg-gradient-to-br from-amber-50 to-pink-50 dark:from-amber-950/30 dark:to-pink-950/20 border border-amber-300 dark:border-amber-800">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-bold">🎒 Au prochain cours</p>
-                <div className="flex flex-wrap gap-1.5">
-                  <Button size="sm" variant="secondary" className="h-8" onClick={() => setAnnounceOpen(true)}>📢 Annoncer au groupe</Button>
-                  <Button size="sm" className="h-8" onClick={() => setCourseOpen(true)}>▶️ Mode cours</Button>
+          <div className={`-mt-4 rounded-b-2xl p-3 space-y-2 ${KINDS.find((k) => k.key === kind)?.tone}`}>
+            {/* Entrée rapide + micro d'abord */}
+            <div className="flex gap-2">
+              <Input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+                placeholder={`${KINDS.find((k) => k.key === kind)?.label} : écris puis Entrée…`}
+                aria-label="Nouvelle ligne"
+                className="h-12 bg-card text-base"
+                autoFocus
+              />
+              <Button type="button" onClick={toggleMic} variant={listening ? 'destructive' : 'default'} className={`h-12 w-12 shrink-0 rounded-xl text-xl ${listening ? 'animate-pulse' : ''}`} aria-label="Parler">
+                {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </Button>
+            </div>
+            {options.due_date || options.remind_at || options.student_id || options.recurrence || options.urgent ? (
+              <p className="text-[11px] text-muted-foreground">Options de « ⋯ Plus » appliquées à la prochaine ligne.</p>
+            ) : null}
+
+            {spoken !== null && (
+              <div className="rounded-xl border-2 border-dashed border-primary bg-card p-2.5 space-y-2">
+                <Input value={spoken} onChange={(e) => setSpoken(e.target.value)} placeholder={listening ? 'Je t\'écoute…' : 'Ce que tu as dit'} aria-label="Phrase dictée" />
+                <p className="text-[11px] text-muted-foreground">Touche où la ranger :</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {KINDS.map((k) => (
+                    <button key={k.key} type="button" disabled={!spoken.trim()} onClick={() => addSpoken(k.key)}
+                      className={`rounded-xl px-1 py-2 text-xs font-bold disabled:opacity-40 ${k.tone}`}>
+                      {k.icon} {k.label}
+                    </button>
+                  ))}
                 </div>
+                <button type="button" onClick={() => setSpoken(null)} className="text-[11px] font-semibold text-muted-foreground">Annuler</button>
               </div>
-              {course.todo.length > 0 && (
-                <div className="space-y-1.5">
-                  <SortableCardList items={course.todo} onReorder={reorder} renderItem={(t, dragProps) => renderTask(t, dragProps)} />
-                </div>
-              )}
-              {course.bring.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-muted-foreground">🧳 À apporter par les élèves</p>
-                  <SortableCardList items={course.bring} onReorder={reorder} renderItem={(t, dragProps) => renderTask(t, dragProps)} />
-                </div>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* À faire */}
-          {(course.todo.length > 0 || course.bring.length > 0) && open.length > 0 && <p className="text-xs font-semibold text-muted-foreground">📝 À faire</p>}
-          {open.length === 0 ? (course.todo.length + course.bring.length > 0 ? null : (
-            <p className="text-center text-sm text-muted-foreground py-3">Rien à faire pour ce groupe 🎉</p>
-          )) : (
-            <div className="space-y-1.5">
-              <SortableCardList items={open} onReorder={reorder} renderItem={(t, dragProps) => renderTask(t, dragProps)} />
-              <p className="text-[11px] text-muted-foreground text-center">Reste appuyée sur une tâche puis glisse-la pour changer l'ordre</p>
-            </div>
-          )}
+            {/* Lignes de l'onglet */}
+            {(() => {
+              const items = kind === 'cours' ? course.todo : kind === 'apporter' ? course.bring : open;
+              return items.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-3">Rien pour le moment</p>
+              ) : (
+                <div className="space-y-1.5">
+                  <SortableCardList items={items} onReorder={reorder} renderItem={(t, dragProps) => renderTask(t, dragProps)} />
+                </div>
+              );
+            })()}
 
-          {/* Faites */}
-          {recentDone.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-muted-foreground">✅ Fait cette semaine</p>
-              {recentDone.map((t) => renderTask(t))}
-            </div>
-          )}
-          {oldDone.length > 0 && (
-            <div className="space-y-1.5">
-              <button type="button" onClick={() => setShowOld(!showOld)} className="text-xs font-semibold text-muted-foreground">
-                {showOld ? '▾' : '▸'} Faites plus tôt ({oldDone.length})
-              </button>
-              {showOld && oldDone.map((t) => renderTask(t))}
-            </div>
-          )}
+            {kind === 'cours' && (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button type="button" variant="secondary" onClick={() => setCourseOpen(true)}>▶️ Mode cours</Button>
+                <Button type="button" variant="secondary" onClick={() => setAnnounceOpen(true)} disabled={course.todo.length + course.bring.length === 0}>📢 Annoncer</Button>
+              </div>
+            )}
+          </div>
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
 
@@ -548,6 +593,33 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
         <CourseModeDialog groupId={group.id} groupName={group.name} open={courseOpen} onClose={() => setCourseOpen(false)} />
         <AnnounceDialog groupId={group.id} groupName={group.name} tasks={tasks} open={announceOpen} onClose={() => setAnnounceOpen(false)} onSent={onClose} />
+
+        {/* En faire un devoir : un ou plusieurs élèves, ou tout le groupe */}
+        <Dialog open={!!homeworkFor} onOpenChange={(o) => { if (!o) setHomeworkFor(null); }}>
+          <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto" level="nested">
+            <DialogTitle>📚 En faire un devoir</DialogTitle>
+            <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">« {homeworkFor?.title} » · pour qui ?</p>
+            <div className="flex flex-wrap gap-2">
+              {groupStudents.map((st) => {
+                const on = picked.has(st.user_id);
+                return (
+                  <button key={st.user_id} type="button"
+                    onClick={() => setPicked((p) => { const n = new Set(p); if (n.has(st.user_id)) n.delete(st.user_id); else n.add(st.user_id); return n; })}
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border'}`}>
+                    {on ? '✓ ' : ''}{st.full_name || 'Élève'}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => confirmHomework(true)}>{group.id ? 'Tout le groupe' : 'Tous les élèves'}</Button>
+              <Button disabled={picked.size === 0} onClick={() => confirmHomework(false)}>
+                {picked.size > 0 ? `Pour ${picked.size} élève${picked.size > 1 ? 's' : ''}` : 'Choisis des élèves'}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Le formulaire de devoir s'ouvre déjà rempli : tu choisis le type, la date et tu valides.</p>
+          </DialogContent>
+        </Dialog>
 
         {/* Supprimer un modèle */}
         <AlertDialog open={!!confirmTemplateDelete} onOpenChange={(o) => { if (!o) setConfirmTemplateDelete(null); }}>

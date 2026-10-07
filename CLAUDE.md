@@ -101,8 +101,11 @@ Partout où une liste de NOMS d'élèves s'affiche : ordre alphabétique à la f
 ## ✏️ Renommer un élève (2026-10-07)
 Bouclier › Élèves › ⋮ › « ✏️ Renommer l'élève » (`RenameStudentDialog`) → fonction `rename-user` (admin seulement) qui met à jour `profiles.full_name` ET le nom du compte (`user_metadata.full_name`, lu par la mascotte, Paramètres, le devoir rendu…). L'élève peut toujours le changer lui-même dans ses Paramètres.
 
-## ⚠️ ACTION EN ATTENTE (2026-10-07) : saisie rapide en cours
-Nadia n'est pas satisfaite de la fenêtre du groupe (trop longue à remplir pendant le cours, « je n'ai pas le temps de lire »). Maquette de 5 dispositions jouables (A 3 gros boutons 🎒/🧳/📝, B colonnes « cahier », C une ligne + pastille qui tourne, D micro d'abord, E feuille à lignes avec onglets) — toutes les options rangées derrière « ⋯ Plus » : https://claude.ai/artifact/61qccgR94bufHAUxT1ffUq — attendre son choix puis refaire la fenêtre.
+## 📝 Fenêtre d'un groupe « À FAIRE » refaite pour noter vite en cours (✅ 2026-10-07, montage validé https://claude.ai/artifact/XQ1ZKd6Mh7uSZQuvA1dmgc)
+- 3 onglets de couleur avec compteur : 🎒 Prochain cours (`next_course` sans `to_bring`), 🧳 À apporter (`to_bring`), 📝 Mémo (le reste ; les anciennes tâches y sont). Ouvre sur 🎒.
+- Entrée « <onglet> : écris puis Entrée… » (la ligne va dans l'onglet ouvert) + gros 🎤 **micro d'abord** : la phrase dite s'affiche (modifiable) puis un tap 🎒/🧳/📝 la range.
+- « ⋯ Plus » : options de la prochaine ligne (date, rappel, élève, chaque semaine, urgent), ⚡ modèles (+ Gérer), tâches faites. En bas de 🎒 : ▶️ Mode cours, 📢 Annoncer.
+- 📌 : Modifier, Urgent, « Déplacer vers » les 2 autres onglets, « 📚 En faire un devoir… » → choix d'**un ou plusieurs élèves** du groupe (ou tout le groupe) → formulaire de devoir pré-rempli. Le cahier de texte a désormais « 👥 Plusieurs élèves » (`assigned_to` = `students` côté formulaire → un devoir `student` par élève coché). Au passage : supprimer un devoir met d'abord en corbeille (avant : supprimé puis corbeille).
 
 ## 🎒 « À faire au prochain cours » (✅ 2026-10-07, proposition C + idées 3, 4, 5, 6, 7, 8, 10 ; maquette https://claude.ai/artifact/CEdvbCeJcHjSMjY995bAkJ)
 - Dans la fenêtre d'un groupe de la carte À FAIRE (`AdminTodoGroupDialog`) : sous la saisie, cases « 🎒 Pour le prochain cours » et « 🧳 À apporter (élèves) » (aussi dans « Modifier » et via 📌) → colonnes `admin_tasks.next_course`, `to_bring` (à apporter = fait partie du prochain cours). Ces lignes remontent dans un bloc doré « 🎒 Au prochain cours » (à faire puis 🧳 à apporter) ; sur le post-it de l'accueil elles passent en premier (🎒/🧳).
