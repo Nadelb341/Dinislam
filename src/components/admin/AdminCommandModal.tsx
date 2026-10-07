@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { LoginTroubleBanner } from '@/components/admin/LoginTroubleBanner';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
@@ -65,7 +67,23 @@ const AdminCommandModal = ({
   const navigate = useNavigate();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
+  // Panneau principal : il défile quand il dépasse l'écran (bandeau ouvert…), le titre et la croix restent visibles
+  const {
+    scrollRef: panelScrollRef, handleScroll: handlePanelScroll, showTop: panelShowTop, showBottom: panelShowBottom,
+    scrollToTop: panelScrollTop, scrollToBottom: panelScrollBottom,
+  } = useScrollToTop();
   useEffect(() => { if (open && initialSection) setModalSection(initialSection); }, [open, initialSection]);
+  // Flèche ⬇️ dès l'ouverture et quand le contenu change de hauteur (bandeau ouvert/fermé)
+  useEffect(() => {
+    if (!open) return;
+    const el = panelScrollRef.current;
+    if (!el) return;
+    handlePanelScroll();
+    const ro = new ResizeObserver(() => handlePanelScroll());
+    Array.from(el.children).forEach((c) => ro.observe(c));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, panelScrollRef, handlePanelScroll]);
 
   const compteurs: Record<string, number> = {
     sourates: pendingSourates,
@@ -113,11 +131,11 @@ const AdminCommandModal = ({
         onClick={onClose}
       >
         <div
-          className="bg-background rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl"
+          className="relative bg-background rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)]"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          {/* Header (toujours visible : le contenu défile en dessous) */}
+          <div className="shrink-0 flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2">
               <span>🛡️</span>
               <h2 className="text-lg font-bold text-foreground">Administration</h2>
@@ -135,7 +153,7 @@ const AdminCommandModal = ({
             </button>
           </div>
 
-          <div className="px-4 pb-5 space-y-3">
+          <div ref={panelScrollRef} onScroll={handlePanelScroll} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-5 space-y-3">
             <LoginTroubleBanner onOpenStudents={() => setModalSection('eleves')} />
             {/* Boutons actions — 1 par ligne, maintenir puis glisser pour réordonner */}
             <SortableCardList
@@ -230,6 +248,7 @@ const AdminCommandModal = ({
               </button>
             </div>
           </div>
+          <ScrollButtons showTop={panelShowTop} showBottom={panelShowBottom} onScrollTop={panelScrollTop} onScrollBottom={panelScrollBottom} position="absolute" />
         </div>
       </div>
 
