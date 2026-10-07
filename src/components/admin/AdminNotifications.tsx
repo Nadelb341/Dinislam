@@ -28,7 +28,7 @@ import {
 import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import PushToggle from '@/components/settings/PushToggle';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
-import { errorMessage } from '@/lib/utils';
+import { errorMessage, byName } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 
 const AdminNotifications = () => {
@@ -69,7 +69,7 @@ const AdminNotifications = () => {
       full_name: p.full_name || 'Sans nom',
       notifActive: subs?.some(s => s.user_id === p.user_id && s.is_active) || false,
     }));
-    setElevesStatut(enrichis.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')));
+    setElevesStatut(enrichis.sort(byName()));
   };
 
   const handleRenvoyerInvitation = async (userId?: string) => {

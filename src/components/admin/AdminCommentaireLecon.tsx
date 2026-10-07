@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { sortByName } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -33,7 +34,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       .from('profiles')
       .select('user_id, full_name')
       .eq('is_approved', true);
-    setEleves((profiles || []).map(p => ({ id: p.user_id, full_name: p.full_name })));
+    setEleves(sortByName((profiles || []).map(p => ({ id: p.user_id, full_name: p.full_name }))));
   }, []);
 
   const chargerLecons = useCallback(async () => {
@@ -61,10 +62,10 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       const nameMap: Record<string, string> = {};
       (profiles || []).forEach(p => { nameMap[p.user_id] = p.full_name || ''; });
 
-      setCommentairesExistants(comments.map((c) => ({
+      setCommentairesExistants(sortByName(comments.map((c) => ({
         ...c,
         full_name: nameMap[c.student_id] || 'Élève inconnu',
-      })));
+      }))));
     } else {
       setCommentairesExistants([]);
     }

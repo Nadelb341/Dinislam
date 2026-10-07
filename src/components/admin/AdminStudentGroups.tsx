@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
-import { errorMessage } from '@/lib/utils';
+import { errorMessage, byName } from '@/lib/utils';
 
 const GROUP_COLORS = [
   { value: 'bg-blue-500', label: 'Bleu', preview: 'bg-blue-500' },
@@ -165,7 +165,8 @@ const AdminStudentGroups = () => {
           .map((m) => {
             const p = profileMap.get(m.user_id);
             return { user_id: m.user_id, full_name: p?.full_name || null, email: p?.email || null };
-          });
+          })
+          .sort(byName());
         return { ...g, color: g.color ?? '', display_order: g.position ?? 0, memberCount: groupMembers.length, members: groupMembers } satisfies StudentGroup;
       });
     },

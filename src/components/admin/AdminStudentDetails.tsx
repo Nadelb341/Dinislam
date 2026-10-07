@@ -34,7 +34,7 @@ import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview'
 import { AlphabetStudentSummary } from '@/components/alphabet/AlphabetStudentSummary';
 import { fetchNoPushStudents } from '@/lib/noPushStudents';
 import { untypedDb } from '@/lib/untypedDb';
-import { errorMessage } from '@/lib/utils';
+import { errorMessage, byName } from '@/lib/utils';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -245,7 +245,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   const filteredStudents = students?.filter((s) =>
     s.email?.toLowerCase().includes(search.toLowerCase()) ||
     s.full_name?.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => Number(hasLoginTrouble(b.user_id)) - Number(hasLoginTrouble(a.user_id)));
+  ).sort((a, b) => Number(hasLoginTrouble(b.user_id)) - Number(hasLoginTrouble(a.user_id)) || byName<{ full_name: string | null }>()(a, b));
 
   // DOB helpers
   const handleDobInputChange = (value: string) => {
