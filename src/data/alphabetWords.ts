@@ -1,4 +1,4 @@
-/** Un mot exemple illustré par lettre (idée bonus 6, 2026-10-07) — l'audio est enregistré par l'enseignante (ligne « mot »). */
+/** Un mot exemple illustré par lettre (idée bonus 6, 2026-10-07) — audio = modèle « mot » de l'enseignante, sinon voix de synthèse provisoire (choix B de Nadia). */
 /** tr : prononciation en lettres latines (mêmes repères que les lignes : ḥ ṣ ḍ ṭ ẓ ʿ q, â î oû = voyelles longues) */
 export interface AlphabetWord { word: string; tr: string; fr: string; emoji: string }
 
@@ -32,3 +32,6 @@ export const ALPHABET_WORDS: Record<string, AlphabetWord> = {
   'و': { word: 'وَرْدَة', tr: 'warda', fr: 'rose', emoji: '🌹' },
   'ي': { word: 'يَد', tr: 'yad', fr: 'main', emoji: '✋' },
 };
+
+/** Voix de synthèse provisoire du mot (public/audio/mots/<code de la lettre>.m4a), remplacée dès que l'enseignante enregistre son modèle « mot » */
+export const wordSynthUrl = (letter: string) => `/audio/mots/${(letter.codePointAt(0) ?? 0).toString(16).padStart(4, '0')}.m4a`;

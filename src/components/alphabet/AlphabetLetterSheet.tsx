@@ -17,7 +17,7 @@ import { buildLines, type LineKey } from '@/lib/alphabetLines';
 import { uploadAlphabetAudio } from '@/lib/alphabetAudio';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { errorMessage } from '@/lib/utils';
-import { ALPHABET_WORDS } from '@/data/alphabetWords';
+import { ALPHABET_WORDS, wordSynthUrl } from '@/data/alphabetWords';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Letter = Tables<'alphabet_letters'>;
@@ -186,13 +186,14 @@ export function AlphabetLetterSheet({
                   <p className="font-arabic text-3xl leading-[1.5]" dir="rtl">{word.word}</p>
                   <p className="text-sm"><span className="font-semibold">« {word.tr} »</span> <span className="text-muted-foreground">· {word.fr}</span></p>
                 </div>
-                {models.get(`${letter.id}:mot`) && (
-                  <Button type="button" size="icon" variant="secondary" className="rounded-full shrink-0" aria-label="Écouter le mot"
-                    onClick={() => new Audio(models.get(`${letter.id}:mot`)).play().catch(() => {})}>
-                    🔊
-                  </Button>
-                )}
+                <Button type="button" size="icon" variant="secondary" className="rounded-full shrink-0" aria-label="Écouter le mot"
+                  onClick={() => new Audio(models.get(`${letter.id}:mot`) ?? wordSynthUrl(letter.letter_arabic)).play().catch(() => {})}>
+                  🔊
+                </Button>
               </div>
+              {isAdmin && !models.get(`${letter.id}:mot`) && (
+                <p className="text-xs text-muted-foreground">🔊 = voix de synthèse en attendant la tienne : enregistre ton modèle ci-dessous pour la remplacer.</p>
+              )}
               {isAdmin && (
                 <AdminLineModelRecorder letterId={letter.id} letterName={letter.name_french} lineKey="mot"
                   lineTitle={`Mot exemple ${word.word}`} currentUrl={models.get(`${letter.id}:mot`) ?? null} />
