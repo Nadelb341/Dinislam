@@ -2393,6 +2393,7 @@ export type Database = {
           scheduled_at: string | null
           send_time: string | null
           sent_at: string | null
+          skip_holidays: boolean
           start_date: string | null
           target_type: string | null
           target_user_id: string | null
@@ -2415,6 +2416,7 @@ export type Database = {
           scheduled_at?: string | null
           send_time?: string | null
           sent_at?: string | null
+          skip_holidays?: boolean
           start_date?: string | null
           target_type?: string | null
           target_user_id?: string | null
@@ -2437,11 +2439,36 @@ export type Database = {
           scheduled_at?: string | null
           send_time?: string | null
           sent_at?: string | null
+          skip_holidays?: boolean
           start_date?: string | null
           target_type?: string | null
           target_user_id?: string | null
           title?: string | null
           weekdays?: number[] | null
+        }
+        Relationships: []
+      }
+      school_holidays: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          label: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          label: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          label?: string
+          start_date?: string
         }
         Relationships: []
       }
@@ -3391,6 +3418,16 @@ export type Database = {
         Args: never
         Returns: {
           group_id: string
+          user_id: string
+        }[]
+      }
+      course_reminder_targets: {
+        Args: never
+        Returns: {
+          full_name: string
+          gender: string
+          lecon: string
+          sourate: string
           user_id: string
         }[]
       }

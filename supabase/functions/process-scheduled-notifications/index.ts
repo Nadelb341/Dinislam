@@ -47,12 +47,16 @@ serve(async (req) => {
     if (error) throw error;
 
     let totalSent = 0;
+    // Vacances scolaires (pause des notifications cochées « pause pendant les vacances »)
+    const { data: holidays } = await supabase.from('school_holidays').select('start_date, end_date').lte('start_date', today).gte('end_date', today);
+    const inHolidays = (holidays ?? []).length > 0;
 
     for (const notif of (notifications || [])) {
       const sendTime = notif.send_time?.substring(0, 5);
       if (!sendTime) continue;
       // Jours choisis (ex. chaque mardi) ; vide = tous les jours
       if (Array.isArray(notif.weekdays) && notif.weekdays.length && !notif.weekdays.includes(isoWeekday(today))) continue;
+      if (notif.skip_holidays && inHolidays) continue;
 
       // Déclenché toutes les 5 min par pg_cron : on envoie dans les 5 min qui suivent l'heure prévue,
       // une seule fois par jour (last_sent_on) — avant, la fenêtre ±5 min pouvait envoyer 2 ou 3 fois.
@@ -83,6 +87,24 @@ serve(async (req) => {
         .from('scheduled_notifications').update({ last_sent_on: today })
         .eq('id', notif.id).or(`last_sent_on.is.null,last_sent_on.neq.${today}`).select('id');
       if (!claimed?.length) continue;
+
+      // Rappel « 🎒 Cours d'arabe » : message personnalisé avec la sourate et la leçon en cours de chaque élève
+      if (notif.module === 'cours') {
+        const { data: targets } = await supabase.rpc('course_reminder_targets');
+        const wanted = Array.isArray(notif.recipients) ? new Set(notif.recipients as string[]) : null;
+        for (const t of (targets ?? []) as { user_id: string; sourate: string | null; lecon: string | null }[]) {
+          if (wanted && !wanted.has(t.user_id)) continue;
+          const parts = [t.sourate ? `ta sourate ${t.sourate}` : '', t.lecon ? `ta ${t.lecon} de Nourania` : ''].filter(Boolean);
+          const body = parts.length
+            ? `📖 Demain, c'est cours d'arabe ! Pense à travailler ${parts.join(' et ')} ce soir, inch'Allah 💪`
+            : notif.message;
+          try {
+            const r = await sendPushInternal({ ...pushBody, userId: t.user_id, body, sendToAll: undefined, userIds: undefined });
+            totalSent += r?.sent || 0;
+          } catch (e) { console.error('Rappel du cours non envoyé', t.user_id, e); }
+        }
+        continue;
+      }
 
       const pushResult = await sendPushInternal(pushBody);
       const sent = pushResult?.sent || 0;
@@ -122,7 +144,7 @@ serve(async (req) => {
 
     // La veille du cours (mardi 10 h, heure de Paris) : rappel à l'enseignante s'il reste des « 📚 Devoirs à préparer »
     let prepReminded = 0;
-    if (isoWeekday(today) === 2 && currTotal >= 10 * 60 && currTotal < 10 * 60 + 5) {
+    if (!inHolidays && isoWeekday(today) === 2 && currTotal >= 10 * 60 && currTotal < 10 * 60 + 5) {
       const { data: prep } = await supabase.from('admin_tasks').select('id, created_by, group_id').eq('done', false).eq('to_prepare', true);
       if (prep?.length) {
         const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'devoirs_a_preparer', sent_on: today });
