@@ -185,7 +185,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
           userIds: adminIds,
           title: '💬 Nouveau message', category: 'adm_msg',
           body: senderName + ' vous a envoyé un message',
-          url: '/admin?section=messages'
+          data: { url: '/?open=messages' }
         }
       });
     } catch (err) {

@@ -392,11 +392,23 @@ serve(async (req) => {
     const sanitizedTag = (tag || 'dini-bismillah')
       .replace(/[^a-zA-Z0-9-]/g, '').substring(0, 32) || 'dini-bismillah';
 
+    // Destination quand on touche la notification : celle donnée par l'envoyeur, sinon selon la catégorie
+    // (avant : aucune destination → toutes les notifications ramenaient à l'accueil)
+    const DEFAULT_URLS: Record<string, string> = {
+      msg: '/?open=messages', adm_msg: '/?open=messages',
+      hw_new: '/?open=devoirs', hw_rem: '/?open=devoirs', hw_res: '/?open=devoirs',
+      lesson: '/nourania', adm_hw: '/?admin=cahier-texte', adm_reg: '/?admin=users', adm_task: '/?open=todo',
+    };
+    const givenData = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
+    const url = typeof givenData.url === 'string' ? givenData.url
+      : typeof body.url === 'string' ? body.url
+      : (typeof category === 'string' && DEFAULT_URLS[category]) || '/';
+
     const payload = {
       title,
       body: notifBody || '',
       tag: sanitizedTag,
-      data: data ?? {},
+      data: { ...givenData, url },
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       vibrate: [200, 100, 200],

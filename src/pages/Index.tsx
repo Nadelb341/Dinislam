@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -153,6 +153,23 @@ const getModuleSlug = (mod): string => {
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const location = useLocation();
+
+  // Notification touchée : ?open=devoirs → on descend jusqu'aux devoirs (le bloc peut arriver après le chargement)
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('open') !== 'devoirs') return;
+    let tries = 0;
+    const t = setInterval(() => {
+      const el = document.getElementById('devoirs');
+      tries++;
+      if (el && el.offsetHeight > 0) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.replaceState({}, '', location.pathname);
+        clearInterval(t);
+      } else if (tries > 20) clearInterval(t);
+    }, 250);
+    return () => clearInterval(t);
+  }, [location.search, location.pathname]);
   const queryClient = useQueryClient();
 
   const [showNotifBanner, setShowNotifBanner] = useState(false);
@@ -505,9 +522,11 @@ const handleModuleClick = (mod) => {
               </div>);
           })()}
 
-          {/* Homework Card - only for admin */}
-          {isAdmin && <HomeworkCard />}
-          <BlocDevoirsEleve />
+          {/* Homework Card - only for admin ; id « devoirs » : cible des notifications de devoirs (?open=devoirs) */}
+          <div id="devoirs" className="scroll-mt-20 space-y-4">
+            {isAdmin && <HomeworkCard />}
+            <BlocDevoirsEleve />
+          </div>
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">

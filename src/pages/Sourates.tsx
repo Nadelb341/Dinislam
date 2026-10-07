@@ -414,7 +414,7 @@ const SouratesPage = () => {
               title: '📖 Validation en attente', category: 'adm_valid',
               body: `Un élève a terminé ${sourateName} et attend votre validation.`,
               type: 'admin',
-              data: { url: '/admin?section=sourates' },
+              data: { url: '/?admin=sourates-validations' },
             },
           }).catch(err => console.error('Push notification error:', err));
 

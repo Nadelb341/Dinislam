@@ -73,7 +73,14 @@ const Header = ({
       const newUrl = location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search, location.pathname, clearNewMessageFlag]);
+    // Notification touchée (enseignante) : ouvrir directement le bon écran du bouclier, ex. ?admin=sourates-validations
+    const adminSection = params.get('admin');
+    if (adminSection && isAdmin) {
+      setAdminInitial({ section: adminSection });
+      setShowAdminModal(true);
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [location.search, location.pathname, clearNewMessageFlag, isAdmin]);
 
   const handleOpenMessaging = () => {
     clearNewMessageFlag();

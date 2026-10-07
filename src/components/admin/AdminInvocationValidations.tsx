@@ -109,6 +109,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
         title: '⭐ Félicitations !', category: 'rec',
         body: `Ton professeur a validé ${request.invocation?.title_french || 'ton invocation'} ! Continue comme ça !`,
         type: 'user',
+        data: { url: '/invocations' },
         userId: request.user_id,
       });
       

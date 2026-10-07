@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
 import { takeDraftResume } from '@/lib/pendingDrafts';
@@ -21,6 +22,16 @@ export function AdminTodoCard() {
   });
   const [openId, setOpenId] = useState<string | null | undefined>(undefined); // undefined = aucun, null = Général
   const resumeChecked = useRef(false);
+  const location = useLocation();
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // Notification « 📝 À FAIRE » touchée (?open=todo) : la carte s'ouvre et on la montre
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('open') !== 'todo') return;
+    setCollapsed(false);
+    setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+    window.history.replaceState({}, '', location.pathname);
+  }, [location.search, location.pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -86,7 +97,7 @@ export function AdminTodoCard() {
   const openGroup = openId === undefined ? null : allGroups.find((g) => g.id === openId) ?? null;
 
   return (
-    <section className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm animate-fade-in">
+    <section ref={sectionRef} className="scroll-mt-20 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm animate-fade-in">
       <button type="button" onClick={toggleCollapsed} className="w-full flex items-center gap-2 px-4 py-3 text-start" aria-expanded={!collapsed}>
         <span className="text-xl">📝</span>
         <span className="font-bold tracking-wide text-foreground">À FAIRE</span>

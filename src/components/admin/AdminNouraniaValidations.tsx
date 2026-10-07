@@ -115,6 +115,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         title: '⭐ Félicitations !', category: 'rec',
         body: `Ton professeur a validé ${request.lesson?.title_french || 'ta leçon'} ! Continue comme ça !`,
         type: 'user',
+        data: { url: '/nourania' },
         userId: request.user_id,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
@@ -157,6 +158,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         title: '📖 Leçon à retravailler', category: 'rec',
         body: `Ton professeur t'invite à retravailler ${request.lesson?.title_french || 'ta leçon'}. Continue tes efforts !`,
         type: 'user',
+        data: { url: '/nourania' },
         userId: request.user_id,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });

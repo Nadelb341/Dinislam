@@ -102,7 +102,7 @@ serve(async (req) => {
           tag: `admin-task-${task.id}`,
           type: 'admin_task',
           category: 'adm_task',
-          data: { url: '/' },
+          data: { url: '/?open=todo' },
         });
         tasksReminded++;
       } catch (e) {

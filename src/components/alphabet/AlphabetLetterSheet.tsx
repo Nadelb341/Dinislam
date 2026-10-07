@@ -69,7 +69,7 @@ export function AlphabetLetterSheet({
       });
       if (error) throw error;
       sendPushNotification({
-        type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider',
+        type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider', data: { url: '/?admin=alphabet-validations' },
         body: `Nouvel exercice : ${letter.name_french} (${letter.letter_arabic}) · ${title}`,
       });
       toast.success('Envoyé à ton prof ✓ Tu peux continuer les autres lignes');
@@ -102,7 +102,7 @@ export function AlphabetLetterSheet({
         const { error } = await supabase.from('alphabet_submissions').insert({ student_id: user.id, letter_id: letter.id, kind: 'final' });
         if (error) throw error;
         sendPushNotification({
-          type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider',
+          type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider', data: { url: '/?admin=alphabet-validations' },
           body: `Lettre apprise ? ${letter.name_french} (${letter.letter_arabic}) attend ta validation`,
         });
         toast.success('Demande envoyée à ton prof ⏳');

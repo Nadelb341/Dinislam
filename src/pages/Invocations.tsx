@@ -419,6 +419,7 @@ const Invocations = () => {
         title: '📝 Nouvelle demande de validation', category: 'adm_valid',
         body: `${firstName} demande la validation de ${invocName}`,
         type: 'admin',
+        data: { url: '/admin?section=invocations-validations' },
       });
       return { autoValidated: false };
     },

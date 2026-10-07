@@ -86,6 +86,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
         title: '⭐ Félicitations !', category: 'rec',
         body: `Ton professeur a validé ${request.sourate?.name_french || 'ta sourate'} ! Continue comme ça !`,
         type: 'user',
+        data: { url: '/sourates' },
         userId: request.user_id,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
@@ -120,6 +121,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
         title: '📖 Sourate à retravailler', category: 'rec',
         body: `Ton professeur t'invite à retravailler ${request.sourate?.name_french || 'ta sourate'}. Continue tes efforts !`,
         type: 'user',
+        data: { url: '/sourates' },
         userId: request.user_id,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });

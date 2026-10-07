@@ -294,6 +294,7 @@ const Nourania = () => {
         title: '📝 Nouvelle demande de validation', category: 'adm_valid',
         body: `${firstName} demande la validation de ${lessonName}`,
         type: 'admin',
+        data: { url: '/?admin=nourania-validations' },
       });
       return { autoValidated: false, lessonId };
     },

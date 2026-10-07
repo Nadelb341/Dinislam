@@ -355,7 +355,7 @@ export default function BlocDevoirsEleve() {
         userIds: adminIds,
         title: '📚 Devoir rendu', category: 'adm_hw',
         body: `${user.user_metadata?.full_name || 'Un élève'} a rendu : ${devoir?.titre || 'un devoir'}`,
-        data: { url: '/admin?section=cahier-texte' },
+        data: { url: '/?admin=cahier-texte' },
       });
     }
 
