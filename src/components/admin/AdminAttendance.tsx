@@ -1,4 +1,5 @@
 import { useState, useMemo, Fragment } from 'react';
+import { CourseModeDialog } from '@/components/home/NextCourse';
 import { groupColorProps, groupStudents } from '@/lib/studentGroups';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,8 @@ const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }>
 const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const { user } = useAuth();
   const [dateASupprimer, setDateASupprimer] = useState<string | null>(null);
+  // Idée 5 : depuis le Registre, ouvrir le « mode cours » du groupe (carte À FAIRE)
+  const [courseGroup, setCourseGroup] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
   const { data: students = [] } = useQuery({
@@ -233,6 +236,15 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                   >
                     <span>👥 {group.groupName}</span>
                     <span className="opacity-70">— {group.members.length} élève{group.members.length > 1 ? 's' : ''}</span>
+                    {group.groupId && (
+                      <button
+                        type="button"
+                        onClick={() => setCourseGroup({ id: group.groupId, name: group.groupName ?? '' })}
+                        className="ms-auto rounded-full bg-white/25 hover:bg-white/35 px-2.5 py-0.5 text-[11px] font-bold"
+                      >
+                        🎒 Prochain cours
+                      </button>
+                    )}
                   </div>
                 )}
                 {group.members.map((student, idx) => (
@@ -315,6 +327,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
         title="Supprimer cette séance ?"
         description={dateASupprimer ? `La séance du ${format(parseISO(dateASupprimer), 'dd/MM/yyyy')} et les présences de tous les élèves iront dans la corbeille (Paramètres), d'où tu pourras les restaurer.` : ''}
       />
+      <CourseModeDialog groupId={courseGroup?.id ?? null} groupName={courseGroup?.name ?? ''} open={!!courseGroup} onClose={() => setCourseGroup(null)} />
     </div>
   );
 };

@@ -101,8 +101,13 @@ Partout où une liste de NOMS d'élèves s'affiche : ordre alphabétique à la f
 ## ✏️ Renommer un élève (2026-10-07)
 Bouclier › Élèves › ⋮ › « ✏️ Renommer l'élève » (`RenameStudentDialog`) → fonction `rename-user` (admin seulement) qui met à jour `profiles.full_name` ET le nom du compte (`user_metadata.full_name`, lu par la mascotte, Paramètres, le devoir rendu…). L'élève peut toujours le changer lui-même dans ses Paramètres.
 
-## ⚠️ ACTION EN ATTENTE (2026-10-07)
-- **Choix de Nadia** : « 🎒 À faire au prochain cours » dans chaque groupe de la carte À FAIRE — maquette 3 propositions (A onglets dans le groupe / B bandeau doré sur le post-it / C case « pour le prochain cours ») + 10 idées bonus : https://claude.ai/artifact/CEdvbCeJcHjSMjY995bAkJ
+## 🎒 « À faire au prochain cours » (✅ 2026-10-07, proposition C + idées 3, 4, 5, 6, 7, 8, 10 ; maquette https://claude.ai/artifact/CEdvbCeJcHjSMjY995bAkJ)
+- Dans la fenêtre d'un groupe de la carte À FAIRE (`AdminTodoGroupDialog`) : sous la saisie, cases « 🎒 Pour le prochain cours » et « 🧳 À apporter (élèves) » (aussi dans « Modifier » et via 📌) → colonnes `admin_tasks.next_course`, `to_bring` (à apporter = fait partie du prochain cours). Ces lignes remontent dans un bloc doré « 🎒 Au prochain cours » (à faire puis 🧳 à apporter) ; sur le post-it de l'accueil elles passent en premier (🎒/🧳).
+- **Mode cours** (idée 3, `CourseModeDialog` dans `src/components/home/NextCourse.tsx`) : grand écran pour cocher (avec confirmation) + « ✅ Terminer le cours » → **report automatique** (idée 4) : les lignes pas faites restent pour le cours suivant, `carried` +1, affiché « 🔁 reportée ×n ».
+- **Registre** (idée 5) : bouton « 🎒 Prochain cours » sur le bandeau de chaque groupe → ouvre le mode cours du groupe.
+- **Annoncer au groupe** (idée 6, `AnnounceDialog`) : lignes au choix (cochées par défaut) → messagerie admin pré-remplie « 📚 Au prochain cours, inch'Allah : … / 🧳 Pense à apporter : … » (Général = tous les élèves).
+- **Modèles** (idée 8) : table `admin_task_templates` (admin seulement, testé), « ⚡ Enregistrer comme modèle » dans 📌, puces « ⚡ Modèles » sous la saisie (un clic = ajout), « Gérer » → ✕ avec confirmation, corbeille type `admin_task_template`. Dictée 🎤 (idée 10) déjà présente.
+- Migration `20261007190000_next_course.sql`. Idées non retenues : 1 (jour de cours), 2 (rappel le matin), 9 (historique).
 
 ## 🗑️ Corbeille — règles de Nadia (2026-09-30, identiques à l'Agenda)
 - Tout ce qui est supprimé dans l'appli (🗑️ ou croix rouge) va d'abord dans la corbeille de Paramètres (bouton « Corbeille » dans la fenêtre de la roue dentée ⚙️) ; rien n'est supprimé définitivement sauf quand la personne vide elle-même sa corbeille.

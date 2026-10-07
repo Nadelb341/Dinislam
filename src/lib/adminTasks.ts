@@ -14,3 +14,10 @@ export function sortTasks(tasks: AdminTask[]) {
   return { open, done };
 }
 export const draftKeyOf = (groupId: string | null) => `dinislam_admin_task_${groupId ?? 'general'}`;
+
+/** Lignes du prochain cours d'un groupe (group_id null = « Général ») : d'abord à faire, puis à apporter */
+export function courseItems(tasks: AdminTask[]) {
+  const open = tasks.filter((t) => t.next_course && !t.done).sort((a, b) => Number(b.urgent) - Number(a.urgent) || a.position - b.position);
+  return { todo: open.filter((t) => !t.to_bring), bring: open.filter((t) => t.to_bring) };
+}
+

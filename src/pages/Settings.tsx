@@ -67,6 +67,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   sourate_recitation: 'Récitation',
   alphabet_letter_audio: 'Audio d\'une lettre',
   admin_task: 'Tâche « À FAIRE »',
+  admin_task_template: 'Modèle de tâche (À FAIRE)',
   alphabet_line_model: 'Modèle audio (Alphabet)',
 };
 

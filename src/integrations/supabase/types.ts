@@ -83,8 +83,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_task_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          next_course: boolean
+          title: string
+          to_bring: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_course?: boolean
+          title: string
+          to_bring?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_course?: boolean
+          title?: string
+          to_bring?: boolean
+        }
+        Relationships: []
+      }
       admin_tasks: {
         Row: {
+          carried: number
           created_at: string
           created_by: string | null
           done: boolean
@@ -92,16 +120,19 @@ export type Database = {
           due_date: string | null
           group_id: string | null
           id: string
+          next_course: boolean
           position: number
           recurrence: string | null
           remind_at: string | null
           reminded_at: string | null
           student_id: string | null
           title: string
+          to_bring: boolean
           updated_at: string
           urgent: boolean
         }
         Insert: {
+          carried?: number
           created_at?: string
           created_by?: string | null
           done?: boolean
@@ -109,16 +140,19 @@ export type Database = {
           due_date?: string | null
           group_id?: string | null
           id?: string
+          next_course?: boolean
           position?: number
           recurrence?: string | null
           remind_at?: string | null
           reminded_at?: string | null
           student_id?: string | null
           title: string
+          to_bring?: boolean
           updated_at?: string
           urgent?: boolean
         }
         Update: {
+          carried?: number
           created_at?: string
           created_by?: string | null
           done?: boolean
@@ -126,12 +160,14 @@ export type Database = {
           due_date?: string | null
           group_id?: string | null
           id?: string
+          next_course?: boolean
           position?: number
           recurrence?: string | null
           remind_at?: string | null
           reminded_at?: string | null
           student_id?: string | null
           title?: string
+          to_bring?: boolean
           updated_at?: string
           urgent?: boolean
         }
