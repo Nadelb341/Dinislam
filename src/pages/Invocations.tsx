@@ -406,6 +406,15 @@ const Invocations = () => {
         .eq('user_id', user.id)
         .eq('invocation_id', invocationId)
         .eq('status', 'refused');
+      // Une seule demande en attente à la fois (pas de nouvelle notification si elle existe déjà)
+      const { data: alreadyPending } = await supabase
+        .from('invocation_validation_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('invocation_id', invocationId)
+        .eq('status', 'pending')
+        .limit(1);
+      if (alreadyPending && alreadyPending.length > 0) throw new Error('Demande déjà envoyée');
       const { error } = await supabase
         .from('invocation_validation_requests')
         .insert({ user_id: user.id, invocation_id: invocationId });
@@ -433,7 +442,10 @@ const Invocations = () => {
         toast.success('📩 Demande de validation envoyée !');
       }
     },
-    onError: () => toast.error('Erreur lors de la validation'),
+    onError: (err: Error) => {
+      if (err.message === 'Demande déjà envoyée') toast.info('Ta demande est déjà envoyée, ton enseignant va la regarder.');
+      else toast.error('Erreur lors de la validation');
+    },
   });
 
   // Build the set of validated invocation IDs for determining unlock state

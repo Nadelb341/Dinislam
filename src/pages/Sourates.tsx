@@ -399,14 +399,27 @@ const SouratesPage = () => {
           });
           toast({ title: 'بارك الله فيك 🎉', description: 'Sourate validée ! Bonne continuation.' });
         } else {
-          // Validation par l'admin pour les -20 ans
-          await supabase
+          // Validation par l'admin pour les -20 ans — une seule demande en attente à la fois
+          // (avant : une nouvelle demande + une notification à chaque case cochée ou recochée)
+          const { data: alreadyPending } = await supabase
+            .from('sourate_validation_requests')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('sourate_id', sourateDbId)
+            .eq('status', 'pending')
+            .limit(1);
+          if (alreadyPending && alreadyPending.length > 0) {
+            toast({ title: 'بارك الله فيك', description: 'Ta demande est déjà envoyée, ton enseignant va la regarder.' });
+            return;
+          }
+          const { error: reqError } = await supabase
             .from('sourate_validation_requests')
             .insert({
               user_id: user.id,
               sourate_id: sourateDbId,
               status: 'pending',
             });
+          if (reqError) return; // demande déjà en attente (verrou de la base) : pas de nouvelle notification
 
           const sourateName = selectedSourate ? selectedSourate.name_french : `Sourate inconnue`;
           supabase.functions.invoke('send-push-notification', {

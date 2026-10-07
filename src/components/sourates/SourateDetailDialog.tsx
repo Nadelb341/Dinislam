@@ -241,11 +241,16 @@ const SourateDetailDialog = ({
 
   if (!dbId) return null;
 
+  // Nombre de cases à cocher réellement affichées : Ayat Al-Kursi = 1 verset dans la base mais 8 parties à cocher
+  // (avant : terminée dès la 1ʳᵉ partie → une demande de validation + une notification à CHAQUE partie cochée)
+  const checkCount = NPM_VERSETS[sourate.number]
+    ? NPM_VERSETS[sourate.number].filter((v) => v.num > 0).length || sourate.verses_count
+    : sourate.verses_count;
   let validatedVerses = 0;
-  for (let i = 1; i <= sourate.verses_count; i++) {
+  for (let i = 1; i <= checkCount; i++) {
     if (verseProgress.get(`${dbId}-${i}`)) validatedVerses++;
   }
-  const versePercentage = Math.round((validatedVerses / sourate.verses_count) * 100);
+  const versePercentage = Math.round((validatedVerses / checkCount) * 100);
 
   const handlePrintSourate = () => {
     const sourateVerses = NPM_VERSETS[sourate.number];
@@ -499,7 +504,7 @@ const SourateDetailDialog = ({
               <p className="font-arabic text-lg">{sourate.name_arabic}</p>
               <p className="text-sm text-muted-foreground font-normal">{sourate.name_french}</p>
               <p className="text-xs text-muted-foreground/70 font-normal">
-                {sourate.verses_count} versets • {sourate.revelation_type} • {validatedVerses}/{sourate.verses_count} validés
+                {sourate.verses_count} versets • {sourate.revelation_type} • {validatedVerses}/{checkCount} validés
               </p>
             </div>
           </DialogTitle>
@@ -664,7 +669,7 @@ const SourateDetailDialog = ({
                     >
                       <Checkbox
                         checked={isVerseValidated}
-                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, num, sourate.number, sourate.verses_count) : askValidation('Valider ce verset ?', `Le verset ${num} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, num, sourate.number, sourate.verses_count))}
+                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, num, sourate.number, checkCount) : askValidation('Valider ce verset ?', `Le verset ${num} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, num, sourate.number, checkCount))}
                         className={cn(
                           'h-5 w-5 rounded border-2 mt-1 shrink-0',
                           isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'
@@ -718,7 +723,7 @@ const SourateDetailDialog = ({
                     >
                       <Checkbox
                         checked={isVerseValidated}
-                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, verseNum, sourate.number, sourate.verses_count) : askValidation('Valider ce verset ?', `Le verset ${verseNum} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, verseNum, sourate.number, sourate.verses_count))}
+                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, verseNum, sourate.number, checkCount) : askValidation('Valider ce verset ?', `Le verset ${verseNum} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, verseNum, sourate.number, checkCount))}
                         className={cn(
                           'h-5 w-5 rounded border-2 mt-1 shrink-0',
                           isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'

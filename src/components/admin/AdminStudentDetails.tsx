@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RenameStudentDialog } from '@/components/admin/RenameStudentDialog';
 import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge';
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +19,7 @@ import {
   ArrowLeft, User, Search,
   Moon, Sparkles, BookOpen, Hand, BookMarked,
   MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff,
-  TrendingDown, Loader2, Trash2,
+  TrendingDown, Loader2, Trash2, Pencil,
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -64,6 +65,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
 
   // Password dialog state
   const [pwdDialogStudent, setPwdDialogStudent] = useState<{ id: string; full_name: string | null } | null>(null);
+  const [renameStudent, setRenameStudent] = useState<{ id: string; full_name: string | null } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
@@ -487,6 +489,9 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                   <DropdownMenuItem onClick={() => setSelectedStudent({ id: student.user_id, email: student.email || '', full_name: student.full_name })}>
                     <BookOpen className="h-4 w-4 mr-2" /> Voir la progression
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRenameStudent({ id: student.user_id, full_name: student.full_name })}>
+                    <Pencil className="h-4 w-4 mr-2" /> ✏️ Renommer l'élève
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openDobDialog(student)}>
                     <CalendarIcon className="h-4 w-4 mr-2" /> 📅 Changer Date Naissance
                   </DropdownMenuItem>
@@ -688,6 +693,8 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
         title="Supprimer cet élève ?"
         description={`Supprimer définitivement ${deleteConfirm.name} ? Toutes ses données seront effacées. Il devra se réinscrire pour accéder à l'application.`}
       />
+
+      <RenameStudentDialog student={renameStudent} onClose={() => setRenameStudent(null)} />
 
       {/* Password dialog */}
       <Dialog open={!!pwdDialogStudent} onOpenChange={() => { setPwdDialogStudent(null); setNewPassword(''); setShowCurrentPwd(false); setShowNewPwd(false); }}>
