@@ -50,11 +50,17 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   });
 
   const { data: groupData } = useQuery({
-    queryKey: ['attendance-group-members'],
+    queryKey: ['attendance-group-members', user?.id],
+    enabled: !!user,
+    retry: 3,
     queryFn: async () => {
-      const { data: g } = await supabase.from('student_groups').select('id, name, color, position').order('name');
-      const { data: m } = await supabase.from('student_group_members').select('group_id, user_id');
-      return { groups: g || [], members: m || [] };
+      const [g, m] = await Promise.all([
+        supabase.from('student_groups').select('id, name, color, position').order('name'),
+        supabase.from('student_group_members').select('group_id, user_id'),
+      ]);
+      if (g.error) throw g.error;
+      if (m.error) throw m.error;
+      return { groups: g.data || [], members: m.data || [] };
     },
   });
 

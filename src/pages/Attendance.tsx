@@ -69,14 +69,19 @@ const Attendance = () => {
   });
 
   // Groupes (Groupe 0, 1, 2…) et appartenance de chaque élève — la fonction ne donne que « qui est dans quel groupe »
-  const { data: groupData } = useQuery({
-    queryKey: ['attendance-groups-overview'],
+  const { data: groupData, isError: groupsFailed, refetch: refetchGroups } = useQuery({
+    queryKey: ['attendance-groups-overview', user?.id],
+    enabled: !!user,
+    retry: 3,
     queryFn: async () => {
-      const [{ data: groups }, { data: members }] = await Promise.all([
+      const [g, m] = await Promise.all([
         supabase.from('student_groups').select('id, name, color, position'),
         supabase.rpc('attendance_student_groups'),
       ]);
-      return { groups: groups || [], members: members || [] };
+      // Une erreur ne doit plus donner une liste « sans groupes » : on réessaie, puis on le dit
+      if (g.error) throw g.error;
+      if (m.error) throw m.error;
+      return { groups: g.data || [], members: m.data || [] };
     },
   });
   const grouped = useMemo(
@@ -190,6 +195,15 @@ const Attendance = () => {
                 ))}
               </div>
 
+              {groupsFailed && (
+                <div className="mb-3 rounded-xl bg-amber-100 dark:bg-amber-950/40 p-2 text-sm flex items-center gap-2">
+                  <span className="flex-1">Les groupes n'ont pas pu être chargés.</span>
+                  <button type="button" className="font-bold underline" onClick={() => refetchGroups()}>Réessayer</button>
+                </div>
+              )}
+              {!groupData && !groupsFailed ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Chargement des groupes…</p>
+              ) : (
               <ScrollArea className="w-full">
                 <div className="min-w-max">
                   {/* Header */}
@@ -264,6 +278,7 @@ const Attendance = () => {
                 </div>
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
+              )}
             </CardContent>
           </Card>
         )}
