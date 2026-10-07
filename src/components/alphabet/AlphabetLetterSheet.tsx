@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,9 @@ import { Check, FileText, Volume2 } from 'lucide-react';
 import { AdminLineModelRecorder } from './AdminLineModelRecorder';
 import { AlphabetLineRow, type AlphabetSubmission } from './AlphabetLineRow';
 import { LetterTracer } from './LetterTracer';
+import { RoundAudioButton } from './RoundAudioButton';
+import { letterGradient } from '@/lib/alphabetFamilies';
+import { useMyAge } from '@/hooks/useMyAge';
 import { buildLines, type LineKey } from '@/lib/alphabetLines';
 import { uploadAlphabetAudio } from '@/lib/alphabetAudio';
 import { sendPushNotification } from '@/lib/pushHelper';
@@ -31,6 +34,11 @@ interface Props {
   submissions: AlphabetSubmission[];
   models: Map<string, string>;
   contents: Tables<'alphabet_content'>[];
+  /** Place de la lettre dans l'alphabet (1 à 28) */
+  position: number;
+  /** Lettres d'avant / d'après, seulement si elles sont ouvertes pour l'élève (idée 2) */
+  prevLetter: Letter | null;
+  nextLetter: Letter | null;
   onLetterChange: (l: Letter) => void;
   onPlay: (l: Letter) => void;
   onClose: () => void;
@@ -38,7 +46,7 @@ interface Props {
 
 /** Fiche d'une lettre : 6 lignes à s'enregistrer (exercices libres), puis demande de validation à l'enseignante. */
 export function AlphabetLetterSheet({
-  letter, isLearned, directValidation, isAdmin, submissions, models, contents, onLetterChange, onPlay, onClose,
+  letter, isLearned, directValidation, isAdmin, submissions, models, contents, position, prevLetter, nextLetter, onLetterChange, onPlay, onClose,
 }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -50,6 +58,13 @@ export function AlphabetLetterSheet({
 
   const lines = useMemo(() => buildLines(letter), [letter]);
   const word = ALPHABET_WORDS[letter.letter_arabic];
+  const playWord = () => { new Audio(models.get(`${letter.id}:mot`) ?? wordSynthUrl(letter.letter_arabic)).play().catch(() => {}); };
+  const age = useMyAge();
+  const [previewDotted, setPreviewDotted] = useState(false);
+  // Idée 6 : pointillés à suivre pour les moins de 6 ans (l'enseignante peut les voir avec l'interrupteur)
+  const dotted = isAdmin ? previewDotted : age !== null && age < 6;
+  // Passer à la lettre d'avant / d'après : la fiche s'ouvre en haut
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }); }, [letter.id, scrollRef]);
   const mine = submissions.filter((s) => s.letter_id === letter.id);
   const latestOf = (key: LineKey) => mine.find((s) => s.kind === 'exercise' && s.line_key === key) ?? null;
   const lastFinal = mine.find((s) => s.kind === 'final') ?? null;
@@ -153,41 +168,56 @@ export function AlphabetLetterSheet({
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
         <div ref={scrollRef} onScroll={handleScroll} className="max-h-[88vh] overflow-y-auto p-5 space-y-4">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 pe-8">
-              <span className="font-arabic text-5xl leading-[1.4]">{letter.letter_arabic}</span>
-              <div className="min-w-0">
-                <p className="text-lg font-bold">{letter.name_french} {stars > 0 && <span className="text-amber-500 text-sm">{'⭐'.repeat(stars)}</span>}</p>
-                <p className="text-sm text-muted-foreground font-arabic">{letter.name_arabic}</p>
+          {/* En-tête « B » (bandeau dégradé, couleur de la famille de lettres, idée 9) + étiquettes « C » + ‹ › (idée 2) */}
+          <DialogHeader className="mt-6">
+            <div className="rounded-3xl px-2 pt-3 pb-4 text-white shadow-md" style={{ background: letterGradient(letter.letter_arabic) }}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
+                <div className="flex justify-start">
+                  {prevLetter && (
+                    <button type="button" onClick={() => onLetterChange(prevLetter)} aria-label={`Lettre d'avant : ${prevLetter.name_french}`}
+                      className="rounded-full bg-white/20 hover:bg-white/30 px-2.5 py-1.5 text-sm font-bold [overflow-wrap:anywhere]">
+                      ‹ {prevLetter.name_french}
+                    </button>
+                  )}
+                </div>
+                <DialogTitle className="font-arabic text-8xl leading-[1.3] font-normal text-center drop-shadow-md">{letter.letter_arabic}</DialogTitle>
+                <div className="flex justify-end">
+                  {nextLetter && (
+                    <button type="button" onClick={() => onLetterChange(nextLetter)} aria-label={`Lettre d'après : ${nextLetter.name_french}`}
+                      className="rounded-full bg-white/20 hover:bg-white/30 px-2.5 py-1.5 text-sm font-bold [overflow-wrap:anywhere]">
+                      {nextLetter.name_french} ›
+                    </button>
+                  )}
+                </div>
               </div>
-            </DialogTitle>
+              <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                <span className="rounded-full bg-white/90 text-slate-900 px-3 py-0.5 font-extrabold">{letter.name_french}</span>
+                <span className="rounded-full bg-white/90 text-slate-900 px-3 py-0.5 font-arabic text-lg leading-snug">{letter.name_arabic}</span>
+                <span className="rounded-full bg-white/90 text-slate-900 px-3 py-0.5 font-bold">{position === 1 ? '1ʳᵉ' : `${position}ᵉ`} lettre</span>
+              </div>
+              {stars > 0 && <p className="text-center text-sm mt-1.5">{'⭐'.repeat(stars)}</p>}
+            </div>
           </DialogHeader>
 
-          {/* Audio de la lettre (les 2 enregistreurs de l'enseignante « Ta voix… » retirés à sa demande le 2026-10-07) */}
-          {([
-            { field: 'audio_url' as const, label: 'La lettre', url: letter.audio_url },
-            { field: 'audio_vowels_url' as const, label: 'Avec les voyelles (a, i, ou)', url: letter.audio_vowels_url },
-          ]).filter(({ url }) => !!url).map(({ field, label, url }) => (
-            <div key={field} className="bg-sky-50 dark:bg-sky-950/20 rounded-xl p-3 space-y-1">
-              <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-              <div className="flex items-center gap-3">
-                <Volume2 className="h-5 w-5 text-primary shrink-0" />
-                <audio key={url} src={url ?? undefined} controls className="flex-1 min-w-0 h-8" />
-              </div>
+          {/* Audio juste en dessous (proposition « 1 » : gros bouton rond) */}
+          {(letter.audio_url || letter.audio_vowels_url) && (
+            <div className="flex justify-center gap-8">
+              {letter.audio_url && <RoundAudioButton url={letter.audio_url} label="Écoute la lettre" from="#3b82f6" to="#1d4ed8" />}
+              {letter.audio_vowels_url && <RoundAudioButton url={letter.audio_vowels_url} label="Avec a, i, ou" from="#8b5cf6" to="#6d28d9" />}
             </div>
-          ))}
+          )}
 
           {/* Mot exemple (idée 6) */}
           {word && (
             <div className="rounded-2xl bg-orange-50 dark:bg-orange-950/20 p-3 space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-4xl shrink-0">{word.emoji}</span>
+                <button type="button" onClick={playWord} aria-label={`Écouter : ${word.fr}`} className="text-4xl shrink-0 transition-transform active:scale-90">{word.emoji}</button>
                 <div className="flex-1 min-w-0">
                   <p className="font-arabic text-3xl leading-[1.5]" dir="rtl">{word.word}</p>
                   <p className="text-sm"><span className="font-semibold">« {word.tr} »</span> <span className="text-muted-foreground">· {word.fr}</span></p>
                 </div>
                 <Button type="button" size="icon" variant="secondary" className="rounded-full shrink-0" aria-label="Écouter le mot"
-                  onClick={() => new Audio(models.get(`${letter.id}:mot`) ?? wordSynthUrl(letter.letter_arabic)).play().catch(() => {})}>
+                  onClick={playWord}>
                   🔊
                 </Button>
               </div>
@@ -229,7 +259,17 @@ export function AlphabetLetterSheet({
             <Button type="button" variant="outline" onClick={() => setShowTracer((s) => !s)}>✍️ Tracer la lettre</Button>
             <Button type="button" variant="outline" onClick={() => onPlay(letter)}>🎮 Jouer avec {letter.letter_arabic}</Button>
           </div>
-          {showTracer && <LetterTracer forms={lines[0].cells} />}
+          {showTracer && (
+            <div className="space-y-2">
+              {isAdmin && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input type="checkbox" checked={previewDotted} onChange={(e) => setPreviewDotted(e.target.checked)} className="h-4 w-4" />
+                  Voir comme un élève de moins de 6 ans (pointillés à suivre)
+                </label>
+              )}
+              <LetterTracer key={letter.id} letter={letter.letter_arabic} forms={lines[0].cells} dotted={dotted} />
+            </div>
+          )}
 
           {/* Ressources ajoutées par l'enseignante */}
           {selectedContents.length > 0 && (

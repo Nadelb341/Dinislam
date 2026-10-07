@@ -477,6 +477,9 @@ const AlphabetPage = () => {
             submissions={submissions}
             models={models}
             contents={contents}
+            position={letters.findIndex((l) => l.id === selectedLetter.id) + 1}
+            prevLetter={(() => { const i = letters.findIndex((l) => l.id === selectedLetter.id); const l = letters[i - 1]; return l && unlocked.has(l.id) ? l : null; })()}
+            nextLetter={(() => { const i = letters.findIndex((l) => l.id === selectedLetter.id); const l = letters[i + 1]; return l && unlocked.has(l.id) ? l : null; })()}
             onLetterChange={setSelectedLetter}
             onPlay={(l) => setReading({ mode: 'lettre', letters: [l] })}
             onClose={() => setSelectedLetter(null)}
