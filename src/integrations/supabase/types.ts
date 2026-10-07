@@ -583,7 +583,9 @@ export type Database = {
           date: string
           id: string
           marked_by: string | null
+          message_seen_at: string | null
           notes: string | null
+          send_message: boolean
           status: string
           user_id: string
         }
@@ -592,7 +594,9 @@ export type Database = {
           date?: string
           id?: string
           marked_by?: string | null
+          message_seen_at?: string | null
           notes?: string | null
+          send_message?: boolean
           status?: string
           user_id: string
         }
@@ -601,7 +605,9 @@ export type Database = {
           date?: string
           id?: string
           marked_by?: string | null
+          message_seen_at?: string | null
           notes?: string | null
+          send_message?: boolean
           status?: string
           user_id?: string
         }
@@ -3358,6 +3364,10 @@ export type Database = {
       is_user_in_group: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
+      }
+      mark_attendance_message_seen: {
+        Args: { p_id: string }
+        Returns: undefined
       }
       move_attendance_session: {
         Args: { p_from: string; p_to: string }

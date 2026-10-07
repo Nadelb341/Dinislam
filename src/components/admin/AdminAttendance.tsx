@@ -30,6 +30,8 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const { user } = useAuth();
   // Date à modifier (string), ajout (null) ou fenêtre fermée (undefined)
   const [editDate, setEditDate] = useState<string | null | undefined>(undefined);
+  // Idée 5 (2026-10-07) : mode où toucher une case coupe / remet le message envoyé à l'élève après le cours
+  const [msgMode, setMsgMode] = useState(false);
   // Idée 5 : depuis le Registre, ouvrir le « mode cours » du groupe (carte À FAIRE)
   const [courseGroup, setCourseGroup] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
@@ -75,9 +77,9 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
   const today = todayIso();
 
   const recordMap = useMemo(() => {
-    const map = new Map<string, { id: string; status: AttendanceStatus }>();
+    const map = new Map<string, { id: string; status: AttendanceStatus; sendMessage: boolean }>();
     records.forEach(r => {
-      map.set(`${r.user_id}-${r.date}`, { id: r.id, status: r.status as AttendanceStatus });
+      map.set(`${r.user_id}-${r.date}`, { id: r.id, status: r.status as AttendanceStatus, sendMessage: r.send_message });
     });
     return map;
   }, [records]);
@@ -88,7 +90,17 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     [students, groupData],
   );
 
+  const toggleMessage = async (userId: string, date: string) => {
+    const record = recordMap.get(`${userId}-${date}`);
+    if (!record) { toast.info("Note d'abord la présence de l'élève pour ce cours"); return; }
+    const { error } = await supabase.from('attendance_records').update({ send_message: !record.sendMessage }).eq('id', record.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(record.sendMessage ? "🔕 Cet élève ne recevra pas le message pour ce cours" : '💬 Le message sera envoyé à cet élève');
+    refetchRecords();
+  };
+
   const handleClickPresence = async (userId: string, date: string, currentStatus?: AttendanceStatus) => {
+    if (msgMode) { await toggleMessage(userId, date); return; }
     const cycle: Record<string, AttendanceStatus | null> = {
       present: 'absent',
       absent: 'late',
@@ -153,6 +165,18 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
             {val.label}
           </span>
         ))}
+      </div>
+
+      {/* Message envoyé à l'élève après le cours (présent / en retard / absent) */}
+      <div className={cn('rounded-xl border p-2.5 text-sm flex flex-wrap items-center gap-2', msgMode ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border')}>
+        <span className="flex-1 min-w-0">
+          {msgMode
+            ? '🔕 Touche la case d\'un élève pour couper (ou remettre) le message qu\'il reçoit après ce cours. Ex. : absence justifiée.'
+            : '💬 Après chaque cours, l\'élève reçoit une fois un petit message selon sa présence.'}
+        </span>
+        <Button size="sm" variant={msgMode ? 'default' : 'outline'} onClick={() => setMsgMode((m) => !m)}>
+          {msgMode ? 'Terminé' : '🔕 Choisir les messages'}
+        </Button>
       </div>
 
       {/* Tableau */}
@@ -229,7 +253,9 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                           onClick={() => handleClickPresence(student.user_id, date, status)}
                         >
                           {display ? (
-                            <div className="w-7 h-7 rounded-full" style={{ backgroundColor: display.color }} />
+                            <div className="relative w-7 h-7 rounded-full" style={{ backgroundColor: display.color }}>
+                              {record && !record.sendMessage && <span className="absolute -top-1.5 -right-2 text-xs" title="Message coupé">🔕</span>}
+                            </div>
                           ) : (
                             <div className="w-7 h-7 rounded-full border-2 border-dashed border-muted-foreground/30" />
                           )}

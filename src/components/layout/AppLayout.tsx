@@ -9,6 +9,7 @@ import AdminMoonAssistant from '@/components/admin/AdminMoonAssistant';
 import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 import PendingDraftsCenter from '@/components/PendingDraftsCenter';
 import TrashPurgeWarning from '@/components/TrashPurgeWarning';
+import AttendanceMessage from '@/components/attendance/AttendanceMessage';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
@@ -37,6 +38,7 @@ const AppLayout = ({
           <PushAutoSubscribe />
           <PendingDraftsCenter />
           <TrashPurgeWarning />
+          <AttendanceMessage />
         </div>
         {children}
       </main>
