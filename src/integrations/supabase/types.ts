@@ -91,6 +91,7 @@ export type Database = {
           next_course: boolean
           title: string
           to_bring: boolean
+          to_prepare: boolean
         }
         Insert: {
           created_at?: string
@@ -99,6 +100,7 @@ export type Database = {
           next_course?: boolean
           title: string
           to_bring?: boolean
+          to_prepare?: boolean
         }
         Update: {
           created_at?: string
@@ -107,6 +109,7 @@ export type Database = {
           next_course?: boolean
           title?: string
           to_bring?: boolean
+          to_prepare?: boolean
         }
         Relationships: []
       }
@@ -128,6 +131,7 @@ export type Database = {
           student_id: string | null
           title: string
           to_bring: boolean
+          to_prepare: boolean
           updated_at: string
           urgent: boolean
         }
@@ -148,6 +152,7 @@ export type Database = {
           student_id?: string | null
           title: string
           to_bring?: boolean
+          to_prepare?: boolean
           updated_at?: string
           urgent?: boolean
         }
@@ -168,6 +173,7 @@ export type Database = {
           student_id?: string | null
           title?: string
           to_bring?: boolean
+          to_prepare?: boolean
           updated_at?: string
           urgent?: boolean
         }

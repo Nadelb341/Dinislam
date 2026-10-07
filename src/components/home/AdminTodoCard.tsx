@@ -115,7 +115,7 @@ export function AdminTodoCard() {
           {allGroups.map((g) => {
             const { open, done } = sortTasks(tasksOf(g.id));
             // 🎒 Prochain cours d'abord, puis les autres tâches, puis les faites de la semaine
-            const lines = [...open.filter((t) => t.next_course), ...open.filter((t) => !t.next_course), ...done.filter((t) => (t.done_at ?? '') >= new Date(Date.now() - 7 * 86400000).toISOString())];
+            const lines = [...open.filter((t) => t.next_course), ...open.filter((t) => t.to_prepare), ...open.filter((t) => !t.next_course && !t.to_prepare), ...done.filter((t) => (t.done_at ?? '') >= new Date(Date.now() - 7 * 86400000).toISOString())];
             const shown = lines.slice(0, MAX_LINES);
             const more = lines.length - shown.length;
             const late = open.some(isLate);
@@ -146,7 +146,7 @@ export function AdminTodoCard() {
                           key={t.id}
                           className={`block truncate text-[12px] leading-snug ${t.done ? 'line-through text-muted-foreground' : isLate(t) ? 'text-destructive font-semibold' : 'text-foreground'}`}
                         >
-                          {t.done ? '• ' : t.to_bring ? '🧳 ' : t.next_course ? '🎒 ' : t.urgent ? '⭐ ' : '• '}{t.title}
+                          {t.done ? '• ' : t.to_bring ? '🧳 ' : t.next_course ? '🎒 ' : t.to_prepare ? '📚 ' : t.urgent ? '⭐ ' : '• '}{t.title}
                         </span>
                       ))}
                     </span>

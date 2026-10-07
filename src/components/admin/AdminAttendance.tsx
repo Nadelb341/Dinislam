@@ -11,7 +11,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn, errorMessage } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { attendanceDates, cycleAttendance, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso } from '@/lib/attendanceSessions';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 interface AdminAttendanceProps {
@@ -95,6 +96,22 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     () => groupStudents(students, groupData?.groups ?? [], groupData?.members ?? []),
     [students, groupData],
   );
+
+  // « ✅ Tous présents » pour un groupe, date du jour (même chose que dans « Ma Présence »)
+  const { askValidation, validationDialog } = useConfirmValidation();
+  const allPresent = (groupName: string, ids: string[]) => {
+    const todo = ids.filter((id) => !recordMap.has(`${id}-${today}`));
+    if (!todo.length) { toast.info('Tous les élèves de ce groupe sont déjà notés aujourd\'hui'); return; }
+    askValidation(`Tous présents · ${groupName} ?`, `${todo.length} élève${todo.length > 1 ? 's' : ''} pas encore noté${todo.length > 1 ? 's' : ''} aujourd'hui passe${todo.length > 1 ? 'nt' : ''} en « présent ».`, async () => {
+      try {
+        await markAllPresent(todo, today, user?.id);
+        refetchRecords();
+        queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
+    });
+  };
 
   const toggleMessage = async (userId: string, date: string) => {
     const record = recordMap.get(`${userId}-${date}`);
@@ -189,11 +206,18 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                   >
                     <span>👥 {group.groupName}</span>
                     <span className="opacity-70">— {group.members.length} élève{group.members.length > 1 ? 's' : ''}</span>
+                    <button
+                      type="button"
+                      onClick={() => allPresent(group.groupName ?? 'groupe', group.members.map((m) => m.user_id))}
+                      className={`ms-auto rounded-full bg-white/25 hover:bg-white/35 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap`}
+                    >
+                      ✅ Tous présents
+                    </button>
                     {group.groupId && (
                       <button
                         type="button"
                         onClick={() => setCourseGroup({ id: group.groupId, name: group.groupName ?? '' })}
-                        className="ms-auto rounded-full bg-white/25 hover:bg-white/35 px-2.5 py-0.5 text-[11px] font-bold"
+                        className="rounded-full bg-white/25 hover:bg-white/35 px-2.5 py-0.5 text-[11px] font-bold"
                       >
                         🎒 Prochain cours
                       </button>
@@ -276,6 +300,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
       )}
 
       <AttendanceDateDialog open={editDate !== undefined} date={editDate ?? null} existing={savedDates} level="nested" onClose={() => setEditDate(undefined)} />
+      {validationDialog}
       <CourseModeDialog groupId={courseGroup?.id ?? null} groupName={courseGroup?.name ?? ''} open={!!courseGroup} onClose={() => setCourseGroup(null)} />
     </div>
   );

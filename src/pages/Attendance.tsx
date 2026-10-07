@@ -10,7 +10,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn, errorMessage } from '@/lib/utils';
 import { groupColorProps, groupStudents } from '@/lib/studentGroups';
-import { attendanceDates, cycleAttendance, fetchAttendanceSessions, todayIso } from '@/lib/attendanceSessions';
+import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso } from '@/lib/attendanceSessions';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
 type AttendanceStatus = 'present' | 'absent' | 'late';
@@ -130,6 +131,23 @@ const Attendance = () => {
     } finally {
       setBusyCell(null);
     }
+  };
+
+  // Idée 3 : « ✅ Tous présents » pour un groupe, sur la date du jour (seulement les élèves pas encore notés)
+  const { askValidation, validationDialog } = useConfirmValidation();
+  const allPresent = (groupName: string, ids: string[]) => {
+    const todo = ids.filter((id) => !recordMap.has(`${id}-${today}`));
+    if (!todo.length) { toast.info('Tous les élèves de ce groupe sont déjà notés aujourd\'hui'); return; }
+    askValidation(`Tous présents · ${groupName} ?`, `${todo.length} élève${todo.length > 1 ? 's' : ''} pas encore noté${todo.length > 1 ? 's' : ''} aujourd'hui passe${todo.length > 1 ? 'nt' : ''} en « présent ». Tu changes ensuite les absents et les retards d'un toucher.`, async () => {
+      try {
+        await markAllPresent(todo, today, user?.id);
+        await queryClient.invalidateQueries({ queryKey: ['all-attendance'] });
+        queryClient.invalidateQueries({ queryKey: ['attendance-records'] });
+        toast.success(`✅ ${todo.length} élève${todo.length > 1 ? 's' : ''} marqué${todo.length > 1 ? 's' : ''} présent${todo.length > 1 ? 's' : ''}`);
+      } catch (e) {
+        toast.error(errorMessage(e));
+      }
+    });
   };
 
   // Deux élèves avec le même prénom (ex. 2 « Lina ») : on ajoute l'initiale du nom
@@ -276,6 +294,12 @@ const Attendance = () => {
                     >
                       <span>👥 {group.groupName}</span>
                       <span className="opacity-80">— {group.members.length}</span>
+                      {isAdmin && (
+                        <button type="button" onClick={() => allPresent(group.groupName ?? 'groupe', group.members.map((m) => m.user_id))}
+                          className="rounded-full bg-white/25 hover:bg-white/35 px-2 py-0.5 text-[10px] font-bold whitespace-nowrap">
+                          ✅ Tous présents aujourd'hui
+                        </button>
+                      )}
                     </div>
                   )}
                   {group.members.map((student, idx) => (
@@ -332,6 +356,7 @@ const Attendance = () => {
             </CardContent>
           </Card>
         )}
+        {validationDialog}
         {isAdmin && (
           <AttendanceDateDialog open={editDate !== undefined} date={editDate ?? null} existing={savedDates} onClose={() => setEditDate(undefined)} />
         )}

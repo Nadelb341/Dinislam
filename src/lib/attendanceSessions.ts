@@ -60,3 +60,14 @@ export async function cycleAttendance(userId: string, date: string, current: { i
     : await supabase.from('attendance_records').delete().eq('id', current.id);
   if (error) throw error;
 }
+
+/** « ✅ Tous présents » (2026-10-08) : marque présents les élèves pas encore notés ce jour-là (ne change rien à ceux déjà notés) */
+export async function markAllPresent(userIds: string[], date: string, markedBy?: string) {
+  if (!userIds.length) return 0;
+  const { error } = await supabase.from('attendance_records').upsert(
+    userIds.map((user_id) => ({ user_id, date, status: 'present', marked_by: markedBy ?? null })),
+    { onConflict: 'user_id,date', ignoreDuplicates: true },
+  );
+  if (error) throw error;
+  return userIds.length;
+}

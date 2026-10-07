@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,16 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
       return new Set((data || []).map((r) => r.flashcard_id));
     },
   });
+  // Idée 1 (2026-10-08) : réviser seulement les mots pas encore appris
+  const [onlyUnknown, setOnlyUnknown] = useState(false);
+  const base = useMemo(() => (onlyUnknown ? cards.filter((c) => !learned.has(c.id)) : cards), [cards, onlyUnknown]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setDeck(base);
+    setIndex(0);
+    setFlipped(false);
+    setIsShuffled(false);
+  }, [base]);
+
   const setLearned = async (id: string, value: boolean) => {
     if (!user) return;
     const { error } = value
@@ -43,17 +53,23 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
     queryClient.invalidateQueries({ queryKey: ['flashcard-learned', user.id] });
   };
 
-  useEffect(() => {
-    setDeck(cards);
-    setIndex(0);
-    setFlipped(false);
-    setIsShuffled(false);
-  }, [cards]);
 
-  const current = deck[index];
-  if (!current) return null;
-  const knows = learned.has(current.id);
   const learnedCount = cards.filter((c) => learned.has(c.id)).length;
+  const unknownToggle = user && learnedCount > 0 && (
+    <Button type="button" size="sm" variant={onlyUnknown ? 'default' : 'outline'} className="w-full h-8 text-xs" onClick={() => setOnlyUnknown((o) => !o)}>
+      {onlyUnknown ? `↩️ Revoir tous les mots (${cards.length})` : `🎯 Seulement les mots à apprendre (${cards.length - learnedCount})`}
+    </Button>
+  );
+  const current = deck[index];
+  if (!current) {
+    return onlyUnknown ? (
+      <div className="space-y-3 text-center">
+        <p className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4 font-bold">🎉 Tu connais tous les mots de cette carte, bravo !</p>
+        {unknownToggle}
+      </div>
+    ) : null;
+  }
+  const knows = learned.has(current.id);
 
   const goTo = (newIndex: number) => {
     setFlipped(false);
@@ -61,14 +77,14 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
   };
 
   const shuffle = () => {
-    setDeck([...cards].sort(() => Math.random() - 0.5));
+    setDeck([...base].sort(() => Math.random() - 0.5));
     setIndex(0);
     setFlipped(false);
     setIsShuffled(true);
   };
 
   const reset = () => {
-    setDeck(cards);
+    setDeck(base);
     setIndex(0);
     setFlipped(false);
     setIsShuffled(false);
@@ -86,6 +102,8 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
           }
         </Button>
       </div>
+
+      {unknownToggle}
 
       {/* Barre de progression */}
       <div className="w-full bg-muted rounded-full h-1.5">

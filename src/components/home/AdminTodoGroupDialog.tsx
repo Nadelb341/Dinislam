@@ -38,18 +38,20 @@ const addDays = (date: string, days: number) => {
   return d.toLocaleDateString('en-CA');
 };
 
-interface Options { due_date: string; remind_at: string; student_id: string; recurrence: boolean; urgent: boolean; next_course: boolean; to_bring: boolean }
-const EMPTY_OPTIONS: Options = { due_date: '', remind_at: '', student_id: '', recurrence: false, urgent: false, next_course: false, to_bring: false };
+interface Options { due_date: string; remind_at: string; student_id: string; recurrence: boolean; urgent: boolean; next_course: boolean; to_bring: boolean; to_prepare: boolean }
+const EMPTY_OPTIONS: Options = { due_date: '', remind_at: '', student_id: '', recurrence: false, urgent: false, next_course: false, to_bring: false, to_prepare: false };
 
-/** Les 3 onglets de la fenêtre d'un groupe (2026-10-07, montage validé par Nadia) */
-type Kind = 'cours' | 'apporter' | 'note';
+/** Les onglets de la fenêtre d'un groupe (2026-10-07, montage validé par Nadia ; « Devoirs à préparer » ajouté le 2026-10-08) */
+type Kind = 'cours' | 'preparer' | 'apporter' | 'note';
 const KINDS: { key: Kind; icon: string; label: string; tone: string }[] = [
   { key: 'cours', icon: '🎒', label: 'Prochain cours', tone: 'bg-amber-50 dark:bg-amber-950/30' },
+  { key: 'preparer', icon: '📚', label: 'Devoirs à préparer', tone: 'bg-emerald-50 dark:bg-emerald-950/30' },
   { key: 'apporter', icon: '🧳', label: 'À apporter', tone: 'bg-violet-50 dark:bg-violet-950/30' },
   { key: 'note', icon: '📝', label: 'Mémo', tone: 'bg-sky-50 dark:bg-sky-950/30' },
 ];
-const kindOf = (t: AdminTask): Kind => (t.to_bring ? 'apporter' : t.next_course ? 'cours' : 'note');
-const flagsOf = (k: Kind) => ({ next_course: k !== 'note', to_bring: k === 'apporter' });
+const kindOf = (t: AdminTask): Kind => (t.to_bring ? 'apporter' : t.to_prepare ? 'preparer' : t.next_course ? 'cours' : 'note');
+/** « Devoirs à préparer » = pour l'enseignante, ne fait pas partie de la liste du cours ni de l'annonce aux élèves */
+const flagsOf = (k: Kind) => ({ next_course: k === 'cours' || k === 'apporter', to_bring: k === 'apporter', to_prepare: k === 'preparer' });
 
 /** Champs supplémentaires d'une tâche (création et modification : mêmes réglages) */
 function TaskOptions({ value, onChange, students }: { value: Options; onChange: (v: Options) => void; students: TodoStudent[] }) {
@@ -163,7 +165,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
   const { open: allOpen, done } = useMemo(() => sortTasks(tasks), [tasks]);
   const course = useMemo(() => courseItems(tasks), [tasks]);
-  const open = useMemo(() => allOpen.filter((t) => !t.next_course), [allOpen]);
+  const open = useMemo(() => allOpen.filter((t) => !t.next_course && !t.to_prepare), [allOpen]);
+  const toPrepare = useMemo(() => allOpen.filter((t) => t.to_prepare), [allOpen]);
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
   const recentDone = done.filter((t) => (t.done_at ?? '') >= weekAgo);
   const oldDone = done.filter((t) => (t.done_at ?? '') < weekAgo);
@@ -176,8 +179,9 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     student_id: o.student_id || null,
     recurrence: o.recurrence ? 'weekly' : null,
     urgent: o.urgent,
-    next_course: o.next_course || o.to_bring,
+    next_course: (o.next_course || o.to_bring) && !o.to_prepare,
     to_bring: o.to_bring,
+    to_prepare: o.to_prepare,
   });
 
   const add = async () => {
@@ -234,7 +238,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
   const moveTo = async (task: AdminTask, k: Kind) => {
     const { error } = await supabase.from('admin_tasks')
-      .update({ ...flagsOf(k), carried: k === 'note' ? 0 : task.carried, updated_at: new Date().toISOString() })
+      .update({ ...flagsOf(k), carried: k === 'note' || k === 'preparer' ? 0 : task.carried, updated_at: new Date().toISOString() })
       .eq('id', task.id);
     if (error) toast.error(errorMessage(error)); else { refresh(); toast.success(`Déplacé vers ${KINDS.find((x) => x.key === k)?.label}`); }
   };
@@ -252,7 +256,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
         const { error: e2 } = await supabase.from('admin_tasks').insert({
           group_id: task.group_id, title: task.title, due_date: addDays(base, 7), remind_at: nextRemind,
           student_id: task.student_id, recurrence: 'weekly', urgent: task.urgent, position: task.position,
-          next_course: task.next_course, to_bring: task.to_bring,
+          next_course: task.next_course, to_bring: task.to_bring, to_prepare: task.to_prepare,
         });
         if (e2) throw e2;
         toast.success(`🔁 Prochaine fois prévue le ${fmtDate(addDays(base, 7))}`);
@@ -284,17 +288,17 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
   const saveAsTemplate = async (task: AdminTask) => {
     const { error } = await supabase.from('admin_task_templates')
-      .insert({ title: task.title, next_course: task.next_course, to_bring: task.to_bring });
+      .insert({ title: task.title, next_course: task.next_course, to_bring: task.to_bring, to_prepare: task.to_prepare });
     if (error) { toast.error(errorMessage(error)); return; }
     queryClient.invalidateQueries({ queryKey: ['admin-task-templates'] });
     toast.success('Modèle enregistré ⚡ Tu le retrouves sous la case de saisie');
   };
 
-  const addFromTemplate = async (tpl: { title: string; next_course: boolean; to_bring: boolean }) => {
+  const addFromTemplate = async (tpl: { title: string; next_course: boolean; to_bring: boolean; to_prepare: boolean }) => {
     if (!group) return;
     const minPos = Math.min(0, ...tasks.map((t) => t.position));
     const { error } = await supabase.from('admin_tasks').insert({
-      group_id: group.id, title: tpl.title, position: minPos - 10, next_course: tpl.next_course || tpl.to_bring, to_bring: tpl.to_bring,
+      group_id: group.id, title: tpl.title, position: minPos - 10, next_course: (tpl.next_course || tpl.to_bring) && !tpl.to_prepare, to_bring: tpl.to_bring, to_prepare: tpl.to_prepare,
     });
     if (error) toast.error(errorMessage(error)); else { refresh(); toast.success(`Ajouté : ${tpl.title}`); }
   };
@@ -315,7 +319,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     setEditTitle(task.title);
     setEditOptions({
       due_date: task.due_date ?? '', remind_at: toLocalInput(task.remind_at), student_id: task.student_id ?? '',
-      recurrence: task.recurrence === 'weekly', urgent: task.urgent, next_course: task.next_course, to_bring: task.to_bring,
+      recurrence: task.recurrence === 'weekly', urgent: task.urgent, next_course: task.next_course, to_bring: task.to_bring, to_prepare: task.to_prepare,
     });
   };
   const saveEdit = async () => {
@@ -449,7 +453,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
                 {templates.map((tpl) => (
                   <span key={tpl.id} className="inline-flex items-center rounded-full border border-border bg-card text-xs">
                     <button type="button" onClick={() => addFromTemplate(tpl)} className="px-2.5 py-1 [overflow-wrap:anywhere] text-start">
-                      {tpl.to_bring ? '🧳 ' : tpl.next_course ? '🎒 ' : '📝 '}{tpl.title}
+                      {tpl.to_bring ? '🧳 ' : tpl.to_prepare ? '📚 ' : tpl.next_course ? '🎒 ' : '📝 '}{tpl.title}
                     </button>
                     {manageTemplates && (
                       <button type="button" onClick={() => setConfirmTemplateDelete({ id: tpl.id, title: tpl.title })} className="pe-2 text-destructive font-bold" aria-label={`Supprimer le modèle ${tpl.title}`}>✕</button>
@@ -479,10 +483,10 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
             </div>
           )}
 
-          {/* Les 3 onglets de couleur */}
-          <div role="tablist" className="grid grid-cols-3 gap-1">
+          {/* Les 4 onglets de couleur */}
+          <div role="tablist" className="grid grid-cols-4 gap-1">
             {KINDS.map((k) => {
-              const count = k.key === 'cours' ? course.todo.length : k.key === 'apporter' ? course.bring.length : open.length;
+              const count = k.key === 'cours' ? course.todo.length : k.key === 'preparer' ? toPrepare.length : k.key === 'apporter' ? course.bring.length : open.length;
               const active = kind === k.key;
               return (
                 <button
@@ -525,7 +529,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
               <div className="rounded-xl border-2 border-dashed border-primary bg-card p-2.5 space-y-2">
                 <Input value={spoken} onChange={(e) => setSpoken(e.target.value)} placeholder={listening ? 'Je t\'écoute…' : 'Ce que tu as dit'} aria-label="Phrase dictée" />
                 <p className="text-[11px] text-muted-foreground">Touche où la ranger :</p>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                   {KINDS.map((k) => (
                     <button key={k.key} type="button" disabled={!spoken.trim()} onClick={() => addSpoken(k.key)}
                       className={`rounded-xl px-1 py-2 text-xs font-bold disabled:opacity-40 ${k.tone}`}>
@@ -539,7 +543,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
 
             {/* Lignes de l'onglet */}
             {(() => {
-              const items = kind === 'cours' ? course.todo : kind === 'apporter' ? course.bring : open;
+              const items = kind === 'cours' ? course.todo : kind === 'preparer' ? toPrepare : kind === 'apporter' ? course.bring : open;
               return items.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-3">Rien pour le moment</p>
               ) : (
