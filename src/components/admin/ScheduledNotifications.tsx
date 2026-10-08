@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { SchoolHolidays } from './SchoolHolidays';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Trash2, Pencil, Plus, Loader2, Users, User } from 'lucide-react';
@@ -53,6 +54,7 @@ interface ScheduledNotification {
   created_at: string;
   created_by: string | null;
   weekdays: number[] | null;
+  skip_holidays: boolean;
 }
 
 const ScheduledNotifications = () => {
@@ -72,6 +74,7 @@ const ScheduledNotifications = () => {
   const [isActive, setIsActive] = useState(true);
   const [requireConfirmation, setRequireConfirmation] = useState(false);
   const [weekdays, setWeekdays] = useState<number[]>([]);
+  const [skipHolidays, setSkipHolidays] = useState(false);
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['scheduled-notifications'],
@@ -128,6 +131,7 @@ const ScheduledNotifications = () => {
         is_active: isActive,
         require_confirmation: requireConfirmation,
         weekdays: weekdays.length ? weekdays : null,
+        skip_holidays: skipHolidays,
         created_by: user?.id,
       };
       if (editingId) {
@@ -184,6 +188,7 @@ const ScheduledNotifications = () => {
     setIsActive(true);
     setRequireConfirmation(false);
     setWeekdays([]);
+    setSkipHolidays(false);
   };
 
   const openEdit = (n: ScheduledNotification) => {
@@ -198,6 +203,7 @@ const ScheduledNotifications = () => {
     setIsActive(n.is_active);
     setRequireConfirmation(n.require_confirmation);
     setWeekdays(n.weekdays ?? []);
+    setSkipHolidays(n.skip_holidays);
     setDialogOpen(true);
   };
 
@@ -228,6 +234,7 @@ const ScheduledNotifications = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        <SchoolHolidays />
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-700 dark:text-amber-400">
           ⚠️ Ne créez des notifications de test que si vous êtes prêt à les recevoir. Supprimez-les après le test.
         </div>
@@ -251,7 +258,7 @@ const ScheduledNotifications = () => {
                       </div>
                       <p className="text-sm mt-1 line-clamp-2">{n.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {n.start_date} → {n.end_date} • {weekdaysLabel(n.weekdays)} à {n.send_time?.substring(0, 5)} • {getRecipientsLabel(n.recipients)}
+                        {n.start_date} → {n.end_date} • {weekdaysLabel(n.weekdays)} à {n.send_time?.substring(0, 5)} • {getRecipientsLabel(n.recipients)}{n.skip_holidays ? ' • 🏖️ pause vacances' : ''}
                         {n.require_confirmation && ` • ${(confirmationCounts as Record<string, number>)[n.id] || 0} confirmation(s)`}
                       </p>
                     </div>
@@ -366,6 +373,11 @@ const ScheduledNotifications = () => {
                   ))}
                 </div>
               )}
+
+              <div className="flex items-center justify-between gap-2">
+                <Label>🏖️ Pause pendant les vacances scolaires</Label>
+                <Switch checked={skipHolidays} onCheckedChange={setSkipHolidays} />
+              </div>
 
               <div className="flex items-center justify-between">
                 <Label>Actif</Label>

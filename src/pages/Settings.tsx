@@ -69,6 +69,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   admin_task: 'Tâche « À FAIRE »',
   admin_task_template: 'Modèle de tâche (À FAIRE)',
   alphabet_line_model: 'Modèle audio (Alphabet)',
+  school_holiday: 'Vacances scolaires',
 };
 
 const Settings = () => {
