@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
 import { takeDraftResume } from '@/lib/pendingDrafts';
+import { DropoutAlerts } from './DropoutAlerts';
 import { AdminTodoGroupDialog } from './AdminTodoGroupDialog';
 import { draftKeyOf, isLate, sortTasks, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
 
@@ -158,6 +159,9 @@ export function AdminTodoCard() {
           })}
         </div>
       )}
+
+      {/* ⚠️ Élèves qui décrochent (idée 2, 2026-10-08) */}
+      {!collapsed && <DropoutAlerts />}
 
       <AdminTodoGroupDialog
         group={openGroup}

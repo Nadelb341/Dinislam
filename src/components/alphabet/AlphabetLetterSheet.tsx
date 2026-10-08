@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,7 +87,7 @@ export function AlphabetLetterSheet({
         type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider', data: { url: '/?admin=alphabet-validations' },
         body: `Nouvel exercice : ${letter.name_french} (${letter.letter_arabic}) · ${title}`,
       });
-      toast.success('Envoyé à ton prof ✓ Tu peux continuer les autres lignes');
+      toast.success(withName(user, 'Envoyé à ton prof ✓ Continue les autres lignes, {prenom} !'));
       refresh();
       return true;
     } catch (e) {
@@ -111,7 +112,7 @@ export function AlphabetLetterSheet({
           if (error) throw error;
         }
         queryClient.invalidateQueries({ queryKey: ['user-alphabet-progress-page', user.id] });
-        toast.success('✅ Lettre apprise !');
+        toast.success(withName(user, '✅ Lettre apprise, bravo {prenom} !'));
       } else {
         const { error } = await supabase.from('alphabet_submissions').insert({ student_id: user.id, letter_id: letter.id, kind: 'final' });
         if (error) throw error;
@@ -119,7 +120,7 @@ export function AlphabetLetterSheet({
           type: 'admin', category: 'adm_valid', title: '🔤 Alphabet à valider', data: { url: '/?admin=alphabet-validations' },
           body: `Lettre apprise ? ${letter.name_french} (${letter.letter_arabic}) attend ta validation`,
         });
-        toast.success('Demande envoyée à ton prof ⏳');
+        toast.success(withName(user, 'Demande envoyée à ton prof ⏳ Bravo {prenom} !'));
         refresh();
       }
     } catch (e) {

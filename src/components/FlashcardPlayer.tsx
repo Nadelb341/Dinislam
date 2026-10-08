@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { withName } from '@/lib/encouragements';
 import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,7 +50,7 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
       ? await supabase.from('user_flashcard_learned').insert({ user_id: user.id, flashcard_id: id })
       : await supabase.from('user_flashcard_learned').delete().eq('user_id', user.id).eq('flashcard_id', id);
     if (error) { toast.error(errorMessage(error)); return; }
-    if (value) toast.success('✅ Mot appris, bravo !');
+    if (value) toast.success(withName(user, '✅ Mot appris, bravo {prenom} !'));
     queryClient.invalidateQueries({ queryKey: ['flashcard-learned', user.id] });
   };
 

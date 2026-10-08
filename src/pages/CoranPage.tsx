@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -172,7 +173,7 @@ const CoranPage = () => {
           newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
           return newMap;
         });
-        toast({ title: 'بارك الله فيك 🎉', description: 'Sourate validée ! Bonne continuation.' });
+        toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
       }
     } catch (e) {
       console.error(e);

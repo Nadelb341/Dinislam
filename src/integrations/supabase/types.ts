@@ -3534,6 +3534,18 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      student_engagement: {
+        Args: never
+        Returns: {
+          full_name: string
+          gender: string
+          joined_at: string
+          last_validation: string
+          missed_streak: number
+          student_id: string
+          weeks: Json
+        }[]
+      }
       weekly_program_view: {
         Args: { p_student?: string }
         Returns: {

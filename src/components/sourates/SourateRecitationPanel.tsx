@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -213,7 +214,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         });
       if (insertError) throw insertError;
 
-      toast.success('Récitation envoyée à l\'enseignant ✅');
+      toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ton prof !'));
       queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user.id] });
       resetRecording();
     } catch (e) {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { withName } from '@/lib/encouragements';
 import { Mic, Square, Send, CheckCircle, BookOpen, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -376,7 +377,7 @@ export default function BlocDevoirsEleve() {
       });
     }
 
-    toast.success("🎉 Devoir envoyé à l'enseignante !");
+    toast.success(withName(user, "🎉 Bravo {prenom}, ton devoir est envoyé à ton prof !"));
     chargerDevoirs();
   };
 

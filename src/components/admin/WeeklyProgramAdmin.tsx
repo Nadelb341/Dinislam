@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { byName, errorMessage } from '@/lib/utils';
 import { nextCourseDay, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { sortGroups } from '@/lib/studentGroups';
+import { useEngagement } from '@/hooks/useEngagement';
+import { dropoutLevel, dropoutReason, type Engagement } from '@/lib/engagement';
+import { EncourageDialog } from '@/components/home/DropoutAlerts';
 
 /**
  * Côté enseignante (bouclier › Cahier de texte) : le « 💎 chemin de la semaine » se crée tout seul chaque mercredi à 21 h.
@@ -19,6 +22,10 @@ export function WeeklyProgramAdmin() {
   const [showStudents, setShowStudents] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [encourage, setEncourage] = useState<Engagement | null>(null);
+  // Suivi : orange = aucun diamant la semaine dernière, rouge = 2 semaines ou plus (ou rien validé depuis 3 semaines)
+  const { data: engagement = [] } = useEngagement(open);
+  const engOf = (id: string) => engagement.find((e) => e.student_id === id);
 
   const { data } = useQuery({
     queryKey: ['weekly-program-admin'],
@@ -60,6 +67,12 @@ export function WeeklyProgramAdmin() {
   const enabled = data?.settings?.enabled ?? true;
   const progs = data?.programs ?? [];
   const full = progs.filter((p) => p.items.length && p.items.every((i) => i.done)).length;
+  const levelOf = (id: string) => { const e = engOf(id); return e ? dropoutLevel(e) : null; };
+  const reds = progs.filter((p) => levelOf(p.student_id) === 'red').length;
+  const oranges = progs.filter((p) => levelOf(p.student_id) === 'orange').length;
+  // Ceux qui décrochent en haut (rouge, puis orange), puis les autres par ordre alphabétique
+  const rank = (id: string) => ({ red: 0, orange: 1 }[levelOf(id) ?? ''] ?? 2);
+  const ordered = [...progs].sort((a, b) => rank(a.student_id) - rank(b.student_id));
 
   return (
     <div className="rounded-2xl border border-sky-200 dark:border-sky-900 bg-sky-50/60 dark:bg-sky-950/20 p-3 space-y-3">
@@ -89,11 +102,20 @@ export function WeeklyProgramAdmin() {
             <span>👀 Le chemin de chaque élève</span>
             <span className="text-xs text-muted-foreground">{full}/{progs.length} trésors ouverts {showStudents ? '▾' : '▸'}</span>
           </button>
+          {(reds > 0 || oranges > 0) && (
+            <p className="text-xs font-semibold">
+              {reds > 0 && <span className="text-red-700 dark:text-red-400">🔴 {reds} élève{reds > 1 ? 's' : ''} décroche{reds > 1 ? 'nt' : ''} (2 semaines ou plus) </span>}
+              {oranges > 0 && <span className="text-orange-700 dark:text-orange-400">🟠 {oranges} n'{oranges > 1 ? 'ont' : 'a'} rien fait la semaine dernière</span>}
+            </p>
+          )}
           {showStudents && (
             <div className="space-y-2">
               {progs.length === 0 && <p className="text-sm text-muted-foreground text-center">Aucun chemin pour le moment (le prochain se crée mercredi à 21 h).</p>}
-              {progs.map((p) => (
-                <div key={p.program_id} className="rounded-xl bg-card border border-border p-2.5 space-y-1.5">
+              {ordered.map((p) => {
+                const level = levelOf(p.student_id);
+                const eng = engOf(p.student_id);
+                return (
+                <div key={p.program_id} className={`rounded-xl border-2 p-2.5 space-y-1.5 ${level === 'red' ? 'border-red-500 bg-red-50 dark:bg-red-950/30' : level === 'orange' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-border bg-card'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold [overflow-wrap:anywhere]">{p.full_name || 'Élève'}</span>
                     <span className="text-[11px] text-muted-foreground shrink-0">pour le {nextCourseDay(p.week_start).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</span>
@@ -105,6 +127,18 @@ export function WeeklyProgramAdmin() {
                       </span>
                     ))}
                   </div>
+                  {level && eng && <p className={`text-xs font-semibold ${level === 'red' ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'}`}>{level === 'red' ? '🔴' : '🟠'} {dropoutReason(eng)}</p>}
+                  {/* Historique des semaines précédentes */}
+                  {eng && eng.weeks.length > 1 && (
+                    <div className="flex flex-wrap gap-1">
+                      {eng.weeks.slice(1).map((w) => (
+                        <span key={w.week} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${w.done === 0 ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' : w.done === w.total ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'}`}>
+                          {new Date(`${w.week}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} : 💎 {w.done}/{w.total}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {level && eng && <Button size="sm" variant="outline" className="h-8" onClick={() => setEncourage(eng)}>✉️ Encourager</Button>}
                   {editing === p.program_id ? (
                     <div className="flex gap-1.5">
                       <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. insiste sur les madd" autoFocus
@@ -117,11 +151,13 @@ export function WeeklyProgramAdmin() {
                     </button>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
       )}
+      <EncourageDialog student={encourage} onClose={() => setEncourage(null)} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,7 +77,7 @@ const AllahNamesPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allah-name-progress', user?.id] });
-      toast.success('Nom mémorisé ! ✅');
+      toast.success(withName(user, 'Nom mémorisé, bravo {prenom} ! ✅'));
     },
     onError: (e) => toast.error(e.message || 'Erreur'),
   });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { personalize, withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon, Printer } from 'lucide-react';
@@ -22,6 +23,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 const Nourania = () => {
   const { user, isAdmin } = useAuth();
+  const myName = user?.user_metadata?.full_name ?? null;
   const queryClient = useQueryClient();
   const { fireSuccess } = useConfetti();
   const isOver20 = useIsOver20();
@@ -146,11 +148,11 @@ const Nourania = () => {
         filter: `student_id=eq.${user.id}`,
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['nourania-admin-unlocks', user.id] });
-        toast.success('🔓 Une nouvelle leçon a été déverrouillée pour toi !');
+        toast.success(personalize('🔓 {prenom}, une nouvelle leçon a été déverrouillée pour toi !', myName));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, queryClient]);
+  }, [user?.id, queryClient, myName]);
 
   // Realtime: listen for admin approval to trigger confetti + unlock
   useEffect(() => {
@@ -177,7 +179,7 @@ const Nourania = () => {
           queryClient.invalidateQueries({ queryKey: ['nourania-progress'] });
           queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
           fireSuccess();
-          toast.success('Leçon validée par l\'enseignant ! 🎉');
+          toast.success(personalize('Leçon validée par ton prof, bravo {prenom} ! 🎉', myName));
 
           // Find next lesson to show unlock dialog
           const approvedLessonId = (payload.new as Tables<'nourania_validation_requests'>).lesson_id;
@@ -197,7 +199,7 @@ const Nourania = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, lessons, queryClient, fireSuccess]);
+  }, [user?.id, lessons, queryClient, fireSuccess, myName]);
 
   // Auto-expand lesson from URL param (e.g., ?lesson=5)
   useEffect(() => {
@@ -303,7 +305,7 @@ const Nourania = () => {
         queryClient.invalidateQueries({ queryKey: ['nourania-progress'] });
         queryClient.invalidateQueries({ queryKey: ['nourania-admin-unlocks'] });
         fireSuccess();
-        toast.success('Leçon validée ! 🎉');
+        toast.success(withName(user, 'Leçon validée, bravo {prenom} ! 🎉'));
         const currentIndex = lessons.findIndex(l => l.id === result.lessonId);
         const nextLesson = lessons[currentIndex + 1];
         if (nextLesson) {
@@ -317,7 +319,7 @@ const Nourania = () => {
         }
       } else {
         queryClient.invalidateQueries({ queryKey: ['nourania-validation-requests'] });
-        toast.success('Demande de validation envoyée à l\'enseignant ! 📩');
+        toast.success(withName(user, 'Demande de validation envoyée à ton prof, {prenom} ! 📩'));
       }
     },
     onError: (err: Error) => {

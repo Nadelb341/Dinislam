@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -397,7 +398,7 @@ const SouratesPage = () => {
             newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
             return newMap;
           });
-          toast({ title: 'بارك الله فيك 🎉', description: 'Sourate validée ! Bonne continuation.' });
+          toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
         } else {
           // Validation par l'admin pour les -20 ans — une seule demande en attente à la fois
           // (avant : une nouvelle demande + une notification à chaque case cochée ou recochée)
@@ -409,7 +410,7 @@ const SouratesPage = () => {
             .eq('status', 'pending')
             .limit(1);
           if (alreadyPending && alreadyPending.length > 0) {
-            toast({ title: 'بارك الله فيك', description: 'Ta demande est déjà envoyée, ton enseignant va la regarder.' });
+            toast({ title: 'بارك الله فيك', description: withName(user, '{prenom}, ta demande est déjà envoyée, ton prof va la regarder.') });
             return;
           }
           const { error: reqError } = await supabase

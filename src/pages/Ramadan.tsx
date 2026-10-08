@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Moon, Star } from 'lucide-react';
 import RamadanCalendarGrid from '@/components/ramadan/RamadanCalendarGrid';
@@ -253,9 +254,9 @@ const Ramadan = () => {
       fireSuccess();
       markProgressMutation.mutate({ dayId: openDay.id, field: 'quiz_completed' });
       if (allCorrect) {
-        toast.success('Bravo ! Toutes les réponses sont correctes ! 🎉');
+        toast.success(withName(user, 'Bravo {prenom} ! Toutes les réponses sont correctes ! 🎉'));
       } else {
-        toast.success(`Bien joué ! ${wrongCount} erreur(s) seulement, journée validée ! 👍`);
+        toast.success(withName(user, `Bien joué {prenom} ! ${wrongCount} erreur(s) seulement, journée validée ! 👍`));
       }
     }
     // Si wrongCount >= maxErrors, le dialog affiche déjà l'écran d'échec — pas de toast ici

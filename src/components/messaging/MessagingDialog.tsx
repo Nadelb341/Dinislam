@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { withName } from '@/lib/encouragements';
 import { Mic, Send, X, Mail, MailOpen, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -205,7 +206,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       const profile = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
       await notifyAdminNewMessage(profile.data?.full_name || 'Un élève');
       
-      toast({ title: 'Message envoyé ✓' });
+      toast({ title: withName(user, '✓ Message envoyé, merci {prenom} !') });
       setMessage('');
       refetch();
     } catch (error) {
@@ -238,7 +239,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
       const profile = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
       await notifyAdminNewMessage(profile.data?.full_name || 'Un élève');
 
-      toast({ title: 'Audio envoyé ✓' });
+      toast({ title: withName(user, '✓ Audio envoyé, merci {prenom} !') });
       refetch();
     } catch (error) {
       console.error('Error uploading audio:', error);

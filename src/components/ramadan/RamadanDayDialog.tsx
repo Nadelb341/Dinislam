@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { withName } from '@/lib/encouragements';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -362,7 +363,7 @@ const RamadanDayDialog = ({
     if (currentVideoIdx < totalVideos - 1) {
       setCurrentVideoIdx(prev => prev + 1);
     } else if (allVideosWatched || (watchedVideoIds.has(currentVideo?.id || '') && watchedCount + 1 >= totalVideos)) {
-      toast.success("Bravo, tu es prêt(e) ! 🌟 C'est parti pour le quiz !");
+      toast.success(withName(user, "Bravo {prenom}, tu es prêt(e) ! 🌟 C'est parti pour le quiz !"));
       goToQuiz();
     }
   };

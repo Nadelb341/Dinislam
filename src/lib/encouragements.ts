@@ -41,3 +41,8 @@ export const ENCOURAGEMENTS = [
   "🕌 Inch'Allah, {prenom}, cette semaine sera une belle semaine d'apprentissage.",
   "❤️ Fais-le pour Allah, {prenom}, et Il t'aidera à retenir.",
 ];
+
+/** Petit message à l'écran au prénom de la personne connectée (ex. « ✅ Mot appris, bravo Hafeda ! ») */
+export function withName(user: { user_metadata?: { full_name?: string | null } } | null | undefined, text: string): string {
+  return personalize(text, user?.user_metadata?.full_name ?? null);
+}

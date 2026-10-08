@@ -1,7 +1,7 @@
 /** 💎 Chemin de la semaine : types et petites règles partagées (élève et enseignante) */
 export interface ProgramItem { module: string; item_id: string; label: string; detail: string; path: string; emoji: string; done: boolean }
 export interface WeeklyProgram {
-  program_id: string; week_start: string; items: ProgramItem[]; message_index: number;
+  program_id: string; student_id: string; week_start: string; items: ProgramItem[]; message_index: number;
   teacher_note: string | null; full_name: string | null; gender: string | null;
 }
 
