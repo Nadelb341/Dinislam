@@ -7,6 +7,16 @@ const MODULE_TITLES: Record<string, string> = {
   general: '📅 Rappel', cours: "🎒 Cours d'arabe", ramadan: '🌙 Ramadan', sourates: '📖 Sourates', nourania: '✨ Nourania',
   invocations: '🤲 Invocations', priere: '🕌 Prière', allah_names: "🌟 99 Noms d'Allah", alphabet: '🔤 Alphabet',
 };
+// Relance automatique douce (idée 1, 2026-10-08) : mêmes messages que le bouton « ✉️ Encourager » (src/lib/engagement.ts)
+const NUDGES = [
+  "Salam {prenom} ! 🌟 Ça fait un moment que je n'ai pas eu de tes nouvelles. Ton chemin de la semaine t'attend dans le Cahier de texte, je suis sûre que tu vas y arriver 💪",
+  "Coucou {prenom} 👋 Tu me manques dans les validations ! Un petit effort cette semaine et tes diamants vont briller 💎 Je crois en toi !",
+  "{prenom}, n'oublie pas : 10 minutes par jour suffisent pour avancer 📖 Je t'attends avec ta prochaine leçon, inch'Allah 🤲",
+  "Salam {prenom} 🌸 Si tu as besoin d'aide pour ta leçon ou ta sourate, écris-moi ici, je suis là pour t'aider 😊",
+  "{prenom}, tu es capable de grandes choses, bismillah ! 🚀 Ouvre ton chemin de la semaine et commence par le diamant que tu préfères 💎",
+];
+const firstNameOf = (n: string | null) => (n || '').trim().split(/\s+/)[0] || '';
+
 /** Jour de la semaine d'une date AAAA-MM-JJ : 1 = lundi … 7 = dimanche */
 const isoWeekday = (day: string) => { const d = new Date(`${day}T12:00:00Z`).getUTCDay(); return d === 0 ? 7 : d; };
 
@@ -236,8 +246,63 @@ serve(async (req) => {
       }
     }
 
+    // 👀 Suivi des décrocheurs (idées 1 + 5) : niveau de chaque élève, « bon retour », relance du jeudi
+    let comebacks = 0, nudges = 0;
+    {
+      const { data: eng } = await supabase.rpc('student_engagement');
+      const { data: states } = await supabase.from('dropout_state').select('student_id, level, since');
+      const stateOf = new Map(((states ?? []) as { student_id: string; level: string | null; since: string | null }[]).map((x) => [x.student_id, x]));
+      const { data: admins } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      const adminIds = (admins ?? []).map((a: { user_id: string }) => a.user_id);
+      const thursdayNudge = !inHolidays && isoWeekday(today) === 4 && currTotal >= 18 * 60 && currTotal < 18 * 60 + 5;
+      let nudgeAllowed = false;
+      if (thursdayNudge) {
+        const { data: st } = await supabase.from('weekly_program_settings').select('auto_nudge').eq('id', 1).maybeSingle();
+        if (st?.auto_nudge !== false) {
+          const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'relance_jeudi', sent_on: today });
+          nudgeAllowed = !logErr;
+        }
+      }
+      for (const e of (eng ?? []) as { student_id: string; full_name: string | null; gender: string | null; joined_at: string | null; last_validation: string | null; missed_streak: number }[]) {
+        const ref = e.last_validation ?? e.joined_at;
+        const idle = ref ? (Date.now() - new Date(ref).getTime()) / 86400000 : 0;
+        const level = e.missed_streak >= 2 || idle >= 21 ? 'red' : e.missed_streak === 1 ? 'orange' : null;
+        const prev = stateOf.get(e.student_id);
+        const prenom = firstNameOf(e.full_name);
+
+        // Idée 5 : il était rouge et vient de revalider quelque chose → bravo à l'élève, l'enseignante est prévenue
+        if (prev?.level === 'red' && e.last_validation && prev.since && new Date(e.last_validation) > new Date(prev.since)) {
+          await supabase.from('dropout_state').upsert({ student_id: e.student_id, level, since: new Date().toISOString(), comeback_at: new Date().toISOString(), comeback_seen: false, updated_at: new Date().toISOString() });
+          comebacks++;
+          try {
+            await sendPushInternal({ userId: e.student_id, title: '🎉 Bon retour, {prenom} !', body: 'On est fiers de toi, tu es {reparti|repartie} ! Continue comme ça 💪', tag: `comeback-${today}`, type: 'comeback', category: 'rec', data: { url: '/' } });
+            if (adminIds.length) await sendPushInternal({ userIds: adminIds, title: '💪 Suivi', body: `${prenom || 'Un élève'} est ${e.gender === 'fille' ? 'repartie' : 'reparti'} ! ${e.gender === 'fille' ? 'Elle' : 'Il'} vient de valider une étape.`, tag: `comeback-${e.student_id}`, type: 'comeback', category: 'adm_recap', data: { url: '/?admin=cahier-texte' } });
+          } catch (err) { console.error('Bon retour non envoyé', e.student_id, err); }
+          continue;
+        }
+        if (!prev || prev.level !== level) {
+          await supabase.from('dropout_state').upsert({ student_id: e.student_id, level, since: new Date().toISOString(), updated_at: new Date().toISOString() });
+        }
+
+        // Idée 1 : jeudi 18 h, petit message automatique aux élèves en orange
+        if (nudgeAllowed && level === 'orange') {
+          const raw = NUDGES[Math.floor(Math.random() * NUDGES.length)];
+          const msg = prenom ? raw.replace(/\{prenom\}/g, prenom) : raw.replace(/\{prenom\},?\s*/g, '');
+          const { error: mErr } = await supabase.from('user_messages').insert({ user_id: e.student_id, message: msg, sender_type: 'admin', message_type: 'text' });
+          if (mErr) { console.error('Relance non enregistrée', e.student_id, mErr.message); continue; }
+          await supabase.from('encouragement_logs').insert({ student_id: e.student_id, message: msg, automatic: true });
+          nudges++;
+          try {
+            await sendPushInternal({ userId: e.student_id, title: '✉️ {prenom}, nouveau message de ton prof', body: msg.substring(0, 100), tag: `nudge-${today}`, type: 'nudge', category: 'msg', data: { url: '/?open=messages' } });
+          } catch (err) { console.error('Relance : notification non envoyée', e.student_id, err); }
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      comebacks,
+      nudges,
       programs,
       recap,
       prepReminded,

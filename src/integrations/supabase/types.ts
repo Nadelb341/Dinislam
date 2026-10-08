@@ -865,6 +865,57 @@ export type Database = {
           },
         ]
       }
+      dropout_state: {
+        Row: {
+          comeback_at: string | null
+          comeback_seen: boolean
+          level: string | null
+          since: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          comeback_at?: string | null
+          comeback_seen?: boolean
+          level?: string | null
+          since?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          comeback_at?: string | null
+          comeback_seen?: boolean
+          level?: string | null
+          since?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      encouragement_logs: {
+        Row: {
+          automatic: boolean
+          id: string
+          message: string
+          sent_at: string
+          student_id: string
+        }
+        Insert: {
+          automatic?: boolean
+          id?: string
+          message: string
+          sent_at?: string
+          student_id: string
+        }
+        Update: {
+          automatic?: boolean
+          id?: string
+          message?: string
+          sent_at?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       homework_assignments: {
         Row: {
           audio_url: string | null
@@ -3404,18 +3455,21 @@ export type Database = {
       }
       weekly_program_settings: {
         Row: {
+          auto_nudge: boolean
           disabled_group_ids: string[]
           enabled: boolean
           id: number
           updated_at: string
         }
         Insert: {
+          auto_nudge?: boolean
           disabled_group_ids?: string[]
           enabled?: boolean
           id?: number
           updated_at?: string
         }
         Update: {
+          auto_nudge?: boolean
           disabled_group_ids?: string[]
           enabled?: boolean
           id?: number
@@ -3488,6 +3542,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      dropout_level_of: {
+        Args: { p_joined: string; p_last: string; p_missed: number }
+        Returns: string
+      }
       generate_weekly_programs: { Args: { p_week: string }; Returns: number }
       get_pending_registrations: {
         Args: never
@@ -3517,6 +3575,7 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
+      mark_comeback_seen: { Args: never; Returns: undefined }
       module_visible_for: {
         Args: { p_path: string; p_user: string }
         Returns: boolean

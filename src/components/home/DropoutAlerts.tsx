@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { personalize } from '@/lib/encouragements';
 import { errorMessage } from '@/lib/utils';
-import { useEngagement } from '@/hooks/useEngagement';
+import { encouragementLabel, useEngagement, useRecentEncouragements } from '@/hooks/useEngagement';
 import { dropoutLevel, dropoutReason, NUDGES, type Engagement } from '@/lib/engagement';
 
 /** ✉️ Encourager un élève : message déjà écrit à son prénom, modifiable, envoyé dans sa messagerie + notification */
@@ -34,9 +34,12 @@ export function EncourageDialog({ student, onClose }: { student: Engagement | nu
     try {
       const { error } = await supabase.from('user_messages').insert({ user_id: student.student_id, message: text.trim(), sender_type: 'admin', message_type: 'text' });
       if (error) throw error;
+      await supabase.from('encouragement_logs').insert({ student_id: student.student_id, message: text.trim(), automatic: false });
       sendPushNotification({ title: '✉️ {prenom}, nouveau message de ton prof', category: 'msg', body: text.trim().substring(0, 100), userId: student.student_id, data: { url: '/?open=messages' } });
       toast.success(`Message envoyé à ${(student.full_name || 'l\'élève').trim().split(/\s+/)[0]} ✉️`);
       queryClient.invalidateQueries({ queryKey: ['student-engagement'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-encouragements'] });
+      queryClient.invalidateQueries({ queryKey: ['student-followup', student.student_id] });
       setOpenedFor(null);
       onClose();
     } catch (e) {
@@ -65,6 +68,7 @@ export function EncourageDialog({ student, onClose }: { student: Engagement | nu
 /** Carte À FAIRE : « ⚠️ Élèves qui décrochent » (rouge d'abord, puis orange) */
 export function DropoutAlerts() {
   const { data = [] } = useEngagement();
+  const { data: recent } = useRecentEncouragements();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<Engagement | null>(null);
   const list = data
@@ -89,7 +93,7 @@ export function DropoutAlerts() {
               <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${level === 'red' ? 'bg-red-600' : 'bg-orange-500'}`} />
               <span className="flex-1 min-w-0">
                 <span className="block text-sm font-semibold [overflow-wrap:anywhere]">{e.full_name || 'Élève'}</span>
-                <span className="block text-[11px] text-muted-foreground">{dropoutReason(e)}</span>
+                <span className="block text-[11px] text-muted-foreground">{dropoutReason(e)}{recent?.get(e.student_id) ? ` · ${encouragementLabel(recent.get(e.student_id))}` : ''}</span>
               </span>
               <Button size="sm" variant="outline" className="h-8 shrink-0" onClick={() => setTarget(e)}>✉️ Encourager</Button>
             </div>

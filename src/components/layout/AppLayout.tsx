@@ -10,6 +10,7 @@ import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 import PendingDraftsCenter from '@/components/PendingDraftsCenter';
 import TrashPurgeWarning from '@/components/TrashPurgeWarning';
 import AttendanceMessage from '@/components/attendance/AttendanceMessage';
+import ComebackCelebration from '@/components/attendance/ComebackCelebration';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
@@ -39,6 +40,7 @@ const AppLayout = ({
           <PendingDraftsCenter />
           <TrashPurgeWarning />
           <AttendanceMessage />
+          <ComebackCelebration />
         </div>
         {children}
       </main>

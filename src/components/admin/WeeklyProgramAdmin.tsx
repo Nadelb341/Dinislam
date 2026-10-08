@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { byName, errorMessage } from '@/lib/utils';
 import { nextCourseDay, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { sortGroups } from '@/lib/studentGroups';
-import { useEngagement } from '@/hooks/useEngagement';
+import { encouragementLabel, useEngagement, useRecentEncouragements } from '@/hooks/useEngagement';
 import { dropoutLevel, dropoutReason, type Engagement } from '@/lib/engagement';
 import { EncourageDialog } from '@/components/home/DropoutAlerts';
 
@@ -25,6 +25,7 @@ export function WeeklyProgramAdmin() {
   const [encourage, setEncourage] = useState<Engagement | null>(null);
   // Suivi : orange = aucun diamant la semaine dernière, rouge = 2 semaines ou plus (ou rien validé depuis 3 semaines)
   const { data: engagement = [] } = useEngagement(open);
+  const { data: recent } = useRecentEncouragements(open);
   const engOf = (id: string) => engagement.find((e) => e.student_id === id);
 
   const { data } = useQuery({
@@ -47,7 +48,7 @@ export function WeeklyProgramAdmin() {
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['weekly-program-admin'] });
 
-  const saveSettings = async (patch: { enabled?: boolean; disabled_group_ids?: string[] }) => {
+  const saveSettings = async (patch: { enabled?: boolean; disabled_group_ids?: string[]; auto_nudge?: boolean }) => {
     const { error } = await supabase.from('weekly_program_settings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1);
     if (error) toast.error(errorMessage(error)); else refresh();
   };
@@ -86,6 +87,13 @@ export function WeeklyProgramAdmin() {
           <div className="flex items-center justify-between gap-2 rounded-xl bg-card p-2.5">
             <span className="text-sm font-semibold">Programme automatique</span>
             <Switch checked={enabled} onCheckedChange={(v) => saveSettings({ enabled: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-card p-2.5">
+            <span className="text-sm">
+              <span className="font-semibold block">🤖 Relance automatique des élèves en 🟠</span>
+              <span className="text-xs text-muted-foreground">le jeudi à 18 h, un petit message d'encouragement à leur prénom</span>
+            </span>
+            <Switch checked={data?.settings?.auto_nudge ?? true} onCheckedChange={(v) => saveSettings({ auto_nudge: v })} />
           </div>
           {enabled && (data?.groups ?? []).length > 0 && (
             <div className="rounded-xl bg-card p-2.5 space-y-1.5">
@@ -127,7 +135,7 @@ export function WeeklyProgramAdmin() {
                       </span>
                     ))}
                   </div>
-                  {level && eng && <p className={`text-xs font-semibold ${level === 'red' ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'}`}>{level === 'red' ? '🔴' : '🟠'} {dropoutReason(eng)}</p>}
+                  {level && eng && <p className={`text-xs font-semibold ${level === 'red' ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'}`}>{level === 'red' ? '🔴' : '🟠'} {dropoutReason(eng)}{recent?.get(p.student_id) ? ` · ${encouragementLabel(recent.get(p.student_id))}` : ''}</p>}
                   {/* Historique des semaines précédentes */}
                   {eng && eng.weeks.length > 1 && (
                     <div className="flex flex-wrap gap-1">
