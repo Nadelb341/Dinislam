@@ -96,8 +96,8 @@ serve(async (req) => {
           if (wanted && !wanted.has(t.user_id)) continue;
           const parts = [t.sourate ? `ta sourate ${t.sourate}` : '', t.lecon ? `ta ${t.lecon} de Nourania` : ''].filter(Boolean);
           const body = parts.length
-            ? `📖 Demain, c'est cours d'arabe ! Pense à travailler ${parts.join(' et ')} ce soir, inch'Allah 💪`
-            : notif.message;
+            ? `📖 {prenom}, demain c'est cours d'arabe ! Pense à travailler ${parts.join(' et ')} ce soir, inch'Allah 💪`
+            : `{prenom}, ${notif.message}`;
           try {
             const r = await sendPushInternal({ ...pushBody, userId: t.user_id, body, sendToAll: undefined, userIds: undefined });
             totalSent += r?.sent || 0;
@@ -178,8 +178,68 @@ serve(async (req) => {
       }
     }
 
+    // 💎 Mercredi 21 h : le « chemin de la semaine » de chaque élève (sauf vacances, si l'enseignante l'a laissé activé)
+    let programs = 0;
+    if (!inHolidays && isoWeekday(today) === 3 && currTotal >= 21 * 60 && currTotal < 21 * 60 + 5) {
+      const { data: settings } = await supabase.from('weekly_program_settings').select('enabled').eq('id', 1).maybeSingle();
+      if (settings?.enabled !== false) {
+        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'chemin_semaine', sent_on: today });
+        if (!logErr) {
+          const { data: created } = await supabase.rpc('generate_weekly_programs', { p_week: today });
+          programs = Number(created) || 0;
+          const { data: rows } = await supabase.from('weekly_programs').select('student_id, items').eq('week_start', today);
+          for (const r of (rows ?? []) as { student_id: string; items: unknown[] }[]) {
+            const n = Array.isArray(r.items) ? r.items.length : 0;
+            try {
+              await sendPushInternal({
+                userId: r.student_id,
+                title: '🗺️ Ton chemin de la semaine',
+                body: `{prenom}, ton chemin est prêt : ${n} diamant${n > 1 ? 's' : ''} à faire briller 💎 Commence par celui que tu veux !`,
+                tag: `programme-${today}`,
+                type: 'weekly_program',
+                category: 'prog_week',
+                data: { url: '/?open=devoirs' },
+              });
+            } catch (e) { console.error('Chemin de la semaine : notification non envoyée', r.student_id, e); }
+          }
+        }
+      }
+    }
+
+    // 📊 Lundi 9 h : récap pour l'enseignante (qui a fait briller ses diamants depuis mercredi)
+    let recap = false;
+    if (isoWeekday(today) === 1 && currTotal >= 9 * 60 && currTotal < 9 * 60 + 5) {
+      const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'recap_lundi', sent_on: today });
+      if (!logErr) {
+        const { data: view } = await supabase.rpc('weekly_program_view', {});
+        const list = (view ?? []) as { full_name: string | null; items: { done: boolean }[] }[];
+        if (list.length) {
+          const first = (n: string | null) => (n || 'Élève').trim().split(/\s+/)[0];
+          const all = list.filter((p) => p.items.length && p.items.every((i) => i.done));
+          const none = list.filter((p) => p.items.length && p.items.every((i) => !i.done));
+          const some = list.length - all.length - none.length;
+          const names = none.slice(0, 6).map((p) => first(p.full_name)).join(', ') + (none.length > 6 ? '…' : '');
+          const { data: admins } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+          try {
+            await sendPushInternal({
+              userIds: (admins ?? []).map((a: { user_id: string }) => a.user_id),
+              title: '📊 Récap de la semaine',
+              body: `💎 ${all.length} élève${all.length > 1 ? 's ont' : ' a'} tout validé, ${some} en partie, ${none.length} rien${none.length ? ` (${names})` : ''}.`,
+              tag: `recap-${today}`,
+              type: 'weekly_recap',
+              category: 'adm_recap',
+              data: { url: '/?admin=cahier-texte' },
+            });
+            recap = true;
+          } catch (e) { console.error('Récap du lundi non envoyé', e); }
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      programs,
+      recap,
       prepReminded,
       processed: (notifications || []).length,
       totalSent,

@@ -6,6 +6,8 @@ describe('Message après le dernier cours', () => {
     expect(buildAttendanceMessage('present', true)).toMatch(/^Présente au dernier cours/);
     expect(buildAttendanceMessage('late', false)).toContain("d'être venu au");
     expect(buildAttendanceMessage('absent', true)).toContain('absente');
+    expect(buildAttendanceMessage('present', false, 'Mahdi')).toContain("macha'Allah Mahdi !");
+    expect(buildAttendanceMessage('absent', true, 'Wiam')).toMatch(/^📚 Wiam, tu étais absente/);
   });
   it('compte les cours suivis d’affilée', () => {
     expect(attendanceStreak(['present', 'late', 'present', 'absent', 'present'])).toBe(3);

@@ -1480,6 +1480,7 @@ export type Database = {
           notif_act: boolean
           notif_adm_hw: boolean
           notif_adm_msg: boolean
+          notif_adm_recap: boolean
           notif_adm_reg: boolean
           notif_adm_task: boolean
           notif_adm_valid: boolean
@@ -1488,6 +1489,7 @@ export type Database = {
           notif_hw_res: boolean
           notif_lesson: boolean
           notif_msg: boolean
+          notif_prog_week: boolean
           notif_rec: boolean
           notif_sched: boolean
           notif_silent: boolean
@@ -1511,6 +1513,7 @@ export type Database = {
           notif_act?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
+          notif_adm_recap?: boolean
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
@@ -1519,6 +1522,7 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_prog_week?: boolean
           notif_rec?: boolean
           notif_sched?: boolean
           notif_silent?: boolean
@@ -1542,6 +1546,7 @@ export type Database = {
           notif_act?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
+          notif_adm_recap?: boolean
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
@@ -1550,6 +1555,7 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_prog_week?: boolean
           notif_rec?: boolean
           notif_sched?: boolean
           notif_silent?: boolean
@@ -3396,6 +3402,57 @@ export type Database = {
           },
         ]
       }
+      weekly_program_settings: {
+        Row: {
+          disabled_group_ids: string[]
+          enabled: boolean
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          disabled_group_ids?: string[]
+          enabled?: boolean
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          disabled_group_ids?: string[]
+          enabled?: boolean
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      weekly_programs: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          message_index: number
+          student_id: string
+          teacher_note: string | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          message_index?: number
+          student_id: string
+          teacher_note?: string | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          message_index?: number
+          student_id?: string
+          teacher_note?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -3431,6 +3488,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      generate_weekly_programs: { Args: { p_week: string }; Returns: number }
       get_pending_registrations: {
         Args: never
         Returns: {
@@ -3459,13 +3517,35 @@ export type Database = {
         Args: { p_id: string }
         Returns: undefined
       }
+      module_visible_for: {
+        Args: { p_path: string; p_user: string }
+        Returns: boolean
+      }
       move_attendance_session: {
         Args: { p_from: string; p_to: string }
         Returns: undefined
       }
+      next_program_items: { Args: { p_user: string }; Returns: Json }
+      program_item_done: {
+        Args: { p_item: string; p_module: string; p_user: string }
+        Returns: boolean
+      }
       recalculate_student_points: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      weekly_program_view: {
+        Args: { p_student?: string }
+        Returns: {
+          full_name: string
+          gender: string
+          items: Json
+          message_index: number
+          program_id: string
+          student_id: string
+          teacher_note: string
+          week_start: string
+        }[]
       }
     }
     Enums: {

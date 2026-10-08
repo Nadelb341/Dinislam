@@ -57,11 +57,11 @@ export default function AttendanceMessage() {
   return (
     <Dialog open onOpenChange={(o) => { if (!o) close(); }}>
       <DialogContent className="max-w-sm text-center">
-        <DialogTitle className="text-xl">Salam{firstName ? ` ${firstName}` : ''} 👋</DialogTitle>
+        <DialogTitle className="text-xl">📋 Ton dernier cours</DialogTitle>
         <p className="text-xs text-muted-foreground">Cours du {format(parseISO(last.date), 'EEEE d MMMM', { locale: fr })}</p>
-        <p className="text-lg leading-relaxed">{buildAttendanceMessage(last.status, data?.profile?.gender === 'fille')}</p>
+        <p className="text-lg leading-relaxed">{buildAttendanceMessage(last.status, data?.profile?.gender === 'fille', firstName)}</p>
         {streak >= 3 && (
-          <p className="rounded-xl bg-orange-100 dark:bg-orange-950/40 py-2 font-bold">🔥 {streak} cours d'affilée, quelle régularité !</p>
+          <p className="rounded-xl bg-orange-100 dark:bg-orange-950/40 py-2 font-bold">🔥 {streak} cours d'affilée{firstName ? `, ${firstName}` : ''}, quelle régularité !</p>
         )}
         <Button onClick={close} className="w-full">Merci 😊</Button>
       </DialogContent>

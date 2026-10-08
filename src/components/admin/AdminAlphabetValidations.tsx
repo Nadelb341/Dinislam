@@ -58,10 +58,10 @@ function SubmissionItem({ sub, name, letter, onDone }: { sub: AlphabetSubmission
       }).eq('id', sub.id);
       if (error) throw error;
       const messages: Record<typeof status, { title: string; body: string }> = {
-        corrected: { title: '⭐ Ton prof a corrigé ton exercice', body: `${letterLabel} · ${title}${comment.trim() ? ` : ${comment.trim()}` : ''}` },
-        redo: { title: '🔁 Exercice à refaire', body: `${letterLabel} · ${title}${comment.trim() ? ` : ${comment.trim()}` : ''}` },
-        validated: { title: '🎉 Lettre validée !', body: `Bravo, ${letterLabel} est validée. La lettre suivante est ouverte !` },
-        to_review: { title: '💪 Encore un petit effort', body: `Retravaille ${letterLabel}, tu vas y arriver ! Puis redemande la validation.` },
+        corrected: { title: '⭐ {prenom}, ton prof a corrigé ton exercice', body: `${letterLabel} · ${title}${comment.trim() ? ` : ${comment.trim()}` : ''}` },
+        redo: { title: '🔁 {prenom}, exercice à refaire', body: `${letterLabel} · ${title}${comment.trim() ? ` : ${comment.trim()}` : ''}` },
+        validated: { title: '🎉 Lettre validée !', body: `Bravo {prenom}, ${letterLabel} est validée. La lettre suivante est ouverte !` },
+        to_review: { title: '💪 Encore un petit effort, {prenom}', body: `Retravaille ${letterLabel}, tu vas y arriver ! Puis redemande la validation.` },
       };
       sendPushNotification({ userId: sub.student_id, category: 'rec', ...messages[status], data: { url: '/alphabet' } });
       toast.success(status === 'validated' ? `✅ ${letterLabel} validée pour ${name}` : 'Réponse envoyée ✓');

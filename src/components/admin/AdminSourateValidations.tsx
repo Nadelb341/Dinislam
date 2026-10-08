@@ -83,7 +83,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
     onSuccess: (_, request) => {
       toast({ title: `✅ Sourate ${request.sourate?.name_french || ''} validée pour ${request.profile?.full_name || 'l\'élève'}` });
       sendPushNotification({
-        title: '⭐ Félicitations !', category: 'rec',
+        title: '⭐ Félicitations {prenom} !', category: 'rec',
         body: `Ton professeur a validé ${request.sourate?.name_french || 'ta sourate'} ! Continue comme ça !`,
         type: 'user',
         data: { url: '/sourates' },
@@ -118,7 +118,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
     onSuccess: (_, request) => {
       toast({ title: '❌ Sourate refusée', description: `${request.sourate?.name_french || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}` });
       sendPushNotification({
-        title: '📖 Sourate à retravailler', category: 'rec',
+        title: '📖 {prenom}, sourate à retravailler', category: 'rec',
         body: `Ton professeur t'invite à retravailler ${request.sourate?.name_french || 'ta sourate'}. Continue tes efforts !`,
         type: 'user',
         data: { url: '/sourates' },

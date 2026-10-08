@@ -349,6 +349,7 @@ serve(async (req) => {
       msg: 'notif_msg', hw_new: 'notif_hw_new', hw_rem: 'notif_hw_rem', hw_res: 'notif_hw_res',
       rec: 'notif_rec', lesson: 'notif_lesson', act: 'notif_act', sched: 'notif_sched',
       adm_msg: 'notif_adm_msg', adm_hw: 'notif_adm_hw', adm_valid: 'notif_adm_valid', adm_reg: 'notif_adm_reg', adm_task: 'notif_adm_task',
+      prog_week: 'notif_prog_week', adm_recap: 'notif_adm_recap',
     };
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {
@@ -398,6 +399,7 @@ serve(async (req) => {
       msg: '/?open=messages', adm_msg: '/?open=messages',
       hw_new: '/?open=devoirs', hw_rem: '/?open=devoirs', hw_res: '/?open=devoirs',
       lesson: '/nourania', adm_hw: '/?admin=cahier-texte', adm_reg: '/?admin=users', adm_task: '/?open=todo',
+      prog_week: '/?open=devoirs', adm_recap: '/?admin=cahier-texte',
     };
     const givenData = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
     const url = typeof givenData.url === 'string' ? givenData.url
@@ -421,11 +423,29 @@ serve(async (req) => {
       .in('user_id', subscriptions.map((s: { user_id: string }) => s.user_id));
     const silentIds = new Set((silentPrefs || []).map((p: { user_id: string }) => p.user_id));
 
+    // Messages au prénom de chaque élève (2026-10-08) : {prenom}, {e} (« e » pour une fille), {forme garçon|forme fille}
+    const needsName = /\{prenom\}|\{e\}|\{[^{}|]*\|[^{}|]*\}/.test(`${title} ${notifBody || ''}`);
+    const people = new Map<string, { full_name: string | null; gender: string | null }>();
+    if (needsName) {
+      const { data: profs } = await supabase.from('profiles').select('user_id, full_name, gender')
+        .in('user_id', [...new Set(subscriptions.map((s: { user_id: string }) => s.user_id))]);
+      for (const p of (profs || []) as { user_id: string; full_name: string | null; gender: string | null }[]) people.set(p.user_id, p);
+    }
+    const personalize = (text: string, userIdOf: string) => {
+      const who = people.get(userIdOf);
+      const prenom = (who?.full_name || '').trim().split(/\s+/)[0] || '';
+      const girl = who?.gender === 'fille';
+      let out = text.replace(/\{([^{}|]*)\|([^{}|]*)\}/g, (_m: string, m: string, f: string) => (girl ? f : m)).replace(/\{e\}/g, girl ? 'e' : '');
+      if (!prenom) out = out.replace(/\{prenom\},\s*/g, '').replace(/,\s*\{prenom\}/g, '').replace(/\s*\{prenom\}/g, '');
+      return out.replace(/\{prenom\}/g, prenom).replace(/\s{2,}/g, ' ').trim();
+    };
+
     const results = await Promise.all(
       subscriptions.map(async (sub) => {
+        const own = needsName ? { ...payload, title: personalize(title, sub.user_id), body: personalize(notifBody || '', sub.user_id) } : payload;
         const result = await sendPushToEndpoint(
           { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth_key },
-          silentIds.has(sub.user_id) ? { ...payload, silent: true } : payload, vapidPublicKey, vapidPrivateKey
+          silentIds.has(sub.user_id) ? { ...own, silent: true } : own, vapidPublicKey, vapidPrivateKey
         );
         return result;
       })

@@ -75,8 +75,12 @@ serve(async (req) => {
       const isEve = parisDay(new Date(devoir.date_limite)) === tomorrow;
       const title = isEve ? `⏰ C'est demain ! ${devoir.titre}` : `📚 Devoir à rendre : ${devoir.titre}`;
       const body = isEve
-        ? "La date limite de ton devoir est demain. Pense à l'envoyer ce soir 🙏"
-        : REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
+        ? "{prenom}, la date limite de ton devoir est demain. Pense à l'envoyer ce soir 🙏"
+        : (() => {
+          // Message au prénom : « Mahdi, n'oublie pas… » (le prénom de Nadia garde sa majuscule)
+          const m = REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
+          return `{prenom}, ${m.startsWith('Nadia') ? m : m.charAt(0).toLowerCase() + m.slice(1)}`;
+        })();
 
       const result = await sendPushInternal({ userIds: toNotify, title, body, type: 'homework_reminder', category: 'hw_rem', data: { url: '/?open=devoirs' } });
 

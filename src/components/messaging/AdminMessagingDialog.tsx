@@ -217,7 +217,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
 
       // Push notification to student
       sendPushNotification({
-        title: '✉️ Nouveau message du professeur', category: 'msg',
+        title: '✉️ {prenom}, nouveau message de ton prof', category: 'msg',
         body: replyMessage.trim().substring(0, 100),
         userId: selectedConversation.user_id,
       });
@@ -245,7 +245,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
 
       // Push notification to student
       sendPushNotification({
-        title: '✉️ Message audio du professeur', category: 'msg',
+        title: '✉️ {prenom}, message audio de ton prof', category: 'msg',
         body: 'Vous avez reçu un message audio',
         userId: selectedConversation.user_id,
       });
@@ -280,7 +280,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
 
       // Push notification to student
       sendPushNotification({
-        title: '✉️ Nouveau message du professeur', category: 'msg',
+        title: '✉️ {prenom}, nouveau message de ton prof', category: 'msg',
         body: newMsgText.trim().substring(0, 100),
         userId: newMsgSelectedUser.user_id,
       });
@@ -349,13 +349,13 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
         try {
           if (groupMsgMode === 'all') {
             await supabase.functions.invoke('send-push-notification', {
-              body: { title: '📢 Nouveau message du professeur', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'all', data: { url: '/?open=messages' } },
+              body: { title: '📢 {prenom}, nouveau message de ton prof', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'all', data: { url: '/?open=messages' } },
             });
           } else {
             // Send to specific user IDs
             for (const t of targets) {
               await supabase.functions.invoke('send-push-notification', {
-                body: { title: '📢 Nouveau message du professeur', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'user', userId: t.user_id, data: { url: '/?open=messages' } },
+                body: { title: '📢 {prenom}, nouveau message de ton prof', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'user', userId: t.user_id, data: { url: '/?open=messages' } },
               });
             }
           }

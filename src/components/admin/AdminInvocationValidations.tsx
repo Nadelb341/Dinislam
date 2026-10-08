@@ -106,7 +106,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
       
       // Notify student
       sendPushNotification({
-        title: '⭐ Félicitations !', category: 'rec',
+        title: '⭐ Félicitations {prenom} !', category: 'rec',
         body: `Ton professeur a validé ${request.invocation?.title_french || 'ton invocation'} ! Continue comme ça !`,
         type: 'user',
         data: { url: '/invocations' },

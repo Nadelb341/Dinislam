@@ -114,7 +114,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
 
     sendPushNotification({
       userIds: [eleveSelectionne],
-      title: '📝 Note de l\'enseignante', category: 'lesson',
+      title: '📝 {prenom}, une note de ton prof', category: 'lesson',
       body: 'Votre enseignante a mis à jour votre progression Nourania',
       data: { url: '/nourania' },
     });
@@ -188,7 +188,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
       const lesson = lessons.find(l => l.id === lessonId);
       sendPushNotification({
         userIds: [eleveSelectionne],
-        title: '🔓 Nouvelle leçon disponible !', category: 'lesson',
+        title: '🔓 {prenom}, nouvelle leçon disponible !', category: 'lesson',
         body: `${lesson?.title_french || 'Une leçon'} a été déverrouillée pour toi`,
         data: { url: '/nourania' },
       });

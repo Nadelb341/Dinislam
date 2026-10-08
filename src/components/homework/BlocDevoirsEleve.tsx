@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { sendPushNotification } from "@/lib/pushHelper";
+import { useQuery } from "@tanstack/react-query";
+import { WeeklyPath } from "./WeeklyPath";
+import type { WeeklyProgram } from "@/lib/weeklyProgram";
 
 type Devoir = {
   id: string;
@@ -237,6 +240,20 @@ export default function BlocDevoirsEleve() {
   const [loading, setLoading] = useState(true);
   const [ouvert, setOuvert] = useState(false);
 
+  // 💎 Chemin de la semaine (le plus récent seulement : les anciens se rangent tout seuls)
+  const { data: program = null } = useQuery({
+    queryKey: ['weekly-program', user?.id],
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('weekly_program_view', { p_student: user!.id });
+      if (error) throw error;
+      const row = (data || [])[0];
+      return row ? ({ ...row, items: (row.items ?? []) as unknown as WeeklyProgram['items'] } as WeeklyProgram) : null;
+    },
+  });
+  const diamondsLeft = program ? program.items.filter((i) => !i.done).length : 0;
+
   const chargerDevoirs = useCallback(async () => {
     if (!user) return;
 
@@ -363,10 +380,10 @@ export default function BlocDevoirsEleve() {
     chargerDevoirs();
   };
 
-  if (loading || (devoirs.length === 0 && devoirsTermines.length === 0)) return null;
+  if (loading || (devoirs.length === 0 && devoirsTermines.length === 0 && !program)) return null;
 
   const totalAFaire = devoirs.length;
-  const toutAJour = totalAFaire === 0;
+  const toutAJour = totalAFaire === 0 && diamondsLeft === 0;
 
   // Date butoir la plus proche parmi les devoirs non rendus
   const prochaineDateButoir = devoirs
@@ -398,7 +415,10 @@ export default function BlocDevoirsEleve() {
         )}>
           {toutAJour
             ? '✅ Tout est à jour !'
-            : `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre`}
+            : [
+                totalAFaire > 0 ? `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre` : '',
+                diamondsLeft > 0 ? `💎 ${diamondsLeft} diamant${diamondsLeft > 1 ? 's' : ''} à faire briller` : '',
+              ].filter(Boolean).join(' · ')}
         </p>
         {!toutAJour && prochaineDateButoir && (
           <p className="text-xs font-medium text-center text-red-600 dark:text-red-400 w-full mt-0.5">
@@ -407,7 +427,7 @@ export default function BlocDevoirsEleve() {
         )}
         {/* Badge + flèche positionnés à droite en absolu */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          {!toutAJour && (
+          {!toutAJour && totalAFaire > 0 && (
             <span className="bg-red-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
               {totalAFaire}
             </span>
@@ -419,7 +439,8 @@ export default function BlocDevoirsEleve() {
 
       {ouvert && (
         <div className="p-3 bg-background">
-          {devoirs.length === 0 && devoirsTermines.length === 0 && (
+          {program && <WeeklyPath program={program} />}
+          {devoirs.length === 0 && devoirsTermines.length === 0 && !program && (
             <p className="text-muted-foreground text-sm text-center py-2">
               Aucun devoir pour le moment
             </p>

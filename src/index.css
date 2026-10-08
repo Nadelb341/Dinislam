@@ -398,3 +398,10 @@
   font-weight: 700;
   direction: rtl;
 }
+
+/* 💎 Diamants du « chemin de la semaine » : scintillement doux quand ils sont validés */
+@keyframes gem-twinkle { 0%, 100% { opacity: .35; transform: scale(.8) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
+@keyframes gem-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+.gem-sparkle { animation: gem-twinkle 1.6s ease-in-out infinite; }
+.gem-shine { animation: gem-glow 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine { animation: none; } }

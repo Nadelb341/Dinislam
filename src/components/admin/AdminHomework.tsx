@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { takeDraftResume } from '@/lib/pendingDrafts';
+import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
@@ -225,7 +226,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       if (destinataires.length > 0) {
         sendPushNotification({
           userIds: destinataires,
-          title: '📚 Nouveau devoir !', category: 'hw_new',
+          title: '📚 {prenom}, nouveau devoir !', category: 'hw_new',
           body: `Nouveau devoir : "${form.titre}" — à rendre bientôt`,
           data: { url: '/?open=devoirs' },
         });
@@ -280,7 +281,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       sendPushNotification({
         userIds: [studentId],
-        title: '🎉 Devoir validé !', category: 'hw_res',
+        title: '🎉 Devoir validé, bravo {prenom} !', category: 'hw_res',
         body: `Ton devoir "${devoirTitre}" a été corrigé ✅`,
         data: { url: '/?open=devoirs' },
       });
@@ -303,7 +304,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       sendPushNotification({
         userIds: [modalARefaire.studentId],
-        title: '🔄 Devoir à refaire', category: 'hw_res',
+        title: '🔄 {prenom}, devoir à refaire', category: 'hw_res',
         body: `"${modalARefaire.devoirTitre}" est à refaire${commentaire ? ` : ${commentaire}` : ''}`,
         data: { url: '/?open=devoirs' },
       });
@@ -356,6 +357,9 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
         </Button>
       </div>
+
+      {/* 💎 Chemin de la semaine automatique (2026-10-08) */}
+      <WeeklyProgramAdmin />
 
       {/* Create form */}
       {showForm && (
