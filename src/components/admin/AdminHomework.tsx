@@ -73,6 +73,18 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     saveDraft(DRAFT_KEY_HOMEWORK, form);
   }, [showForm, form]);
 
+  // « Supprimer » le brouillon : il part dans la corbeille (Paramètres), jamais effacé directement
+  const trashHomeworkDraft = async () => {
+    const d = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
+    if (d && user) {
+      const ok = await moveToTrash(user.id, 'draft', DRAFT_KEY_HOMEWORK, `Brouillon — nouveau devoir « ${d.titre.slice(0, 80)} »`, { key: DRAFT_KEY_HOMEWORK, data: d });
+      if (!ok) { toast.error('Mise en corbeille impossible — le brouillon est conservé'); return; }
+      toast.success('Brouillon mis dans la corbeille (Paramètres)');
+    }
+    clearDraft(DRAFT_KEY_HOMEWORK);
+    setHomeworkDraft(null);
+  };
+
   // Fetch devoirs with enriched names
   const { data: devoirs = [] } = useQuery({
     queryKey: ['admin-devoirs'],
@@ -353,7 +365,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm) { clearDraft(DRAFT_KEY_HOMEWORK); setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '' }); } setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm && form.titre.trim()) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
         </Button>
       </div>
@@ -649,7 +661,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       </Dialog>
 
       {/* Dialog récupération brouillon devoir */}
-      <AlertDialog open={!!homeworkDraft} onOpenChange={(open) => { if (!open) { clearDraft(DRAFT_KEY_HOMEWORK); setHomeworkDraft(null); } }}>
+      <AlertDialog open={!!homeworkDraft} onOpenChange={(open) => { if (!open) setHomeworkDraft(null); }}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>⏳ Action inachevée</AlertDialogTitle>
@@ -661,7 +673,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex gap-2 flex-row justify-end">
             <button
-              onClick={() => { clearDraft(DRAFT_KEY_HOMEWORK); setHomeworkDraft(null); }}
+              onClick={trashHomeworkDraft}
               className="px-4 py-2 text-sm rounded-md border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
             >
               Supprimer

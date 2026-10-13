@@ -9,6 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
+import { DRAFT_RESUME_EVENT, takeDraftResumePrefix } from '@/lib/pendingDrafts';
 import { moveToTrash } from '@/lib/trash';
 import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link, Calendar } from 'lucide-react';
 import ContentUploadTabs from './ContentUploadTabs';
@@ -137,6 +140,14 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   // Unlimited questions
   const [questions, setQuestions] = useState<QuestionForm[]>([emptyQuestion()]);
   const [maxErrorsInput, setMaxErrorsInput] = useState<string>('3');
+  // Brouillon des NOUVELLES questions d'un jour (pas encore enregistrées) ; les questions déjà en base n'y sont pas
+  const hasContent = (q: QuestionForm) => !!(q.question.trim() || q.explanation.trim() || q.options.some((o) => o.trim()));
+  const quizDraft = useCreationDraft(selectedDay ? `dinislam_ramadan_quiz_${selectedDay}` : null, {
+    active: !!selectedDay,
+    value: { questions: questions.filter((q) => !q.existingId && hasContent(q)) },
+    isEmpty: (v) => v.questions.length === 0,
+    restore: (v) => setQuestions((prev) => [...prev.filter((q) => q.existingId), ...v.questions]),
+  });
 
   // Fetch ramadan settings
   const { data: settings } = useQuery({
@@ -181,7 +192,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   });
 
   // Fetch quizzes
-  const { data: quizzes = [] } = useQuery({
+  const { data: quizzes = [], isFetched: quizzesFetched } = useQuery({
     queryKey: ['admin-ramadan-quizzes'],
     queryFn: async () => {
       const { data, error } = await supabase.from('ramadan_quizzes').select('*').order('question_order');
@@ -414,6 +425,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       return skippedCount;
     },
     onSuccess: (skippedCount) => {
+      quizDraft.done();
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-quizzes'] });
       if (skippedCount > 0) {
         toast({ title: `Quiz enregistré — ${skippedCount} doublon(s) ignoré(s)` });
@@ -728,6 +740,24 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       setQuestions([emptyQuestion()]);
     }
   };
+
+  // « Continuer » des questions de quiz d'un jour (message d'ouverture) : rouvrir ce jour sur le quiz
+  const [resumeDay, setResumeDay] = useState<string | null>(null);
+  useEffect(() => {
+    const tryResume = () => {
+      const k = takeDraftResumePrefix('dinislam_ramadan_quiz_');
+      if (k) setResumeDay(k.slice('dinislam_ramadan_quiz_'.length));
+    };
+    tryResume();
+    window.addEventListener(DRAFT_RESUME_EVENT, tryResume);
+    return () => window.removeEventListener(DRAFT_RESUME_EVENT, tryResume);
+  }, []);
+  useEffect(() => {
+    if (!resumeDay || !quizzesFetched || !days.some((d) => d.id === resumeDay)) return;
+    handleOpenDay(resumeDay, 'quiz');
+    setResumeDay(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeDay, quizzesFetched, days]);
 
   // Scroll to section after dialog opens
   useEffect(() => {
@@ -1261,6 +1291,10 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
                 )}
               </div>
 
+              <DraftRestoredBanner draft={quizDraft} onCleared={() => setQuestions((prev) => {
+                const kept = prev.filter((q) => q.existingId);
+                return kept.length ? kept : [emptyQuestion()];
+              })} />
               <p className="text-xs text-muted-foreground">↕️ Maintenez une question puis glissez pour la déplacer</p>
 
               <SortableCardList

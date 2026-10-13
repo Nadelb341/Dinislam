@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, X, Send, Moon, CheckCircle, XCircle, Plus, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { moveToTrash } from '@/lib/trash';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +48,13 @@ const AdminMoonAssistant = () => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(false);
+  // Question tapée mais pas encore envoyée : gardée si on ferme l'assistant
+  const draft = useCreationDraft('dinislam_moon_assistant', {
+    active: isOpen,
+    value: inputText,
+    isEmpty: (v) => !v.trim(),
+    restore: (v) => { setInputText(v); setIsOpen(true); },
+  });
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
 
@@ -243,6 +251,7 @@ const AdminMoonAssistant = () => {
 
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
+    draft.done();
     setInputText('');
     setIsLoading(true);
 

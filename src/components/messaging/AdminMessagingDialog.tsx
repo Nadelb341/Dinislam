@@ -9,6 +9,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft, useReplyDraft, useReplyResume } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
+import { loadDraft } from '@/hooks/useDraftRecovery';
+import { moveToTrash } from '@/lib/trash';
 import { supabase } from '@/integrations/supabase/client';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useToast } from '@/hooks/use-toast';
@@ -75,9 +79,35 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
   const [groupMsgSearch, setGroupMsgSearch] = useState('');
   const [groupMsgSelectedGroups, setGroupMsgSelectedGroups] = useState<Set<string>>(new Set());
 
+  // Brouillons : réponse par élève, nouveau message, message à plusieurs élèves
+  const replyDraft = useReplyDraft(selectedConversation?.user_id ?? null, setReplyMessage);
+  const [resumeReplyFor, setResumeReplyFor] = useState<string | null>(null);
+  useReplyResume(setResumeReplyFor);
+
+  const newMsgDraft = useCreationDraft('dinislam_admin_new_msg', {
+    active: newMsgOpen,
+    value: { user: newMsgSelectedUser, text: newMsgText },
+    isEmpty: (v) => !v.text.trim(),
+    restore: (v) => { setNewMsgSelectedUser(v.user); setNewMsgText(v.text); setNewMsgOpen(true); },
+  });
+  const groupMsgDraft = useCreationDraft('dinislam_admin_group_msg', {
+    active: groupMsgOpen,
+    value: { text: groupMsgText, push: groupMsgPush, mode: groupMsgMode, selected: [...groupMsgSelected], groups: [...groupMsgSelectedGroups] },
+    isEmpty: (v) => !v.text.trim(),
+    restore: (v) => {
+      setGroupMsgText(v.text); setGroupMsgPush(v.push); setGroupMsgMode(v.mode);
+      setGroupMsgSelected(new Set(v.selected)); setGroupMsgSelectedGroups(new Set(v.groups)); setGroupMsgOpen(true);
+    },
+  });
+
   // Ouverture depuis une tâche « À FAIRE » : message de groupe déjà rempli
   useEffect(() => {
     if (!open || !prefillGroupMessage) return;
+    // Un ancien brouillon différent ne disparaît pas : il part dans la corbeille
+    const old = loadDraft<{ text?: string }>('dinislam_admin_group_msg');
+    if (old?.text?.trim() && old.text !== prefillGroupMessage.text && user) {
+      moveToTrash(user.id, 'draft', 'dinislam_admin_group_msg', `Brouillon — message à plusieurs élèves « ${old.text.slice(0, 80)} »`, { key: 'dinislam_admin_group_msg', data: old });
+    }
     setGroupMsgText(prefillGroupMessage.text);
     if (prefillGroupMessage.groupIds.length) {
       setGroupMsgMode('groups');
@@ -86,7 +116,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
       setGroupMsgMode('all');
     }
     setGroupMsgOpen(true);
-  }, [open, prefillGroupMessage]);
+  }, [open, prefillGroupMessage, user]);
 
   // Fetch all profiles for new message / group message dialog
   const { data: allProfiles = [] } = useQuery({
@@ -133,7 +163,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
   });
 
   // Fetch conversations
-  const { data: conversations = [], refetch } = useQuery({
+  const { data: conversations = [], refetch, isFetched: conversationsFetched } = useQuery({
     queryKey: ['admin-dialog-conversations'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -163,6 +193,14 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
     },
     enabled: open,
   });
+
+  // « Continuer » une réponse : rouvrir la conversation de cet élève
+  useEffect(() => {
+    if (!resumeReplyFor || !open || !conversationsFetched) return;
+    const conv = conversations.find((c) => c.user_id === resumeReplyFor);
+    setSelectedConversation(conv ?? { user_id: resumeReplyFor, profile: { full_name: null, email: null }, lastMessage: '', lastMessageDate: '', unreadCount: 0 });
+    setResumeReplyFor(null);
+  }, [resumeReplyFor, open, conversationsFetched, conversations]);
 
   // Fetch selected conversation messages
   const { data: messages = [], refetch: refetchMessages } = useQuery({
@@ -222,7 +260,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
         userId: selectedConversation.user_id,
       });
 
-      setReplyMessage(''); refetchMessages();
+      replyDraft.sent(); setReplyMessage(''); refetchMessages();
     } catch (err) { toast({ title: 'Erreur', description: (errorMessage(err) || 'Erreur inconnue') + (err?.code ? ` | code: ${err.code}` : ''), variant: 'destructive' }); }
     finally { setIsSending(false); }
   };
@@ -286,6 +324,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
       });
 
       // Close new message dialog and open the conversation
+      newMsgDraft.done();
       setNewMsgOpen(false);
       setNewMsgText('');
       setNewMsgSelectedUser(null);
@@ -362,6 +401,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
         } catch (e) { console.error('Push notification error:', e); }
       }
 
+      groupMsgDraft.done();
       setGroupMsgOpen(false);
       setGroupMsgText('');
       setGroupMsgPush(true);
@@ -459,7 +499,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
               {/* Reply */}
               <div className="space-y-2 py-3 border-t">
                 <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
-                <Textarea value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
+                <Textarea value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => audioInputRef.current?.click()} disabled={isSending}>
                     <Music className="h-4 w-4 mr-1" /> Audio
@@ -523,6 +563,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
             <DialogDescription>Sélectionnez un élève et écrivez votre message</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <DraftRestoredBanner draft={newMsgDraft} onCleared={() => { setNewMsgText(''); setNewMsgSelectedUser(null); }} />
             {/* Student search */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Élève</Label>
@@ -597,6 +638,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
             <DialogDescription>Choisissez les destinataires et écrivez votre message</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <DraftRestoredBanner draft={groupMsgDraft} onCleared={() => { setGroupMsgText(''); setGroupMsgMode('all'); setGroupMsgSelected(new Set()); setGroupMsgSelectedGroups(new Set()); setGroupMsgPush(true); }} />
             {/* Mode selection */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Destinataires</Label>

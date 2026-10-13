@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { moveToTrash } from '@/lib/trash';
 import {
   Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
@@ -38,6 +40,12 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const [formNameFr, setFormNameFr] = useState('');
   const [formTranslit, setFormTranslit] = useState('');
   const [formExplanation, setFormExplanation] = useState('');
+  const draft = useCreationDraft('dinislam_allah_name', {
+    active: formOpen && !editingName,
+    value: { nameAr: formNameAr, nameFr: formNameFr, translit: formTranslit, explanation: formExplanation },
+    isEmpty: (v) => !v.nameAr.trim() && !v.nameFr.trim() && !v.translit.trim() && !v.explanation.trim(),
+    restore: (v) => { setEditingName(null); setFormNameAr(v.nameAr); setFormNameFr(v.nameFr); setFormTranslit(v.translit); setFormExplanation(v.explanation); setFormOpen(true); },
+  });
 
   const { data: names = [], isLoading } = useQuery({
     queryKey: ['admin-allah-names'],
@@ -81,6 +89,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
       queryClient.invalidateQueries({ queryKey: ['allah-names'] });
       toast.success(editingName ? 'Nom modifié ✅' : 'Nom ajouté ✅');
+      if (!editingName) draft.done();
       setFormOpen(false);
       setEditingName(null);
     },
@@ -375,6 +384,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {!editingName && <DraftRestoredBanner draft={draft} onCleared={() => { setFormNameAr(''); setFormNameFr(''); setFormTranslit(''); setFormExplanation(''); }} />}
             <div>
               <Label>Nom en arabe *</Label>
               <Input value={formNameAr} onChange={(e) => setFormNameAr(e.target.value)} className="font-arabic text-right text-lg" dir="rtl" />

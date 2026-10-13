@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { moveToTrash } from '@/lib/trash';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { errorMessage } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -23,6 +25,12 @@ export function SchoolHolidays() {
   const [end, setEnd] = useState('');
   const [toDelete, setToDelete] = useState<Holiday | null>(null);
   const [open, setOpen] = useState(false);
+  const draft = useCreationDraft('dinislam_school_holiday', {
+    active: open,
+    value: { label, start, end },
+    isEmpty: (v) => !v.label.trim() && !v.start && !v.end,
+    restore: (v) => { setLabel(v.label); setStart(v.start); setEnd(v.end); setOpen(true); },
+  });
 
   const { data: holidays = [] } = useQuery({
     queryKey: ['school-holidays'],
@@ -41,6 +49,7 @@ export function SchoolHolidays() {
     if (end < start) { toast.error('La date de fin doit être après la date de début'); return; }
     const { error } = await supabase.from('school_holidays').insert({ label: label.trim(), start_date: start, end_date: end });
     if (error) { toast.error(errorMessage(error)); return; }
+    draft.done();
     setLabel(''); setStart(''); setEnd('');
     toast.success('Vacances ajoutées 🏖️');
     refresh();
@@ -76,6 +85,7 @@ export function SchoolHolidays() {
               </div>
             ))}
           </div>
+          <DraftRestoredBanner draft={draft} onCleared={() => { setLabel(''); setStart(''); setEnd(''); }} />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex. Vacances de Noël" aria-label="Nom des vacances" />
             <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} aria-label="Premier jour" />

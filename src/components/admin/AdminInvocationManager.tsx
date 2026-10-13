@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { moveToTrash } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,6 +71,15 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   const [formContentAr, setFormContentAr] = useState('');
   const [formContentFr, setFormContentFr] = useState('');
   const [formCategory, setFormCategory] = useState('quotidienne');
+  const draft = useCreationDraft('dinislam_invocation', {
+    active: formOpen && !editingInvocation,
+    value: { title: formTitle, titleAr: formTitleAr, contentAr: formContentAr, contentFr: formContentFr, category: formCategory },
+    isEmpty: (v) => !v.title.trim() && !v.titleAr.trim() && !v.contentAr.trim() && !v.contentFr.trim(),
+    restore: (v) => {
+      setEditingInvocation(null); setFormTitle(v.title); setFormTitleAr(v.titleAr); setFormContentAr(v.contentAr);
+      setFormContentFr(v.contentFr); setFormCategory(v.category); setFormOpen(true);
+    },
+  });
 
   const { data: invocations = [], isLoading } = useQuery({
     queryKey: ['admin-invocations-full'],
@@ -112,6 +123,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocations-list'] });
       toast.success(editingInvocation ? 'Invocation modifiée ✅' : 'Invocation ajoutée ✅');
+      if (!editingInvocation) draft.done();
       setFormOpen(false);
       setEditingInvocation(null);
     },
@@ -374,6 +386,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
             <DialogTitle>{editingInvocation ? 'Modifier l\'invocation' : 'Ajouter une invocation'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            {!editingInvocation && <DraftRestoredBanner draft={draft} onCleared={() => { setFormTitle(''); setFormTitleAr(''); setFormContentAr(''); setFormContentFr(''); setFormCategory('quotidienne'); }} />}
             <div>
               <Label>Titre (Français) *</Label>
               <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Ex: Matin, Soir, Voyage..." />

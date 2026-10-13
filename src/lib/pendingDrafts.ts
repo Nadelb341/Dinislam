@@ -39,6 +39,74 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Messagerie', noun: 'message pas encore envoyé', route: '/?open=messages', perUser: true,
     labelOf: (d) => text(d),
   },
+  // Formulaires de création de l'enseignante (outil commun useCreationDraft, 2026-10-13)
+  dinislam_sched_notif: {
+    place: 'Monitoring › Notifications programmées', noun: 'notification programmée', route: '/monitoring', adminOnly: true,
+    labelOf: (d) => text((d as { message?: string } | null)?.message),
+  },
+  dinislam_school_holiday: {
+    place: 'Monitoring › Vacances scolaires', noun: 'période de vacances', route: '/monitoring', adminOnly: true,
+    labelOf: (d) => text((d as { label?: string } | null)?.label),
+  },
+  dinislam_version: {
+    place: 'Monitoring › Version', noun: 'nouvelle version', route: '/monitoring?tab=version', adminOnly: true,
+    labelOf: (d) => { const v = d as { version_number?: string; label?: string } | null; return text(v?.label) || text(v?.version_number); },
+  },
+  dinislam_admin_new_msg: {
+    place: 'Messagerie › Nouveau message', noun: 'message pas encore envoyé', route: '/?open=messages', adminOnly: true,
+    labelOf: (d) => text((d as { text?: string } | null)?.text),
+  },
+  dinislam_admin_group_msg: {
+    place: 'Messagerie › Message à plusieurs élèves', noun: 'message pas encore envoyé', route: '/?open=messages', adminOnly: true,
+    labelOf: (d) => text((d as { text?: string } | null)?.text),
+  },
+  dinislam_admin_reply_: {
+    place: 'Messagerie › Réponse à un élève', noun: 'réponse pas encore envoyée', route: '/?open=messages', adminOnly: true,
+    labelOf: (d) => text(d),
+  },
+  dinislam_student_group: {
+    place: 'Bouclier › Élèves › Groupes', noun: 'nouveau groupe', route: '/?admin=eleves', adminOnly: true,
+    labelOf: (d) => text((d as { name?: string } | null)?.name),
+  },
+  dinislam_allah_name: {
+    place: 'Tableau de bord › 99 Noms d\'Allah', noun: 'nouveau nom', route: '/admin?section=allah-names-manage', adminOnly: true,
+    labelOf: (d) => { const v = d as { nameFr?: string; nameAr?: string } | null; return text(v?.nameFr) || text(v?.nameAr); },
+  },
+  dinislam_invocation: {
+    place: 'Tableau de bord › Invocations', noun: 'nouvelle invocation', route: '/admin?section=invocations-manage', adminOnly: true,
+    labelOf: (d) => { const v = d as { title?: string; titleAr?: string } | null; return text(v?.title) || text(v?.titleAr); },
+  },
+  dinislam_module_card_: {
+    place: 'Tableau de bord › carte d\'un module', noun: 'nouvelle carte', route: '/admin', adminOnly: true,
+    labelOf: (d) => {
+      const v = d as { title?: string; titleAr?: string; module?: string } | null;
+      const t = text(v?.title) || text(v?.titleAr);
+      return t && text(v?.module) ? `${t} (module ${text(v?.module)})` : t;
+    },
+  },
+  dinislam_flashcard_: {
+    place: 'Tableau de bord › carte d\'un module › Flashcards', noun: 'flashcard pas encore ajoutée', route: '/admin', adminOnly: true,
+    labelOf: (d) => {
+      const v = d as { front?: string; arabic?: string; card?: string } | null;
+      const t = text(v?.front) || text(v?.arabic);
+      return t && text(v?.card) ? `${t} (carte ${text(v?.card)})` : t;
+    },
+  },
+  dinislam_dynamic_card: {
+    place: 'Tableau de bord', noun: 'nouvelle carte', route: '/admin', adminOnly: true,
+    labelOf: (d) => text((d as { title?: string } | null)?.title),
+  },
+  dinislam_ramadan_quiz_: {
+    place: 'Tableau de bord › Ramadan › quiz d\'un jour', noun: 'questions de quiz', route: '/admin?section=ramadan-manage', adminOnly: true,
+    labelOf: (d) => {
+      const qs = (d as { questions?: { question?: string }[] } | null)?.questions ?? [];
+      return qs.map((q) => text(q.question)).filter(Boolean).join(' · ');
+    },
+  },
+  dinislam_moon_assistant: {
+    place: 'Assistant 🌙 de l\'enseignante', noun: 'question pas encore envoyée', route: '/', adminOnly: true,
+    labelOf: (d) => text(d),
+  },
 };
 
 export interface PendingDraft {
@@ -46,6 +114,13 @@ export interface PendingDraft {
   key: string;
   label: string;
   def: DraftDef;
+}
+
+/** Définition d'une clé de brouillon (clé exacte ou préfixe se terminant par « _ »). */
+export function draftDefFor(key: string): DraftDef | null {
+  if (DRAFT_DEFS[key]) return DRAFT_DEFS[key];
+  const prefix = Object.keys(DRAFT_DEFS).find(k => k.endsWith('_') && key.startsWith(k));
+  return prefix ? DRAFT_DEFS[prefix] : null;
 }
 
 function findDef(key: string, userId: string): DraftDef | null {
@@ -83,8 +158,19 @@ export function scanPendingDrafts(userId: string, isAdmin: boolean): PendingDraf
 
 /** « Continuer » : l'écran concerné reprend le brouillon directement, sans reposer la question. */
 const RESUME_KEY = 'draft_resume_request';
+/** Prévient un écran déjà ouvert (même page) qu'il doit reprendre son brouillon. */
+export const DRAFT_RESUME_EVENT = 'dinislam:draft-resume';
 export function requestDraftResume(key: string) {
   try { sessionStorage.setItem(RESUME_KEY, key); } catch { /* stockage indisponible */ }
+  window.dispatchEvent(new Event(DRAFT_RESUME_EVENT));
+}
+/** Comme takeDraftResume, pour une famille de clés (ex. « dinislam_admin_reply_ » + id de l'élève) : rend la clé complète. */
+export function takeDraftResumePrefix(prefix: string): string | null {
+  try {
+    const k = sessionStorage.getItem(RESUME_KEY);
+    if (k && k.startsWith(prefix)) { sessionStorage.removeItem(RESUME_KEY); return k; }
+  } catch { /* stockage indisponible */ }
+  return null;
 }
 export function takeDraftResume(key: string): boolean {
   try {

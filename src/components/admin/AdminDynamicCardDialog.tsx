@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { FileText, List, Video, File, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
 
@@ -122,6 +124,19 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
     }
   }, [editCard, open]);
 
+  // Brouillon d'une nouvelle carte (déclaré APRÈS la remise à zéro ci-dessus pour que le brouillon repris l'emporte)
+  const draft = useCreationDraft('dinislam_dynamic_card', {
+    active: open && !editCard,
+    value: { title, icon, bgColor, contentType, content, isPublic, selectedUsers, fileUrl, fileName },
+    isEmpty: (v) => !v.title.trim() && !v.content.trim() && !v.fileUrl,
+    restore: (v) => {
+      // Fenêtre fermée : on l'ouvre seulement, le brouillon revient tout seul à l'ouverture (après la remise à zéro)
+      if (!open) { onOpenChange(true); return; }
+      setTitle(v.title); setIcon(v.icon); setBgColor(v.bgColor); setContentType(v.contentType); setContent(v.content);
+      setIsPublic(v.isPublic); setSelectedUsers(v.selectedUsers ?? []); setFileUrl(v.fileUrl); setFileName(v.fileName);
+    },
+  });
+
   useEffect(() => {
     if (cardVisibility) {
       setSelectedUsers(cardVisibility);
@@ -220,6 +235,7 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
       toast.success(editCard ? 'Carte modifiée' : 'Carte créée');
+      if (!editCard) draft.done();
       onOpenChange(false);
     },
     onError: (err) => {
@@ -243,6 +259,7 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
         </DialogHeader>
 
         <div className="space-y-4">
+          {!editCard && <DraftRestoredBanner draft={draft} onCleared={() => { setTitle(''); setIcon('FileText'); setBgColor(COLOR_OPTIONS[0].value); setContentType('text'); setContent(''); setIsPublic(true); setSelectedUsers([]); setFileUrl(null); setFileName(null); }} />}
           <div>
             <Label>Titre</Label>
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Nom de la carte" />

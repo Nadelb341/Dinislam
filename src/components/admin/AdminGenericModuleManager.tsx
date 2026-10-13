@@ -6,6 +6,8 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { moveToTrash } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,6 +52,12 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   const [formTitleAr, setFormTitleAr] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formSection, setFormSection] = useState('');
+  const draft = useCreationDraft(`dinislam_module_card_${moduleId}`, {
+    active: formOpen && !editingCard,
+    value: { title: formTitle, titleAr: formTitleAr, desc: formDesc, section: formSection, module: moduleTitle },
+    isEmpty: (v) => !v.title.trim() && !v.titleAr.trim() && !v.desc.trim() && !v.section.trim(),
+    restore: (v) => { setEditingCard(null); setFormTitle(v.title); setFormTitleAr(v.titleAr); setFormDesc(v.desc); setFormSection(v.section); setFormOpen(true); },
+  });
 
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ['admin-module-cards', moduleId],
@@ -95,6 +103,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-cards', moduleId] });
       toast.success(editingCard ? 'Carte modifiée ✅' : 'Carte ajoutée ✅');
+      if (!editingCard) draft.done();
       setFormOpen(false);
       setEditingCard(null);
     },
@@ -425,6 +434,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
             <DialogTitle>{editingCard ? 'Modifier la carte' : 'Nouvelle carte'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {!editingCard && <DraftRestoredBanner draft={draft} onCleared={() => { setFormTitle(''); setFormTitleAr(''); setFormDesc(''); setFormSection(''); }} />}
             <div>
               <Label>Titre *</Label>
               <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Ex: Leçon 1, Vocabulaire..." />

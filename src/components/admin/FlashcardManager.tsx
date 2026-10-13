@@ -8,6 +8,8 @@ import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, X } from
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { generateFromTemplate } from '@/data/flashcard-templates';
 import { errorMessage } from '@/lib/utils';
 
@@ -33,6 +35,13 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
   const [editFront, setEditFront] = useState('');
   const [editArabic, setEditArabic] = useState('');
   const [editTranslit, setEditTranslit] = useState('');
+  // Flashcard commencée mais pas encore ajoutée (une par carte de module)
+  const draft = useCreationDraft(`dinislam_flashcard_${cardId}`, {
+    active: expanded,
+    value: { front, arabic, translit, card: cardTitle },
+    isEmpty: (v) => !v.front.trim() && !v.arabic.trim() && !v.translit.trim(),
+    restore: (v) => { setFront(v.front); setArabic(v.arabic); setTranslit(v.translit); setExpanded(true); },
+  });
 
   const { data: flashcards = [] } = useQuery({
     queryKey: ['admin-flashcards', cardId],
@@ -70,6 +79,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
     },
     onSuccess: () => {
       invalidate();
+      draft.done();
       setFront(''); setArabic(''); setTranslit('');
       toast.success('Flashcard ajoutée ✅');
     },
@@ -185,6 +195,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
 
           {/* Formulaire d'ajout */}
           <div className="space-y-2">
+            <DraftRestoredBanner draft={draft} onCleared={() => { setFront(''); setArabic(''); setTranslit(''); }} />
             <Input
               placeholder="Texte français (recto) *"
               value={front}

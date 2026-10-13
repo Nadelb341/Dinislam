@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import { compressPhoto } from '@/lib/compressImage';
+import { useReplyDraft } from '@/hooks/useCreationDraft';
 
 
 interface UserMessage {
@@ -44,6 +45,8 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
   const queryClient = useQueryClient();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
+  // Brouillon de réponse propre à chaque élève (partagé avec la messagerie du bouclier)
+  const replyDraft = useReplyDraft(selectedConversation?.user_id ?? null, setReplyMessage);
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -145,6 +148,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
       });
       
       toast({ title: 'Réponse envoyée' });
+      replyDraft.sent();
       setReplyMessage('');
       refetchMessages();
     } catch (error) {
@@ -256,7 +260,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
         {/* Reply input */}
         <div className="space-y-2 pt-3 border-t">
           <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
-          <Textarea value={replyMessage} onChange={(e) => setReplyMessage(e.target.value)} placeholder="Votre réponse..." rows={2} className="resize-none" />
+          <Textarea value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Votre réponse..." rows={2} className="resize-none" />
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => audioInputRef.current?.click()} disabled={isSending} size="sm">
               <Music className="h-4 w-4 mr-1" /> Audio

@@ -16,6 +16,8 @@ import {
 import { Plus, MoreVertical, Pencil, Trash2, Users, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { moveToTrash } from '@/lib/trash';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage, byName } from '@/lib/utils';
@@ -135,6 +137,12 @@ const AdminStudentGroups = () => {
   const [studentSearch, setStudentSearch] = useState('');
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('tous');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('tous');
+  const draft = useCreationDraft('dinislam_student_group', {
+    active: dialogOpen && !editingGroup,
+    value: { name: groupName, color: groupColor, students: [...selectedStudents] },
+    isEmpty: (v) => !v.name.trim() && v.students.length === 0,
+    restore: (v) => { setEditingGroup(null); setGroupName(v.name); setGroupColor(v.color); setSelectedStudents(new Set(v.students)); setDialogOpen(true); },
+  });
 
   // Fetch groups with members
   const { data: groups = [] } = useQuery({
@@ -219,6 +227,7 @@ const AdminStudentGroups = () => {
       }
     },
     onSuccess: async () => {
+      if (!editingGroup) draft.done();
       closeDialog();
       toast.success(editingGroup ? 'Groupe modifié' : 'Groupe créé');
       await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
@@ -333,6 +342,7 @@ const AdminStudentGroups = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {!editingGroup && <DraftRestoredBanner draft={draft} onCleared={() => { setGroupName(''); setGroupColor('bg-blue-500'); setSelectedStudents(new Set()); }} />}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Nom du groupe</Label>
               <Input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Ex: Groupe A" />

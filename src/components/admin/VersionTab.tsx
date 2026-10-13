@@ -14,12 +14,20 @@ import { Plus, RotateCcw, Loader2, Tag, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 
 const VersionTab = () => {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [restoreId, setRestoreId] = useState<string | null>(null);
   const [newVersion, setNewVersion] = useState({ version_number: '', label: '', description: '' });
+  const draft = useCreationDraft('dinislam_version', {
+    active: showCreate,
+    value: newVersion,
+    isEmpty: (v) => !v.version_number.trim() && !v.label.trim() && !v.description.trim(),
+    restore: (v) => { setNewVersion(v); setShowCreate(true); },
+  });
 
   const { data: versions = [], isLoading } = useQuery({
     queryKey: ['app-versions'],
@@ -69,6 +77,7 @@ const VersionTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['app-versions'] });
+      draft.done();
       setShowCreate(false);
       setNewVersion({ version_number: '', label: '', description: '' });
       toast({ title: '✅ Version créée' });
@@ -162,6 +171,7 @@ const VersionTab = () => {
             <DialogTitle>Nouvelle version</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
+            <DraftRestoredBanner draft={draft} onCleared={() => setNewVersion({ version_number: '', label: '', description: '' })} />
             <div>
               <Label>Numéro de version</Label>
               <Input

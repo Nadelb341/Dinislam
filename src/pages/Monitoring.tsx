@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +41,7 @@ const StatusDot = ({ ok }: { ok: boolean | null }) => {
 const Monitoring = () => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Section 1: Status
   const [status, setStatus] = useState<{
@@ -270,7 +271,7 @@ const Monitoring = () => {
   return (
     <AppLayout>
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <Tabs defaultValue="monitoring" className="w-full">
+        <Tabs defaultValue={searchParams.get('tab') === 'version' ? 'version' : 'monitoring'} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
             <TabsTrigger value="version">Version</TabsTrigger>

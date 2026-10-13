@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { SchoolHolidays } from './SchoolHolidays';
+import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Trash2, Pencil, Plus, Loader2, Users, User } from 'lucide-react';
@@ -75,6 +77,20 @@ const ScheduledNotifications = () => {
   const [requireConfirmation, setRequireConfirmation] = useState(false);
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [skipHolidays, setSkipHolidays] = useState(false);
+
+  // Brouillon de la notification en cours de création (gardé si on ferme sans programmer)
+  const draftValue = { module, message, startDate, endDate, sendTime, recipientMode, selectedStudents, isActive, requireConfirmation, weekdays, skipHolidays };
+  const draft = useCreationDraft('dinislam_sched_notif', {
+    active: dialogOpen && !editingId,
+    value: draftValue,
+    isEmpty: (v) => !v.message.trim() && !v.startDate && !v.endDate,
+    restore: (v) => {
+      setModule(v.module); setMessage(v.message); setStartDate(v.startDate); setEndDate(v.endDate);
+      setSendTime(v.sendTime); setRecipientMode(v.recipientMode); setSelectedStudents(v.selectedStudents ?? []);
+      setIsActive(v.isActive); setRequireConfirmation(v.requireConfirmation); setWeekdays(v.weekdays ?? []);
+      setSkipHolidays(v.skipHolidays); setEditingId(null); setDialogOpen(true);
+    },
+  });
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['scheduled-notifications'],
@@ -145,6 +161,7 @@ const ScheduledNotifications = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       toast({ title: editingId ? '✅ Notification modifiée' : '✅ Notification programmée' });
+      if (!editingId) draft.done();
       resetForm();
     },
     onError: (e) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
@@ -288,6 +305,7 @@ const ScheduledNotifications = () => {
               <DialogTitle>{editingId ? 'Modifier la notification' : 'Programmer une notification'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {!editingId && <DraftRestoredBanner draft={draft} onCleared={() => { resetForm(); setDialogOpen(true); }} />}
               <div>
                 <Label>Module concerné</Label>
                 <Select value={module} onValueChange={setModule}>
