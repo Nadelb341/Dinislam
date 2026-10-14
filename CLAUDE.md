@@ -774,7 +774,8 @@ Les PDF réellement en ligne (envoyés en mai) ne contenaient PAS la page où la
 
 ### Affichage PDF sans scroll interne (màj 2026-05-07)
 - Composant `src/components/nourania/NouraniaPdfViewer.tsx` : utilise `react-pdf` (pdfjs-dist v5) pour rendre chaque page en `<canvas>` empilé verticalement → scroll continu sans iframe
-- Worker PDF : `public/pdf.worker.min.mjs` (copie locale de pdfjs-dist, 1 MB)
+- Worker PDF : ~~`public/pdf.worker.min.mjs`~~ supprimé le 2026-10-14 → importé depuis `pdfjs-dist/legacy/build/pdf.worker.min.mjs?url` (toujours assorti à la version installée)
+- ⚠️ 2026-10-14 (commit 7c1aef6) : sur l'iPad de Yacine (vieux Safari), la page Nourania plantait (« Promise.withResolvers is not a function », leçon 9). Correctif : `vite.config.ts` redirige `pdfjs-dist` vers sa version **legacy** (elle ajoute les fonctions manquantes) + plan B dans le lecteur (`PdfSafetyNet` → bouton « 📄 Ouvrir le cours » au lieu de faire planter la page). Testé en simulant l'absence de la fonction : PDF leçon 9 ouvert. Ne JAMAIS revenir au build moderne de pdf.js.
 - Suppression de l'ancienne `<iframe>` et de `getPdfHeight()` dans `Nourania.tsx`
 - Bouton "Imprimer" rouge (bordure + texte) à côté de chaque PDF → ouvre dans un nouvel onglet pour impression native
 - `react-pdf` ajouté dans `optimizeDeps.include` de `vite.config.ts`
