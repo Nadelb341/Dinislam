@@ -26,11 +26,14 @@ export default defineConfig(() => ({
   },
   plugins: [react(), buildVersion()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "node_modules/react"),
-      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      { find: "react", replacement: path.resolve(__dirname, "node_modules/react") },
+      { find: "react-dom", replacement: path.resolve(__dirname, "node_modules/react-dom") },
+      // Lecteur PDF (cours Nourania) : version « anciens appareils » de pdf.js, qui apporte elle-même les fonctions
+      // manquantes sur les vieux iPad/Safari (ex. Promise.withResolvers). Sans ça, la page Nourania plantait (2026-10-14).
+      { find: /^pdfjs-dist$/, replacement: path.resolve(__dirname, "node_modules/pdfjs-dist/legacy/build/pdf.mjs") },
+    ],
     dedupe: [
       "react", 
       "react-dom",
