@@ -44,6 +44,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PendingApproval from "./pages/PendingApproval";
+import ApprovalCheckFailed from "./pages/ApprovalCheckFailed";
 
 const Sourates = lazy(() => import("./pages/Sourates"));
 const Invocations = lazy(() => import("./pages/Invocations"));
@@ -67,7 +68,7 @@ const queryClient = new QueryClient();
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isApproved, isAdmin } = useAuth();
+  const { user, loading, isApproved, isAdmin, approvalCheckFailed } = useAuth();
 
   if (loading) {
     return (
@@ -83,6 +84,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!isAdmin && isApproved === false) {
     return <PendingApproval />;
+  }
+
+  // Vérification impossible (réseau, navigateur…) : jamais « Inscription en attente » à tort
+  if (!isAdmin && approvalCheckFailed && isApproved !== true) {
+    return <ApprovalCheckFailed />;
   }
 
   return <>{children}</>;

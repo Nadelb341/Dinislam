@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { rememberPassword } from '@/lib/rememberPassword';
@@ -11,6 +11,10 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isApproved: boolean | null;
+  /** La vérification « compte validé ? » n'a pas pu aboutir (réseau, navigateur…) : ni oui ni non */
+  approvalCheckFailed: boolean;
+  /** Relance la vérification « compte validé ? » */
+  recheckApproval: () => Promise<void>;
   signUp: (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -33,6 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  const [approvalCheckFailed, setApprovalCheckFailed] = useState(false);
+  // Seule la dernière vérification lancée a le droit de modifier l'état (une réponse lente et ratée ne doit pas écraser une bonne)
+  const approvalRun = useRef(0);
 
   const checkAdminRole = useCallback(async (userId: string) => {
     try {
@@ -47,27 +54,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) { console.error('Error in checkAdminRole:', err); return false; }
   }, []);
 
-  const checkApprovalStatus = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_approved')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (error) { console.error('Error checking approval:', error); return false; }
-      return data?.is_approved ?? false;
-    } catch (err) { console.error('Error in checkApprovalStatus:', err); return false; }
+  /**
+   * « Compte validé ? » → true / false quand la base a répondu, null quand elle n'a pas pu répondre.
+   * Avant le 2026-10-14, le moindre raté (réseau, navigateur Xiaomi…) donnait « false » : une élève acceptée
+   * (Lina Nebian) restait bloquée sur « Inscription en attente ». Désormais : 3 essais, et un raté n'est jamais un « non ».
+   */
+  const checkApprovalStatus = useCallback(async (userId: string): Promise<boolean | null> => {
+    let lastError = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_approved')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!error && data) return data.is_approved === true;
+        // Aucune ligne visible = la connexion n'a pas été jointe à la demande (le profil existe toujours)
+        lastError = error ? `${error.code ?? ''} ${error.message}` : 'profil non visible (connexion non jointe ?)';
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+      }
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
+    }
+    console.error('Vérification « compte validé ? » impossible :', lastError);
+    // Trace visible dans Monitoring, pour connaître la vraie cause sur l'appareil de l'élève
+    supabase.from('app_logs').insert({
+      user_id: userId, level: 'warn', action: 'Vérification « compte validé ? » impossible',
+      details: { error: lastError, user_agent: navigator.userAgent },
+    }).then(() => {}, () => {});
+    return null;
   }, []);
+
+  /** Applique le résultat ; un raté laisse « validé » tel quel et affiche l'écran « Réessayer » si on ne sait rien */
+  const applyApproval = useCallback(async (userId: string) => {
+    const run = ++approvalRun.current;
+    const [approved, admin] = await Promise.all([checkApprovalStatus(userId), checkAdminRole(userId)]);
+    if (run !== approvalRun.current) return;
+    setIsAdmin(admin);
+    if (admin) { setIsApproved(true); setApprovalCheckFailed(false); return; }
+    if (approved === null) { setApprovalCheckFailed(true); return; }
+    setIsApproved(approved);
+    setApprovalCheckFailed(false);
+  }, [checkApprovalStatus, checkAdminRole]);
 
   // Re-check approval when app comes back to foreground
   const recheckApproval = useCallback(async () => {
     const currentUser = (await supabase.auth.getUser()).data.user;
     if (!currentUser) return;
-    const approved = await checkApprovalStatus(currentUser.id);
-    const admin = await checkAdminRole(currentUser.id);
-    setIsApproved(admin ? true : approved);
-    setIsAdmin(admin);
-  }, [checkApprovalStatus, checkAdminRole]);
+    await applyApproval(currentUser.id);
+  }, [applyApproval]);
 
   useEffect(() => {
     let mounted = true;
@@ -90,16 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           clearTimeout(safetyTimer);
 
           // Roles in background, never block rendering
-          checkAdminRole(session.user.id).then(val => {
-            if (mounted) setIsAdmin(val);
-          });
-          checkApprovalStatus(session.user.id).then(val => {
-            if (mounted) {
-              checkAdminRole(session.user.id).then(isAdm => {
-                if (mounted) setIsApproved(isAdm ? true : val);
-              });
-            }
-          });
+          applyApproval(session.user.id);
 
           // Update last_seen silently
           supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
@@ -138,20 +164,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         if (session?.user) {
           setUser(session.user);
-          checkAdminRole(session.user.id).then(val => {
-            if (mounted) setIsAdmin(val);
-          });
-          checkApprovalStatus(session.user.id).then(val => {
-            if (mounted) {
-              checkAdminRole(session.user.id).then(isAdm => {
-                if (mounted) setIsApproved(isAdm ? true : val);
-              });
-            }
-          });
+          applyApproval(session.user.id);
         } else {
+          approvalRun.current++;
           setUser(null);
           setIsAdmin(false);
           setIsApproved(null);
+          setApprovalCheckFailed(false);
         }
       }
     );
@@ -170,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [checkAdminRole, checkApprovalStatus, recheckApproval]);
+  }, [applyApproval, recheckApproval]);
 
   const signUp = async (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => {
     try {
@@ -210,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setIsAdmin(false);
     setIsApproved(null);
+    setApprovalCheckFailed(false);
   };
 
   const resetPassword = async (email: string) => {
@@ -223,6 +243,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) { return { error: error as Error }; }
   };
 
-  const value = { user, session, loading, isAdmin, isApproved, signUp, signIn, signOut, resetPassword };
+  const value = { user, session, loading, isAdmin, isApproved, approvalCheckFailed, recheckApproval, signUp, signIn, signOut, resetPassword };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
