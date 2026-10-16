@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
-import { takeDraftResume } from '@/lib/pendingDrafts';
+import { DRAFT_RESUME_EVENT, takeDraftResume } from '@/lib/pendingDrafts';
 import { DropoutAlerts } from './DropoutAlerts';
 import { AdminTodoGroupDialog } from './AdminTodoGroupDialog';
 import { draftKeyOf, isLate, sortTasks, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
@@ -88,11 +89,16 @@ export function AdminTodoCard() {
 
   // « Continuer » depuis le message d'ouverture de l'appli : on rouvre le bon post-it
   useEffect(() => {
-    if (resumeChecked.current || groups.length === 0) return;
-    resumeChecked.current = true;
-    for (const g of [...groups.map((x) => x.id), null]) {
-      if (takeDraftResume(draftKeyOf(g))) { setCollapsed(false); setOpenId(g); break; }
-    }
+    if (groups.length === 0) return;
+    const tryResume = () => {
+      for (const g of [...groups.map((x) => x.id), null]) {
+        if (takeDraftResume(draftKeyOf(g))) { setCollapsed(false); setOpenId(g); break; }
+      }
+    };
+    if (!resumeChecked.current) { resumeChecked.current = true; tryResume(); }
+    // « Continuer » depuis « Mes brouillons » du bouclier alors que l'accueil est déjà affiché
+    window.addEventListener(DRAFT_RESUME_EVENT, tryResume);
+    return () => window.removeEventListener(DRAFT_RESUME_EVENT, tryResume);
   }, [groups]);
 
   const openGroup = openId === undefined ? null : allGroups.find((g) => g.id === openId) ?? null;
@@ -102,6 +108,7 @@ export function AdminTodoCard() {
       <button type="button" onClick={toggleCollapsed} className="w-full flex items-center gap-2 px-4 py-3 text-start" aria-expanded={!collapsed}>
         <span className="text-xl">📝</span>
         <span className="font-bold tracking-wide text-foreground">À FAIRE</span>
+        <DraftDot draftKey="dinislam_admin_task_" />
         {openCount > 0 && (
           <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${lateCount ? 'animate-pulse' : ''}`}>
             {openCount > 99 ? '99+' : openCount}
@@ -132,6 +139,7 @@ export function AdminTodoCard() {
                 <span className="relative flex flex-col gap-1 p-2.5 pt-3">
                   <span className="flex items-start gap-1.5">
                     <span className="flex-1 min-w-0 text-[13px] font-bold leading-tight text-foreground [overflow-wrap:anywhere]">{g.name}</span>
+                    <DraftDot draftKey={draftKeyOf(g.id)} />
                     {open.length > 0 && (
                       <span className={`shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${late ? 'animate-pulse' : ''}`}>
                         {open.length}

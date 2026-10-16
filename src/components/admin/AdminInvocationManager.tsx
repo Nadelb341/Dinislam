@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -273,7 +274,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-2" /> Retour</Button>
-        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Ajouter une invocation</Button>
+        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" /> Ajouter une invocation <DraftDot draftKey="dinislam_invocation" className="ml-1.5" /></Button>
       </div>
 
       <div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -68,7 +69,7 @@ export function SchoolHolidays() {
   return (
     <div className="rounded-xl border border-sky-200 dark:border-sky-900 bg-sky-50/60 dark:bg-sky-950/20 p-3 space-y-2">
       <button type="button" onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between gap-2 text-sm font-semibold">
-        <span>🏖️ Vacances scolaires (pause des rappels)</span>
+        <span className="flex items-center gap-1.5">🏖️ Vacances scolaires (pause des rappels) <DraftDot draftKey="dinislam_school_holiday" /></span>
         <span className="text-xs text-muted-foreground">{open ? '▾' : '▸'} {holidays.length}</span>
       </button>
       {open && (

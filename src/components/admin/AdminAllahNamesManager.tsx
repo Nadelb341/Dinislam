@@ -2,6 +2,7 @@
  * AdminAllahNamesManager — Gestion admin des 99 Noms d'Allah
  * Design: Bleu profond & Ambre/Doré — selon capture
  */
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -248,7 +249,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
             style={{ background: 'hsl(220 70% 45%)' }}
           >
-            <Plus className="h-4 w-4" /> Ajouter un nom
+            <Plus className="h-4 w-4" /> Ajouter un nom <DraftDot draftKey="dinislam_allah_name" />
           </button>
         </div>
       </div>

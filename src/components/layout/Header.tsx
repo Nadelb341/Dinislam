@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
 import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
@@ -36,7 +37,7 @@ const Header = ({
 }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminInitial, setAdminInitial] = useState<OpenAdminDetail | null>(null);
@@ -106,6 +107,12 @@ const Header = ({
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
+              {/* Message commencé mais pas envoyé */}
+              <DraftDot
+                tiny
+                draftKey={isAdmin ? ['dinislam_admin_new_msg', 'dinislam_admin_group_msg', 'dinislam_admin_reply_'] : user ? `messaging_student_${user.id}` : null}
+                className="absolute -bottom-0.5 -right-0.5 text-[10px]"
+              />
             </Button>
             <Button
               variant="ghost" size="icon"

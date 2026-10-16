@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -246,7 +247,7 @@ const ScheduledNotifications = () => {
             📅 Notifications Programmées
           </CardTitle>
           <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Programmer
+            <Plus className="h-4 w-4 mr-1" /> Programmer <DraftDot draftKey="dinislam_sched_notif" className="ml-1.5" />
           </Button>
         </div>
       </CardHeader>

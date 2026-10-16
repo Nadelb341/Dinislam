@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1033,6 +1034,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               <span className="absolute top-0.5 left-0.5 text-[7px] leading-none">
                 {isGloballyUnlocked ? '🔓' : hasExceptions ? '🔑' : '🔒'}
               </span>
+              <DraftDot draftKey={`dinislam_ramadan_quiz_${day.id}`} tiny className="absolute top-0.5 right-0.5" />
 
               {/* Day number */}
               <span className="text-[10px] font-bold leading-none">{day.day_number}</span>

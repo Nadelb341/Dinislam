@@ -1,4 +1,4 @@
-import { loadDraft } from '@/hooks/useDraftRecovery';
+import { loadDraft, clearDraft, draftSavedAt } from '@/hooks/useDraftRecovery';
 
 /**
  * Actions inachevées rappelées DÈS L'OUVERTURE de l'appli (règle globale du 2026-09-26,
@@ -114,6 +114,8 @@ export interface PendingDraft {
   key: string;
   label: string;
   def: DraftDef;
+  /** Dernière modification (millisecondes), null si inconnue */
+  savedAt: number | null;
 }
 
 /** Définition d'une clé de brouillon (clé exacte ou préfixe se terminant par « _ »). */
@@ -151,9 +153,50 @@ export function scanPendingDrafts(userId: string, isAdmin: boolean): PendingDraf
     if (!def || (def.adminOnly && !isAdmin)) continue;
     const label = def.labelOf(loadDraft<unknown>(key));
     if (!label) continue;
-    out.push({ key, label, def });
+    out.push({ key, label, def, savedAt: draftSavedAt(key) });
   }
   return out;
+}
+
+/** Un brouillon de cet appareil existe pour cette clé (clé exacte, ou toute clé qui commence par un préfixe se terminant par « _ »). */
+export function hasDraft(keyOrPrefix: string): boolean {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('draft_')) continue;
+      const key = k.slice(6);
+      const match = keyOrPrefix.endsWith('_') ? key.startsWith(keyOrPrefix) : key === keyOrPrefix;
+      if (!match) continue;
+      const def = draftDefFor(key);
+      if (def ? !!def.labelOf(loadDraft<unknown>(key)) : true) return true;
+    }
+  } catch { /* stockage indisponible */ }
+  return false;
+}
+
+/** « Effacer » un brouillon : il part dans la corbeille (Paramètres), jamais supprimé directement. */
+export async function trashDraft(userId: string, d: PendingDraft): Promise<boolean> {
+  // Chargé à la demande : la corbeille a besoin de la base, le reste de ce fichier non
+  const { moveToTrash } = await import('@/lib/trash');
+  const ok = await moveToTrash(userId, 'draft', d.key, `Brouillon — ${d.def.noun} « ${d.label.slice(0, 120)} »`, { key: d.key, data: loadDraft(d.key) });
+  if (ok) clearDraft(d.key);
+  return ok;
+}
+
+/** Brouillon plus vieux que ça : rangé tout seul dans la corbeille à l'ouverture de l'appli (idée C, 2026-10-16). */
+export const DRAFT_MAX_AGE_DAYS = 30;
+const inTrashing = new Set<string>();
+
+/** Range dans la corbeille les brouillons de l'utilisateur non modifiés depuis 30 jours. Rend le nombre rangé. */
+export async function trashOldDrafts(userId: string, isAdmin: boolean): Promise<number> {
+  const limit = Date.now() - DRAFT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const old = scanPendingDrafts(userId, isAdmin).filter(d => d.savedAt !== null && d.savedAt < limit && !inTrashing.has(d.key));
+  let n = 0;
+  for (const d of old) {
+    inTrashing.add(d.key);
+    try { if (await trashDraft(userId, d)) n++; } finally { inTrashing.delete(d.key); }
+  }
+  return n;
 }
 
 /** « Continuer » : l'écran concerné reprend le brouillon directement, sans reposer la question. */

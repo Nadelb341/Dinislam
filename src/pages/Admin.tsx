@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { moveToTrash } from '@/lib/trash';
@@ -629,6 +630,7 @@ const Admin = () => {
           className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all z-40"
         >
           <Plus className="h-6 w-6" />
+          <DraftDot draftKey="dinislam_dynamic_card" className="absolute -top-1 -right-1" />
         </button>
 
         <AdminDynamicCardDialog

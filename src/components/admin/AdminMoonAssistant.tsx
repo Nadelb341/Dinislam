@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -386,6 +387,7 @@ const AdminMoonAssistant = () => {
         aria-label="Assistant Admin"
       >
         <span style={{ fontSize: '18px', lineHeight: 1, filter: 'drop-shadow(0 0 4px rgba(200,180,255,0.6))' }}>🌙</span>
+        <DraftDot draftKey="dinislam_moon_assistant" tiny className="absolute -top-0.5 -right-0.5 text-[10px]" />
       </button>
 
       {/* Chat Panel */}

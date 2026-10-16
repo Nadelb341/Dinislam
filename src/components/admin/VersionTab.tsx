@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -162,7 +163,7 @@ const VersionTab = () => {
 
       {/* Create new version */}
       <Button onClick={() => setShowCreate(true)} className="w-full">
-        <Plus className="h-4 w-4 mr-2" /> Créer une nouvelle version
+        <Plus className="h-4 w-4 mr-2" /> Créer une nouvelle version <DraftDot draftKey="dinislam_version" className="ml-1.5" />
       </Button>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

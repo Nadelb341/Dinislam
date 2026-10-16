@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -175,7 +176,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
       >
-        <span>🃏 Flashcards{count !== null && count > 0 ? ` (${count})` : ''}</span>
+        <span className="flex items-center gap-1.5">🃏 Flashcards{count !== null && count > 0 ? ` (${count})` : ''} <DraftDot draftKey={`dinislam_flashcard_${cardId}`} /></span>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
 

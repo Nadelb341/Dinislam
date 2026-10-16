@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -366,7 +367,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
         <Button onClick={() => { if (showForm && form.titre.trim()) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); setShowForm(!showForm); }} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Nouveau devoir
+          <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
       </div>
 

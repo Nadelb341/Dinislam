@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music, Plus, Users, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -456,10 +457,10 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
                   <Mail className="h-5 w-5" /> Messagerie Admin
                   <div className="ml-auto flex gap-1">
                     <Button size="sm" variant="outline" onClick={() => setNewMsgOpen(true)}>
-                      <Plus className="h-4 w-4 mr-1" /> Nouveau
+                      <Plus className="h-4 w-4 mr-1" /> Nouveau <DraftDot draftKey="dinislam_admin_new_msg" className="ml-1" />
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setGroupMsgOpen(true)}>
-                      <Users className="h-4 w-4 mr-1" /> Groupe
+                      <Users className="h-4 w-4 mr-1" /> Groupe <DraftDot draftKey="dinislam_admin_group_msg" className="ml-1" />
                     </Button>
                   </div>
                 </>
@@ -541,6 +542,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm [overflow-wrap:anywhere]">{conv.profile.full_name || 'Élève'}</p>
                         {conv.unreadCount > 0 && <Badge className="bg-orange-500 text-[10px] h-5">{conv.unreadCount}</Badge>}
+                        <DraftDot draftKey={`dinislam_admin_reply_${conv.user_id}`} />
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
                     </div>

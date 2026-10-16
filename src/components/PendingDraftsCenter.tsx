@@ -7,7 +7,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { moveToTrash } from '@/lib/trash';
-import { scanPendingDrafts, requestDraftResume, type PendingDraft } from '@/lib/pendingDrafts';
+import { scanPendingDrafts, requestDraftResume, trashOldDrafts, DRAFT_MAX_AGE_DAYS, type PendingDraft } from '@/lib/pendingDrafts';
 
 // Chaque brouillon n'est proposé qu'une fois par ouverture de l'appli (pas à chaque changement de page).
 // Le rôle admin arrive un peu après la connexion : un 2ᵉ passage ajoute alors les brouillons réservés à l'admin.
@@ -23,11 +23,23 @@ const PendingDraftsCenter = () => {
 
   useEffect(() => {
     if (loading || !user) return;
-    const found = scanPendingDrafts(user.id, isAdmin).filter(d => !alreadyProposed.has(d.key));
-    if (found.length === 0) return;
-    found.forEach(d => alreadyProposed.add(d.key));
-    setItems(prev => [...prev, ...found]);
-    setOpen(true);
+    let cancelled = false;
+    (async () => {
+      // Brouillons pas touchés depuis 30 jours : rangés dans la corbeille, jamais supprimés directement (idée C)
+      const trashed = await trashOldDrafts(user.id, isAdmin);
+      if (trashed > 0) {
+        toast(`🗑️ ${trashed > 1 ? `${trashed} vieux brouillons rangés` : 'Un vieux brouillon rangé'} dans la corbeille`, {
+          description: `Pas touché${trashed > 1 ? 's' : ''} depuis plus de ${DRAFT_MAX_AGE_DAYS} jours. Tu peux ${trashed > 1 ? 'les' : 'le'} restaurer depuis la corbeille (Paramètres).`,
+        });
+      }
+      if (cancelled) return;
+      const found = scanPendingDrafts(user.id, isAdmin).filter(d => !alreadyProposed.has(d.key));
+      if (found.length === 0) return;
+      found.forEach(d => alreadyProposed.add(d.key));
+      setItems(prev => [...prev, ...found]);
+      setOpen(true);
+    })();
+    return () => { cancelled = true; };
   }, [user, isAdmin, loading]);
 
   const remove = (d: PendingDraft) => {

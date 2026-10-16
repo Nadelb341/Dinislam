@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -307,7 +308,7 @@ const AdminStudentGroups = () => {
           <Users className="h-4 w-4" /> Groupes
         </h3>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Nouveau groupe
+          <Plus className="h-4 w-4 mr-1" /> Nouveau groupe <DraftDot draftKey="dinislam_student_group" className="ml-1.5" />
         </Button>
       </div>
 

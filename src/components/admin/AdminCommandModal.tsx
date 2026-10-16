@@ -15,6 +15,10 @@ import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminStudentDetails from '@/components/admin/AdminStudentDetails';
 import AdminAttendance from '@/components/admin/AdminAttendance';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
+import AdminMyDrafts from '@/components/admin/AdminMyDrafts';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePendingDrafts } from '@/hooks/useDrafts';
+import { requestDraftResume, type PendingDraft } from '@/lib/pendingDrafts';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -54,6 +58,9 @@ const BOUTONS_MODULES = [
   { id: 'inscriptions', label: 'Inscriptions', section: 'users', emoji: '📝' },
 ];
 
+/** « Mes brouillons » (idée B, 2026-10-16) : bouton à part, orange quand un brouillon attend */
+const BOUTON_BROUILLONS = { id: 'brouillons', label: 'Mes brouillons', section: 'brouillons', emoji: '🗒️' };
+
 const AdminCommandModal = ({
   open,
   onOpenChange,
@@ -70,6 +77,8 @@ const AdminCommandModal = ({
   initialSearch,
 }: AdminCommandModalProps) => {
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+  const drafts = usePendingDrafts(user?.id, isAdmin);
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
   // Panneau principal : il défile quand il dépasse l'écran (bandeau ouvert…), le titre et la croix restent visibles
@@ -133,7 +142,15 @@ const AdminCommandModal = ({
 
   const totalBadge = Object.values(compteurs).reduce((a, b) => a + b, 0);
 
-  const allBoutons = [...BOUTONS_ACTIONS, ...BOUTONS_MODULES];
+  const allBoutons = [...BOUTONS_ACTIONS, ...BOUTONS_MODULES, BOUTON_BROUILLONS];
+
+  // « Continuer » un brouillon : on ferme le bouclier et on ouvre la fiche, déjà remplie
+  const continueDraft = (d: PendingDraft) => {
+    setModalSection(null);
+    onClose();
+    requestDraftResume(d.key);
+    navigate(d.def.route);
+  };
 
   return (
     <>
@@ -225,6 +242,17 @@ const AdminCommandModal = ({
                   </button>
                 );
               })}
+              <button
+                onClick={() => setModalSection(BOUTON_BROUILLONS.section)}
+                className={`col-span-2 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${drafts.length > 0 ? 'bg-amber-400 text-amber-950' : 'bg-emerald-500 text-white'}`}
+              >
+                <span>{BOUTON_BROUILLONS.emoji} {BOUTON_BROUILLONS.label}</span>
+                {drafts.length > 0 && (
+                  <span className="bg-white text-amber-900 text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">
+                    {drafts.length}
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* Séparateur */}
@@ -293,6 +321,7 @@ const AdminCommandModal = ({
                 section={modalSection}
                 initialSearch={initialSearch}
                 onClose={() => setModalSection(null)}
+                onContinueDraft={continueDraft}
                 onNavigate={(path) => {
                   setModalSection(null);
                   onClose();
@@ -312,13 +341,17 @@ function AdminSectionRenderer({
   initialSearch,
   onClose,
   onNavigate,
+  onContinueDraft,
 }: {
   section: string;
   initialSearch?: string;
   onClose: () => void;
   onNavigate: (path: string) => void;
+  onContinueDraft: (d: PendingDraft) => void;
 }) {
   switch (section) {
+    case 'brouillons':
+      return <AdminMyDrafts onContinue={onContinueDraft} />;
     case 'users':
       return <AdminRegistrationValidations onBack={onClose} />;
     case 'sourates-validations':
