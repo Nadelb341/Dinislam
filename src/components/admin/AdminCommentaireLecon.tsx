@@ -174,7 +174,7 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
           if (existing) {
             await supabase
               .from('user_nourania_progress')
-              .update({ is_validated: true, updated_at: new Date().toISOString() })
+              .update({ is_validated: true })
               .eq('id', existing.id);
           } else {
             await supabase

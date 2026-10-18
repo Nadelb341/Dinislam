@@ -260,7 +260,7 @@ const Nourania = () => {
         if (existing) {
           const { error } = await supabase
             .from('user_nourania_progress')
-            .update({ is_validated: true, updated_at: new Date().toISOString() })
+            .update({ is_validated: true })
             .eq('id', existing.id);
           if (error) throw error;
         } else {

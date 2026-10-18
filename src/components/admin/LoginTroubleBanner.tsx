@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
-import { fetchLoginTrouble } from '@/lib/loginTrouble';
+import { fetchLoginTrouble, fetchAbsentStudents, ABSENT_DAYS } from '@/lib/loginTrouble';
 
 /** Bouclier : « N élèves n'arrivent pas à se connecter », avec la liste et un accès direct à la liste Élèves */
 export function LoginTroubleBanner({ onOpenStudents }: { onOpenStudents: () => void }) {
   const [open, setOpen] = useState(false);
   const { data = [] } = useQuery({ queryKey: ['admin-login-trouble'], queryFn: fetchLoginTrouble, staleTime: 60_000 });
-  if (data.length === 0) return null;
+  if (data.length === 0) return <AbsentStudentsBanner onOpenStudents={onOpenStudents} />;
   return (
+    <>
     <div className="rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-2 px-4 py-3 text-start">
         <span className="font-semibold text-sm text-red-900 dark:text-red-100">
@@ -29,6 +30,42 @@ export function LoginTroubleBanner({ onOpenStudents }: { onOpenStudents: () => v
           </ul>
           <p className="text-xs text-muted-foreground">Dans Élèves : « Confirmer » sur sa carte, ou ⋮ › Modifier le mot de passe pour lui en donner un.</p>
           <button type="button" onClick={onOpenStudents} className="w-full rounded-xl bg-destructive text-destructive-foreground font-semibold py-2 text-sm">
+            👨‍🎓 Ouvrir la liste des élèves
+          </button>
+        </div>
+      )}
+    </div>
+    <AbsentStudentsBanner onOpenStudents={onOpenStudents} />
+    </>
+  );
+}
+
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/** « 😴 N élèves n'ont pas ouvert l'appli depuis plus de 30 jours » : souvent un souci de connexion qui ne se voit pas (2026-10-18) */
+function AbsentStudentsBanner({ onOpenStudents }: { onOpenStudents: () => void }) {
+  const [open, setOpen] = useState(false);
+  const { data = [] } = useQuery({ queryKey: ['admin-absent-students'], queryFn: fetchAbsentStudents, staleTime: 60_000 });
+  if (data.length === 0) return null;
+  return (
+    <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 overflow-hidden">
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-2 px-4 py-3 text-start">
+        <span className="font-semibold text-sm text-amber-900 dark:text-amber-100">
+          😴 {data.length} élève{data.length > 1 ? 's' : ''} {data.length > 1 ? "n'ont" : "n'a"} pas ouvert l'appli depuis plus de {ABSENT_DAYS} jours
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-4 pb-3 space-y-2">
+          <ul className="space-y-1 text-sm">
+            {data.map((a) => (
+              <li key={a.user_id} className="[overflow-wrap:anywhere]">
+                <b>{a.name}</b> · {a.lastSeen ? `dernière visite le ${fmtDay(a.lastSeen)} (il y a ${a.days} jours)` : `aucune visite depuis son inscription (il y a ${a.days} jours)`}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">C'est parfois un souci de connexion : demande à la famille. Dans Élèves, ⋮ › Modifier le mot de passe pour lui en donner un nouveau.</p>
+          <button type="button" onClick={onOpenStudents} className="w-full rounded-xl bg-amber-500 text-white font-semibold py-2 text-sm">
             👨‍🎓 Ouvrir la liste des élèves
           </button>
         </div>

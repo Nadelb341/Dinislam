@@ -808,3 +808,8 @@ Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section
 ## 🖼️ Un contenu incohérent avec son rôle → s'arrêter et demander (ajoutée 2026-09-01)
 Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Demander en cas de doute" → "🖼️ Cas particulier — un contenu qui ne correspond pas à ce qu'il est censé être"). Quand une image/un champ/un libellé/une valeur montré par Nadia ne colle pas à ce qu'il devrait être (ex : écriture manuscrite scannée là où on attend une photo de plat), **le signaler et demander AVANT d'exécuter la demande à la lettre** — ne pas foncer.
 
+
+## Corrections du 2026-10-18 (réponses de Nadia : points 2, 3, 5)
+- ✅ Sourates « Débloquer pour un élève » (`AdminSourateContent.tsx`) : reverrouiller demande une confirmation, puis le déblocage part dans la corbeille (type `sourate_admin_unlock` → table `sourate_admin_unlocks`, restaurable). Avant : effacé directement.
+- ✅ Nourania : `user_nourania_progress` n'a pas de colonne `updated_at`. Les 3 mises à jour (`Nourania.tsx`, `AdminNouraniaValidations.tsx`, `AdminCommentaireLecon.tsx`) écrivaient dedans et échouaient (« Erreur lors de la validation » côté élève ; côté admin, demande acceptée mais leçon pas cochée). Elles n'écrivent plus que `is_validated: true`. Vérifié en SQL : aucune demande acceptée restée sans leçon validée.
+- ✅ Bouclier : sous le bandeau « n'arrivent pas à se connecter », un bandeau orange « 😴 N élèves n'ont pas ouvert l'appli depuis plus de 30 jours » (`fetchAbsentStudents` dans `src/lib/loginTrouble.ts` ; dernière visite = la plus récente entre `profiles.last_seen` et la dernière connexion, sinon la date d'inscription ; admins exclus). Il n'est pas compté dans les pastilles rouges.

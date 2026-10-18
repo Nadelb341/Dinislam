@@ -308,15 +308,28 @@ const AdminSourateContent = () => {
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
-  const toggleUnlock = async (userId: string, sourateId: string) => {
+  // Reverrouiller : confirmation, puis le déblocage part dans la corbeille (restaurable), jamais effacé directement
+  const [toRelock, setToRelock] = useState<{ unlock: (typeof unlocks)[number]; label: string } | null>(null);
+
+  const toggleUnlock = async (userId: string, sourateId: string, label: string) => {
     const existing = unlocks.find(u => u.user_id === userId && u.sourate_id === sourateId);
-    if (existing) {
-      await supabase.from('sourate_admin_unlocks').delete().eq('id', existing.id);
-    } else {
-      await supabase.from('sourate_admin_unlocks').insert({ user_id: userId, sourate_id: sourateId, unlocked_by: user?.id });
-    }
+    if (existing) { setToRelock({ unlock: existing, label }); return; }
+    const { error } = await supabase.from('sourate_admin_unlocks').insert({ user_id: userId, sourate_id: sourateId, unlocked_by: user?.id });
+    if (error) { toast.error('Erreur : la sourate n\'a pas été débloquée'); return; }
     refetchUnlocks();
-    toast.success(existing ? 'Sourate verrouillée' : 'Sourate déverrouillée');
+    toast.success('Sourate déverrouillée');
+  };
+
+  const confirmRelock = async () => {
+    const r = toRelock;
+    setToRelock(null);
+    if (!r || !user?.id) return;
+    const ok = await moveToTrash(user.id, 'sourate_admin_unlock', r.unlock.id, r.label, r.unlock);
+    if (!ok) { toast.error('Mise en corbeille impossible — la sourate reste débloquée'); return; }
+    const { error } = await supabase.from('sourate_admin_unlocks').delete().eq('id', r.unlock.id);
+    if (error) { toast.error('Erreur : la sourate est toujours débloquée'); return; }
+    refetchUnlocks();
+    toast.success('Sourate reverrouillée (le déblocage est dans la corbeille)');
   };
 
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
@@ -387,7 +400,7 @@ const AdminSourateContent = () => {
                 return (
                   <div key={s.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
                     <span className="text-sm">{s.number}. {s.name_french}</span>
-                    <Button variant={isUnlocked ? 'default' : 'outline'} size="sm" onClick={() => toggleUnlock(selectedStudent, s.id)}>
+                    <Button variant={isUnlocked ? 'default' : 'outline'} size="sm" onClick={() => toggleUnlock(selectedStudent, s.id, `${s.number}. ${s.name_french} — ${(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'Élève'}`)}>
                       {isUnlocked ? <Unlock className="h-3 w-3 mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
                       {isUnlocked ? 'Débloqué' : 'Débloquer'}
                     </Button>
@@ -428,6 +441,13 @@ const AdminSourateContent = () => {
         onOpenChange={(open) => !open && setDeleteContentId(null)}
         onConfirm={() => { if (deleteContentId) deleteMutation.mutate(deleteContentId); setDeleteContentId(null); }}
         description="Ce contenu sera supprimé définitivement."
+      />
+      <ConfirmDeleteDialog
+        open={!!toRelock}
+        onOpenChange={(open) => !open && setToRelock(null)}
+        onConfirm={confirmRelock}
+        title="Reverrouiller cette sourate ?"
+        description={toRelock ? `« ${toRelock.label} » ne sera plus débloquée à la main. Le déblocage ira dans la corbeille (Paramètres), d'où tu pourras le restaurer.` : ''}
       />
     </div>
   );

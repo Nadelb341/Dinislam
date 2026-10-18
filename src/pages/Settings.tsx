@@ -70,6 +70,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   admin_task_template: 'Modèle de tâche (À FAIRE)',
   alphabet_line_model: 'Modèle audio (Alphabet)',
   school_holiday: 'Vacances scolaires',
+  sourate_admin_unlock: 'Sourate débloquée à la main',
 };
 
 const Settings = () => {
