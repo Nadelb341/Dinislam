@@ -17,7 +17,8 @@ import {
 import { Plus, MoreVertical, Pencil, Trash2, Users, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
@@ -83,6 +84,7 @@ const DraggableGroupCard = ({
           <div className="flex items-start gap-2 min-w-0 flex-1">
             <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${group.color}`} />
             <span className="text-sm font-bold leading-tight break-words">{group.name}</span>
+            <DraftDot draftKey={editDraftKey('dinislam_student_group', group.id)} tiny className="text-[10px]" />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -143,6 +145,13 @@ const AdminStudentGroups = () => {
     value: { name: groupName, color: groupColor, students: [...selectedStudents] },
     isEmpty: (v) => !v.name.trim() && v.students.length === 0,
     restore: (v) => { setEditingGroup(null); setGroupName(v.name); setGroupColor(v.color); setSelectedStudents(new Set(v.students)); setDialogOpen(true); },
+  });
+  // Modification pas enregistrée d'un groupe (2026-10-19) ; élèves triés pour comparer avec l'original
+  const editDraft = useEditDraft('dinislam_student_group', editingGroup?.id, {
+    active: dialogOpen,
+    value: { name: groupName, color: groupColor, students: [...selectedStudents].sort() },
+    original: editingGroup && { name: editingGroup.name, color: editingGroup.color, students: editingGroup.members.map(m => m.user_id).sort() },
+    restore: (v) => { setGroupName(v.name); setGroupColor(v.color); setSelectedStudents(new Set(v.students)); },
   });
 
   // Fetch groups with members
@@ -228,7 +237,7 @@ const AdminStudentGroups = () => {
       }
     },
     onSuccess: async () => {
-      if (!editingGroup) draft.done();
+      if (editingGroup) editDraft.done(); else draft.done();
       closeDialog();
       toast.success(editingGroup ? 'Groupe modifié' : 'Groupe créé');
       await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
@@ -282,6 +291,8 @@ const AdminStudentGroups = () => {
     setAgeFilter('tous');
     setGenderFilter('tous');
   };
+
+  useEditDraftResume('dinislam_student_group', groups, (g) => openEdit(g));
 
   const openEdit = (group: StudentGroup) => {
     setEditingGroup(group);
@@ -347,6 +358,7 @@ const AdminStudentGroups = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {editingGroup && <DraftRestoredBanner draft={editDraft} onCleared={() => openEdit(editingGroup)} />}
             {!editingGroup && <DraftRestoredBanner draft={draft} onCleared={() => { setGroupName(''); setGroupColor('bg-blue-500'); setSelectedStudents(new Set()); }} />}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Nom du groupe</Label>

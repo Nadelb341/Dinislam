@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { installMoodToasts } from "./lib/moodToasts";
+
+// Émojis selon le ton, le sujet et la saison sur tous les petits messages (2026-10-19)
+installMoodToasts();
 
 const bootstrap = async () => {
   if ("serviceWorker" in navigator) {

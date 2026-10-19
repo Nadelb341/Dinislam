@@ -39,6 +39,15 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Messagerie', noun: 'message pas encore envoyé', route: '/?open=messages', perUser: true,
     labelOf: (d) => text(d),
   },
+  // Commentaire de récitation commencé par l'élève (clé : préfixe + id de l'élève + « : » + sourate ou nom), 2026-10-19
+  dinislam_sourate_comment_: {
+    place: 'Sourates › ma récitation', noun: 'commentaire pas encore envoyé', route: '/sourates', perUser: true,
+    labelOf: (d) => { const v = d as { text?: string; name?: string } | null; const t = text(v?.text); return t && text(v?.name) ? `${t} (${text(v?.name)})` : t; },
+  },
+  dinislam_name_comment_: {
+    place: '99 Noms d\'Allah › mon audio', noun: 'commentaire pas encore envoyé', route: '/allah-names', perUser: true,
+    labelOf: (d) => { const v = d as { text?: string; name?: string } | null; const t = text(v?.text); return t && text(v?.name) ? `${t} (${text(v?.name)})` : t; },
+  },
   // Formulaires de création de l'enseignante (outil commun useCreationDraft, 2026-10-13)
   dinislam_sched_notif: {
     place: 'Monitoring › Notifications programmées', noun: 'notification programmée', route: '/monitoring', adminOnly: true,
@@ -118,20 +127,41 @@ export interface PendingDraft {
   savedAt: number | null;
 }
 
+/**
+ * Modification pas enregistrée d'un élément existant (2026-10-19, demande de Nadia) :
+ * clé `<clé du formulaire>__edit_<id>`, même contenu que le brouillon de création.
+ */
+export const EDIT_MARK = '__edit_';
+export const editDraftKey = (base: string, id: string | number) => `${base}${EDIT_MARK}${id}`;
+
+function asEditDef(def: DraftDef): DraftDef {
+  return { ...def, noun: 'modification pas enregistrée' };
+}
+
 /** Définition d'une clé de brouillon (clé exacte ou préfixe se terminant par « _ »). */
 export function draftDefFor(key: string): DraftDef | null {
+  const edit = key.indexOf(EDIT_MARK);
+  if (edit > 0) {
+    const def = draftDefFor(key.slice(0, edit));
+    return def ? asEditDef(def) : null;
+  }
   if (DRAFT_DEFS[key]) return DRAFT_DEFS[key];
   const prefix = Object.keys(DRAFT_DEFS).find(k => k.endsWith('_') && key.startsWith(k));
   return prefix ? DRAFT_DEFS[prefix] : null;
 }
 
 function findDef(key: string, userId: string): DraftDef | null {
+  const edit = key.indexOf(EDIT_MARK);
+  if (edit > 0) {
+    const def = findDef(key.slice(0, edit), userId);
+    return def ? asEditDef(def) : null;
+  }
   if (DRAFT_DEFS[key] && !DRAFT_DEFS[key].perUser) return DRAFT_DEFS[key];
   const prefix = Object.keys(DRAFT_DEFS).find(k => k.endsWith('_') && key.startsWith(k));
   if (!prefix) return null;
   const def = DRAFT_DEFS[prefix];
   // Brouillon d'un autre compte sur le même appareil : jamais montré
-  if (def.perUser && key !== prefix + userId) return null;
+  if (def.perUser && key !== prefix + userId && !key.startsWith(prefix + userId + ':')) return null;
   return def;
 }
 

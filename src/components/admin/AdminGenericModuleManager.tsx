@@ -7,7 +7,8 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,6 +60,13 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     isEmpty: (v) => !v.title.trim() && !v.titleAr.trim() && !v.desc.trim() && !v.section.trim(),
     restore: (v) => { setEditingCard(null); setFormTitle(v.title); setFormTitleAr(v.titleAr); setFormDesc(v.desc); setFormSection(v.section); setFormOpen(true); },
   });
+  // Modification pas enregistrée d'une carte : gardée comme brouillon (2026-10-19)
+  const editDraft = useEditDraft(`dinislam_module_card_${moduleId}`, editingCard?.id, {
+    active: formOpen,
+    value: { title: formTitle, titleAr: formTitleAr, desc: formDesc, section: formSection, module: moduleTitle },
+    original: editingCard && { title: editingCard.title || '', titleAr: editingCard.title_arabic || '', desc: editingCard.description || '', section: editingCard.section || '', module: moduleTitle },
+    restore: (v) => { setFormTitle(v.title); setFormTitleAr(v.titleAr); setFormDesc(v.desc); setFormSection(v.section); },
+  });
 
   const { data: cards = [], isLoading } = useQuery({
     queryKey: ['admin-module-cards', moduleId],
@@ -104,7 +112,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-cards', moduleId] });
       toast.success(editingCard ? 'Carte modifiée ✅' : 'Carte ajoutée ✅');
-      if (!editingCard) draft.done();
+      if (editingCard) editDraft.done(); else draft.done();
       setFormOpen(false);
       setEditingCard(null);
     },
@@ -289,13 +297,15 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
     setIsUploadingImage(false);
   }, [queryClient, moduleId]);
 
+  useEditDraftResume(`dinislam_module_card_${moduleId}`, cards, (c) => openEdit(c));
+
   const openAdd = () => {
     setEditingCard(null);
     setFormTitle(''); setFormTitleAr(''); setFormDesc(''); setFormSection('');
     setFormOpen(true);
   };
 
-  const openEdit = (card) => {
+  const openEdit = (card: Tables<'module_cards'>) => {
     setEditingCard(card);
     setFormTitle(card.title || '');
     setFormTitleAr(card.title_arabic || '');
@@ -373,8 +383,9 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
 
                           {/* Actions */}
                           <div className="flex gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
-                            <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(card)}>
+                            <Button variant="outline" size="sm" className="h-8 px-2 relative" onClick={() => openEdit(card)}>
                               <Pencil className="h-3.5 w-3.5" />
+                              <DraftDot draftKey={editDraftKey(`dinislam_module_card_${moduleId}`, card.id)} tiny className="absolute -top-1 -right-1 text-[10px]" />
                             </Button>
                             <Button variant="outline" size="sm" className="h-8 px-2 text-destructive hover:text-destructive" onClick={() => setDeleteCardId(card.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
@@ -437,6 +448,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
           </DialogHeader>
           <div className="space-y-4">
             {!editingCard && <DraftRestoredBanner draft={draft} onCleared={() => { setFormTitle(''); setFormTitleAr(''); setFormDesc(''); setFormSection(''); }} />}
+            {editingCard && <DraftRestoredBanner draft={editDraft} onCleared={() => openEdit(editingCard)} />}
             <div>
               <Label>Titre *</Label>
               <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Ex: Leçon 1, Vocabulaire..." />

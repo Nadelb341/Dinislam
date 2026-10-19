@@ -853,3 +853,14 @@ Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Deman
 
 ## Flashcards : 10 mélanges prêts (2026-10-19, demande de Nadia)
 - Plus de flèches ⌃/⌄ côté enseignante. `lib/flashcardMixes.ts` : 10 ordres reproductibles par série de cartes ; à chaque ouverture l'élève passe au suivant (mémorisé sur l'appareil), bouton « Mélange n/10 · suivant ».
+
+## Brouillons partout (2026-10-19, demande de Nadia : a + b + c)
+- (a) Modifications pas enregistrées : `useEditDraft(base, id, {active, value, original, restore})` (useCreationDraft.ts), clé `editDraftKey(base, id)` = `<base>__edit_<id>` ; « vide » = identique à l'original. `useEditDraftResume` rouvre la fiche depuis « Mes brouillons ». Branché : 99 noms, invocations, cartes de module, flashcards, groupes, notifications programmées, cartes d'annonce. Définition reprise de la clé de base (noun « modification pas enregistrée »).
+- Pastille 📝 : sur chaque crayon concerné + sur les cartes du tableau de bord (`tileDraftKeys` dans Admin.tsx, prop `draftKeys` d'AdminModuleCard).
+- (b) Élèves : commentaire de récitation pas envoyé gardé (`dinislam_sourate_comment_` / `dinislam_name_comment_` + id élève + « : » + cible), rappelé à l'ouverture de l'appli. `perUser` accepte maintenant `préfixe + id` OU `préfixe + id + ':' + …`.
+- (c) Chiffre rouge du bouclier (Header) et pastille de la fenêtre 🛡️ = choses à valider + brouillons.
+- Toast « 📝 Brouillon gardé » aussi quand on quitte une modification sans enregistrer.
+
+## Émojis dans toute l'appli (2026-10-19, demande de Nadia)
+- `addMoodEmojis` (lib/moodEmojis.ts) : ton (joie / triste / neutre, deviné par mots-clés), émoji du sujet (📖 🎙️ 💌 🗑️ …) et de saison. Un texte qui a déjà un émoji n'est JAMAIS modifié.
+- Branché sur : toast.success/error/warning/info de sonner (`installMoodToasts` dans main.tsx), titres de use-toast (destructive = triste), corps des notifications push (send-push-notification, copie `_shared/moodEmojis.ts` à garder identique).

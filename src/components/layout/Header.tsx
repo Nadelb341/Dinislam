@@ -14,6 +14,7 @@ import NewMessageNotification from '@/components/messaging/NewMessageNotificatio
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
+import { usePendingDrafts } from '@/hooks/useDrafts';
 import AdminCommandModal from '@/components/admin/AdminCommandModal';
 
 const ZOOM_URL = 'https://us06web.zoom.us/j/4080361371?pwd=UHVDc1o0RDE3WFBmNTBNTENaMDJnUT09';
@@ -63,6 +64,9 @@ const Header = ({
   const { unreadCount, hasNewMessage, clearNewMessageFlag } = useUnreadMessages();
   const pendingCounts = useAdminPendingCounts();
   const monitoringErrors = useMonitoringErrorCount();
+  // Chiffre rouge du bouclier = choses à valider + brouillons pas terminés (2026-10-19)
+  const drafts = usePendingDrafts(user?.id, isAdmin);
+  const shieldTotal = pendingCounts.total + drafts.length;
 
   // Auto-open messaging from URL param ?open=messages
   useEffect(() => {
@@ -143,9 +147,9 @@ const Header = ({
             {isAdmin && (
               <Button variant="ghost" size="icon" onClick={() => setShowAdminModal(true)} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
                 <Shield className="h-5 w-5" />
-                {pendingCounts.total > 0 ? (
+                {shieldTotal > 0 ? (
                   <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
-                    {pendingCounts.total > 9 ? '9+' : pendingCounts.total}
+                    {shieldTotal > 9 ? '9+' : shieldTotal}
                   </Badge>
                 ) : (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-primary flex items-center justify-center">

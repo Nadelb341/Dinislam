@@ -111,6 +111,8 @@ const AdminCommandModal = ({
     inscriptions: pendingRegistrations,
     messages: pendingMessages,
     eleves: pendingLoginTrouble,
+    // Brouillons pas terminés : comptés dans le chiffre rouge du bouclier (demande de Nadia, 2026-10-19)
+    brouillons: drafts.length,
   };
 
   useEffect(() => {

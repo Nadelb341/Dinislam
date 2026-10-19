@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { FileText, List, Video, File, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
@@ -136,6 +136,19 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
       setIsPublic(v.isPublic); setSelectedUsers(v.selectedUsers ?? []); setFileUrl(v.fileUrl); setFileName(v.fileName);
     },
   });
+  // Modification pas enregistrée d'une carte existante (2026-10-19). Les élèves choisis arrivent après coup : pas dans le brouillon.
+  const editDraft = useEditDraft('dinislam_dynamic_card', editCard?.id, {
+    active: open,
+    value: { title, icon, bgColor, contentType, content, isPublic, fileUrl, fileName },
+    original: editCard && {
+      title: editCard.title, icon: editCard.icon, bgColor: editCard.bg_color, contentType: editCard.content_type,
+      content: editCard.content || '', isPublic: editCard.is_public, fileUrl: editCard.file_url, fileName: editCard.file_name,
+    },
+    restore: (v) => {
+      setTitle(v.title); setIcon(v.icon); setBgColor(v.bgColor); setContentType(v.contentType); setContent(v.content);
+      setIsPublic(v.isPublic); setFileUrl(v.fileUrl); setFileName(v.fileName);
+    },
+  });
 
   useEffect(() => {
     if (cardVisibility) {
@@ -235,7 +248,7 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
       toast.success(editCard ? 'Carte modifiée' : 'Carte créée');
-      if (!editCard) draft.done();
+      if (editCard) editDraft.done(); else draft.done();
       onOpenChange(false);
     },
     onError: (err) => {
@@ -259,6 +272,10 @@ const AdminDynamicCardDialog = ({ open, onOpenChange, editCard }: AdminDynamicCa
         </DialogHeader>
 
         <div className="space-y-4">
+          {editCard && <DraftRestoredBanner draft={editDraft} onCleared={() => {
+            setTitle(editCard.title); setIcon(editCard.icon); setBgColor(editCard.bg_color); setContentType(editCard.content_type);
+            setContent(editCard.content || ''); setIsPublic(editCard.is_public); setFileUrl(editCard.file_url); setFileName(editCard.file_name);
+          }} />}
           {!editCard && <DraftRestoredBanner draft={draft} onCleared={() => { setTitle(''); setIcon('FileText'); setBgColor(COLOR_OPTIONS[0].value); setContentType('text'); setContent(''); setIsPublic(true); setSelectedUsers([]); setFileUrl(null); setFileName(null); }} />}
           <div>
             <Label>Titre</Label>

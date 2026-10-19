@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
-import { DRAFT_RESUME_EVENT, takeDraftResume, takeDraftResumePrefix } from '@/lib/pendingDrafts';
+import { DRAFT_RESUME_EVENT, EDIT_MARK, editDraftKey, takeDraftResume, takeDraftResumePrefix } from '@/lib/pendingDrafts';
 
 /**
  * Brouillon automatique d'un formulaire de CRÉATION (règle « Brouillon automatique » + « Actions inachevées »).
@@ -64,7 +64,15 @@ export function useCreationDraft<T>(key: string | null, opts: CreationDraftOptio
   const keyRef = useRef(key);
   useEffect(() => {
     // Autre élément (ex. autre jour du Ramadan) : comme une nouvelle ouverture
-    if (keyRef.current !== key) { keyRef.current = key; wasActive.current = false; }
+    if (keyRef.current !== key) {
+      // Fiche fermée en même temps que l'élément quitté (ex. modification annulée) : on prévient aussi
+      const left = keyRef.current;
+      if (left && wasActive.current) {
+        const d = loadDraft<T>(left);
+        if (d != null && !optsRef.current.isEmpty(d)) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras dans 🛡️ › Mes brouillons.' });
+      }
+      keyRef.current = key; wasActive.current = false;
+    }
     if (!key) return;
     if (opts.active && !wasActive.current) {
       finishedAt.current = null;
@@ -135,4 +143,48 @@ export function useReplyResume(onResume: (studentId: string) => void) {
     window.addEventListener(DRAFT_RESUME_EVENT, tryResume);
     return () => window.removeEventListener(DRAFT_RESUME_EVENT, tryResume);
   }, []);
+}
+
+/**
+ * Brouillon d'une MODIFICATION pas enregistrée d'un élément existant (2026-10-19, demande de Nadia).
+ * Même fonctionnement que la création : « vide » veut dire « identique à l'original ».
+ * Clé `<clé du formulaire>__edit_<id>` (voir editDraftKey) : la définition est reprise de la clé du formulaire.
+ */
+export function useEditDraft<T>(base: string, itemId: string | number | null | undefined, opts: {
+  active: boolean; value: T; original: T | null; restore: (v: T) => void;
+}): CreationDraft {
+  const key = itemId != null ? editDraftKey(base, itemId) : null;
+  const original = JSON.stringify(opts.original);
+  return useCreationDraft(key, {
+    active: opts.active && key !== null,
+    value: opts.value,
+    isEmpty: (v) => JSON.stringify(v) === original,
+    restore: opts.restore,
+  });
+}
+
+/** « Continuer » une modification depuis « Mes brouillons » : rouvre la fiche de l'élément, le brouillon revient tout seul. */
+export function useEditDraftResume<I extends { id: string | number }>(base: string | null, items: I[] | undefined, openEdit: (item: I) => void) {
+  const pending = useRef<string | null>(null);
+  const openRef = useRef(openEdit);
+  openRef.current = openEdit;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const tryOpen = () => {
+    if (!pending.current) return;
+    const item = itemsRef.current?.find((i) => String(i.id) === pending.current);
+    if (item) { pending.current = null; openRef.current(item); }
+  };
+  useEffect(() => {
+    if (!base) return;
+    const prefix = base + EDIT_MARK;
+    const take = () => {
+      const k = takeDraftResumePrefix(prefix);
+      if (k) { pending.current = k.slice(prefix.length); tryOpen(); }
+    };
+    take();
+    window.addEventListener(DRAFT_RESUME_EVENT, take);
+    return () => window.removeEventListener(DRAFT_RESUME_EVENT, take);
+  }, [base]);
+  useEffect(() => { tryOpen(); }, [items]);
 }

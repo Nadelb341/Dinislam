@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { trashThenDelete, collectChildren } from '@/lib/trash';
@@ -537,6 +538,21 @@ const Admin = () => {
     );
   }
 
+  // Pastille 📝 sur une carte du tableau de bord : création ou modification pas terminée à l'intérieur (2026-10-19)
+  const tileDraftKeys = (key: string): string[] | undefined => {
+    const withEdits = (k: string) => [k, editDraftKey(k, '')];
+    const moduleKeys = (path: string) => {
+      const mod = learningModules?.find((m) => m.builtin_path === path);
+      return mod ? withEdits(`dinislam_module_card_${mod.id}`) : undefined;
+    };
+    if (key === 'ramadan') return ['dinislam_ramadan_quiz_'];
+    if (key === 'invocations') return withEdits('dinislam_invocation');
+    if (key === 'allah-names') return withEdits('dinislam_allah_name');
+    if (key === 'grammaire') return moduleKeys('/grammaire');
+    const slug = `/module/${key}`;
+    return learningModules?.some((m) => m.builtin_path === slug) ? moduleKeys(slug) : undefined;
+  };
+
   // Dashboard view
   return (
     <AppLayout title="Tableau de bord">
@@ -571,6 +587,7 @@ const Admin = () => {
                                 cardBgColor={card.cardBgColor}
                                 onClick={() => {}}
                                 actionButton={renderVisibilityToggle(card.key)}
+                                draftKeys={tileDraftKeys(card.key)}
                               />
                             </div>
                           </PopoverTrigger>
@@ -607,6 +624,7 @@ const Admin = () => {
                         cardBgColor={card.cardBgColor}
                         onClick={() => setCurrentView(card.view)}
                         actionButton={renderVisibilityToggle(card.key)}
+                        draftKeys={tileDraftKeys(card.key)}
                       />
                     </SortableCard>
                   );
@@ -657,7 +675,7 @@ const Admin = () => {
           onOpenChange={setDeleteCardOpen}
           onConfirm={() => cardToDelete && deleteCardMutation.mutate(cardToDelete)}
           title="Supprimer la carte"
-          description="Voulez-vous vraiment supprimer cette carte et tout son contenu ?"
+          description="Cette carte et tout son contenu iront dans la corbeille (Paramètres), d'où tu pourras les restaurer."
         />
 
         <ConfirmDeleteDialog
@@ -665,7 +683,7 @@ const Admin = () => {
           onOpenChange={setDeleteModuleOpen}
           onConfirm={() => moduleToDelete && deleteModuleMutation.mutate(moduleToDelete)}
           title="Supprimer le module"
-          description="Voulez-vous vraiment supprimer ce module pédagogique et toutes ses cartes ? Cette action est irréversible."
+          description="Ce module et toutes ses cartes iront dans la corbeille (Paramètres), d'où tu pourras les restaurer."
         />
       </div>
     </AppLayout>

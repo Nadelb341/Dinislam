@@ -3,7 +3,8 @@ import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { moveToTrash, trashThenDelete } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,6 +82,16 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       setFormContentFr(v.contentFr); setFormCategory(v.category); setFormOpen(true);
     },
   });
+  // Modification pas enregistrée d'une invocation : gardée comme brouillon (2026-10-19)
+  const editDraft = useEditDraft('dinislam_invocation', editingInvocation?.id, {
+    active: formOpen,
+    value: { title: formTitle, titleAr: formTitleAr, contentAr: formContentAr, contentFr: formContentFr, category: formCategory },
+    original: editingInvocation && {
+      title: editingInvocation.title_french || '', titleAr: editingInvocation.title_arabic || '', contentAr: editingInvocation.content_arabic || '',
+      contentFr: editingInvocation.content_french || '', category: editingInvocation.category || 'quotidienne',
+    },
+    restore: (v) => { setFormTitle(v.title); setFormTitleAr(v.titleAr); setFormContentAr(v.contentAr); setFormContentFr(v.contentFr); setFormCategory(v.category); },
+  });
 
   const { data: invocations = [], isLoading } = useQuery({
     queryKey: ['admin-invocations-full'],
@@ -124,7 +135,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocations-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocations-list'] });
       toast.success(editingInvocation ? 'Invocation modifiée ✅' : 'Invocation ajoutée ✅');
-      if (!editingInvocation) draft.done();
+      if (editingInvocation) editDraft.done(); else draft.done();
       setFormOpen(false);
       setEditingInvocation(null);
     },
@@ -238,6 +249,8 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     setIsUploadingImage(false);
   }, [queryClient]);
 
+  useEditDraftResume('dinislam_invocation', invocations, (inv) => openEdit(inv));
+
   const openAdd = () => {
     setEditingInvocation(null);
     setFormTitle(''); setFormTitleAr(''); setFormContentAr(''); setFormContentFr(''); setFormCategory('quotidienne');
@@ -338,8 +351,9 @@ const AdminInvocationManager = ({ onBack }: Props) => {
                               />
                               {isThisUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => openEdit(inv)}>
+                            <Button variant="outline" size="sm" className="h-8 px-2 relative" onClick={() => openEdit(inv)}>
                               <Pencil className="h-3.5 w-3.5" />
+                              <DraftDot draftKey={editDraftKey('dinislam_invocation', inv.id)} tiny className="absolute -top-1 -right-1 text-[10px]" />
                             </Button>
                             <Button variant="outline" size="sm" className="h-8 px-2 text-destructive hover:text-destructive" onClick={() => setDeleteInvId(inv.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
@@ -382,6 +396,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
           </DialogHeader>
           <div className="space-y-3">
             {!editingInvocation && <DraftRestoredBanner draft={draft} onCleared={() => { setFormTitle(''); setFormTitleAr(''); setFormContentAr(''); setFormContentFr(''); setFormCategory('quotidienne'); }} />}
+            {editingInvocation && <DraftRestoredBanner draft={editDraft} onCleared={() => openEdit(editingInvocation)} />}
             <div>
               <Label>Titre (Français) *</Label>
               <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="Ex: Matin, Soir, Voyage..." />

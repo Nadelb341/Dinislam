@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
+import { addMoodEmojis } from "@/lib/moodEmojis";
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -136,6 +137,8 @@ type Toast = Omit<ToasterToast, "id">;
 
 function toast({ ...props }: Toast) {
   const id = genId();
+  // Émojis selon le ton, le sujet et la saison (2026-10-19) ; rien si le titre en a déjà
+  if (typeof props.title === "string") props.title = addMoodEmojis(props.title, props.variant === "destructive" ? "triste" : undefined);
 
   const update = (props: ToasterToast) =>
     dispatch({

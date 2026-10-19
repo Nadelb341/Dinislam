@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useCreationDraft } from './useCreationDraft';
+import { useCreationDraft, useEditDraft } from './useCreationDraft';
 import { loadDraft, saveDraft } from './useDraftRecovery';
-import { requestDraftResume } from '@/lib/pendingDrafts';
+import { requestDraftResume, editDraftKey, scanPendingDrafts } from '@/lib/pendingDrafts';
 
 type Form = { text: string };
 const KEY = 'dinislam_test_form';
@@ -88,5 +88,49 @@ describe('useCreationDraft', () => {
     set({ text: 'abc' });
     set({ text: '' });
     expect(loadDraft<Form>(KEY)).toBeNull();
+  });
+});
+
+describe('useEditDraft (modification pas enregistrée)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    vi.stubGlobal('sessionStorage', memoryStorage());
+  });
+  const BASE = 'dinislam_allah_name';
+  const EKEY = editDraftKey(BASE, 7);
+
+  function setupEdit(initial: { active: boolean; text: string; id: number | null }) {
+    const state = { ...initial };
+    const original = { text: 'Original' };
+    const hook = renderHook(
+      ({ active, text, id }) => useEditDraft<Form>(BASE, id, {
+        active, value: { text }, original: id == null ? null : original,
+        restore: (v) => { state.text = v.text; },
+      }),
+      { initialProps: initial },
+    );
+    const set = (p: Partial<typeof initial>) => { Object.assign(state, p); hook.rerender({ ...state }); };
+    return { hook, state, set };
+  }
+
+  it('rien n\'est gardé tant que rien ne change, la modification est gardée, revenir à l\'original l\'efface', () => {
+    const { set } = setupEdit({ active: true, text: 'Original', id: 7 });
+    expect(loadDraft(EKEY)).toBeNull();
+    set({ text: 'Changé' });
+    expect(loadDraft<Form>(EKEY)).toEqual({ text: 'Changé' });
+    set({ text: 'Original' });
+    expect(loadDraft(EKEY)).toBeNull();
+  });
+
+  it('la modification revient en rouvrant la fiche, et apparaît dans « Mes brouillons »', () => {
+    saveDraft(EKEY, { text: 'Changé' });
+    const { state, set } = setupEdit({ active: false, text: 'Original', id: 7 });
+    set({ active: true });
+    expect(state.text).toBe('Changé');
+    saveDraft(editDraftKey(BASE, 3), { nameFr: 'Le Roi' });
+    const found = scanPendingDrafts('u1', true).find((d) => d.key === editDraftKey(BASE, 3));
+    expect(found?.label).toBe('Le Roi');
+    expect(found?.def.noun).toBe('modification pas enregistrée');
+    expect(found?.def.place).toContain('99 Noms');
   });
 });

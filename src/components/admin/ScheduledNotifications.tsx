@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { SchoolHolidays } from './SchoolHolidays';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -105,6 +106,26 @@ const ScheduledNotifications = () => {
     },
   });
 
+  // Modification pas enregistrée d'une notification programmée (2026-10-19)
+  const editingNotif = editingId ? notifications.find((x) => x.id === editingId) ?? null : null;
+  const fieldsOf = (n: ScheduledNotification) => ({
+    module: n.module, message: n.message, startDate: n.start_date, endDate: n.end_date,
+    sendTime: n.send_time?.substring(0, 5) || '08:00', recipientMode: (n.recipients === 'all' ? 'all' : 'select') as typeof recipientMode,
+    selectedStudents: Array.isArray(n.recipients) ? n.recipients.filter((r): r is string => typeof r === 'string') : [],
+    isActive: n.is_active, requireConfirmation: n.require_confirmation, weekdays: n.weekdays ?? [], skipHolidays: n.skip_holidays,
+  });
+  const editDraft = useEditDraft('dinislam_sched_notif', editingNotif?.id, {
+    active: dialogOpen,
+    value: draftValue,
+    original: editingNotif && fieldsOf(editingNotif),
+    restore: (v) => {
+      setModule(v.module); setMessage(v.message); setStartDate(v.startDate); setEndDate(v.endDate);
+      setSendTime(v.sendTime); setRecipientMode(v.recipientMode); setSelectedStudents(v.selectedStudents ?? []);
+      setIsActive(v.isActive); setRequireConfirmation(v.requireConfirmation); setWeekdays(v.weekdays ?? []); setSkipHolidays(v.skipHolidays);
+    },
+  });
+  useEditDraftResume('dinislam_sched_notif', notifications, (n) => openEdit(n));
+
   const { data: students = [] } = useQuery({
     queryKey: ['all-students-for-notif'],
     queryFn: async () => {
@@ -162,7 +183,7 @@ const ScheduledNotifications = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-notifications'] });
       toast({ title: editingId ? '✅ Notification modifiée' : '✅ Notification programmée' });
-      if (!editingId) draft.done();
+      if (editingId) editDraft.done(); else draft.done();
       resetForm();
     },
     onError: (e) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
@@ -285,7 +306,8 @@ const ScheduledNotifications = () => {
                         checked={n.is_active}
                         onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: n.id, is_active: checked })}
                       />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(n)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 relative" onClick={() => openEdit(n)}>
+                        <DraftDot draftKey={editDraftKey('dinislam_sched_notif', n.id)} tiny className="absolute -top-1 -right-1 text-[10px]" />
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutate(n.id)}>
@@ -306,6 +328,7 @@ const ScheduledNotifications = () => {
               <DialogTitle>{editingId ? 'Modifier la notification' : 'Programmer une notification'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {editingNotif && <DraftRestoredBanner draft={editDraft} onCleared={() => openEdit(editingNotif)} />}
               {!editingId && <DraftRestoredBanner draft={draft} onCleared={() => { resetForm(); setDialogOpen(true); }} />}
               <div>
                 <Label>Module concerné</Label>

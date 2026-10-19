@@ -9,7 +9,8 @@ import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, X } from
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { trashThenDelete, collectChildren } from '@/lib/trash';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { generateFromTemplate } from '@/data/flashcard-templates';
 import { errorMessage } from '@/lib/utils';
@@ -99,6 +100,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
     },
     onSuccess: () => {
       invalidate();
+      editDraft.done();
       setEditingId(null);
       toast.success('Flashcard modifiée ✅');
     },
@@ -123,12 +125,22 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
 
   // Plus de flèches ⌃/⌄ : l'appli mélange les cartes toute seule, 10 mélanges prêts (2026-10-19, voir lib/flashcardMixes)
 
-  const startEdit = (f) => {
+  const startEdit = (f: { id: string; front_text: string; back_arabic: string | null; back_transliteration: string | null }) => {
     setEditingId(f.id);
     setEditFront(f.front_text);
     setEditArabic(f.back_arabic || '');
     setEditTranslit(f.back_transliteration || '');
   };
+
+  // Modification pas enregistrée d'une flashcard (2026-10-19)
+  const editingCard = editingId ? flashcards.find((f) => f.id === editingId) ?? null : null;
+  const editDraft = useEditDraft(`dinislam_flashcard_${cardId}`, editingCard?.id, {
+    active: expanded,
+    value: { front: editFront, arabic: editArabic, translit: editTranslit, card: cardTitle },
+    original: editingCard && { front: editingCard.front_text, arabic: editingCard.back_arabic || '', translit: editingCard.back_transliteration || '', card: cardTitle },
+    restore: (v) => { setEditFront(v.front); setEditArabic(v.arabic); setEditTranslit(v.translit); },
+  });
+  useEditDraftResume(`dinislam_flashcard_${cardId}`, flashcards, (f) => { setExpanded(true); startEdit(f); });
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -165,7 +177,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
         onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
       >
-        <span className="flex items-center gap-1.5">🃏 Flashcards{count !== null && count > 0 ? ` (${count})` : ''} <DraftDot draftKey={`dinislam_flashcard_${cardId}`} /></span>
+        <span className="flex items-center gap-1.5">🃏 Flashcards{count !== null && count > 0 ? ` (${count})` : ''} <DraftDot draftKey={[`dinislam_flashcard_${cardId}`, editDraftKey(`dinislam_flashcard_${cardId}`, '')]} /></span>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
 

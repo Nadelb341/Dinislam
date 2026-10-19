@@ -3,6 +3,7 @@
  * Design: Bleu profond & Ambre/Doré — selon capture
  */
 import { DraftDot } from '@/components/shared/DraftDot';
+import { editDraftKey } from '@/lib/pendingDrafts';
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCreationDraft } from '@/hooks/useCreationDraft';
+import { useCreationDraft, useEditDraft, useEditDraftResume } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { trashThenDelete } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
@@ -46,6 +47,14 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     value: { nameAr: formNameAr, nameFr: formNameFr, translit: formTranslit, explanation: formExplanation },
     isEmpty: (v) => !v.nameAr.trim() && !v.nameFr.trim() && !v.translit.trim() && !v.explanation.trim(),
     restore: (v) => { setEditingName(null); setFormNameAr(v.nameAr); setFormNameFr(v.nameFr); setFormTranslit(v.translit); setFormExplanation(v.explanation); setFormOpen(true); },
+  });
+  // Modification pas enregistrée d'un nom existant : gardée comme brouillon (2026-10-19)
+  const nameFields = (n: Tables<'allah_names'> | null) => n && ({ nameAr: n.name_arabic || '', nameFr: n.name_french || '', translit: n.transliteration || '', explanation: n.explanation || '' });
+  const editDraft = useEditDraft('dinislam_allah_name', editingName?.id, {
+    active: formOpen,
+    value: { nameAr: formNameAr, nameFr: formNameFr, translit: formTranslit, explanation: formExplanation },
+    original: nameFields(editingName),
+    restore: (v) => { setFormNameAr(v.nameAr); setFormNameFr(v.nameFr); setFormTranslit(v.translit); setFormExplanation(v.explanation); },
   });
 
   const { data: names = [], isLoading } = useQuery({
@@ -90,7 +99,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
       queryClient.invalidateQueries({ queryKey: ['allah-names'] });
       toast.success(editingName ? 'Nom modifié ✅' : 'Nom ajouté ✅');
-      if (!editingName) draft.done();
+      if (editingName) editDraft.done(); else draft.done();
       setFormOpen(false);
       setEditingName(null);
     },
@@ -173,13 +182,15 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     finally { setUploadingMedia(null); }
   }, [queryClient, allMedia, user]);
 
+  useEditDraftResume('dinislam_allah_name', names, (n) => openEdit(n));
+
   const openAdd = () => {
     setEditingName(null);
     setFormNameAr(''); setFormNameFr(''); setFormTranslit(''); setFormExplanation('');
     setFormOpen(true);
   };
 
-  const openEdit = (name) => {
+  const openEdit = (name: Tables<'allah_names'>) => {
     setEditingName(name);
     setFormNameAr(name.name_arabic || '');
     setFormNameFr(name.name_french || '');
@@ -327,10 +338,11 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                       <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => openEdit(name)}
-                          className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors hover:bg-blue-50"
+                          className="w-8 h-8 rounded-lg border flex items-center justify-center relative transition-colors hover:bg-blue-50"
                           style={{ borderColor: 'hsl(220 20% 85%)', color: 'hsl(220 30% 50%)' }}
                         >
                           <Pencil className="h-3.5 w-3.5" />
+                          <DraftDot draftKey={editDraftKey('dinislam_allah_name', name.id)} tiny className="absolute -top-1 -right-1 text-[10px]" />
                         </button>
                         <button
                           onClick={() => setExpandedId(expandedId === name.id ? null : name.id)}
@@ -374,6 +386,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
           </DialogHeader>
           <div className="space-y-4">
             {!editingName && <DraftRestoredBanner draft={draft} onCleared={() => { setFormNameAr(''); setFormNameFr(''); setFormTranslit(''); setFormExplanation(''); }} />}
+            {editingName && <DraftRestoredBanner draft={editDraft} onCleared={() => openEdit(editingName)} />}
             <div>
               <Label>Nom en arabe *</Label>
               <Input value={formNameAr} onChange={(e) => setFormNameAr(e.target.value)} className="font-arabic text-right text-lg" dir="rtl" />

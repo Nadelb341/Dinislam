@@ -1,6 +1,7 @@
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { DraftDot } from '@/components/shared/DraftDot';
 
 interface AdminModuleCardProps {
   title: string;
@@ -13,6 +14,8 @@ interface AdminModuleCardProps {
   onClick: () => void;
   isActive?: boolean;
   actionButton?: React.ReactNode;
+  /** Brouillons de cette carte (création ou modification pas terminée) : pastille 📝 */
+  draftKeys?: string[];
 }
 
 const AdminModuleCard = ({
@@ -26,6 +29,7 @@ const AdminModuleCard = ({
   onClick,
   isActive = false,
   actionButton,
+  draftKeys,
 }: AdminModuleCardProps) => {
   return (
     <div
@@ -36,6 +40,7 @@ const AdminModuleCard = ({
       )}
       onClick={onClick}
     >
+      {draftKeys && draftKeys.length > 0 && <DraftDot draftKey={draftKeys} tiny className="absolute top-1 left-1 z-10 text-[11px]" />}
       {actionButton && (
         <div className="absolute top-1 right-1 z-10" onClick={(e) => e.stopPropagation()}>
           {actionButton}

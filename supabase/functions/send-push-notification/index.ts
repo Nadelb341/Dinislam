@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { addMoodEmojis } from '../_shared/moodEmojis.ts';
 
 const ALLOWED_ORIGINS = ['https://dinislam-app.vercel.app', 'http://localhost:8080'];
 
@@ -228,7 +229,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { userId, userIds, sendToAll, excludeUserId, title, body: notifBody, tag, data, type, category } = body;
+    const { userId, userIds, sendToAll, excludeUserId, title, body: rawBody, tag, data, type, category } = body;
+    // Émojis selon le ton, le sujet et la saison (2026-10-19) ; un texte qui a déjà un émoji ne change pas
+    const notifBody = typeof rawBody === 'string' ? addMoodEmojis(rawBody) : rawBody;
 
     // Health check
     if (type === 'health-check' || type === 'health_check') {

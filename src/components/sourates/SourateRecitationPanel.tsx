@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { moveToTrash } from '@/lib/trash';
 import { errorMessage } from '@/lib/utils';
+import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 
 interface SourateRecitationPanelProps {
   /** Récitation d'une sourate… */
@@ -42,6 +43,14 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
   const [uploading, setUploading] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [comment, setComment] = useState('');
+  // Commentaire commencé mais pas envoyé : gardé sur l'appareil, rappelé à l'ouverture de l'appli (2026-10-19)
+  const commentKey = user && targetKey ? `${isName ? 'dinislam_name_comment_' : 'dinislam_sourate_comment_'}${user.id}:${targetKey}` : null;
+  useEffect(() => { setComment(commentKey ? loadDraft<{ text: string }>(commentKey)?.text ?? '' : ''); }, [commentKey]);
+  const changeComment = (text: string) => {
+    setComment(text);
+    if (!commentKey) return;
+    if (text.trim()) saveDraft(commentKey, { text, name: sourateName }); else clearDraft(commentKey);
+  };
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -193,7 +202,6 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
     setRecorded(null);
     setRecordedUrl(null);
     setSeconds(0);
-    setComment('');
   };
 
   const uploadRecitation = async () => {
@@ -234,6 +242,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
       toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ta maîtresse ! Elle va l\'écouter 🎧'));
       queryClient.invalidateQueries({ queryKey: ['student-recitations', targetKey, user.id] });
       resetRecording();
+      changeComment('');
     } catch (e) {
       toast.error(errorMessage(e) || 'Erreur lors de l\'envoi');
     } finally {
@@ -277,7 +286,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
           <audio src={recordedUrl!} controls preload="auto" className="w-full" />
           <textarea
             value={comment}
-            onChange={e => setComment(e.target.value)}
+            onChange={e => changeComment(e.target.value)}
             placeholder="Un commentaire pour l'enseignant ? (optionnel)"
             className="w-full text-sm border rounded-lg p-2 resize-none bg-background"
             rows={2}
