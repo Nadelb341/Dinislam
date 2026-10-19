@@ -46,7 +46,7 @@ const BOUTONS_ACTIONS = [
   { id: 'devoirs', label: 'Devoirs à corriger', section: 'cahier-texte', emoji: '📚' },
   { id: 'alphabet', label: 'Alphabet à valider', section: 'alphabet-validations', emoji: '🔤' },
   { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
-  { id: 'sourates', label: 'Sourates à valider', section: 'sourates-validations', emoji: '📖' },
+  // « Sourates à valider » retiré le 2026-10-19 : une sourate se valide par sa récitation (« Récitations à corriger »)
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
   { id: 'messages', label: 'Messages non lus', section: null, emoji: '✉️' },
 ];

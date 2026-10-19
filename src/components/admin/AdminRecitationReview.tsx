@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Mic, MicOff, Send, CheckCircle, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/utils';
+import { sendPushNotification } from '@/lib/pushHelper';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
@@ -14,6 +16,7 @@ interface AdminRecitationReviewProps {
 
 const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   const queryClient = useQueryClient();
+  const { askValidation, validationDialog } = useConfirmValidation();
   const [filter, setFilter] = useState<'pending' | 'corrected' | 'validated'>('pending');
   const [responding, setResponding] = useState<string | null>(null);
   const [adminComment, setAdminComment] = useState('');
@@ -107,7 +110,11 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
     setRecording(false);
   };
 
-  const sendResponse = async (recitationId: string, studentId: string, newStatus: 'validated' | 'corrected') => {
+  type Rec = NonNullable<typeof recitations>[number];
+  const sendResponse = async (rec: Rec, newStatus: 'validated' | 'corrected') => {
+    const recitationId = rec.id;
+    const studentId = rec.student_id;
+    const sourateName = rec.sourate?.name_french || 'ta sourate';
     // Optimistic: fermer le panneau et retirer l'item immédiatement
     const previousData = queryClient.getQueryData(['admin-recitations', filter]);
     const savedComment = adminComment;
@@ -144,6 +151,20 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         })
         .eq('id', recitationId);
       if (error) throw error;
+
+      // Chemin unique des sourates (2026-10-19) : « Valider » = sourate validée → la suivante s'ouvre pour l'élève
+      if (newStatus === 'validated') {
+        const { error: progressError } = await supabase
+          .from('user_sourate_progress')
+          .upsert({ user_id: studentId, sourate_id: rec.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' },
+            { onConflict: 'user_id,sourate_id,context' });
+        if (progressError) throw progressError;
+      }
+      sendPushNotification(newStatus === 'validated'
+        ? { title: '⭐ Félicitations {prenom} !', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
+            body: `Ta maîtresse a validé ta récitation de ${sourateName} 🥳 La sourate suivante est ouverte ✨` }
+        : { title: '📝 {prenom}, une correction pour toi', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
+            body: `Écoute la correction de ${sourateName}, puis refais ton audio 🎙️ Tu vas y arriver 💪` });
 
       toast.success(newStatus === 'validated' ? 'Récitation validée ✅' : 'Correction envoyée 📝');
       queryClient.invalidateQueries({ queryKey: ['admin-recitations'] });
@@ -290,7 +311,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      onClick={() => sendResponse(r.id, r.student_id, 'corrected')}
+                      onClick={() => sendResponse(r, 'corrected')}
                       disabled={saving || (!adminComment && !adminAudio)}
                       variant="outline"
                       className="flex-1 gap-1"
@@ -300,7 +321,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => sendResponse(r.id, r.student_id, 'validated')}
+                      onClick={() => askValidation('Valider cette récitation ?', `${r.profile?.full_name || 'L\'élève'} : ${r.sourate?.name_french || 'sourate'} sera validée, et la sourate suivante s'ouvrira.`, () => sendResponse(r, 'validated'))}
                       disabled={saving}
                       className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
                     >
@@ -323,6 +344,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
           </Card>
         ))}
       </div>
+      {validationDialog}
     </div>
   );
 };

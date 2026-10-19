@@ -179,7 +179,8 @@ const Monitoring = () => {
   const loadValidationCounts = useCallback(async () => {
     const [reg, sou, nou, inv] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
-      supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      // Sourates : chemin unique par la récitation (2026-10-19)
+      supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ]);
@@ -446,7 +447,7 @@ const Monitoring = () => {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Inscriptions', count: validationCounts.registrations, icon: UserCheck, section: 'registration-validations' },
-                { label: 'Sourates', count: validationCounts.sourates, icon: ClipboardCheck, section: 'sourates-validations' },
+                { label: 'Récitations', count: validationCounts.sourates, icon: ClipboardCheck, section: 'recitations' },
                 { label: 'Nourania', count: validationCounts.nourania, icon: Sparkles, section: 'nourania-validations' },
                 { label: 'Invocations', count: validationCounts.invocations, icon: Hand, section: 'invocations-validations' },
               ].map((item) => {

@@ -231,43 +231,35 @@ const SouratesPage = () => {
     return () => { supabase.removeChannel(ch); };
   }, [user, loadAll]);
 
-  // Listen for admin validation approvals in realtime
+  // Chemin unique (2026-10-19, décision de Nadia) : la sourate suivante s'ouvre quand l'enseignante appuie sur
+  // « Valider » sous la récitation ; « Envoyer correction » = l'élève refait son audio.
   useEffect(() => {
     if (!user) return;
+    const sourateNameOf = (sourateId: string) => {
+      for (const [num, id] of dbSourates.entries()) {
+        if (id === sourateId) return SOURATES_DATA.find(s => s.number === num)?.name_french || '';
+      }
+      return '';
+    };
     const channel = supabase
-      .channel('user-validation-approvals')
+      .channel('user-recitation-reviews')
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
-        table: 'sourate_validation_requests',
-        filter: `user_id=eq.${user.id}`,
+        table: 'sourate_recitations',
+        filter: `student_id=eq.${user.id}`,
       }, (payload) => {
-        const newRecord = payload.new as Tables<'sourate_validation_requests'>;
-        if (newRecord.status === 'refused') {
-          // Admin refused - notify student and delete request so they can retry
-          let sourateName = '';
-          for (const [num, id] of dbSourates.entries()) {
-            if (id === newRecord.sourate_id) {
-              sourateName = SOURATES_DATA.find(s => s.number === num)?.name_french || '';
-              break;
-            }
-          }
+        const rec = payload.new as Tables<'sourate_recitations'>;
+        const before = payload.old as Partial<Tables<'sourate_recitations'>>;
+        if (before?.status === rec.status) return;
+        if (rec.status === 'corrected') {
           toast({
-            title: '📖 Sourate à retravailler',
-            description: `Ton professeur t'invite à retravailler ${sourateName}. Continue tes efforts !`,
+            title: '📝 Ta maîtresse t\'a envoyé une correction',
+            description: withName(user, `{prenom}, écoute sa correction pour ${sourateNameOf(rec.sourate_id) || 'ta sourate'}, puis refais ton audio 🎙️ Tu vas y arriver 💪`),
           });
-          // Reset progress so student can retry
-          setSourateProgress(prev => {
-            const newMap = new Map(prev);
-            const existing = newMap.get(newRecord.sourate_id);
-            if (existing) newMap.set(newRecord.sourate_id, { ...existing, is_validated: false });
-            return newMap;
-          });
-          // Delete refused request so student can submit again
-          supabase.from('sourate_validation_requests').delete().eq('id', newRecord.id).then(() => {});
         }
-        if (newRecord.status === 'approved') {
-          const approvedSourateId = newRecord.sourate_id;
+        if (rec.status === 'validated') {
+          const approvedSourateId = rec.sourate_id;
           // Mark sourate as validated
           setSourateProgress(prev => {
             const newMap = new Map(prev);
@@ -383,9 +375,8 @@ const SouratesPage = () => {
       });
 
       if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
-        setSelectedSourate(null);
-
         if (isOver20) {
+          setSelectedSourate(null);
           // Auto-validation pour les +20 ans — pas besoin de l'admin
           await supabase
             .from('user_sourate_progress')
@@ -400,41 +391,11 @@ const SouratesPage = () => {
           });
           toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
         } else {
-          // Validation par l'admin pour les -20 ans — une seule demande en attente à la fois
-          // (avant : une nouvelle demande + une notification à chaque case cochée ou recochée)
-          const { data: alreadyPending } = await supabase
-            .from('sourate_validation_requests')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('sourate_id', sourateDbId)
-            .eq('status', 'pending')
-            .limit(1);
-          if (alreadyPending && alreadyPending.length > 0) {
-            toast({ title: 'بارك الله فيك', description: withName(user, '{prenom}, ta demande est déjà envoyée, ton prof va la regarder.') });
-            return;
-          }
-          const { error: reqError } = await supabase
-            .from('sourate_validation_requests')
-            .insert({
-              user_id: user.id,
-              sourate_id: sourateDbId,
-              status: 'pending',
-            });
-          if (reqError) return; // demande déjà en attente (verrou de la base) : pas de nouvelle notification
-
-          const sourateName = selectedSourate ? selectedSourate.name_french : `Sourate inconnue`;
-          supabase.functions.invoke('send-push-notification', {
-            body: {
-              title: '📖 Validation en attente', category: 'adm_valid',
-              body: `Un élève a terminé ${sourateName} et attend votre validation.`,
-              type: 'admin',
-              data: { url: '/?admin=sourates-validations' },
-            },
-          }).catch(err => console.error('Push notification error:', err));
-
+          // Moins de 20 ans : cocher n'envoie plus de demande. C'est la récitation que l'enseignante valide
+          // (la fiche reste ouverte, le cadre « Envoyer ma récitation » est juste en dessous de la barre).
           toast({
-            title: 'بارك الله فيك',
-            description: 'Tous les versets sont cochés ! En attente de validation par l\'enseignant.',
+            title: '🎉 Tous tes versets sont cochés !',
+            description: withName(user, '{prenom}, envoie maintenant ta récitation à ta maîtresse 🎙️ juste sous la barre de progression.'),
           });
         }
       }
@@ -452,7 +413,7 @@ const SouratesPage = () => {
     if (!isSourateAccessible(sourate.number)) {
       toast({
         title: "Sourate verrouillée",
-        description: "Complétez d'abord la sourate précédente",
+        description: "Envoie d'abord ta récitation de la sourate précédente 🎙️ Elle s'ouvrira quand ta maîtresse l'aura validée.",
         variant: "destructive",
       });
       return;
@@ -554,6 +515,7 @@ const SouratesPage = () => {
           sourateProgress={dbSourates.get(selectedSourate.number) ? sourateProgress.get(dbSourates.get(selectedSourate.number)!) : undefined}
           contents={dbSourates.get(selectedSourate.number) ? sourateContents.filter(c => c.sourate_id === dbSourates.get(selectedSourate.number) && (!c.target_user_id || c.target_user_id === user?.id)) : []}
           onVerseToggle={handleVerseToggle}
+          needsRecitation={!isOver20 && !isAdmin}
         />
       )}
 

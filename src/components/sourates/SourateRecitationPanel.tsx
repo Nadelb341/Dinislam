@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { sendPushNotification } from '@/lib/pushHelper';
 import { withName } from '@/lib/encouragements';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -214,7 +215,14 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
         });
       if (insertError) throw insertError;
 
-      toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ton prof !'));
+      // L'enseignante est prévenue : c'est sa validation qui ouvre la sourate suivante
+      sendPushNotification({
+        title: '🎙️ Nouvelle récitation à écouter', category: 'adm_valid', type: 'admin',
+        body: `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé sa récitation de ${sourateName}.`,
+        data: { url: '/?admin=recitations-audio' },
+      });
+
+      toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ta maîtresse ! Elle va l\'écouter 🎧'));
       queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user.id] });
       resetRecording();
     } catch (e) {

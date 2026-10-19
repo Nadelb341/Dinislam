@@ -193,6 +193,8 @@ interface SourateDetailDialogProps {
   sourateProgress: { is_validated: boolean; is_memorized: boolean; progress_percentage: number } | undefined;
   contents: Tables<'sourate_content'>[];
   onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
+  /** Moins de 20 ans : c'est la récitation validée par l'enseignante qui ouvre la sourate suivante */
+  needsRecitation?: boolean;
 }
 
 const SourateDetailDialog = ({
@@ -204,6 +206,7 @@ const SourateDetailDialog = ({
   sourateProgress,
   contents,
   onVerseToggle,
+  needsRecitation = false,
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
   const { askValidation, validationDialog } = useConfirmValidation();
@@ -517,6 +520,13 @@ const SourateDetailDialog = ({
             </div>
             <Progress value={versePercentage} className="h-2" />
           </div>
+
+          {/* Tous les versets cochés, sourate pas encore validée : il reste la récitation */}
+          {needsRecitation && versePercentage === 100 && !sourateProgress?.is_validated && (
+            <div className="rounded-xl border-2 border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100">
+              🎉 Tous tes versets sont cochés ! Envoie maintenant ta récitation 🎙️ La sourate suivante s'ouvrira quand ta maîtresse l'aura validée ✨
+            </div>
+          )}
 
           {/* Panel récitation élève */}
           {dbId && (
