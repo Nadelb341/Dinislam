@@ -821,3 +821,11 @@ Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Deman
 - Une récitation envoyée → notification à Nadia (`/?admin=recitations-audio`).
 - Inchangé (décisions de Nadia) : les sourates déjà validées le restent ; les déblocages à la main sont gardés (« Débloquer pour un élève ») ; les 20 ans et plus restent libres (validation automatique).
 - `AdminModules.tsx` (jamais utilisé) supprimé le 2026-10-19 avec l'accord de Nadia.
+
+## Alerte « chat qui pleure » (2026-10-19, demande de Nadia)
+- `ErrorBoundary.componentDidCatch` → `logCrash` (`src/lib/crashLog.ts`) écrit dans `app_logs` (action `Écran « chat qui pleure »`, level `error`, details : erreur, page, appareil), une seule fois par ouverture de page.
+- Monitoring : panneau `CrashAlertsPanel` tout en haut, rouge tant qu'un plantage n'a pas de `resolved_at`. Bouton « ✅ Problème résolu » (avec confirmation) et « Tout marquer résolu ». Réglages dans `crash_alert_settings` (une ligne) : la notification revient toutes les 1, 2, 3 ou 4 h ; fin « jusqu'à résolution » (`until_at` null, par défaut) ou une date et une heure.
+- Pastille : `useMonitoringErrorCount` = erreurs non lues hors plantages + plantages non résolus (icône Monitoring de l'en-tête, et bouton 📊 Monitoring du bouclier en rouge).
+- Envoi : `process-scheduled-notifications` (cron toutes les 5 min). Une notification dès un nouveau plantage, puis selon l'intervalle, catégorie `adm_crash` (interrupteur `notif_adm_crash` dans Paramètres › Notifications).
+- Migration 20261019130000 : `app_logs.resolved_at` + règle UPDATE admin. Avant, « Marquer lu » du Monitoring ne faisait rien, faute de règle.
+- ⚠️ Signalé, pas modifié : « Vider les logs » ne fait rien non plus (pas de règle DELETE), et viderait sans corbeille.

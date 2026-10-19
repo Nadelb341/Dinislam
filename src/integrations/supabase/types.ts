@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_card_order: {
@@ -531,6 +556,7 @@ export type Database = {
           id: string
           is_read: boolean | null
           level: string | null
+          resolved_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -540,6 +566,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           level?: string | null
+          resolved_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -549,6 +576,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           level?: string | null
+          resolved_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -679,6 +707,30 @@ export type Database = {
           login_at?: string | null
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      crash_alert_settings: {
+        Row: {
+          id: number
+          interval_hours: number
+          last_sent_at: string | null
+          until_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          interval_hours?: number
+          last_sent_at?: string | null
+          until_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          interval_hours?: number
+          last_sent_at?: string | null
+          until_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1529,6 +1581,7 @@ export type Database = {
           isha_reminder: boolean | null
           maghrib_reminder: boolean | null
           notif_act: boolean
+          notif_adm_crash: boolean
           notif_adm_hw: boolean
           notif_adm_msg: boolean
           notif_adm_recap: boolean
@@ -1562,6 +1615,7 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
           notif_adm_recap?: boolean
@@ -1595,6 +1649,7 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
           notif_adm_recap?: boolean
@@ -3746,6 +3801,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "student"],

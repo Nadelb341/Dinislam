@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { CrashAlertsPanel } from '@/components/admin/CrashAlertsPanel';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -290,6 +291,9 @@ const Monitoring = () => {
             </Button>
           </div>
         </div>
+
+        {/* Plantages « chat qui pleure » : tout en haut, en rouge tant qu'ils ne sont pas résolus */}
+        <CrashAlertsPanel />
 
         {/* SECTION 1: Real-time Activity */}
         <Card>

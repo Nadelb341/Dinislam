@@ -18,6 +18,7 @@ import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
 import AdminMyDrafts from '@/components/admin/AdminMyDrafts';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePendingDrafts } from '@/hooks/useDrafts';
+import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import { requestDraftResume, type PendingDraft } from '@/lib/pendingDrafts';
 
 interface AdminCommandModalProps {
@@ -79,6 +80,8 @@ const AdminCommandModal = ({
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
   const drafts = usePendingDrafts(user?.id, isAdmin);
+  // Erreurs et plantages « chat qui pleure » pas encore réglés (rouge + pastille)
+  const monitoringErrors = useMonitoringErrorCount();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
   // Panneau principal : il défile quand il dépasse l'écran (bandeau ouvert…), le titre et la croix restent visibles
@@ -270,9 +273,14 @@ const AdminCommandModal = ({
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setModalSection('monitoring')}
-                className="py-2 rounded-xl border border-border text-muted-foreground text-xs font-semibold"
+                className={`relative py-2 rounded-xl border text-xs font-semibold ${monitoringErrors > 0 ? 'border-destructive bg-destructive/10 text-destructive' : 'border-border text-muted-foreground'}`}
               >
                 📊 Monitoring
+                {monitoringErrors > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center">
+                    {monitoringErrors > 9 ? '9+' : monitoringErrors}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setModalSection('stats')}

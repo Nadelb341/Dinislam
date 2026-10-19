@@ -299,9 +299,47 @@ serve(async (req) => {
       }
     }
 
+    // Alerte « chat qui pleure » (2026-10-19) : tant qu'un plantage n'est pas marqué « Problème résolu »,
+    // l'enseignante reçoit une notification tout de suite, puis toutes les 1 à 4 h (réglage dans Monitoring),
+    // jusqu'à la date de fin choisie (sinon jusqu'à la résolution).
+    let crashAlerts = 0;
+    try {
+      const { data: crashes } = await supabase
+        .from('app_logs').select('id, user_id, created_at')
+        .eq('action', 'Écran « chat qui pleure »').is('resolved_at', null)
+        .order('created_at', { ascending: false });
+      const { data: cfg } = await supabase.from('crash_alert_settings').select('*').eq('id', 1).maybeSingle();
+      if (crashes && crashes.length > 0 && cfg) {
+        const nowMs = Date.now();
+        const last = cfg.last_sent_at ? new Date(cfg.last_sent_at).getTime() : 0;
+        const newCrash = new Date(crashes[0].created_at).getTime() > last;
+        const due = nowMs - last >= cfg.interval_hours * 3600_000 - 60_000;
+        const ended = cfg.until_at && nowMs > new Date(cfg.until_at).getTime();
+        if (!ended && (newCrash || due)) {
+          const { data: admins } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+          const ids = (admins || []).map((a: { user_id: string }) => a.user_id);
+          const studentIds = [...new Set(crashes.map((c: { user_id: string }) => c.user_id))];
+          const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', studentIds);
+          const names = (profs || []).map((p: { full_name: string | null }) => firstNameOf(p.full_name)).filter(Boolean);
+          const who = names.length ? names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '') : 'Un élève';
+          if (ids.length) {
+            await sendPushInternal({
+              userIds: ids, type: 'admin', category: 'adm_crash', tag: 'crash-alert',
+              title: `😿 ${crashes.length > 1 ? `${crashes.length} plantages à régler` : 'Un plantage à régler'}`,
+              body: `${who} : écran du chat qui pleure. Ouvre le Monitoring pour voir et régler le problème.`,
+              data: { url: '/monitoring' },
+            });
+            crashAlerts++;
+          }
+          await supabase.from('crash_alert_settings').update({ last_sent_at: new Date().toISOString() }).eq('id', 1);
+        }
+      }
+    } catch (err) { console.error('Alerte plantage non envoyée', err); }
+
     return new Response(JSON.stringify({
       success: true,
       comebacks,
+      crashAlerts,
       nudges,
       programs,
       recap,
