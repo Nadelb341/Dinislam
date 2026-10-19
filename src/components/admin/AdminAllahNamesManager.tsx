@@ -19,7 +19,6 @@ import { moveToTrash } from '@/lib/trash';
 import {
   Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus, type LucideIcon } from 'lucide-react';
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
@@ -33,7 +32,6 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingName, setEditingName] = useState<Tables<'allah_names'> | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<{ nameId: number; type: string } | null>(null);
 
@@ -97,21 +95,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     onError: (e) => toast.error(e.message),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const nameItem = names.find((n) => n.id === id);
-      const { error } = await supabase.from('allah_names').delete().eq('id', id);
-      if (error) throw error;
-      if (nameItem && user?.id) await moveToTrash(user.id, 'allah_name', String(id), nameItem.name_french || nameItem.name_arabic, nameItem);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
-      queryClient.invalidateQueries({ queryKey: ['allah-names'] });
-      toast.success('Nom supprimé');
-      setDeleteId(null);
-    },
-    onError: () => toast.error('Erreur lors de la suppression'),
-  });
+  // Les 99 noms ne se suppriment jamais : ils sont dans l'ordre (décision de Nadia, 2026-10-19)
 
   const deleteMediaMutation = useMutation({
     mutationFn: async (mediaId: string) => {
@@ -346,13 +330,6 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                             ? <ChevronUp className="h-3.5 w-3.5" />
                             : <ChevronDown className="h-3.5 w-3.5" />}
                         </button>
-                        <button
-                          onClick={() => setDeleteId(name.id)}
-                          className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors hover:bg-red-50"
-                          style={{ borderColor: 'hsl(0 80% 88%)', color: 'hsl(0 70% 50%)' }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
                       </div>
                     </div>
 
@@ -417,14 +394,6 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
-      <ConfirmDeleteDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
-        onConfirm={() => deleteId !== null && deleteMutation.mutate(deleteId)}
-        title="Supprimer ce nom ?"
-        description="Cette action supprimera définitivement ce nom et tous ses médias associés."
-      />
     </div>
   );
 };

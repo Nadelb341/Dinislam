@@ -2667,10 +2667,11 @@ export type Database = {
         Row: {
           admin_audio_url: string | null
           admin_comment: string | null
+          allah_name_id: number | null
           audio_url: string
           created_at: string
           id: string
-          sourate_id: string
+          sourate_id: string | null
           status: string
           student_comment: string | null
           student_id: string
@@ -2679,10 +2680,11 @@ export type Database = {
         Insert: {
           admin_audio_url?: string | null
           admin_comment?: string | null
+          allah_name_id?: number | null
           audio_url: string
           created_at?: string
           id?: string
-          sourate_id: string
+          sourate_id?: string | null
           status?: string
           student_comment?: string | null
           student_id: string
@@ -2691,16 +2693,24 @@ export type Database = {
         Update: {
           admin_audio_url?: string | null
           admin_comment?: string | null
+          allah_name_id?: number | null
           audio_url?: string
           created_at?: string
           id?: string
-          sourate_id?: string
+          sourate_id?: string | null
           status?: string
           student_comment?: string | null
           student_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sourate_recitations_allah_name_id_fkey"
+            columns: ["allah_name_id"]
+            isOneToOne: false
+            referencedRelation: "allah_names"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sourate_recitations_sourate_id_fkey"
             columns: ["sourate_id"]

@@ -250,6 +250,7 @@ const SouratesPage = () => {
         filter: `student_id=eq.${user.id}`,
       }, (payload) => {
         const rec = payload.new as Tables<'sourate_recitations'>;
+        if (!rec.sourate_id) return; // audio d'un nom d'Allah : géré par sa page
         const before = payload.old as Partial<Tables<'sourate_recitations'>>;
         if (before?.status === rec.status) return;
         if (rec.status === 'corrected') {

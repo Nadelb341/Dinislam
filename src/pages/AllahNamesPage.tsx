@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
+import { useConfetti } from '@/hooks/useConfetti';
+import { withMoodEmojis } from '@/lib/moodEmojis';
 import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +20,9 @@ const AllahNamesPage = () => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Tables<'allah_names'> | null>(null);
   const [mediaOpen, setMediaOpen] = useState<'video' | 'audio' | 'pdf' | null>(null);
+  const { fireSuccess } = useConfetti();
+  // Moins de 20 ans : chaque nom s'ouvre quand l'enseignante a validé l'audio du nom précédent (2026-10-19)
+  const needsAudio = !isAdmin && !isOver20;
 
   const { data: names = [], isLoading } = useQuery({
     queryKey: ['allah-names'],
@@ -77,17 +83,52 @@ const AllahNamesPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allah-name-progress', user?.id] });
-      toast.success(withName(user, 'Nom mémorisé, bravo {prenom} ! ✅'));
+      toast.success(withName(user, 'Nom mémorisé, bravo {prenom} ! ✅'), {
+        description: withMoodEmojis('N\'oublie pas que tu dois retenir ce nom par cœur avant de passer au suivant !'),
+        duration: 10000,
+      });
     },
     onError: (e) => toast.error(e.message || 'Erreur'),
   });
+
+  // Audio validé ou corrigé par l'enseignante : message tout de suite (même si la page reste ouverte)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`allah-name-reviews-${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'sourate_recitations', filter: `student_id=eq.${user.id}`,
+      }, (payload) => {
+        const rec = payload.new as Tables<'sourate_recitations'>;
+        if (rec.allah_name_id == null) return;
+        const name = names.find((n) => n.id === rec.allah_name_id);
+        const label = name?.transliteration || name?.name_french || 'ce nom';
+        if (rec.status === 'validated') {
+          queryClient.invalidateQueries({ queryKey: ['allah-name-progress', user.id] });
+          fireSuccess();
+          toast.success(withName(user, `Bravo {prenom}, ta maîtresse a validé ${label} !`), {
+            description: withMoodEmojis('N\'oublie pas que tu dois retenir ce nom par cœur avant de passer au suivant !'),
+            duration: 10000,
+          });
+        } else if (rec.status === 'corrected') {
+          toast(withMoodEmojis(`Ta maîtresse t'a envoyé une correction pour ${label}`, 'triste'), {
+            description: 'Écoute-la, puis refais ton audio 🎙️ Tu vas y arriver 💪',
+            duration: 10000,
+          });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, names, queryClient, fireSuccess]);
 
   const getMedia = (type: string) => selectedMedia.find((m) => m.media_type === type);
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
 
   const openName = (name, index) => {
     if (!isNameAccessible(index)) {
-      toast.info('Mémorise le nom précédent d\'abord ! 🔒');
+      toast.info(needsAudio
+        ? 'Envoie d\'abord l\'audio du nom précédent 🎙️ Celui-ci s\'ouvrira quand ta maîtresse l\'aura validé 🔒'
+        : 'Mémorise le nom précédent d\'abord ! 🔒');
       return;
     }
     setSelected(name);
@@ -285,6 +326,16 @@ const AllahNamesPage = () => {
                 <p className="text-base text-white/75">{selected.name_french}</p>
               </div>
 
+              {/* Prononciation : écouter, puis répéter */}
+              {getMedia('audio') && (
+                <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.3)' }}>
+                  <p className="text-sm font-bold" style={{ color: 'hsl(38 92% 62%)' }}>🔊 Écoute bien, puis répète</p>
+                  <audio key={getMedia('audio')!.file_url} controls preload="none" className="w-full">
+                    <source src={getMedia('audio')!.file_url} />
+                  </audio>
+                </div>
+              )}
+
               {selected.explanation && (
                 <div className="rounded-xl p-4" style={{ background: 'rgba(217,119,6,0.07)', border: '1px solid rgba(217,119,6,0.18)' }}>
                   <p className="text-xs font-bold mb-2" style={{ color: 'hsl(38 92% 58%)' }}>Explication</p>
@@ -300,6 +351,10 @@ const AllahNamesPage = () => {
                       style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
                       <CheckCircle2 className="h-5 w-5" style={{ color: 'hsl(142 70% 45%)' }} />
                       <span className="text-sm font-semibold" style={{ color: 'hsl(142 70% 50%)' }}>Nom mémorisé ✅</span>
+                    </div>
+                  ) : needsAudio ? (
+                    <div className="rounded-xl bg-background p-1">
+                      <SourateRecitationPanel allahNameId={selected.id} sourateName={selected.transliteration || selected.name_french} />
                     </div>
                   ) : (
                     <Button

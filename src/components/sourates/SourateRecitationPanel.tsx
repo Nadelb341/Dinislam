@@ -16,7 +16,11 @@ import { moveToTrash } from '@/lib/trash';
 import { errorMessage } from '@/lib/utils';
 
 interface SourateRecitationPanelProps {
-  sourateId: string;
+  /** Récitation d'une sourate… */
+  sourateId?: string;
+  /** …ou audio d'un des 99 noms d'Allah (2026-10-19, même circuit de validation) */
+  allahNameId?: number;
+  /** Nom affiché (sourate ou nom d'Allah) */
   sourateName: string;
 }
 
@@ -26,7 +30,10 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   corrected: { label: 'Corrigée', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
 };
 
-const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPanelProps) => {
+const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: SourateRecitationPanelProps) => {
+  const isName = allahNameId != null;
+  // Clé propre à l'élément (sourate ou nom) pour le cache, le canal en direct et le dossier des fichiers
+  const targetKey = isName ? `allah-${allahNameId}` : sourateId;
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [recording, setRecording] = useState(false);
@@ -66,13 +73,13 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   };
 
   const { data: recitations } = useQuery({
-    queryKey: ['student-recitations', sourateId, user?.id],
-    enabled: !!user && !!sourateId,
+    queryKey: ['student-recitations', targetKey, user?.id],
+    enabled: !!user && !!targetKey,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sourate_recitations')
         .select('*')
-        .eq('sourate_id', sourateId)
+        .eq(isName ? 'allah_name_id' : 'sourate_id', (isName ? allahNameId : sourateId)!)
         .eq('student_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -98,9 +105,9 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       if (error) throw error;
     },
     onMutate: async (r: { id: string }) => {
-      await queryClient.cancelQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
-      const previous = queryClient.getQueryData(['student-recitations', sourateId, user?.id]);
-      queryClient.setQueryData(['student-recitations', sourateId, user?.id],
+      await queryClient.cancelQueries({ queryKey: ['student-recitations', targetKey, user?.id] });
+      const previous = queryClient.getQueryData(['student-recitations', targetKey, user?.id]);
+      queryClient.setQueryData(['student-recitations', targetKey, user?.id],
         (old: { id: string }[] | undefined) => (old || []).filter((item) => item.id !== r.id)
       );
       return { previous };
@@ -108,31 +115,31 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
     onSuccess: () => toast.success('Récitation mise dans la corbeille (Paramètres)'),
     onError: (_e, _r, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(['student-recitations', sourateId, user?.id], context.previous);
+        queryClient.setQueryData(['student-recitations', targetKey, user?.id], context.previous);
       }
       toast.error('Erreur lors de la suppression');
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-recitations', targetKey, user?.id] });
     },
   });
 
   // Realtime updates
   useEffect(() => {
-    if (!user || !sourateId) return;
+    if (!user || !targetKey) return;
     const channel = supabase
-      .channel(`recitations-${sourateId}-${user.id}`)
+      .channel(`recitations-${targetKey}-${user.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'sourate_recitations',
         filter: `student_id=eq.${user.id}`,
       }, () => {
-        queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user.id] });
+        queryClient.invalidateQueries({ queryKey: ['student-recitations', targetKey, user.id] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [sourateId, user, queryClient]);
+  }, [targetKey, user, queryClient]);
 
   const startRecording = async () => {
     try {
@@ -196,7 +203,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       const mime = mimeTypeRef.current || 'audio/mp4';
       const baseMime = mime.split(';')[0]; // supprimer les paramètres de codec
       const ext = getExtFromMime(baseMime);
-      const filename = `${user.id}/${sourateId}/${Date.now()}.${ext}`;
+      const filename = `${user.id}/${targetKey}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from('recitations')
         .upload(filename, recorded, { contentType: baseMime, upsert: false });
@@ -207,7 +214,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
       const { error: insertError } = await supabase
         .from('sourate_recitations')
         .insert({
-          sourate_id: sourateId,
+          ...(isName ? { allah_name_id: allahNameId } : { sourate_id: sourateId }),
           student_id: user.id,
           audio_url: publicUrl,
           student_comment: comment || null,
@@ -217,13 +224,15 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
 
       // L'enseignante est prévenue : c'est sa validation qui ouvre la sourate suivante
       sendPushNotification({
-        title: '🎙️ Nouvelle récitation à écouter', category: 'adm_valid', type: 'admin',
-        body: `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé sa récitation de ${sourateName}.`,
+        title: isName ? '✨ Nouvel audio d\'un nom d\'Allah' : '🎙️ Nouvelle récitation à écouter', category: 'adm_valid', type: 'admin',
+        body: isName
+          ? `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé son audio du nom ${sourateName}.`
+          : `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé sa récitation de ${sourateName}.`,
         data: { url: '/?admin=recitations-audio' },
       });
 
       toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ta maîtresse ! Elle va l\'écouter 🎧'));
-      queryClient.invalidateQueries({ queryKey: ['student-recitations', sourateId, user.id] });
+      queryClient.invalidateQueries({ queryKey: ['student-recitations', targetKey, user.id] });
       resetRecording();
     } catch (e) {
       toast.error(errorMessage(e) || 'Erreur lors de l\'envoi');
@@ -237,7 +246,7 @@ const SourateRecitationPanel = ({ sourateId, sourateName }: SourateRecitationPan
   return (
     <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20 p-4 space-y-3">
       <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-        🎙️ Envoyer ma récitation
+        {isName ? '🎙️ Envoyer mon audio de ce nom' : '🎙️ Envoyer ma récitation'}
       </p>
 
       {/* Recorder */}

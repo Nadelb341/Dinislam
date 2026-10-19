@@ -829,3 +829,11 @@ Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Deman
 - Envoi : `process-scheduled-notifications` (cron toutes les 5 min). Une notification dès un nouveau plantage, puis selon l'intervalle, catégorie `adm_crash` (interrupteur `notif_adm_crash` dans Paramètres › Notifications).
 - Migration 20261019130000 : `app_logs.resolved_at` + règle UPDATE admin. Avant, « Marquer lu » du Monitoring ne faisait rien, faute de règle.
 - ⚠️ Signalé, pas modifié : « Vider les logs » ne fait rien non plus (pas de règle DELETE), et viderait sans corbeille.
+
+## 99 noms d'Allah : audio de l'élève validé par l'enseignante (2026-10-19, demande de Nadia)
+- Même circuit que les sourates : `sourate_recitations` accepte `allah_name_id` (soit une sourate, soit un nom, migration 20261019150000). `SourateRecitationPanel` prend `allahNameId`. `AdminRecitationReview` affiche « ✨ Nom d'Allah : … ». « Valider » (avec confirmation) → `user_allah_name_progress` validé → le nom suivant s'ouvre, avec une notification à l'élève. « Envoyer correction » → l'élève refait son audio.
+- Page élève (`AllahNamesPage`) : cadre « 🔊 Écoute bien, puis répète » (média `audio` du nom). Moins de 20 ans : le cadre d'envoi d'audio remplace « J'ai mémorisé ce nom ». En direct : validé → confettis + « N'oublie pas que tu dois retenir ce nom par cœur avant de passer au suivant ! » avec émojis ; corrigé → message aux émojis tristes. Les 20 ans et plus gardent « J'ai mémorisé ce nom » (même message).
+- Émojis selon le ton et la saison : `src/lib/moodEmojis.ts` (`withMoodEmojis(texte, 'joie'|'triste')`, `seasonEmojis`).
+- Les noms ne se suppriment plus : la poubelle est retirée du tableau de bord (décision de Nadia).
+- Audios de prononciation : piste trouvée, le dépôt GitHub MohammedAbidNafi/99-Names-of-Allah (licence MIT, 100 fichiers, environ 1 Mo au total, mp3 32 à 64 kbps). En attente de l'écoute de Nadia avant de les importer.
+- Cron `dinislam-scheduled-notifications` : délai de réponse passé de 5 à 30 s le 2026-10-19 (dépassements de délai fréquents depuis 12 h UTC).

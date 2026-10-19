@@ -56,11 +56,16 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       if (recs.length === 0) return [];
 
       const studentIds = [...new Set(recs.map((r) => r.student_id))];
-      const sourateIds = [...new Set(recs.map((r) => r.sourate_id))];
+      const sourateIds = [...new Set(recs.map((r) => r.sourate_id).filter((x): x is string => !!x))];
+      const nameIds = [...new Set(recs.map((r) => r.allah_name_id).filter((x): x is number => x != null))];
 
-      const [{ data: profiles }, { data: sourates }] = await Promise.all([
+      const [{ data: profiles }, { data: sourates }, { data: allahNames }] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name, email').in('user_id', studentIds as string[]),
         supabase.from('sourates').select('id, number, name_arabic, name_french').in('id', sourateIds as string[]),
+        // Audios des 99 noms d'Allah (même circuit que les sourates, 2026-10-19)
+        nameIds.length
+          ? supabase.from('allah_names').select('id, name_arabic, name_french, transliteration').in('id', nameIds)
+          : Promise.resolve({ data: [] as { id: number; name_arabic: string; name_french: string; transliteration: string | null }[] }),
       ]);
 
       // Génère des URLs signées pour tous les audios (contourne cache et restrictions iOS)
@@ -68,6 +73,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         ...r,
         profile: profiles?.find((p) => p.user_id === r.student_id),
         sourate: sourates?.find((s) => s.id === r.sourate_id),
+        allahName: allahNames?.find((n) => n.id === r.allah_name_id),
         audio_url: await toSignedUrl(r.audio_url),
         admin_audio_url: await toSignedUrl(r.admin_audio_url),
       })));
@@ -114,7 +120,10 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   const sendResponse = async (rec: Rec, newStatus: 'validated' | 'corrected') => {
     const recitationId = rec.id;
     const studentId = rec.student_id;
-    const sourateName = rec.sourate?.name_french || 'ta sourate';
+    const isName = rec.allah_name_id != null;
+    const sourateName = isName
+      ? (rec.allahName?.transliteration || rec.allahName?.name_french || 'ce nom')
+      : (rec.sourate?.name_french || 'ta sourate');
     // Optimistic: fermer le panneau et retirer l'item immédiatement
     const previousData = queryClient.getQueryData(['admin-recitations', filter]);
     const savedComment = adminComment;
@@ -153,14 +162,27 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       if (error) throw error;
 
       // Chemin unique des sourates (2026-10-19) : « Valider » = sourate validée → la suivante s'ouvre pour l'élève
-      if (newStatus === 'validated') {
+      if (newStatus === 'validated' && isName) {
+        // 99 noms : « Valider » = nom validé → le nom suivant s'ouvre pour l'élève
+        const { error: progressError } = await supabase
+          .from('user_allah_name_progress')
+          .upsert({ user_id: studentId, name_id: rec.allah_name_id!, is_validated: true, validated_at: new Date().toISOString() },
+            { onConflict: 'user_id,name_id' });
+        if (progressError) throw progressError;
+      } else if (newStatus === 'validated') {
         const { error: progressError } = await supabase
           .from('user_sourate_progress')
           .upsert({ user_id: studentId, sourate_id: rec.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' },
             { onConflict: 'user_id,sourate_id,context' });
         if (progressError) throw progressError;
       }
-      sendPushNotification(newStatus === 'validated'
+      if (isName) {
+        sendPushNotification(newStatus === 'validated'
+          ? { title: '🌟 Bravo {prenom} !', category: 'rec', type: 'user', userId: studentId, data: { url: '/allah-names' },
+              body: `Ta maîtresse a validé ton audio de ${sourateName} 🥳 N'oublie pas de le retenir par cœur avant de passer au suivant ✨` }
+          : { title: '📝 {prenom}, une correction pour toi', category: 'rec', type: 'user', userId: studentId, data: { url: '/allah-names' },
+              body: `Écoute la correction de ${sourateName}, puis refais ton audio 🎙️ Tu vas y arriver 💪` });
+      } else sendPushNotification(newStatus === 'validated'
         ? { title: '⭐ Félicitations {prenom} !', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
             body: `Ta maîtresse a validé ta récitation de ${sourateName} 🥳 La sourate suivante est ouverte ✨` }
         : { title: '📝 {prenom}, une correction pour toi', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
@@ -240,7 +262,9 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
                   <div>
                     <p className="text-sm font-medium">{r.profile?.full_name || 'Élève'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {r.sourate?.name_french} ({r.sourate?.name_arabic}) •{' '}
+                      {r.allahName
+                        ? <>✨ Nom d'Allah : {r.allahName.transliteration || r.allahName.name_french} ({r.allahName.name_arabic})</>
+                        : <>{r.sourate?.name_french} ({r.sourate?.name_arabic})</>} •{' '}
                       {new Date(r.created_at).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
@@ -321,7 +345,9 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => askValidation('Valider cette récitation ?', `${r.profile?.full_name || 'L\'élève'} : ${r.sourate?.name_french || 'sourate'} sera validée, et la sourate suivante s'ouvrira.`, () => sendResponse(r, 'validated'))}
+                      onClick={() => askValidation('Valider cette récitation ?', r.allahName
+                        ? `${r.profile?.full_name || 'L\'élève'} : le nom ${r.allahName.transliteration || r.allahName.name_french} sera validé, et le nom suivant s'ouvrira.`
+                        : `${r.profile?.full_name || 'L\'élève'} : ${r.sourate?.name_french || 'sourate'} sera validée, et la sourate suivante s'ouvrira.`, () => sendResponse(r, 'validated'))}
                       disabled={saving}
                       className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
                     >
