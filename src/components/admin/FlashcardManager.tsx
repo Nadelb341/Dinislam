@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, X } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { generateFromTemplate } from '@/data/flashcard-templates';
@@ -108,9 +108,10 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const card = flashcards.find((f) => f.id === id);
-      const { error } = await supabase.from('module_flashcards').delete().eq('id', id);
-      if (error) throw error;
-      if (card && user?.id) await moveToTrash(user.id, 'flashcard', id, card.front_text || 'Flashcard', card);
+      if (!card || !user?.id) throw new Error('Flashcard introuvable');
+      await trashThenDelete({ userId: user.id, type: 'flashcard', id, label: card.front_text || 'Flashcard', data: card,
+        children: [await collectChildren('user_flashcard_learned', 'flashcard_id', [id])],
+        remove: () => supabase.from('module_flashcards').delete().eq('id', id) });
     },
     onSuccess: () => {
       invalidate();
@@ -120,19 +121,7 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
     onError: () => toast.error('Erreur lors de la suppression'),
   });
 
-  const moveMutation = useMutation({
-    mutationFn: async ({ id, direction }: { id: string; direction: 'up' | 'down' }) => {
-      const idx = list.findIndex((f) => f.id === id);
-      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= list.length) return;
-      const current = list[idx];
-      const swap = list[swapIdx];
-      await supabase.from('module_flashcards').update({ display_order: swap.display_order }).eq('id', current.id);
-      await supabase.from('module_flashcards').update({ display_order: current.display_order }).eq('id', swap.id);
-    },
-    onSuccess: invalidate,
-    onError: () => toast.error('Erreur lors du déplacement'),
-  });
+  // Plus de flèches ⌃/⌄ : l'appli mélange les cartes toute seule, 10 mélanges prêts (2026-10-19, voir lib/flashcardMixes)
 
   const startEdit = (f) => {
     setEditingId(f.id);
@@ -229,6 +218,9 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
           </div>
 
           {/* Liste */}
+          {list.length > 1 && (
+            <p className="text-xs text-muted-foreground">🔀 Pas besoin de ranger les cartes : l'appli les mélange toute seule pour les élèves (10 ordres différents, un nouveau à chaque ouverture).</p>
+          )}
           {list.length > 0 && (
             <div className="space-y-1.5 max-h-96 overflow-y-auto">
               {list.map((f, i) => (
@@ -287,20 +279,6 @@ const FlashcardManager = ({ cardId, cardTitle, moduleTitle }: Props) => {
                       </p>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <Button
-                        size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground"
-                        onClick={() => moveMutation.mutate({ id: f.id, direction: 'up' })}
-                        disabled={i === 0 || moveMutation.isPending}
-                      >
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground"
-                        onClick={() => moveMutation.mutate({ id: f.id, direction: 'down' })}
-                        disabled={i === list.length - 1 || moveMutation.isPending}
-                      >
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      </Button>
                       <Button
                         size="icon" variant="ghost" className="h-6 w-6 text-blue-500 hover:text-blue-600"
                         onClick={() => startEdit(f)}

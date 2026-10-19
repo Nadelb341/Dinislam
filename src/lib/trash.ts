@@ -59,6 +59,39 @@ export async function moveToTrash(userId: string, type: TrashItemType, originalI
   return !error;
 }
 
+/** Éléments liés qui disparaîtraient avec l'élément (suppression en cascade) : gardés avec lui dans la corbeille. */
+export type TrashChildren = { table: string; rows: Record<string, unknown>[]; relink?: string }[];
+
+/** Lit les lignes liées d'une table (ex. réponses d'un quiz) pour les garder dans la corbeille. */
+export async function collectChildren(table: string, column: string, ids: string[], relink?: boolean): Promise<TrashChildren[number]> {
+  if (!ids.length) return { table, rows: [] };
+  const { data, error } = await untypedDb.from(table).select("*").in(column, ids);
+  if (error) throw new Error("Lecture des éléments liés impossible : rien n'a été supprimé");
+  return { table, rows: (data || []) as Record<string, unknown>[], ...(relink ? { relink: column } : {}) };
+}
+
+/**
+ * Règle « ne jamais rien perdre » (2026-10-19) : la copie dans la corbeille est faite AVANT la suppression.
+ * Copie impossible → rien n'est supprimé. Suppression impossible → la copie est retirée (pas de doublon).
+ */
+export async function trashThenDelete(opts: {
+  userId: string; type: TrashItemType; id: string; label: string; data: unknown;
+  children?: TrashChildren;
+  remove: () => PromiseLike<{ error: unknown }>;
+}) {
+  const children = (opts.children || []).filter((c) => c.rows.length);
+  const payload = children.length ? { ...(opts.data as object), __children: children } : opts.data;
+  const { data: saved, error } = await supabase.from("trash_items")
+    .insert({ user_id: opts.userId, item_type: opts.type, original_id: opts.id, label: opts.label, item_data: payload as Json })
+    .select("id").single();
+  if (error || !saved) throw new Error("Mise en corbeille impossible : rien n'a été supprimé");
+  const { error: delErr } = await opts.remove();
+  if (delErr) {
+    await supabase.from("trash_items").delete().eq("id", saved.id);
+    throw delErr instanceof Error ? delErr : new Error("Suppression impossible");
+  }
+}
+
 export async function fetchTrash(userId: string): Promise<TrashItem[]> {
   const { data } = await supabase
     .from("trash_items")
@@ -124,8 +157,18 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   }
   const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">];
   if (!table) return false;
-  const { error } = await untypedDb.from(table).insert(item.item_data);
+  const { __children, ...row } = (item.item_data || {}) as { __children?: TrashChildren } & Record<string, unknown>;
+  const { error } = await untypedDb.from(table).insert(__children ? row : item.item_data);
   if (error) return false;
+  // Éléments liés gardés avec lui (réponses, membres, flashcards...) : remis dans l'ordre où ils ont été copiés
+  for (const c of __children || []) {
+    if (c.relink) {
+      const ids = c.rows.map((r) => r.id).filter(Boolean);
+      if (ids.length) await untypedDb.from(c.table).update({ [c.relink]: item.original_id }).in("id", ids);
+    } else if (c.rows.length) {
+      await untypedDb.from(c.table).upsert(c.rows, { ignoreDuplicates: true });
+    }
+  }
   await supabase.from("trash_items").delete().eq("id", item.id);
   return true;
 }

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
@@ -85,16 +85,10 @@ const AdminInvocationContent = () => {
     mutationFn: async (contentId: string) => {
       const content = contents.find(c => c.id === contentId);
       if (!content) return;
-      if (content.content_type !== 'youtube') {
-        try {
-          const url = new URL(content.file_url);
-          const bucketPath = url.pathname.split('/object/public/invocation-content/');
-          if (bucketPath[1]) await supabase.storage.from('invocation-content').remove([decodeURIComponent(bucketPath[1])]);
-        } catch (e) { console.warn(e); }
-      }
-      const { error } = await supabase.from('invocation_content').delete().eq('id', contentId);
-      if (error) throw error;
-      if (user?.id) await moveToTrash(user.id, 'invocation_content', contentId, content.file_name || 'Contenu invocation', content);
+      // Corbeille d'abord ; le fichier est gardé pour pouvoir le restaurer (règle « ne jamais rien perdre », 2026-10-19)
+      if (!content || !user?.id) throw new Error('Contenu introuvable');
+      await trashThenDelete({ userId: user.id, type: 'invocation_content', id: contentId, label: content.file_name || 'Contenu invocation', data: content,
+        remove: () => supabase.from('invocation_content').delete().eq('id', contentId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents'] });

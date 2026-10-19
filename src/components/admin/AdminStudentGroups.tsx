@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage, byName } from '@/lib/utils';
 
@@ -241,16 +241,20 @@ const AdminStudentGroups = () => {
     queryClient.setQueryData(['student-groups'], (old: StudentGroup[] | undefined) =>
       (old || []).filter(g => g.id !== groupId)
     );
-    const { error } = await supabase.from('student_groups').delete().eq('id', groupId);
-    if (!error) {
-      toast.success('Groupe supprimé');
-      if (group && user?.id) {
-        const { memberCount, members, ...groupRow } = group;
-        await moveToTrash(user.id, 'student_group', groupId, group.name || 'Groupe', groupRow);
-      }
-    } else {
+    try {
+      if (!group || !user?.id) throw new Error('Groupe introuvable');
+      const { memberCount, members, ...groupRow } = group;
+      // Membres du groupe (cascade) et tâches liées (lien effacé) gardés avec lui : la restauration remet tout
+      await trashThenDelete({ userId: user.id, type: 'student_group', id: groupId, label: group.name || 'Groupe', data: groupRow,
+        children: [
+          await collectChildren('student_group_members', 'group_id', [groupId]),
+          await collectChildren('admin_tasks', 'group_id', [groupId], true),
+        ],
+        remove: () => supabase.from('student_groups').delete().eq('id', groupId) });
+      toast.success('Groupe mis dans la corbeille (Paramètres)');
+    } catch (error) {
       queryClient.invalidateQueries({ queryKey: ['student-groups'] });
-      toast.error(`Erreur suppression: ${error.message} (${error.code})`);
+      toast.error(`Erreur suppression : ${errorMessage(error)}`);
     }
   };
 

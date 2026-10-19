@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Unlock, Lock, Upload, Trash2, Eye, EyeOff, UserCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { moveToTrash, trashThenDelete } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
@@ -290,16 +290,10 @@ const AdminSourateContent = () => {
     mutationFn: async (contentId: string) => {
       const content = contents.find(c => c.id === contentId);
       if (!content) return;
-      if (content.content_type !== 'youtube') {
-        try {
-          const url = new URL(content.file_url);
-          const bucketPath = url.pathname.split('/object/public/sourate-content/');
-          if (bucketPath[1]) await supabase.storage.from('sourate-content').remove([decodeURIComponent(bucketPath[1])]);
-        } catch (e) { console.warn(e); }
-      }
-      const { error } = await supabase.from('sourate_content').delete().eq('id', contentId);
-      if (error) throw error;
-      if (user?.id) await moveToTrash(user.id, 'sourate_content', contentId, content.file_name || 'Contenu sourate', content);
+      // Corbeille d'abord ; le fichier est gardé pour pouvoir le restaurer (règle « ne jamais rien perdre », 2026-10-19)
+      if (!content || !user?.id) throw new Error('Contenu introuvable');
+      await trashThenDelete({ userId: user.id, type: 'sourate_content', id: contentId, label: content.file_name || 'Contenu sourate', data: content,
+        remove: () => supabase.from('sourate_content').delete().eq('id', contentId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-contents'] });
@@ -440,7 +434,7 @@ const AdminSourateContent = () => {
         open={!!deleteContentId}
         onOpenChange={(open) => !open && setDeleteContentId(null)}
         onConfirm={() => { if (deleteContentId) deleteMutation.mutate(deleteContentId); setDeleteContentId(null); }}
-        description="Ce contenu sera supprimé définitivement."
+        description="Ce contenu ira dans la corbeille (Paramètres), d'où tu pourras le restaurer."
       />
       <ConfirmDeleteDialog
         open={!!toRelock}

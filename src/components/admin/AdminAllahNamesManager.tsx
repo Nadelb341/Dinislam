@@ -15,7 +15,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete } from '@/lib/trash';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import {
   Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus, type LucideIcon } from 'lucide-react';
@@ -34,6 +35,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const [editingName, setEditingName] = useState<Tables<'allah_names'> | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<{ nameId: number; type: string } | null>(null);
+  const [mediaToDelete, setMediaToDelete] = useState<{ id: string; file_name: string | null } | null>(null);
 
   const [formNameAr, setFormNameAr] = useState('');
   const [formNameFr, setFormNameFr] = useState('');
@@ -100,14 +102,16 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const deleteMediaMutation = useMutation({
     mutationFn: async (mediaId: string) => {
       const media = allMedia.find((m) => m.id === mediaId);
-      const { error } = await supabase.from('allah_name_media').delete().eq('id', mediaId);
-      if (error) throw error;
-      if (media && user?.id) await moveToTrash(user.id, 'allah_name_media', mediaId, media.file_name || 'Média', media);
+      if (!media || !user?.id) throw new Error('Média introuvable');
+      // Corbeille d'abord, fichier gardé : on peut toujours le restaurer (2026-10-19)
+      await trashThenDelete({ userId: user.id, type: 'allah_name_media', id: mediaId, label: media.file_name || 'Média', data: media,
+        remove: () => supabase.from('allah_name_media').delete().eq('id', mediaId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });
-      toast.success('Média supprimé');
+      toast.success('Média mis dans la corbeille (Paramètres)');
     },
+    onError: (e) => toast.error(errorMessage(e)),
   });
 
   const reorderMutation = useMutation({
@@ -144,11 +148,11 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
     setUploadingMedia({ nameId, type });
     try {
       const ext = file.name.split('.').pop();
-      const path = `allah-names/${nameId}-${type}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
+      // Nom de fichier unique : l'ancien fichier n'est jamais écrasé, il reste restaurable depuis la corbeille (2026-10-19)
+      const path = `allah-names/${nameId}-${type}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file));
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-      await supabase.from('allah_name_media').delete().eq('name_id', nameId).eq('media_type', type);
       const { error } = await supabase.from('allah_name_media').insert({
         name_id: nameId,
         media_type: type,
@@ -156,11 +160,18 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         file_name: file.name,
       });
       if (error) throw error;
+      // Le nouveau est en place : l'ancien part dans la corbeille
+      const olds = allMedia.filter((m) => m.name_id === nameId && m.media_type === type);
+      for (const old of olds) {
+        if (!user?.id) break;
+        await trashThenDelete({ userId: user.id, type: 'allah_name_media', id: old.id, label: `${old.file_name || 'Média'} (remplacé)`, data: old,
+          remove: () => supabase.from('allah_name_media').delete().eq('id', old.id) });
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });
       toast.success(`${type === 'video' ? 'Vidéo' : type === 'audio' ? 'Audio' : 'PDF'} mis à jour ✅`);
     } catch (e) { toast.error(errorMessage(e)); }
     finally { setUploadingMedia(null); }
-  }, [queryClient]);
+  }, [queryClient, allMedia, user]);
 
   const openAdd = () => {
     setEditingName(null);
@@ -196,7 +207,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
               />
               <span className="text-[10px] underline" style={{ color: 'hsl(220 70% 45%)' }}>Remplacer</span>
             </label>
-            <button onClick={() => deleteMediaMutation.mutate(existing.id)} className="text-destructive hover:text-destructive/80">
+            <button onClick={() => setMediaToDelete(existing)} className="text-destructive hover:text-destructive/80" aria-label="Supprimer ce média">
               <Trash2 className="h-3 w-3" />
             </button>
           </div>
@@ -394,6 +405,13 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         </DialogContent>
       </Dialog>
 
+      <ConfirmDeleteDialog
+        open={!!mediaToDelete}
+        onOpenChange={(o) => { if (!o) setMediaToDelete(null); }}
+        onConfirm={() => { if (mediaToDelete) deleteMediaMutation.mutate(mediaToDelete.id); setMediaToDelete(null); }}
+        title="Supprimer ce média ?"
+        description={mediaToDelete ? `« ${mediaToDelete.file_name || 'Média'} » ira dans la corbeille (Paramètres), d'où tu pourras le restaurer.` : ''}
+      />
     </div>
   );
 };

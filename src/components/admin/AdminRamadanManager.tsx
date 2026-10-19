@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
 import { DRAFT_RESUME_EVENT, takeDraftResumePrefix } from '@/lib/pendingDrafts';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { ArrowLeft, Upload, Video, HelpCircle, Trash2, Save, Loader2, Rocket, RotateCcw, Plus, AlertTriangle, FileText, Volume2, Image, Lock, Unlock, Check, Moon, Link, Calendar } from 'lucide-react';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard from './ContentItemCard';
@@ -297,9 +297,10 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const deleteVideoMutation = useMutation({
     mutationFn: async (videoId: string) => {
       const video = dayVideos.find((v) => v.id === videoId);
-      const { error } = await supabase.from('ramadan_day_videos').delete().eq('id', videoId);
-      if (error) throw error;
-      if (video && user?.id) await moveToTrash(user.id, 'ramadan_day_video', videoId, video.file_name || 'Vidéo Ramadan', video);
+      if (!video || !user?.id) throw new Error('Vidéo introuvable');
+      await trashThenDelete({ userId: user.id, type: 'ramadan_day_video', id: videoId, label: video.file_name || 'Vidéo Ramadan', data: video,
+        children: [await collectChildren('user_ramadan_video_watched', 'video_id', [videoId])],
+        remove: () => supabase.from('ramadan_day_videos').delete().eq('id', videoId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-videos'] });
@@ -443,10 +444,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const deleteQuizMutation = useMutation({
     mutationFn: async (quizId: string) => {
       const quiz = quizzes.find((q) => q.id === quizId);
-      await supabase.from('quiz_responses').delete().eq('quiz_id', quizId);
-      const { error } = await supabase.from('ramadan_quizzes').delete().eq('id', quizId);
-      if (error) throw error;
-      if (quiz && user?.id) await moveToTrash(user.id, 'ramadan_quiz', quizId, quiz.question || 'Question', quiz);
+      if (!quiz || !user?.id) throw new Error('Question introuvable');
+      // Les réponses des élèves partent avec la question (cascade) : elles sont gardées avec elle dans la corbeille
+      await trashThenDelete({ userId: user.id, type: 'ramadan_quiz', id: quizId, label: quiz.question || 'Question', data: quiz,
+        children: [await collectChildren('quiz_responses', 'quiz_id', [quizId])],
+        remove: () => supabase.from('ramadan_quizzes').delete().eq('id', quizId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-quizzes'] });
@@ -458,10 +460,11 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const deleteAllQuizzesMutation = useMutation({
     mutationFn: async (dayId: string) => {
       const dayQuizzes = getQuizzesForDay(dayId);
+      if (!user?.id) throw new Error('Non connecté');
       for (const q of dayQuizzes) {
-        await supabase.from('quiz_responses').delete().eq('quiz_id', q.id);
-        await supabase.from('ramadan_quizzes').delete().eq('id', q.id);
-        if (user?.id) await moveToTrash(user.id, 'ramadan_quiz', q.id, q.question || 'Question', q);
+        await trashThenDelete({ userId: user.id, type: 'ramadan_quiz', id: q.id, label: q.question || 'Question', data: q,
+          children: [await collectChildren('quiz_responses', 'quiz_id', [q.id])],
+          remove: () => supabase.from('ramadan_quizzes').delete().eq('id', q.id) });
       }
     },
     onSuccess: () => {
@@ -522,9 +525,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
   const deleteActivityMutation = useMutation({
     mutationFn: async (activityId: string) => {
       const activity = dayActivities.find((a) => a.id === activityId);
-      const { error } = await supabase.from('ramadan_day_activities').delete().eq('id', activityId);
-      if (error) throw error;
-      if (activity && user?.id) await moveToTrash(user.id, 'ramadan_day_activity', activityId, activity.file_name || 'Activité Ramadan', activity);
+      if (!activity || !user?.id) throw new Error('Activité introuvable');
+      await trashThenDelete({ userId: user.id, type: 'ramadan_day_activity', id: activityId, label: activity.file_name || 'Activité Ramadan', data: activity,
+        remove: () => supabase.from('ramadan_day_activities').delete().eq('id', activityId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-activities'] });

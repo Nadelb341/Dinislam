@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
-import { moveToTrash } from '@/lib/trash';
+import { moveToTrash, trashThenDelete } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -167,16 +167,10 @@ const AdminInvocationManager = ({ onBack }: Props) => {
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
       const content = contents.find((c) => c.id === contentId);
-      if (content) {
-        try {
-          const url = new URL(content.file_url);
-          const parts = url.pathname.split('/object/public/invocation-content/');
-          if (parts[1]) await supabase.storage.from('invocation-content').remove([decodeURIComponent(parts[1])]);
-        } catch { /* ignore */ }
-      }
-      const { error } = await supabase.from('invocation_content').delete().eq('id', contentId);
-      if (error) throw error;
-      if (content && user?.id) await moveToTrash(user.id, 'invocation_content', contentId, content.file_name || 'Contenu', content);
+      // Corbeille d'abord ; le fichier est gardé pour pouvoir le restaurer (règle « ne jamais rien perdre », 2026-10-19)
+      if (!content || !user?.id) throw new Error('Contenu introuvable');
+      await trashThenDelete({ userId: user.id, type: 'invocation_content', id: contentId, label: content.file_name || 'Contenu', data: content,
+        remove: () => supabase.from('invocation_content').delete().eq('id', contentId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents-full'] });

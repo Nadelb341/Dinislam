@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { withName } from '@/lib/encouragements';
-import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Shuffle } from 'lucide-react';
+import { MIX_COUNT, deckKey, mixCards, nextMixOnOpen, rememberMix } from '@/lib/flashcardMixes';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,10 +18,12 @@ interface Flashcard {
 }
 
 const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
-  const [deck, setDeck] = useState<Flashcard[]>(cards);
+  // 10 mélanges déjà prêts (2026-10-19) : un nouveau à chaque ouverture, « Mélange suivant » pour changer
+  const key = useMemo(() => deckKey(cards.map((c) => c.id)), [cards]);
+  const [mix, setMix] = useState(() => nextMixOnOpen(key));
+  const [deck, setDeck] = useState<Flashcard[]>(() => mixCards(cards, mix));
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [isShuffled, setIsShuffled] = useState(false);
   // « ✅ Je connais ce mot » (2026-10-08) : compte dans le Classement (ligne « Vocabulaire appris » du barème)
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -38,11 +41,10 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const base = useMemo(() => (onlyUnknown ? cards.filter((c) => !learned.has(c.id)) : cards), [cards, onlyUnknown]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    setDeck(base);
+    setDeck(mixCards(base, mix));
     setIndex(0);
     setFlipped(false);
-    setIsShuffled(false);
-  }, [base]);
+  }, [base, mix]);
 
   const setLearned = async (id: string, value: boolean) => {
     if (!user) return;
@@ -77,18 +79,10 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
     setIndex(newIndex);
   };
 
-  const shuffle = () => {
-    setDeck([...base].sort(() => Math.random() - 0.5));
-    setIndex(0);
-    setFlipped(false);
-    setIsShuffled(true);
-  };
-
-  const reset = () => {
-    setDeck(base);
-    setIndex(0);
-    setFlipped(false);
-    setIsShuffled(false);
+  const nextMix = () => {
+    const n = (mix + 1) % MIX_COUNT;
+    rememberMix(key, n);
+    setMix(n);
   };
 
   return (
@@ -96,11 +90,8 @@ const FlashcardPlayer = ({ cards }: { cards: Flashcard[] }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">{index + 1} / {deck.length}{learnedCount > 0 && <span className="ms-2 text-xs text-emerald-600 font-bold">✅ {learnedCount} appris</span>}</span>
-        <Button size="sm" variant="ghost" onClick={isShuffled ? reset : shuffle} className="h-8 text-xs">
-          {isShuffled
-            ? <><RotateCcw className="h-3.5 w-3.5 mr-1" />Réinitialiser</>
-            : <><Shuffle className="h-3.5 w-3.5 mr-1" />Mélanger</>
-          }
+        <Button size="sm" variant="ghost" onClick={nextMix} className="h-8 text-xs" title="Changer l'ordre des cartes">
+          <Shuffle className="h-3.5 w-3.5 mr-1" />Mélange {mix + 1}/{MIX_COUNT} · suivant
         </Button>
       </div>
 

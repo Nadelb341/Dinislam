@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete } from '@/lib/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -19,6 +19,12 @@ interface Props {
 // Clé interne pour identifier la carte PDF principale du Coran
 const CORAN_PDF_SECTION = 'coran-pdf-principal';
 const CORAN_EXTRA_SECTION = 'coran-contenu-extra';
+
+/** Ancien PDF remplacé : corbeille d'abord, fichier gardé (2026-10-19) */
+async function trashOldPdf(userId: string, old: { id: string; file_name: string | null }) {
+  await trashThenDelete({ userId, type: 'module_content', id: old.id, label: old.file_name || 'PDF du Coran', data: old,
+    remove: () => supabase.from('module_card_content').delete().eq('id', old.id) });
+}
 
 const AdminCoranContent = ({ onBack }: Props) => {
   const { user } = useAuth();
@@ -91,7 +97,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryFn: async () => {
       const { data } = await supabase
         .from('module_card_content')
-        .select('id, file_url, file_name')
+        .select('*') // ligne complète : nécessaire pour la restaurer depuis la corbeille
         .eq('card_id', pdfCard.id)
         .eq('content_type', 'fichier')
         .limit(1);
@@ -106,7 +112,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     queryFn: async () => {
       const { data } = await supabase
         .from('module_card_content')
-        .select('id, file_url, file_name, content_type')
+        .select('*')
         .eq('card_id', extraCard.id)
         .order('display_order');
       return data || [];
@@ -122,24 +128,14 @@ const AdminCoranContent = ({ onBack }: Props) => {
     return urlData.publicUrl;
   };
 
-  const removeFromStorage = async (fileUrl: string) => {
-    try {
-      const url = new URL(fileUrl);
-      const parts = url.pathname.split('/object/public/module-cards/');
-      if (parts[1]) await supabase.storage.from('module-cards').remove([decodeURIComponent(parts[1])]);
-    } catch { /* fichier déjà absent : rien à faire */ }
-  };
 
   // Upload PDF du Coran
   const handleUploadPdf = useCallback(async (file: File) => {
     if (!user?.id || !pdfCard?.id) return;
     setIsUploadingPdf(true);
     try {
-      // Supprimer l'ancien PDF si existant
-      if (pdfContent) {
-        await removeFromStorage(pdfContent.file_url);
-        await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
-      }
+      // L'ancien PDF part dans la corbeille (fichier gardé) avant d'être remplacé (2026-10-19)
+      if (pdfContent) await trashOldPdf(user.id, pdfContent);
       const publicUrl = await uploadToStorage(file, pdfCard.id);
       const { error } = await supabase.from('module_card_content').insert({
         card_id: pdfCard.id, content_type: 'fichier', file_url: publicUrl,
@@ -168,10 +164,7 @@ const AdminCoranContent = ({ onBack }: Props) => {
     }
     setIsUploadingPdf(true);
     try {
-      if (pdfContent) {
-        await removeFromStorage(pdfContent.file_url);
-        await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
-      }
+      if (pdfContent) await trashOldPdf(user.id, pdfContent);
       const { error } = await supabase.from('module_card_content').insert({
         card_id: pdfCard.id, content_type: 'fichier', file_url: url,
         file_name: 'Coran PDF', display_order: 0, uploaded_by: user.id,
@@ -192,9 +185,10 @@ const AdminCoranContent = ({ onBack }: Props) => {
   const handleDeletePdf = useCallback(async () => {
     if (!pdfContent) return;
     try {
-      await removeFromStorage(pdfContent.file_url);
-      await supabase.from('module_card_content').delete().eq('id', pdfContent.id);
-      if (user?.id) await moveToTrash(user.id, 'module_content', pdfContent.id, pdfContent.file_name || 'PDF du Coran', pdfContent);
+      // Corbeille d'abord ; le fichier est gardé pour pouvoir le restaurer (2026-10-19)
+      if (!user?.id) throw new Error('Non connecté');
+      await trashThenDelete({ userId: user.id, type: 'module_content', id: pdfContent.id, label: pdfContent.file_name || 'PDF du Coran', data: pdfContent,
+        remove: () => supabase.from('module_card_content').delete().eq('id', pdfContent.id) });
       await refetchPdf();
       toast.success('PDF supprimé');
     } catch {
@@ -246,9 +240,9 @@ const AdminCoranContent = ({ onBack }: Props) => {
     const item = extraContents.find(c => c.id === id);
     if (!item) return;
     try {
-      if (item.content_type !== 'youtube') await removeFromStorage(item.file_url);
-      await supabase.from('module_card_content').delete().eq('id', id);
-      if (user?.id) await moveToTrash(user.id, 'module_content', id, item.file_name || 'Contenu', item);
+      if (!user?.id) throw new Error('Non connecté');
+      await trashThenDelete({ userId: user.id, type: 'module_content', id, label: item.file_name || 'Contenu', data: item,
+        remove: () => supabase.from('module_card_content').delete().eq('id', id) });
       await refetchExtra();
       toast.success('Contenu supprimé');
     } catch {

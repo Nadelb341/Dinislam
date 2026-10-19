@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -326,11 +326,12 @@ const Admin = () => {
   const deleteCardMutation = useMutation({
     mutationFn: async (cardId: string) => {
       const card = dynamicCards?.find((c) => c.id === cardId);
-      const { error } = await supabase.from('dashboard_cards').delete().eq('id', cardId);
-      if (error) throw error;
+      if (!card || !user?.id) throw new Error('Carte introuvable');
+      await trashThenDelete({ userId: user.id, type: 'dashboard_card', id: cardId, label: card.title || 'Carte', data: card,
+        children: [await collectChildren('dashboard_card_visibility', 'card_id', [cardId])],
+        remove: () => supabase.from('dashboard_cards').delete().eq('id', cardId) });
       // Also remove from ordering
       await supabase.from('admin_card_order').delete().eq('card_key', `dynamic-${cardId}`);
-      if (card && user?.id) await moveToTrash(user.id, 'dashboard_card', cardId, card.title || 'Carte', card);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
@@ -345,9 +346,21 @@ const Admin = () => {
   const deleteModuleMutation = useMutation({
     mutationFn: async (moduleId: string) => {
       const mod = learningModules?.find((m) => m.id === moduleId);
-      const { error } = await supabase.from('learning_modules').delete().eq('id', moduleId);
-      if (error) throw error;
-      if (mod && user?.id) await moveToTrash(user.id, 'learning_module', moduleId, mod.title || 'Module', mod);
+      if (!mod || !user?.id) throw new Error('Module introuvable');
+      // Tout ce qui part avec le module (cartes, contenus, flashcards, progression) est gardé avec lui dans la corbeille
+      const cards = await collectChildren('module_cards', 'module_id', [moduleId]);
+      const cardIds = cards.rows.map((c) => String(c.id));
+      const flash = await collectChildren('module_flashcards', 'module_card_id', cardIds);
+      await trashThenDelete({ userId: user.id, type: 'learning_module', id: moduleId, label: mod.title || 'Module', data: mod,
+        children: [
+          await collectChildren('module_content', 'module_id', [moduleId]),
+          await collectChildren('module_visibility', 'module_id', [moduleId]),
+          cards,
+          await collectChildren('module_card_content', 'card_id', cardIds),
+          flash,
+          await collectChildren('user_flashcard_learned', 'flashcard_id', flash.rows.map((f) => String(f.id))),
+        ],
+        remove: () => supabase.from('learning_modules').delete().eq('id', moduleId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });

@@ -837,3 +837,19 @@ Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Deman
 - Les noms ne se suppriment plus : la poubelle est retirée du tableau de bord (décision de Nadia).
 - Audios de prononciation : piste trouvée, le dépôt GitHub MohammedAbidNafi/99-Names-of-Allah (licence MIT, 100 fichiers, environ 1 Mo au total, mp3 32 à 64 kbps). En attente de l'écoute de Nadia avant de les importer.
 - Cron `dinislam-scheduled-notifications` : délai de réponse passé de 5 à 30 s le 2026-10-19 (dépassements de délai fréquents depuis 12 h UTC).
+
+## 99 noms : audios de prononciation (2026-10-19)
+- 99 audios importés de github.com/MohammedAbidNafi/99-Names-of-Allah (licence MIT), écoutés et validés par Nadia sur échantillon.
+- Stockage `module-cards/allah-names/<id>-audio.mp3` (n°67 Al-Ahad en `.m4a`), une ligne `allah_name_media` (type `audio`) par nom.
+- Correspondance faite par nom de fichier, PAS par la numérotation de l'appli source (elle inverse 24/39 et 31/37). Paires à surveiller : 48 majeed / 65 majid, 55 wali / 77 waliy.
+- Remplacement d'un média : nouveau fichier à nom unique (`<id>-<type>-<horodatage>`), l'ancien part dans la corbeille APRÈS l'ajout du nouveau. Suppression d'un média : fenêtre de confirmation.
+
+## Corbeille « copie d'abord » (2026-10-19, règle « ne jamais rien perdre »)
+- `trashThenDelete` (lib/trash.ts) : copie dans la corbeille AVANT la suppression ; si la copie échoue, rien n'est supprimé ; si la suppression échoue, la copie est retirée.
+- `collectChildren` : ce qui part en cascade est gardé dans `item_data.__children` et remis à la restauration (réponses de quiz, membres de groupe, contenus/flashcards d'une carte, cartes d'un module, flashcards apprises, vidéos vues, visibilité des cartes). `relink` = lien remis (tâches d'un groupe, `group_id` mis à vide par la base).
+- Les fichiers des contenus supprimés ne sont plus effacés du stockage : sinon la restauration donnait un lien mort.
+- Migration 20261019180000 : l'admin peut relire/remettre `quiz_responses`, `user_flashcard_learned`, `user_ramadan_video_watched`.
+- Toute nouvelle suppression doit utiliser `trashThenDelete` (ou `moveToTrash` vérifié AVANT le delete).
+
+## Flashcards : 10 mélanges prêts (2026-10-19, demande de Nadia)
+- Plus de flèches ⌃/⌄ côté enseignante. `lib/flashcardMixes.ts` : 10 ordres reproductibles par série de cartes ; à chaque ouverture l'élève passe au suivant (mémorisé sur l'appareil), bouton « Mélange n/10 · suivant ».

@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreationDraft } from '@/hooks/useCreationDraft';
 import { DraftRestoredBanner } from '@/components/shared/DraftRestoredBanner';
-import { moveToTrash } from '@/lib/trash';
+import { trashThenDelete, collectChildren } from '@/lib/trash';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,9 +114,16 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const card = cards.find((c) => c.id === id);
-      const { error } = await supabase.from('module_cards').delete().eq('id', id);
-      if (error) throw error;
-      if (card && user?.id) await moveToTrash(user.id, 'module_card', id, card.title || 'Carte', card);
+      if (!card || !user?.id) throw new Error('Carte introuvable');
+      // Contenus, flashcards et flashcards apprises partent avec la carte (cascade) : gardés avec elle dans la corbeille
+      const flash = await collectChildren('module_flashcards', 'module_card_id', [id]);
+      await trashThenDelete({ userId: user.id, type: 'module_card', id, label: card.title || 'Carte', data: card,
+        children: [
+          await collectChildren('module_card_content', 'card_id', [id]),
+          flash,
+          await collectChildren('user_flashcard_learned', 'flashcard_id', flash.rows.map((f) => String(f.id))),
+        ],
+        remove: () => supabase.from('module_cards').delete().eq('id', id) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
@@ -143,16 +150,10 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
   const deleteContentMutation = useMutation({
     mutationFn: async (contentId: string) => {
       const content = contents.find((c) => c.id === contentId);
-      if (content) {
-        try {
-          const url = new URL(content.file_url);
-          const parts = url.pathname.split('/object/public/module-cards/');
-          if (parts[1]) await supabase.storage.from('module-cards').remove([decodeURIComponent(parts[1])]);
-        } catch { /* ignore */ }
-      }
-      const { error } = await supabase.from('module_card_content').delete().eq('id', contentId);
-      if (error) throw error;
-      if (content && user?.id) await moveToTrash(user.id, 'module_content', contentId, content.file_name || 'Contenu', content);
+      // Corbeille d'abord ; le fichier est gardé pour pouvoir le restaurer (règle « ne jamais rien perdre », 2026-10-19)
+      if (!content || !user?.id) throw new Error('Contenu introuvable');
+      await trashThenDelete({ userId: user.id, type: 'module_content', id: contentId, label: content.file_name || 'Contenu', data: content,
+        remove: () => supabase.from('module_card_content').delete().eq('id', contentId) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
