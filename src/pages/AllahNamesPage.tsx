@@ -211,7 +211,8 @@ const AllahNamesPage = () => {
                           : 'rgba(217,119,6,0.07)',
                       minHeight: '148px',
                       boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-                      opacity: accessible ? 1 : 0.45,
+                      // Verrouillé : plus de grisé fade, on garde le noir et l'or de la carte (2026-10-23)
+                      opacity: accessible ? 1 : 0.85,
                     }}
                   >
                     {/* Order badge */}
@@ -229,7 +230,7 @@ const AllahNamesPage = () => {
                       </span>
                     ) : !accessible ? (
                       <span className="absolute top-2 right-2">
-                        <Lock className="h-3.5 w-3.5" style={{ color: 'hsl(222 20% 40%)' }} />
+                        <Lock className="h-3.5 w-3.5" style={{ color: 'hsl(38 70% 45%)' }} />
                       </span>
                     ) : null}
 
@@ -249,15 +250,22 @@ const AllahNamesPage = () => {
                       </div>
                     )}
 
-                    <p className="font-arabic text-2xl font-bold text-center leading-tight w-full mt-1" style={{ color: 'hsl(0 0% 95%)' }}>
-                      {accessible ? name.name_arabic : '﹖'}
-                    </p>
+                    {accessible ? (
+                      <p className="font-arabic text-2xl font-bold text-center leading-tight w-full mt-1" style={{ color: 'hsl(0 0% 95%)' }}>
+                        {name.name_arabic}
+                      </p>
+                    ) : (
+                      <p className="text-4xl text-center leading-none w-full mt-1" aria-hidden="true"
+                        style={{ filter: 'drop-shadow(0 0 10px hsla(38, 92%, 55%, 0.55))' }}>
+                        ✨
+                      </p>
+                    )}
                     {name.transliteration && accessible && (
                       <p className="text-xs font-semibold text-center mt-1" style={{ color: 'hsl(38 92% 58%)' }}>
                         {name.transliteration}
                       </p>
                     )}
-                    <p className="text-[11px] text-center mt-0.5 leading-tight" style={{ color: 'hsl(222 15% 65%)' }}>
+                    <p className="text-[11px] text-center mt-1 leading-tight" style={{ color: accessible ? 'hsl(222 15% 65%)' : 'hsl(38 60% 62%)' }}>
                       {accessible ? name.name_french : '🔒 Verrouillé'}
                     </p>
 
