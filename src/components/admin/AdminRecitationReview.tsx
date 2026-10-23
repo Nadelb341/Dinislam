@@ -12,9 +12,11 @@ import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
+  /** Sourates (« Sourates à corriger ») ou 99 noms (« 99 noms d'Allah à valider ») : deux lignes séparées du bouclier (2026-10-23) */
+  kind?: 'sourates' | 'names';
 }
 
-const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
+const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationReviewProps) => {
   const queryClient = useQueryClient();
   const { askValidation, validationDialog } = useConfirmValidation();
   const [filter, setFilter] = useState<'pending' | 'corrected' | 'validated'>('pending');
@@ -43,12 +45,13 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
   };
 
   const { data: recitations, isLoading } = useQuery({
-    queryKey: ['admin-recitations', filter],
+    queryKey: ['admin-recitations', filter, kind],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sourate_recitations')
         .select('*')
         .eq('status', filter)
+        .not(kind === 'names' ? 'allah_name_id' : 'sourate_id', 'is', null)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -125,14 +128,14 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       ? (rec.allahName?.transliteration || rec.allahName?.name_french || 'ce nom')
       : (rec.sourate?.name_french || 'ta sourate');
     // Optimistic: fermer le panneau et retirer l'item immédiatement
-    const previousData = queryClient.getQueryData(['admin-recitations', filter]);
+    const previousData = queryClient.getQueryData(['admin-recitations', filter, kind]);
     const savedComment = adminComment;
     const savedAudio = adminAudio;
     setResponding(null);
     setAdminComment('');
     setAdminAudio(null);
     setAdminAudioUrl(null);
-    queryClient.setQueryData<NonNullable<typeof recitations>>(['admin-recitations', filter], (old) =>
+    queryClient.setQueryData<NonNullable<typeof recitations>>(['admin-recitations', filter, kind], (old) =>
       (old || []).filter((r) => r.id !== recitationId)
     );
 
@@ -192,7 +195,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
       queryClient.invalidateQueries({ queryKey: ['admin-recitations'] });
     } catch (e) {
       // Rollback en cas d'erreur
-      queryClient.setQueryData(['admin-recitations', filter], previousData);
+      queryClient.setQueryData(['admin-recitations', filter, kind], previousData);
       setResponding(recitationId);
       setAdminComment(savedComment);
       setAdminAudio(savedAudio);
@@ -215,7 +218,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
         <Button variant="ghost" size="sm" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Retour
         </Button>
-        <h2 className="text-lg font-bold">🎙️ Récitations reçues</h2>
+        <h2 className="text-lg font-bold">{kind === 'names' ? '✨ 99 noms d\'Allah à valider' : '🎙️ Sourates à corriger'}</h2>
       </div>
 
       {/* Filter tabs */}
@@ -245,7 +248,7 @@ const AdminRecitationReview = ({ onBack }: AdminRecitationReviewProps) => {
 
       {!isLoading && recitations?.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>Aucune récitation {filter === 'pending' ? 'en attente' : filter === 'corrected' ? 'corrigée' : 'validée'}</p>
+          <p>Aucun {kind === 'names' ? 'audio de nom' : 'audio de sourate'} {filter === 'pending' ? 'en attente' : filter === 'corrected' ? 'corrigé' : 'validé'}</p>
         </div>
       )}
 

@@ -23,7 +23,39 @@ interface SourateRecitationPanelProps {
   allahNameId?: number;
   /** Nom affiché (sourate ou nom d'Allah) */
   sourateName: string;
+  /** Ambiance de la carte : « night » = noir, or et blanc des 99 noms (2026-10-23) */
+  theme?: 'rose' | 'night';
+  /** Envoi facultatif (99 noms, 20 ans et plus) : « (optionnel) » à côté du titre */
+  optional?: boolean;
 }
+
+/** Classes selon l'ambiance de la carte (règle « jamais d'appli fade », 2026-10-23) */
+const THEMES = {
+  rose: {
+    box: 'rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20 p-4 space-y-3',
+    title: 'text-sm font-semibold text-foreground flex items-center gap-2',
+    record: 'bg-rose-500 hover:bg-rose-600 text-white gap-2',
+    field: 'w-full text-sm border rounded-lg p-2 resize-none bg-background',
+    send: 'gap-2 flex-1',
+    again: '',
+    pastTitle: 'text-xs font-medium text-muted-foreground',
+    past: 'bg-background rounded-lg p-3 space-y-2 border',
+    muted: 'text-xs text-muted-foreground',
+    sep: 'space-y-2 mt-2 border-t pt-3',
+  },
+  night: {
+    box: 'rounded-xl border border-amber-500/40 bg-gradient-to-br from-[hsl(222_55%_11%)] to-[hsl(222_65%_7%)] p-4 space-y-3 shadow-[0_0_24px_rgba(217,119,6,0.12)]',
+    title: 'text-sm font-bold text-amber-400 flex flex-wrap items-center gap-2',
+    record: 'gap-2 text-white border-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
+    field: 'w-full text-sm rounded-lg p-2 resize-none bg-[hsl(222_50%_9%)] text-white placeholder:text-white/40 border border-amber-500/30',
+    send: 'gap-2 flex-1 text-white border-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
+    again: 'bg-transparent text-amber-300 border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-200',
+    pastTitle: 'text-xs font-semibold text-amber-300/90',
+    past: 'rounded-lg p-3 space-y-2 border border-amber-500/20 bg-white/5',
+    muted: 'text-xs text-white/60',
+    sep: 'space-y-2 mt-2 border-t border-amber-500/20 pt-3',
+  },
+};
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: 'En attente', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
@@ -31,7 +63,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   corrected: { label: 'Corrigée', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
 };
 
-const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: SourateRecitationPanelProps) => {
+const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = 'rose', optional = false }: SourateRecitationPanelProps) => {
+  const t = THEMES[theme];
   const isName = allahNameId != null;
   // Clé propre à l'élément (sourate ou nom) pour le cache, le canal en direct et le dossier des fichiers
   const targetKey = isName ? `allah-${allahNameId}` : sourateId;
@@ -236,7 +269,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
         body: isName
           ? `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé son audio du nom ${sourateName}.`
           : `${user.user_metadata?.full_name || 'Un élève'} t'a envoyé sa récitation de ${sourateName}.`,
-        data: { url: '/?admin=recitations-audio' },
+        data: { url: isName ? '/?admin=allah-names-audio' : '/?admin=recitations-audio' },
       });
 
       toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ta maîtresse ! Elle va l\'écouter 🎧'));
@@ -253,9 +286,10 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   return (
-    <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20 p-4 space-y-3">
-      <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+    <div className={t.box}>
+      <p className={t.title}>
         {isName ? '🎙️ Envoyer mon audio de ce nom' : '🎙️ Envoyer ma récitation'}
+        {optional && <span className="text-xs font-normal opacity-75">(optionnel)</span>}
       </p>
 
       {/* Recorder */}
@@ -265,7 +299,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
             <Button
               size="sm"
               onClick={startRecording}
-              className="bg-rose-500 hover:bg-rose-600 text-white gap-2"
+              className={t.record}
             >
               <Mic className="h-4 w-4" />
               Commencer l'enregistrement
@@ -288,7 +322,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
             value={comment}
             onChange={e => changeComment(e.target.value)}
             placeholder="Un commentaire pour l'enseignant ? (optionnel)"
-            className="w-full text-sm border rounded-lg p-2 resize-none bg-background"
+            className={t.field}
             rows={2}
           />
           <div className="flex gap-2">
@@ -296,12 +330,12 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
               size="sm"
               onClick={uploadRecitation}
               disabled={uploading}
-              className="gap-2 flex-1"
+              className={t.send}
             >
               <Upload className="h-4 w-4" />
               {uploading ? 'Envoi...' : 'Envoyer à l\'enseignant'}
             </Button>
-            <Button size="sm" variant="outline" onClick={resetRecording} disabled={uploading}>
+            <Button size="sm" variant="outline" onClick={resetRecording} disabled={uploading} className={t.again}>
               Recommencer
             </Button>
           </div>
@@ -310,14 +344,14 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
 
       {/* Past recitations */}
       {recitations && recitations.length > 0 && (
-        <div className="space-y-2 mt-2 border-t pt-3">
-          <p className="text-xs font-medium text-muted-foreground">Mes récitations envoyées</p>
+        <div className={t.sep}>
+          <p className={t.pastTitle}>{isName ? 'Mes audios envoyés' : 'Mes récitations envoyées'}</p>
           {recitations.map((r) => {
             const st = STATUS_LABELS[r.status] || STATUS_LABELS.pending;
             return (
-              <div key={r.id} className="bg-background rounded-lg p-3 space-y-2 border">
+              <div key={r.id} className={t.past}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground">
+                  <span className={t.muted}>
                     {new Date(r.created_at).toLocaleDateString('fr-FR')}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
@@ -359,7 +393,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName }: Sourate
                 </div>
                 <audio src={r.audio_url} controls preload="auto" className="w-full" />
                 {r.student_comment && (
-                  <p className="text-xs text-muted-foreground italic">"{r.student_comment}"</p>
+                  <p className={`${t.muted} italic`}>"{r.student_comment}"</p>
                 )}
                 {/* Admin response */}
                 {(r.admin_comment || r.admin_audio_url) && (

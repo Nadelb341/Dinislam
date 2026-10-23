@@ -58,6 +58,19 @@ const AllahNamesPage = () => {
     },
   });
 
+  // Audios envoyés qui attendent l'écoute de l'enseignante : badge « ⏳ En attente » sur la vignette (2026-10-23)
+  const { data: pendingIds = new Set<number>() } = useQuery({
+    queryKey: ['allah-name-pending', user?.id, selected?.id ?? null],
+    enabled: !!user && !isAdmin,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sourate_recitations')
+        .select('allah_name_id').eq('student_id', user!.id).eq('status', 'pending').not('allah_name_id', 'is', null);
+      if (error) throw error;
+      return new Set((data || []).map((r) => r.allah_name_id as number));
+    },
+  });
+
   const validatedIds = new Set(progress.filter((p) => p.is_validated).map((p) => p.name_id));
   const validatedCount = validatedIds.size;
   const totalCount = names.length;
@@ -205,7 +218,7 @@ const AllahNamesPage = () => {
                         ? 'linear-gradient(145deg, hsl(222 55% 11%), hsl(222 65% 8%))'
                         : 'hsl(222 40% 8%)',
                       borderColor: validated
-                        ? 'rgba(34,197,94,0.4)'
+                        ? 'rgba(234,179,8,0.65)'
                         : accessible
                           ? 'rgba(217, 119, 6, 0.2)'
                           : 'rgba(217,119,6,0.07)',
@@ -226,7 +239,12 @@ const AllahNamesPage = () => {
                     {/* Lock or check icon */}
                     {validated ? (
                       <span className="absolute top-2 right-2">
-                        <CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(142 70% 45%)' }} />
+                        <CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(45 93% 55%)' }} />
+                      </span>
+                    ) : pendingIds.has(name.id) ? (
+                      <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                        style={{ color: 'hsl(38 92% 62%)', background: 'rgba(217,119,6,0.18)', border: '1px solid rgba(217,119,6,0.4)' }}>
+                        ⏳ En attente
                       </span>
                     ) : !accessible ? (
                       <span className="absolute top-2 right-2">
@@ -354,7 +372,7 @@ const AllahNamesPage = () => {
               {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
               {isAdmin && (
                 <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(217,119,6,0.07)', border: '1px dashed rgba(217,119,6,0.35)', color: 'hsl(222 15% 78%)' }}>
-                  🎙️ Ici, l'élève voit le bouton pour t'envoyer son audio de ce nom. Ta validation (dans « Récitations à corriger ») ouvre le nom suivant.
+                  🎙️ Ici, l'élève voit le bouton pour t'envoyer son audio de ce nom. Ta validation (bouclier › « 99 noms d'Allah à valider ») ouvre le nom suivant.
                 </div>
               )}
 
@@ -363,14 +381,12 @@ const AllahNamesPage = () => {
                 <div className="pt-1">
                   {isSelectedValidated ? (
                     <div className="flex items-center justify-center gap-2 py-3 rounded-xl"
-                      style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                      <CheckCircle2 className="h-5 w-5" style={{ color: 'hsl(142 70% 45%)' }} />
-                      <span className="text-sm font-semibold" style={{ color: 'hsl(142 70% 50%)' }}>Nom mémorisé ✅</span>
+                      style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.45)' }}>
+                      <CheckCircle2 className="h-5 w-5" style={{ color: 'hsl(45 93% 55%)' }} />
+                      <span className="text-sm font-semibold" style={{ color: 'hsl(45 93% 62%)' }}>Nom mémorisé ✅</span>
                     </div>
                   ) : needsAudio ? (
-                    <div className="rounded-xl bg-background p-1">
-                      <SourateRecitationPanel allahNameId={selected.id} sourateName={selected.transliteration || selected.name_french} />
-                    </div>
+                    <SourateRecitationPanel allahNameId={selected.id} sourateName={selected.transliteration || selected.name_french} theme="night" />
                   ) : (
                     <Button
                       className="w-full gap-2 font-semibold"
@@ -383,6 +399,11 @@ const AllahNamesPage = () => {
                     </Button>
                   )}
                 </div>
+              )}
+
+              {/* 20 ans et plus : ils valident seuls (le nom suivant s'ouvre), l'audio est facultatif (2026-10-23) */}
+              {!isAdmin && !needsAudio && (
+                <SourateRecitationPanel allahNameId={selected.id} sourateName={selected.transliteration || selected.name_french} theme="night" optional />
               )}
 
               {/* Media */}

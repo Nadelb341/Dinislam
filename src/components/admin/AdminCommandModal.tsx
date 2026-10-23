@@ -31,6 +31,7 @@ interface AdminCommandModalProps {
   pendingMessages: number;
   pendingHomework: number;
   pendingRecitations: number;
+  pendingAllahNames?: number;
   /** Exercices et demandes de validation d'Alphabet en attente */
   pendingAlphabet?: number;
   total: number;
@@ -46,9 +47,11 @@ interface AdminCommandModalProps {
 const BOUTONS_ACTIONS = [
   { id: 'devoirs', label: 'Devoirs à corriger', section: 'cahier-texte', emoji: '📚' },
   { id: 'alphabet', label: 'Alphabet à valider', section: 'alphabet-validations', emoji: '🔤' },
-  { id: 'recitations', label: 'Récitations à corriger', section: 'recitations-audio', emoji: '🎙️' },
+  { id: 'recitations', label: 'Sourates à corriger', section: 'recitations-audio', emoji: '🎙️' },
   // « Sourates à valider » retiré le 2026-10-19 : une sourate se valide par sa récitation (« Récitations à corriger »)
   { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
+  // Audios des 99 noms : ligne à part, sous Nourania (2026-10-23)
+  { id: 'noms', label: '99 noms d\'Allah à valider', section: 'allah-names-audio', emoji: '✨' },
   { id: 'messages', label: 'Messages non lus', section: null, emoji: '✉️' },
 ];
 
@@ -70,6 +73,7 @@ const AdminCommandModal = ({
   pendingNourania,
   pendingHomework,
   pendingRecitations,
+  pendingAllahNames = 0,
   pendingAlphabet = 0,
   pendingMessages,
   pendingLoginTrouble = 0,
@@ -108,6 +112,7 @@ const AdminCommandModal = ({
     devoirs: pendingHomework,
     alphabet: pendingAlphabet,
     recitations: pendingRecitations,
+    noms: pendingAllahNames,
     inscriptions: pendingRegistrations,
     messages: pendingMessages,
     eleves: pendingLoginTrouble,
@@ -374,7 +379,9 @@ function AdminSectionRenderer({
     case 'cahier-texte-module':
       return <AdminHomework onBack={onClose} />;
     case 'recitations-audio':
-      return <AdminRecitationReview onBack={onClose} />;
+      return <AdminRecitationReview onBack={onClose} kind="sourates" />;
+    case 'allah-names-audio':
+      return <AdminRecitationReview onBack={onClose} kind="names" />;
     case 'monitoring':
       return (
         <div className="text-center py-8">
