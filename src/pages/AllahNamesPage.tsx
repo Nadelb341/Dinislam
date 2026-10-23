@@ -10,7 +10,7 @@ import { useIsOver20 } from '@/hooks/useIsOver20';
 import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Play, FileText, Music, Lock, CheckCircle2, Star } from 'lucide-react';
+import { X, Play, FileText, Lock, CheckCircle2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -19,7 +19,7 @@ const AllahNamesPage = () => {
   const isOver20 = useIsOver20();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Tables<'allah_names'> | null>(null);
-  const [mediaOpen, setMediaOpen] = useState<'video' | 'audio' | 'pdf' | null>(null);
+  const [mediaOpen, setMediaOpen] = useState<'video' | 'pdf' | null>(null);
   const { fireSuccess } = useConfetti();
   // Moins de 20 ans : chaque nom s'ouvre quand l'enseignante a validé l'audio du nom précédent (2026-10-19)
   const needsAudio = !isAdmin && !isOver20;
@@ -343,6 +343,13 @@ const AllahNamesPage = () => {
                 </div>
               )}
 
+              {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
+              {isAdmin && (
+                <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(217,119,6,0.07)', border: '1px dashed rgba(217,119,6,0.35)', color: 'hsl(222 15% 78%)' }}>
+                  🎙️ Ici, l'élève voit le bouton pour t'envoyer son audio de ce nom. Ta validation (dans « Récitations à corriger ») ouvre le nom suivant.
+                </div>
+              )}
+
               {/* Validation button */}
               {!isAdmin && (
                 <div className="pt-1">
@@ -371,7 +378,7 @@ const AllahNamesPage = () => {
               )}
 
               {/* Media */}
-              {(getMedia('video') || getMedia('audio') || getMedia('pdf')) && (
+              {(getMedia('video') || getMedia('pdf')) && (
                 <div className="space-y-2">
                   <p className="text-xs font-bold" style={{ color: 'hsl(38 92% 58%)' }}>Ressources</p>
                   <div className="flex flex-wrap gap-2">
@@ -379,12 +386,6 @@ const AllahNamesPage = () => {
                       <Button size="sm" onClick={() => setMediaOpen('video')} className="gap-2 text-xs border" variant="outline"
                         style={{ background: 'rgba(217,119,6,0.15)', color: 'hsl(38 92% 58%)', borderColor: 'rgba(217,119,6,0.3)' }}>
                         <Play className="h-3.5 w-3.5" /> Vidéo
-                      </Button>
-                    )}
-                    {getMedia('audio') && (
-                      <Button size="sm" onClick={() => setMediaOpen('audio')} className="gap-2 text-xs border" variant="outline"
-                        style={{ background: 'rgba(217,119,6,0.15)', color: 'hsl(38 92% 58%)', borderColor: 'rgba(217,119,6,0.3)' }}>
-                        <Music className="h-3.5 w-3.5" /> Audio
                       </Button>
                     )}
                     {getMedia('pdf') && (
@@ -398,11 +399,6 @@ const AllahNamesPage = () => {
                     <video controls className="w-full rounded-xl mt-2" style={{ maxHeight: '200px' }}>
                       <source src={getMedia('video')!.file_url} />
                     </video>
-                  )}
-                  {mediaOpen === 'audio' && getMedia('audio') && (
-                    <audio controls className="w-full mt-2">
-                      <source src={getMedia('audio')!.file_url} />
-                    </audio>
                   )}
                   {mediaOpen === 'pdf' && getMedia('pdf') && (
                     <button

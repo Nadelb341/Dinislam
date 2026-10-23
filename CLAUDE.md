@@ -864,3 +864,4 @@ Voir règle complète dans `~/Projets Claude Code/CLAUDE.md` (section "❓ Deman
 ## Émojis dans toute l'appli (2026-10-19, demande de Nadia)
 - `addMoodEmojis` (lib/moodEmojis.ts) : ton (joie / triste / neutre, deviné par mots-clés), émoji du sujet (📖 🎙️ 💌 🗑️ …) et de saison. Un texte qui a déjà un émoji n'est JAMAIS modifié.
 - Branché sur : toast.success/error/warning/info de sonner (`installMoodToasts` dans main.tsx), titres de use-toast (destructive = triste), corps des notifications push (send-push-notification, copie `_shared/moodEmojis.ts` à garder identique).
+- 2026-10-23 : fiche d'un nom (AllahNamesPage) — l'audio de prononciation n'apparaît plus en double dans « Ressources » (il est en haut, « Écoute bien, puis répète ») ; à sa place l'enseignante voit un cadre qui explique que l'élève y envoie son audio (panneau d'enregistrement pour les moins de 20 ans, inchangé).
