@@ -239,16 +239,17 @@ const AllahNamesPage = () => {
                     {/* Lock or check icon */}
                     {validated ? (
                       <span className="absolute top-2 right-2">
-                        <CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(45 93% 55%)' }} />
+                        {/* Tailles voulues par Nadia (2026-10-23) : coche et cadenas ×3, badge « En attente » ×1,5 */}
+                        <CheckCircle2 className="h-12 w-12" style={{ color: 'hsl(45 93% 55%)', filter: 'drop-shadow(0 0 6px hsla(45, 93%, 55%, 0.45))' }} />
                       </span>
                     ) : pendingIds.has(name.id) ? (
-                      <span className="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                      <span className="absolute top-2 right-2 text-[15px] font-bold px-2 py-1 rounded-lg"
                         style={{ color: 'hsl(38 92% 62%)', background: 'rgba(217,119,6,0.18)', border: '1px solid rgba(217,119,6,0.4)' }}>
                         ⏳ En attente
                       </span>
                     ) : !accessible ? (
                       <span className="absolute top-2 right-2">
-                        <Lock className="h-3.5 w-3.5" style={{ color: 'hsl(38 70% 45%)' }} />
+                        <Lock className="h-[42px] w-[42px]" style={{ color: 'hsl(38 70% 45%)' }} />
                       </span>
                     ) : null}
 
@@ -257,10 +258,10 @@ const AllahNamesPage = () => {
                       <img
                         src={name.image_url}
                         alt={name.name_french}
-                        className="w-full h-14 object-cover rounded-xl mb-2 mt-4 opacity-80"
+                        className="w-full h-14 object-cover rounded-xl mb-2 mt-12 opacity-80"
                       />
                     ) : (
-                      <div className="w-full flex items-center justify-center mt-5 mb-1">
+                      <div className="w-full flex items-center justify-center mt-12 mb-1">
                         <svg width="44" height="28" viewBox="0 0 44 28" fill="none" opacity={accessible ? 0.3 : 0.12}>
                           <path d="M2 28 Q2 6 22 2 Q42 6 42 28" stroke="hsl(38 92% 55%)" strokeWidth="1.5" fill="none"/>
                           <line x1="2" y1="28" x2="42" y2="28" stroke="hsl(38 92% 55%)" strokeWidth="1.5"/>

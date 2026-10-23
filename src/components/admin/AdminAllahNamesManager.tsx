@@ -320,7 +320,14 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                         )}
                         {/* Media badges */}
                         {getNameMedia(name.id).length > 0 && (
-                          <div className="flex gap-1 mt-1">
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {/* « ta voix » : audio enregistré par l'enseignante (les audios importés s'appellent « Prononciation … »), 2026-10-23 */}
+                            {getNameMedia(name.id).some((m) => m.media_type === 'audio' && !(m.file_name || '').startsWith('Prononciation ')) && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold"
+                                style={{ background: 'linear-gradient(135deg, hsl(38 92% 50%), hsl(32 98% 44%))', color: 'white' }}>
+                                🎙️ ta voix
+                              </span>
+                            )}
                             {getNameMedia(name.id).map((m) => (
                               <span
                                 key={m.id}
