@@ -22,6 +22,7 @@ import {
   Pencil, Trash2, ArrowLeft, Loader2, Image as ImageIcon,
   Play, Music, FileText, ChevronDown, ChevronUp, Upload, Plus, type LucideIcon } from 'lucide-react';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
+import { AdminNameVoiceRecorder } from '@/components/admin/AdminNameVoiceRecorder';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
@@ -177,6 +178,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
           remove: () => supabase.from('allah_name_media').delete().eq('id', old.id) });
       }
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });
+      queryClient.invalidateQueries({ queryKey: ['allah-name-media', nameId] });
       toast.success(`${type === 'video' ? 'Vidéo' : type === 'audio' ? 'Audio' : 'PDF'} mis à jour ✅`);
     } catch (e) { toast.error(errorMessage(e)); }
     finally { setUploadingMedia(null); }
@@ -374,6 +376,14 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                         </p>
                         <MediaUploadRow nameId={name.id} type="video" label="Vidéo" icon={Play} />
                         <MediaUploadRow nameId={name.id} type="audio" label="Audio" icon={Music} />
+                        {/* Hors de MediaUploadRow (recréé à chaque affichage) pour ne pas perdre l'enregistrement en cours */}
+                        <div onPointerDown={(e) => e.stopPropagation()}>
+                        <AdminNameVoiceRecorder
+                          nameLabel={`n°${name.display_order} ${name.transliteration || name.name_french}`}
+                          hasAudio={getNameMedia(name.id).some((m) => m.media_type === 'audio')}
+                          onSave={(file) => handleUploadMedia(name.id, 'audio', file)}
+                        />
+                        </div>
                         <MediaUploadRow nameId={name.id} type="pdf" label="PDF" icon={FileText} />
                       </div>
                     )}
