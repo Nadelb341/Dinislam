@@ -12,6 +12,12 @@ Dinislam est une application web d'éducation islamique (en français) construit
 ## ⏳ RÈGLE ABSOLUE — Ne jamais compter sur Nadia pour relancer / rappeler / redemander
 Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 2026-08-31). Toute suite à donner — blocage côté Nadia **OU** une amélioration/vérification que JE propose pour plus tard — doit être notée par moi dans une section **"⚠️ ACTION EN ATTENTE"** de ce fichier et reprise par moi au début de chaque session, jamais en attendant qu'elle m'en reparle. Nadia oublie tout : *"n'attends plus que je te dise de faire les choses à venir ou des sortes de rappels"*.
 
+## 🔄 RÈGLE ABSOLUE — Tout changement visible EN DIRECT chez les utilisateurs concernés (2026-10-23, élargie le 2026-10-25)
+Nadia : *« lorsque je fais un changement dans l'application, les autres utilisateurs concernés doivent pouvoir le voir instantanément, les modifications, ajouts ou suppressions, doivent se mettre à jour en direct sans que les utilisateurs aient à recharger l'appli. »* Règle complète : CLAUDE.md global (« 🔄 Tout ce qui est partagé… »).
+- Concerne tout ce que Nadia publie ou change pour les élèves (cours, cartes, audios, images, devoirs, validations, déblocages, réglages, annonces) ET tout ce qu'un élève envoie à Nadia, sur tous les écrans qui l'affichent (y compris un autre appareil de Nadia).
+- Pour chaque table : abonnement `postgres_changes` sur l'écran + table dans la publication `supabase_realtime` + RLS de lecture.
+- ⚠️ **ACTION EN ATTENTE (proposée à Nadia le 2026-10-25)** : audit complet. 21 tables sont en direct ; **67 tables lues par l'appli ne le sont pas encore** (cartes du tableau de bord, modules et flashcards, invocations, alphabet, Nourania, Ramadan, prières, devoirs, groupes, programme de la semaine, vacances, déblocages…). À traiter carte par carte (publication + abonnement), en laissant de côté les tables purement techniques (app_logs, push_subscriptions, trash_items, student_passwords, user_roles…).
+
 ## ✅ Élèves prévenus du nouveau lien (2026-09-30)
 Nadia a envoyé le message le 2026-09-30. Vérifier de temps en temps en base que les élèves se reconnectent (`auth.users.last_sign_in_at`) et se réabonnent aux notifications (`push_subscriptions`).
 
