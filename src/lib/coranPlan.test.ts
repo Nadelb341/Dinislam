@@ -60,3 +60,15 @@ describe('coranPlan', () => {
     expect(isFinished(p)).toBe(false);
   });
 });
+
+describe('À mon rythme par date de fin', () => {
+  it('répartit les 604 pages sans trou jusqu\'à la date choisie', async () => {
+    const { daysBetween } = await import('./coranPlan');
+    const total = daysBetween('2026-01-01', '2026-04-30');
+    expect(total).toBe(120);
+    const p = { plan: 'rythme' as const, totalDays: total, endDate: '2026-04-30' };
+    expect(pagesForDay(p, 1).from).toBe(1);
+    expect(pagesForDay(p, total).to).toBe(604);
+    for (let d = 2; d <= total; d++) expect(pagesForDay(p, d).from).toBe(pagesForDay(p, d - 1).to + 1);
+  });
+});

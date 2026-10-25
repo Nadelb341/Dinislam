@@ -16,6 +16,9 @@ import { JUZ, A_SAVOIR, indexOfPage, pageOfIndex } from '@/data/coranMeta';
 import { SOURATES_DATA } from '@/data/sourates';
 import { pagesForDay, localDay, type Programme } from '@/lib/coranPlan';
 import { errorMessage, cn } from '@/lib/utils';
+import { pickEncouragement } from '@/lib/coranEncouragements';
+import { withName } from '@/lib/encouragements';
+import { percentRead } from '@/lib/coranPlan';
 import { describeIndex } from '@/lib/coranPages';
 
 /**
@@ -37,7 +40,7 @@ const TABS: { id: Tab; emoji: string; label: string; admin?: boolean }[] = [
 const nameOf = (n: number) => SOURATES_DATA.find((s) => s.number === n)?.name_french.split(' (')[0] ?? '';
 
 const CoranPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [params, setParams] = useSearchParams();
   const initialTab = (params.get('tab') === 'programme' ? 'programme' : (params.get('tab') as Tab)) || 'lire';
   const [tab, setTabState] = useState<Tab>(TABS.some((t) => t.id === initialTab) ? initialTab : 'lire');
@@ -84,8 +87,8 @@ const CoranPage = () => {
       await save('juz', String(juz), { done: next });
       if (!isDone) {
         const full = JUZ[juz - 1].sourates.every((s) => next.includes(s.n));
-        if (full) { fireConfetti(); toast.success(`🎉 Juz' ${juz} terminé, ma shā' Allah !`); }
-        else { fireSuccess(); toast.success(`✅ ${nameOf(sura)} terminée`); }
+        if (full) { fireConfetti(); toast.success(withName(user, pickEncouragement('juzDone')), { description: `Juz' ${juz} terminé 🎉` }); }
+        else { fireSuccess(); toast.success(withName(user, pickEncouragement('suraDone')), { description: `${nameOf(sura)} terminée` }); }
       }
     } catch (e) { toast.error(errorMessage(e)); }
   };
@@ -99,7 +102,11 @@ const CoranPage = () => {
       await save('programme', 'active', { ...p, doneDays, finished, finishedOn: finished ? (p.finishedOn || localDay()) : undefined });
       if (!isDone) {
         if (finished) { setTab('programme'); toast.success('🏆 Tu as lu tout le Coran, ma shā\' Allah !'); }
-        else { fireSuccess(); toast.success(`✅ Lecture du jour ${day} faite`); }
+        else {
+          fireSuccess();
+          const half = percentRead(p) < 50 && percentRead({ ...p, doneDays }) >= 50;
+          toast.success(withName(user, pickEncouragement(half ? 'halfway' : 'dayDone')), { description: `Lecture du jour ${day} faite ✅` });
+        }
       }
     } catch (e) { toast.error(errorMessage(e)); }
   };
@@ -188,7 +195,12 @@ const CoranPage = () => {
 
         {tab === 'programme' && (
           <CoranProgrammeTab programme={programme}
-            onSave={(p) => save('programme', 'active', p).catch((e) => { toast.error(errorMessage(e)); })}
+            onSave={(p) => {
+              const isNew = !programme;
+              return save('programme', 'active', p)
+                .then(() => { if (isNew) { fireSuccess(); toast.success(withName(user, pickEncouragement('start'))); } })
+                .catch((e) => { toast.error(errorMessage(e)); });
+            }}
             onStop={() => remove('programme', 'active', 'Programme de lecture du Coran').then(() => { toast.success('Programme arrêté (il est dans la corbeille de Paramètres)'); }).catch((e) => { toast.error(errorMessage(e)); })}
             onReadDay={(day) => { if (!programme) return; setReading({ kind: 'prog', day }); setIndex(indexOfPage(pagesForDay(programme, day).from)); setTab('lire'); }} />
         )}

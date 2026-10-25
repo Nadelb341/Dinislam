@@ -11,6 +11,8 @@ export interface Programme {
   start: string;
   totalDays: number;
   pagesPerDay?: number;
+  /** « À mon rythme » par date de fin : les 604 pages sont réparties sur les jours jusqu'à cette date */
+  endDate?: string;
   doneDays: number[];
   reminder: boolean;
   finished?: boolean;
@@ -21,7 +23,7 @@ export const PLAN_LABELS: Record<PlanKind, { emoji: string; title: string; hint:
   ramadan: { emoji: '🌙', title: 'Ramadan', hint: "Tout le Coran en 30 jours · 1 Juz' par jour" },
   annee: { emoji: '📅', title: "Toute l'année", hint: '2 pages par jour' },
   semaine: { emoji: '⚡', title: 'En 7 jours', hint: '1 manzil par jour' },
-  rythme: { emoji: '✏️', title: 'À mon rythme', hint: 'Je choisis combien de pages par jour' },
+  rythme: { emoji: '✏️', title: 'À mon rythme', hint: 'Je choisis mes pages par jour ou ma date de fin' },
 };
 
 export function totalDaysFor(plan: PlanKind, pagesPerDay = 2): number {
@@ -31,10 +33,24 @@ export function totalDaysFor(plan: PlanKind, pagesPerDay = 2): number {
   return Math.ceil(QURAN_PAGES / n);
 }
 
+/** Plans proposés aux élèves (2026-10-25 : Nadia garde seulement Ramadan et À mon rythme) */
+export const OFFERED_PLANS: PlanKind[] = ['ramadan', 'rythme'];
+
+/** Nombre de jours entre deux dates, les deux comprises */
+export function daysBetween(start: string, end: string): number {
+  return Math.floor((Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86400000) + 1;
+}
+
 /** Pages du Coran (1 à 604) à lire le jour `day` (1 = premier jour) */
-export function pagesForDay(p: Pick<Programme, 'plan' | 'pagesPerDay' | 'totalDays'>, day: number): { from: number; to: number } {
+export function pagesForDay(p: Pick<Programme, 'plan' | 'pagesPerDay' | 'totalDays' | 'endDate'>, day: number): { from: number; to: number } {
   const d = Math.max(1, Math.min(day, p.totalDays));
   if (p.plan === 'ramadan') return { from: JUZ[d - 1].page, to: JUZ[d - 1].endPage };
+  if (p.plan === 'rythme' && p.endDate) {
+    // Répartition régulière des 604 pages jusqu'à la date de fin choisie
+    const from = Math.floor(((d - 1) * QURAN_PAGES) / p.totalDays) + 1;
+    const to = Math.floor((d * QURAN_PAGES) / p.totalDays);
+    return { from, to: Math.max(from, to) };
+  }
   if (p.plan === 'semaine') return { from: MANZIL_PAGE[d - 1], to: d < 7 ? MANZIL_PAGE[d] - 1 : QURAN_PAGES };
   const n = p.plan === 'annee' ? 2 : Math.max(1, Math.round(p.pagesPerDay || 2));
   const from = (d - 1) * n + 1;
