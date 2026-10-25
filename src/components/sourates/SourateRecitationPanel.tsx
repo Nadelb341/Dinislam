@@ -272,7 +272,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
         data: { url: isName ? '/?admin=allah-names-audio' : '/?admin=recitations-audio' },
       });
 
-      toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ta maîtresse ! Elle va l\'écouter 🎧'));
+      toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ton professeur ! Il va l\'écouter 🎧'));
       queryClient.invalidateQueries({ queryKey: ['student-recitations', targetKey, user.id] });
       resetRecording();
       changeComment('');

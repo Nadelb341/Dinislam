@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note";
 
 export interface TrashItem {
   id: string;
@@ -21,7 +21,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -145,6 +145,23 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
+  // Note d'un marque-page du Coran : remise sur son marque-page (recréé en « À apprendre » s'il a été retiré)
+  if (item.item_type === "coran_note") {
+    const d = item.item_data as { index?: number; note?: { id: string; text: string; date: string } } | null;
+    if (!d?.index || !d.note) return false;
+    const { data: row } = await supabase.from("coran_progress").select("data").eq("user_id", item.user_id).eq("kind", "lecture").eq("key", "main").maybeSingle();
+    const lecture = ((row?.data as { index?: number; bookmarks?: { index: number; color: string; label: string; notes?: { id: string }[] }[] } | null) || { index: 1, bookmarks: [] });
+    const bms = lecture.bookmarks || [];
+    const found = bms.find((b) => b.index === d.index);
+    const next = found
+      ? bms.map((b) => (b.index === d.index ? { ...b, notes: [...(b.notes || []).filter((n) => n.id !== d.note!.id), d.note!] } : b))
+      : [...bms, { index: d.index, color: "or", label: "À apprendre", notes: [d.note] }];
+    const { error } = await supabase.from("coran_progress")
+      .upsert({ user_id: item.user_id, kind: "lecture", key: "main", data: { ...lecture, bookmarks: next } as unknown as Json, updated_at: new Date().toISOString() }, { onConflict: "user_id,kind,key" });
+    if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
   // Fichier retiré d'une ligne « À FAIRE » : on le remet sur sa ligne (le fichier est resté dans le stockage)
   if (item.item_type === "admin_task_attachment") {
     const d = item.item_data as { task_id?: string; attachment?: { path: string; name: string; type: string } } | null;
@@ -171,7 +188,7 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
-  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment">];
+  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note">];
   if (!table) return false;
   const { __children, ...row } = (item.item_data || {}) as { __children?: TrashChildren } & Record<string, unknown>;
   const { error } = await untypedDb.from(table).insert(__children ? row : item.item_data);

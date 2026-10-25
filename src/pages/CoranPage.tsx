@@ -5,7 +5,10 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
-import { useCoranProgress, type Bookmark } from '@/hooks/useCoranProgress';
+import { useCoranProgress, type Bookmark, type BookmarkNote } from '@/hooks/useCoranProgress';
+import { moveToTrash } from '@/lib/trash';
+import { REVIEW_NEXT_DAYS } from '@/lib/coranPages';
+import type { Json } from '@/integrations/supabase/types';
 import { CoranReader, type ReaderMode } from '@/components/coran/CoranReader';
 import { BookmarkButton, SommaireButton, ListenButton } from '@/components/coran/CoranTools';
 import { CoranJuzTab } from '@/components/coran/CoranJuzTab';
@@ -14,7 +17,7 @@ import { CoranProgrammeTab } from '@/components/coran/CoranProgrammeTab';
 import { CoranStudentsTab } from '@/components/coran/CoranStudentsTab';
 import { JUZ, A_SAVOIR, indexOfPage, pageOfIndex } from '@/data/coranMeta';
 import { SOURATES_DATA } from '@/data/sourates';
-import { pagesForDay, localDay, type Programme } from '@/lib/coranPlan';
+import { pagesForDay, localDay, dateOfDay, type Programme } from '@/lib/coranPlan';
 import { errorMessage, cn } from '@/lib/utils';
 import { pickEncouragement } from '@/lib/coranEncouragements';
 import { withName } from '@/lib/encouragements';
@@ -74,7 +77,23 @@ const CoranPage = () => {
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
 
   const saveBookmarks = (bookmarks: Bookmark[]) =>
-    save('lecture', 'main', { ...lecture, bookmarks }).then(() => toast.success('🔖 Marque-pages enregistrés')).catch((e) => toast.error(errorMessage(e)));
+    save('lecture', 'main', { ...lectureRef.current, bookmarks }).catch((e) => toast.error(errorMessage(e)));
+  const [bmOpen, setBmOpen] = useState(false);
+  // Retirer une note : copie dans la corbeille d'abord (règle « rien sans la corbeille »)
+  const removeNote = async (i: number, note: BookmarkNote) => {
+    if (!user) return;
+    const ok = await moveToTrash(user.id, 'coran_note', String(i), `Note « ${note.text.slice(0, 40)} » (${describeIndex(i).title})`, { index: i, note } as unknown as Json);
+    if (!ok) { toast.error("Mise en corbeille impossible : la note n'a pas été retirée"); return; }
+    await saveBookmarks(lectureRef.current.bookmarks.map((b) => (b.index === i ? { ...b, notes: (b.notes || []).filter((n) => n.id !== note.id) } : b)));
+    toast.success('Note retirée (elle est dans la corbeille de Paramètres)');
+  };
+  // Rappel de révision : pages « À réviser » arrivées à leur date
+  const today = localDay();
+  const toReview = lecture.bookmarks.filter((b) => b.color === 'rouge' && b.reviewAt && b.reviewAt <= today);
+  const markReviewed = (b: Bookmark) => {
+    void saveBookmarks(lecture.bookmarks.map((x) => (x.index === b.index ? { ...x, reviewAt: dateOfDay(today, REVIEW_NEXT_DAYS + 1) } : x)))
+      .then(() => { fireSuccess(); toast.success(withName(user, `✅ Bravo {prenom} ! Prochaine révision dans ${REVIEW_NEXT_DAYS} jours`)); });
+  };
 
   const readFreeNoSave = (i: number) => { setReading({ kind: 'free' }); setIndex(i); setTab('lire'); };
 
@@ -137,7 +156,7 @@ const CoranPage = () => {
 
   const tools = (
     <>
-      <BookmarkButton index={index} bookmarks={lecture.bookmarks} onChange={(b) => void saveBookmarks(b)} />
+      <BookmarkButton index={index} bookmarks={lecture.bookmarks} onChange={(b) => void saveBookmarks(b)} onRemoveNote={(i, n) => void removeNote(i, n)} open={bmOpen} onOpenChange={setBmOpen} />
       <SommaireButton bookmarks={lecture.bookmarks} onGo={(i) => (reading.kind === 'free' ? changeIndex(i) : setIndex(i))} />
       <ListenButton index={index} />
     </>
@@ -169,6 +188,19 @@ const CoranPage = () => {
 
         {tab === 'lire' && (
           <div className="space-y-3">
+            {toReview.length > 0 && (
+              <div className="rounded-2xl border-2 border-[#c0392b]/60 bg-[#c0392b]/5 p-3 space-y-2">
+                <p className="text-sm font-extrabold text-[#c0392b]">🔁 À réviser aujourd'hui</p>
+                {toReview.map((b) => (
+                  <div key={b.index} className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => (reading.kind === 'free' ? changeIndex(b.index) : setIndex(b.index))} className="flex-1 min-w-0 text-left text-sm font-bold [overflow-wrap:anywhere]">
+                      📖 {describeIndex(b.index).title} · {describeIndex(b.index).sub}
+                    </button>
+                    <button type="button" onClick={() => markReviewed(b)} className="rounded-full bg-[#c0392b] text-white px-3 py-1 text-xs font-bold">✅ Révisée</button>
+                  </div>
+                ))}
+              </div>
+            )}
             {reading.kind === 'free' && lecture.index > 1 && index !== lecture.index && (
               <button type="button" onClick={() => setIndex(lecture.index)}
                 className="w-full rounded-2xl bg-gradient-to-br from-[#c39a3e] to-[#a77a1c] text-white px-4 py-3 text-left font-bold shadow-sm active:scale-[0.99] transition-transform">
@@ -194,7 +226,8 @@ const CoranPage = () => {
               </div>
             )}
             <CoranReader index={index} onIndexChange={changeIndex} mode={mode} action={action} tools={tools} range={range}
-              bookmarkOf={(i) => { const b = lecture.bookmarks.find((x) => x.index === i); return b ? BOOKMARK_COLORS[b.color] && { dot: BOOKMARK_COLORS[b.color].dot, label: b.label } : null; }} />
+              onOpenBookmark={() => setBmOpen(true)}
+              bookmarkOf={(i) => { const b = lecture.bookmarks.find((x) => x.index === i); return b ? { hex: BOOKMARK_COLORS[b.color].hex, emoji: BOOKMARK_COLORS[b.color].emoji, label: BOOKMARK_COLORS[b.color].label, notes: b.notes || [] } : null; }} />
             <p className="text-center text-[11px] text-muted-foreground">Glisse le doigt vers la droite pour tourner la page · deux doigts pour zoomer · tablette à l'horizontale : double page</p>
           </div>
         )}

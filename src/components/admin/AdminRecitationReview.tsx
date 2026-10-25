@@ -182,12 +182,12 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
       if (isName) {
         sendPushNotification(newStatus === 'validated'
           ? { title: '🌟 Bravo {prenom} !', category: 'rec', type: 'user', userId: studentId, data: { url: '/allah-names' },
-              body: `Ta maîtresse a validé ton audio de ${sourateName} 🥳 N'oublie pas de le retenir par cœur avant de passer au suivant ✨` }
+              body: `Ton professeur a validé ton audio de ${sourateName} 🥳 N'oublie pas de le retenir par cœur avant de passer au suivant ✨` }
           : { title: '📝 {prenom}, une correction pour toi', category: 'rec', type: 'user', userId: studentId, data: { url: '/allah-names' },
               body: `Écoute la correction de ${sourateName}, puis refais ton audio 🎙️ Tu vas y arriver 💪` });
       } else sendPushNotification(newStatus === 'validated'
         ? { title: '⭐ Félicitations {prenom} !', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
-            body: `Ta maîtresse a validé ta récitation de ${sourateName} 🥳 La sourate suivante est ouverte ✨` }
+            body: `Ton professeur a validé ta récitation de ${sourateName} 🥳 La sourate suivante est ouverte ✨` }
         : { title: '📝 {prenom}, une correction pour toi', category: 'rec', type: 'user', userId: studentId, data: { url: '/sourates' },
             body: `Écoute la correction de ${sourateName}, puis refais ton audio 🎙️ Tu vas y arriver 💪` });
 

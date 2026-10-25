@@ -1,49 +1,162 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { getHoussaryEmbedUrl } from '@/data/houssaryVideos';
 import { CORAN_ORDERED } from '@/data/sourates';
 import { SURA_PAGE, A_SAVOIR, QURAN_PAGES, indexOfPage, pageOfIndex, suraOfPage, juzOfPage } from '@/data/coranMeta';
-import { describeIndex, BOOKMARK_COLORS } from '@/lib/coranPages';
-import type { Bookmark, BookmarkColor } from '@/hooks/useCoranProgress';
+import { describeIndex, BOOKMARK_COLORS, REVIEW_FIRST_DAYS } from '@/lib/coranPages';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { askTeacher } from '@/lib/coranQuestions';
+import { withName } from '@/lib/encouragements';
+import { localDay, dateOfDay } from '@/lib/coranPlan';
+import { errorMessage } from '@/lib/utils';
+import type { Bookmark, BookmarkColor, BookmarkNote } from '@/hooks/useCoranProgress';
 import { cn } from '@/lib/utils';
 
 
 const toolBtn = 'rounded-full px-3 py-1.5 text-xs font-extrabold bg-[#f1e5da] text-[#2a1414] dark:bg-[#33201e] dark:text-[#f3e9e4] active:scale-95 transition-transform';
 
-/** 🔖 Marque-pages en couleur sur la page affichée */
-export function BookmarkButton({ index, bookmarks, onChange }: { index: number; bookmarks: Bookmark[]; onChange: (b: Bookmark[]) => void }) {
-  const [open, setOpen] = useState(false);
+/** 🔖 Marque-page de la page affichée : couleur, notes datées (notes rapides, dictée), « Pose une question » */
+export function BookmarkButton({ index, bookmarks, onChange, onRemoveNote, open, onOpenChange }: {
+  index: number; bookmarks: Bookmark[];
+  onChange: (b: Bookmark[]) => void;
+  /** Retirer une note : elle passe d'abord par la corbeille */
+  onRemoveNote: (index: number, note: BookmarkNote) => void;
+  open: boolean; onOpenChange: (o: boolean) => void;
+}) {
+  const { user } = useAuth();
   const current = bookmarks.find((b) => b.index === index);
+  const [color, setColor] = useState<BookmarkColor | null>(null);
+  const [draft, setDraft] = useState('');
+  const [listening, setListening] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [sending, setSending] = useState(false);
+  useEffect(() => { if (open) { setColor(current?.color ?? null); setDraft(''); } }, [open, current?.color]);
+  const chosen = color ?? current?.color ?? null;
+  const notes = current?.notes ?? [];
+  const where = `${describeIndex(index).title} · ${describeIndex(index).sub}`;
+
+  const save = (extraNote?: string) => {
+    if (!chosen) { toast.error('Choisis d\'abord une couleur 🙂'); return; }
+    const text = (extraNote ?? draft).trim();
+    const nextNotes = text ? [...notes, { id: `${Date.now()}`, text, date: localDay() }] : notes;
+    const reviewAt = chosen === 'rouge' ? (current?.color === 'rouge' && current.reviewAt ? current.reviewAt : dateOfDay(localDay(), REVIEW_FIRST_DAYS + 1)) : undefined;
+    onChange([...bookmarks.filter((b) => b.index !== index), { index, color: chosen, label: BOOKMARK_COLORS[chosen].label, notes: nextNotes, reviewAt }]);
+    setDraft('');
+  };
+  const dictate = () => {
+    const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
+    const Api = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Api) { toast.error('La dictée ne marche pas sur cet appareil'); return; }
+    const r = new Api();
+    r.lang = 'fr-FR'; r.interimResults = false;
+    r.onresult = (e) => { const t = e.results[0]?.[0]?.transcript || ''; setDraft((d) => (d ? `${d} ${t}` : t)); };
+    r.onend = () => setListening(false);
+    setListening(true);
+    r.start();
+  };
+  const send = async () => {
+    if (!user || !question.trim()) return;
+    setSending(true);
+    try {
+      await askTeacher(user.id, question, where, index);
+      toast.success(withName(user, '✉️ Question envoyée à ton professeur, merci {prenom} !'));
+      setQuestion(''); setAskOpen(false);
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSending(false); }
+  };
+
   return (
     <>
-      <button type="button" className={cn(toolBtn, current && 'ring-2 ring-[#c39a3e]')} onClick={() => setOpen(true)} aria-label="Marque-page">
+      <button type="button" className={cn(toolBtn, current && 'ring-2 ring-[#c39a3e]')} onClick={() => onOpenChange(true)} aria-label="Marque-page">
         🔖 Marque-page{current && <span className={cn('ml-1 inline-block h-2.5 w-2.5 rounded-full align-middle', BOOKMARK_COLORS[current.color].dot)} />}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm" level="nested">
-          <DialogHeader><DialogTitle>🔖 Marque-page · {describeIndex(index).title}</DialogTitle></DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md max-h-[88dvh] overflow-y-auto" level="nested">
+          <DialogHeader><DialogTitle className="pe-8">🔖 Marque-page · {describeIndex(index).title}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-2">
             {(Object.keys(BOOKMARK_COLORS) as BookmarkColor[]).map((c) => (
-              <button key={c} type="button"
-                onClick={() => { onChange([...bookmarks.filter((b) => b.index !== index), { index, color: c, label: BOOKMARK_COLORS[c].label }]); setOpen(false); }}
-                className={cn('flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold text-left', current?.color === c ? 'border-[#c39a3e] bg-[#f5ead1] dark:bg-[#3b2e14]' : 'border-border')}>
-                <span className={cn('h-4 w-4 rounded-full shrink-0', BOOKMARK_COLORS[c].dot)} />{BOOKMARK_COLORS[c].label}
+              <button key={c} type="button" onClick={() => setColor(c)} aria-pressed={chosen === c}
+                className={cn('flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold text-left', chosen === c ? 'border-2 text-white' : 'border-border')}
+                style={chosen === c ? { background: BOOKMARK_COLORS[c].hex, borderColor: BOOKMARK_COLORS[c].hex } : undefined}>
+                <span className={cn('h-4 w-4 rounded-full shrink-0 border-2 border-white/70', BOOKMARK_COLORS[c].dot)} />{BOOKMARK_COLORS[c].label}
               </button>
             ))}
           </div>
-          {current && (
-            <button type="button" onClick={() => { onChange(bookmarks.filter((b) => b.index !== index)); setOpen(false); }}
-              className="text-sm font-semibold text-destructive">Retirer le marque-page de cette page</button>
+          {chosen === 'rouge' && <p className="text-xs text-muted-foreground">🔁 Cette page reviendra comme rappel de révision dans {REVIEW_FIRST_DAYS} jours.</p>}
+
+          {notes.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#c39a3e]">📝 Mes notes</p>
+              {notes.map((n) => (
+                <div key={n.id} className="flex items-start gap-2 rounded-xl bg-[#fff3a8] text-[#4a3b00] px-3 py-2">
+                  <p className="flex-1 text-sm whitespace-pre-line [overflow-wrap:anywhere]">{n.text}<span className="block text-[10px] font-bold opacity-70">{fmtNoteDate(n.date)}</span></p>
+                  <button type="button" onClick={() => onRemoveNote(index, n)} className="text-destructive font-extrabold shrink-0" aria-label="Retirer cette note">✕</button>
+                </div>
+              ))}
+            </div>
           )}
+
+          <div className="space-y-2">
+            <label htmlFor="bm-note" className="text-sm font-bold">✏️ Ajouter une note (facultatif)</label>
+            <div className="flex gap-2">
+              <Textarea id="bm-note" value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} placeholder="Ex. : revoir les versets 5 à 8 avant jeudi" />
+              <button type="button" onClick={dictate} aria-label="Dicter la note"
+                className={cn('shrink-0 h-11 w-11 rounded-xl grid place-items-center text-lg', listening ? 'bg-destructive text-white animate-pulse' : 'bg-[#f1e5da] dark:bg-[#33201e]')}>🎙️</button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_NOTES.map((q) => (
+                <button key={q} type="button" onClick={() => setDraft((d) => (d ? `${d} ${q}` : q))} className="rounded-full bg-[#f1e5da] dark:bg-[#33201e] px-3 py-1 text-xs font-bold">{q}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => { save(); if (chosen) { toast.success('🔖 Marque-page enregistré'); onOpenChange(false); } }}
+              className="flex-1 rounded-xl bg-[#7a1d22] text-white px-4 py-2.5 text-sm font-bold">Enregistrer</button>
+            {current && (
+              <button type="button" onClick={() => { onChange(bookmarks.filter((b) => b.index !== index)); onOpenChange(false); }}
+                className="rounded-xl border border-destructive text-destructive px-3 py-2.5 text-xs font-bold">Retirer le marque-page</button>
+            )}
+          </div>
+
+          {/* ❔ Pose une question : envoyée au professeur dans la messagerie */}
+          <div className="rounded-2xl border border-[#2457a5]/40 bg-blue-50 dark:bg-blue-950/30 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setAskOpen((v) => !v)} className="rounded-full bg-[#2457a5] text-white px-4 py-1.5 text-sm font-bold">❔ Pose une question</button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" aria-label="À quoi sert ce bouton ?" className="h-6 w-6 rounded-full border-2 border-[#2457a5] text-[#2457a5] text-xs font-extrabold grid place-items-center">?</button>
+                </PopoverTrigger>
+                <PopoverContent className="z-[800] max-w-xs text-sm">
+                  Si tu as une question ou que quelque chose n'est pas clair sur cette page, n'hésite pas à la poser à ton professeur : il essaiera de te répondre au plus vite ! 😊
+                </PopoverContent>
+              </Popover>
+            </div>
+            {askOpen && (
+              <>
+                <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} placeholder="Écris ta question ici…" aria-label="Ma question" />
+                <p className="text-[11px] text-muted-foreground">Elle arrivera dans la messagerie de ton professeur, avec cette page ({where}).</p>
+                <button type="button" disabled={sending || !question.trim()} onClick={() => void send()}
+                  className="rounded-xl bg-[#2457a5] text-white px-4 py-2 text-sm font-bold disabled:opacity-50">✉️ Envoyer ma question</button>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[-'ʿ’]/g, '').toLowerCase();
+type SpeechRec = { lang: string; interimResults: boolean; start: () => void; onresult: (e: { results: { 0?: { transcript?: string } }[] }) => void; onend: () => void };
+const QUICK_NOTES = ['🔁 À réviser', '✅ Je la connais', '⭐ Belle page', '📅 Pour le prochain cours'];
+const fmtNoteDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-'ʿ’]/g, '').toLowerCase();
 
 /** 📑 Sommaire : aller à une page ou à une sourate, marque-pages, pages « À savoir » */
 export function SommaireButton({ bookmarks, onGo }: { bookmarks: Bookmark[]; onGo: (index: number) => void }) {

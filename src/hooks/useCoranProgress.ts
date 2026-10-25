@@ -12,7 +12,14 @@ import type { Programme } from '@/lib/coranPlan';
  *  - programme / active  → Programme              (lecture du jour)
  */
 export type BookmarkColor = 'rouge' | 'or' | 'vert' | 'bleu';
-export interface Bookmark { index: number; color: BookmarkColor; label: string }
+/** Note d'un marque-page (plusieurs notes datées possibles, 2026-10-25) */
+export interface BookmarkNote { id: string; text: string; date: string }
+export interface Bookmark {
+  index: number; color: BookmarkColor; label: string;
+  notes?: BookmarkNote[];
+  /** « À réviser » : date (AAAA-MM-JJ) où la page revient comme rappel de révision */
+  reviewAt?: string;
+}
 export interface Lecture { index: number; bookmarks: Bookmark[] }
 
 type Row = { kind: string; key: string; data: Json };

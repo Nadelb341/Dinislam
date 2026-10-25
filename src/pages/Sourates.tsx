@@ -259,7 +259,7 @@ const SouratesPage = () => {
         if (before?.status === rec.status) return;
         if (rec.status === 'corrected') {
           toast({
-            title: '📝 Ta maîtresse t\'a envoyé une correction',
+            title: '📝 Ton professeur t\'a envoyé une correction',
             description: withName(user, `{prenom}, écoute sa correction pour ${sourateNameOf(rec.sourate_id) || 'ta sourate'}, puis refais ton audio 🎙️ Tu vas y arriver 💪`),
           });
         }
@@ -375,7 +375,7 @@ const SouratesPage = () => {
         // (la fiche reste ouverte, le cadre « Envoyer ma récitation » est juste en dessous de la barre).
         toast({
           title: '🎉 Tous tes versets sont cochés !',
-          description: withName(user, '{prenom}, envoie maintenant ta récitation à ta maîtresse 🎙️ juste sous la barre de progression.'),
+          description: withName(user, '{prenom}, envoie maintenant ta récitation à ton professeur 🎙️ juste sous la barre de progression.'),
         });
       }
     }
@@ -451,7 +451,7 @@ const SouratesPage = () => {
     if (!isSourateAccessible(sourate.number)) {
       toast({
         title: "Sourate verrouillée",
-        description: "Envoie d'abord ta récitation de la sourate précédente 🎙️ Elle s'ouvrira quand ta maîtresse l'aura validée.",
+        description: "Envoie d'abord ta récitation de la sourate précédente 🎙️ Elle s'ouvrira quand ton professeur l'aura validée.",
         variant: "destructive",
       });
       return;

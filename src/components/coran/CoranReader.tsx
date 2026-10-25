@@ -63,11 +63,13 @@ interface Props {
   tools?: ReactNode;
   /** Limites de lecture (programme du jour) : rien n'empêche d'aller plus loin, on les affiche juste */
   range?: { from: number; to: number };
-  /** Marque-page posé sur une page : ruban de couleur dans le coin de la page */
-  bookmarkOf?: (index: number) => { dot: string; label: string } | null;
+  /** Marque-page posé sur une page : ruban de couleur + post-it des notes dans le coin de la page */
+  bookmarkOf?: (index: number) => { hex: string; emoji: string; label: string; notes: { id: string; text: string; date: string }[] } | null;
+  /** Toucher le post-it : ouvre la fenêtre du marque-page pour écrire ou modifier */
+  onOpenBookmark?: () => void;
 }
 
-export function CoranReader({ index, onIndexChange, mode, action, tools, range, bookmarkOf }: Props) {
+export function CoranReader({ index, onIndexChange, mode, action, tools, range, bookmarkOf, onOpenBookmark }: Props) {
   const [double, setDouble] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape) and (min-width: 900px)');
@@ -100,6 +102,11 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range, 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [go]);
+
+  // Post-it des notes : ouvert à chaque arrivée sur la page, refermé avec la bulle 💬 (demande de Nadia, 2026-10-26)
+  const [closedNotes, setClosedNotes] = useState<Set<number>>(new Set());
+  useEffect(() => { setClosedNotes(new Set()); }, [index]);
+  const stop = (e: React.TouchEvent | React.PointerEvent) => e.stopPropagation();
 
   // Zoom à deux doigts + glisser pour tourner les pages
   const [zoom, setZoom] = useState(1);
@@ -167,12 +174,39 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range, 
             return (
               <div key={i} className={cn('relative h-full', pages.length > 1 ? 'w-1/2' : 'w-full')}>
                 <PageImage index={i} alt={`${describeIndex(i).title} · ${describeIndex(i).sub}`} />
-                {bm && (
-                  <span className="absolute top-0 right-3 flex flex-col items-center pointer-events-none" aria-label={`Marque-page : ${bm.label}`}>
-                    <span className={cn('block w-7 h-12 shadow-md [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]', bm.dot)} />
-                    <span className="mt-1 rounded-full bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 whitespace-nowrap">🔖 {bm.label}</span>
-                  </span>
-                )}
+                {bm && (() => {
+                  const open = !closedNotes.has(i);
+                  return (
+                    <div className="absolute top-0 right-2 flex flex-col items-end gap-1 max-w-[62%] sm:max-w-[240px]" onTouchStart={stop} onTouchEnd={stop} onPointerDown={stop}>
+                      <div className="flex items-start gap-1.5">
+                        {bm.notes.length > 0 && (
+                          <button type="button" aria-pressed={open} aria-label={open ? 'Refermer le post-it' : 'Ouvrir le post-it'}
+                            onClick={() => setClosedNotes((s) => { const n = new Set(s); if (open) n.add(i); else n.delete(i); return n; })}
+                            className="mt-1 relative h-8 w-8 rounded-full bg-white shadow-md grid place-items-center text-base border-2"
+                            style={{ borderColor: bm.hex }}>
+                            💬
+                            {!open && <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-white text-[9px] font-bold grid place-items-center px-1">{bm.notes.length}</span>}
+                          </button>
+                        )}
+                        <span className="block w-7 h-12 shadow-md [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]" style={{ background: bm.hex }} aria-label={`Marque-page : ${bm.label}`} />
+                      </div>
+                      {bm.notes.length > 0 && open ? (
+                        <button type="button" onClick={onOpenBookmark}
+                          className="w-full text-left rounded-sm rounded-br-xl bg-[#fff3a8] text-[#4a3b00] shadow-[0_6px_14px_rgba(0,0,0,0.25)] -rotate-1 overflow-hidden max-h-[38dvh] overflow-y-auto">
+                          <span className="block px-2.5 py-1 text-[11px] font-extrabold text-white" style={{ background: bm.hex }}>{bm.emoji} {bm.label}</span>
+                          {bm.notes.map((n) => (
+                            <span key={n.id} className="block px-2.5 py-1.5 text-[13px] leading-snug border-b border-[#4a3b00]/10 last:border-0 whitespace-pre-line [overflow-wrap:anywhere]">
+                              {n.text}
+                              <span className="block text-[9px] font-bold opacity-60">{new Date(n.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
+                            </span>
+                          ))}
+                        </button>
+                      ) : (
+                        <span className="rounded-full text-white text-[10px] font-bold px-2 py-0.5 whitespace-nowrap shadow" style={{ background: bm.hex }}>{bm.emoji} {bm.label}</span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}

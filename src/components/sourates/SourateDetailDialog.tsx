@@ -567,7 +567,7 @@ const SourateDetailDialog = ({
           {/* Tous les versets cochés, sourate pas encore validée : il reste la récitation */}
           {needsRecitation && versePercentage === 100 && !sourateProgress?.is_validated && (
             <div className="rounded-xl border-2 border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-900 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-100">
-              🎉 Tous tes versets sont cochés ! Envoie maintenant ta récitation 🎙️ La sourate suivante s'ouvrira quand ta maîtresse l'aura validée ✨
+              🎉 Tous tes versets sont cochés ! Envoie maintenant ta récitation 🎙️ La sourate suivante s'ouvrira quand ton professeur l'aura validée ✨
             </div>
           )}
 

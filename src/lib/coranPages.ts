@@ -18,12 +18,16 @@ export function describeIndex(index: number): { title: string; sub: string } {
   return { title: `Page ${page}`, sub: `${sura?.name_french.split(' (')[0] ?? ''} · Juz' ${juzOfPage(page)}` };
 }
 
-export const BOOKMARK_COLORS: Record<BookmarkColor, { dot: string; label: string }> = {
-  rouge: { dot: 'bg-[#c0392b]', label: 'À réviser' },
-  or: { dot: 'bg-[#c39a3e]', label: 'À apprendre' },
-  vert: { dot: 'bg-[#1f7a52]', label: 'Ma page préférée' },
-  bleu: { dot: 'bg-[#2457a5]', label: 'Important' },
+export const BOOKMARK_COLORS: Record<BookmarkColor, { dot: string; hex: string; emoji: string; label: string }> = {
+  rouge: { dot: 'bg-[#c0392b]', hex: '#c0392b', emoji: '🔴', label: 'À réviser' },
+  or: { dot: 'bg-[#c39a3e]', hex: '#c39a3e', emoji: '🟡', label: 'À apprendre' },
+  vert: { dot: 'bg-[#1f7a52]', hex: '#1f7a52', emoji: '🟢', label: 'Ma page préférée' },
+  bleu: { dot: 'bg-[#2457a5]', hex: '#2457a5', emoji: '🔵', label: 'Important' },
 };
+
+/** Rappel de révision (idée acceptée le 2026-10-25) : « À réviser » revient 3 jours après, puis 7 jours après chaque révision */
+export const REVIEW_FIRST_DAYS = 3;
+export const REVIEW_NEXT_DAYS = 7;
 
 /** Fiches à relire avec attention avant validation (doutes signalés le 2026-10-25) */
 export const STORIES_WITH_DOUBT = [3, 8, 16, 17, 24, 30, 36, 60, 64, 66, 83, 96];

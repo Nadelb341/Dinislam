@@ -74,6 +74,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   sourate_admin_unlock: 'Sourate débloquée à la main',
   coran_progress: 'Programme de lecture du Coran',
   admin_task_attachment: 'Fichier d\'une ligne À FAIRE',
+  coran_note: 'Note d\'un marque-page du Coran',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 

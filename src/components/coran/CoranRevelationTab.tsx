@@ -177,7 +177,7 @@ function StoryDialog({ n, story, onClose, onRead }: { n: number; story?: Story; 
             )}
           </div>
         ) : (
-          <p className="rounded-xl bg-[#f5ead1] dark:bg-[#3b2e14] px-3 py-3 text-sm">✨ L'histoire de cette sourate est en préparation par ta maîtresse. Reviens bientôt !</p>
+          <p className="rounded-xl bg-[#f5ead1] dark:bg-[#3b2e14] px-3 py-3 text-sm">✨ L'histoire de cette sourate est en préparation par ton professeur. Reviens bientôt !</p>
         )}
 
         {!editing && <SourateQuiz n={n} />}

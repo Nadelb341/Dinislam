@@ -131,12 +131,12 @@ const AllahNamesPage = () => {
         if (rec.status === 'validated') {
           queryClient.invalidateQueries({ queryKey: ['allah-name-progress', user.id] });
           fireSuccess();
-          toast.success(withName(user, `Bravo {prenom}, ta maîtresse a validé ${label} !`), {
+          toast.success(withName(user, `Bravo {prenom}, ton professeur a validé ${label} !`), {
             description: withMoodEmojis('N\'oublie pas que tu dois retenir ce nom par cœur avant de passer au suivant !'),
             duration: 10000,
           });
         } else if (rec.status === 'corrected') {
-          toast(withMoodEmojis(`Ta maîtresse t'a envoyé une correction pour ${label}`, 'triste'), {
+          toast(withMoodEmojis(`Ton professeur t'a envoyé une correction pour ${label}`, 'triste'), {
             description: 'Écoute-la, puis refais ton audio 🎙️ Tu vas y arriver 💪',
             duration: 10000,
           });
@@ -152,7 +152,7 @@ const AllahNamesPage = () => {
   const openName = (name, index) => {
     if (!isNameAccessible(index)) {
       toast.info(needsAudio
-        ? 'Envoie d\'abord l\'audio du nom précédent 🎙️ Celui-ci s\'ouvrira quand ta maîtresse l\'aura validé 🔒'
+        ? 'Envoie d\'abord l\'audio du nom précédent 🎙️ Celui-ci s\'ouvrira quand ton professeur l\'aura validé 🔒'
         : 'Mémorise le nom précédent d\'abord ! 🔒');
       return;
     }
