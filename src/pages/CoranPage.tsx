@@ -108,16 +108,18 @@ const CoranPage = () => {
     fetchPdf();
   }, []);
 
-  const handleVerseToggle = async (sourateDbId: string, verseNumber: number, _sourateNumber: number, versesCount: number) => {
+  const handleVerseToggle = async (sourateDbId: string, verseNumber: number | number[], _sourateNumber: number, versesCount: number) => {
     if (!user) return;
 
-    const key = `${sourateDbId}-${verseNumber}`;
-    const currentValue = verseProgress.get(key) || false;
+    // Plusieurs versets d'un coup quand une ligne en regroupe plusieurs (sourate 56, 2026-10-25)
+    const nums = Array.isArray(verseNumber) ? verseNumber : [verseNumber];
+    const keys = nums.map((n) => `${sourateDbId}-${n}`);
+    const currentValue = keys.every((k) => verseProgress.get(k));
     const newValue = !currentValue;
 
     setVerseProgress(prev => {
       const newMap = new Map(prev);
-      newMap.set(key, newValue);
+      keys.forEach((k) => newMap.set(k, newValue));
       return newMap;
     });
 
@@ -125,12 +127,12 @@ const CoranPage = () => {
       await supabase
         .from('user_sourate_verse_progress')
         .upsert(
-          { user_id: user.id, sourate_id: sourateDbId, verse_number: verseNumber, is_memorized: newValue, context: 'coran' },
+          nums.map((n) => ({ user_id: user.id, sourate_id: sourateDbId, verse_number: n, is_memorized: newValue, context: 'coran' })),
           { onConflict: 'user_id,sourate_id,verse_number,context' }
         );
 
       const newVerseProgress = new Map(verseProgress);
-      newVerseProgress.set(key, newValue);
+      keys.forEach((k) => newVerseProgress.set(k, newValue));
 
       let validatedVerses = 0;
       for (let i = 1; i <= versesCount; i++) {

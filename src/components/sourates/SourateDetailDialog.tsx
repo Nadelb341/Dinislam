@@ -192,7 +192,8 @@ interface SourateDetailDialogProps {
   verseProgress: Map<string, boolean>;
   sourateProgress: { is_validated: boolean; is_memorized: boolean; progress_percentage: number } | undefined;
   contents: Tables<'sourate_content'>[];
-  onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
+  /** Un verset, ou plusieurs quand une ligne NPM en regroupe plusieurs (sourate 56 : « Versets 4 à 6 ») */
+  onVerseToggle: (dbId: string, verseNum: number | number[], sourateNumber: number, versesCount: number) => void;
   /** « Valider sourate entière » : coche tous les versets d'un coup */
   onValidateAll?: (dbId: string, verseNums: number[], versesCount: number) => Promise<void>;
   /** Moins de 20 ans : c'est la récitation validée par l'enseignante qui ouvre la sourate suivante */
@@ -249,20 +250,23 @@ const SourateDetailDialog = ({
 
   // Nombre de cases à cocher réellement affichées : Ayat Al-Kursi = 1 verset dans la base mais 8 parties à cocher
   // (avant : terminée dès la 1ʳᵉ partie → une demande de validation + une notification à CHAQUE partie cochée)
-  const checkCount = NPM_VERSETS[sourate.number]
-    ? NPM_VERSETS[sourate.number].filter((v) => v.num > 0).length || sourate.verses_count
+  // Sourate 56 : certaines lignes NPM regroupent plusieurs versets (4 à 6, 28 à 30…) → on compte les vrais versets (2026-10-25)
+  const checkCount = sourate.number === 1000 && NPM_VERSETS[1000]
+    ? NPM_VERSETS[1000].filter((v) => v.num > 0).length
     : sourate.verses_count;
+  // Versets couverts par une ligne NPM : de son numéro jusqu'au numéro de la ligne suivante (exclu)
+  const npmNums = (NPM_VERSETS[sourate.number] || []).filter((v) => v.num > 0).map((v) => v.num);
+  const coveredBy = (num: number): number[] => {
+    if (sourate.number === 1000) return [num];
+    const next = npmNums.find((n) => n > num) ?? checkCount + 1;
+    return Array.from({ length: Math.max(1, next - num) }, (_, i) => num + i);
+  };
   let validatedVerses = 0;
   for (let i = 1; i <= checkCount; i++) {
     if (verseProgress.get(`${dbId}-${i}`)) validatedVerses++;
   }
   const versePercentage = Math.round((validatedVerses / checkCount) * 100);
-  // Versets à cocher par « Valider sourate entière » : ceux affichés + ceux comptés dans le pourcentage
-  // (sourate 56 : 3 versets absents des pages NPM, les deux listes ne sont pas identiques)
-  const shownNums = NPM_VERSETS[sourate.number]
-    ? NPM_VERSETS[sourate.number].filter((v) => v.num > 0).map((v) => v.num)
-    : Array.from({ length: sourate.verses_count }, (_, i) => i + 1);
-  const allVerseNums = [...new Set([...shownNums, ...Array.from({ length: checkCount }, (_, i) => i + 1)])];
+  const allVerseNums = Array.from({ length: checkCount }, (_, i) => i + 1);
   const askValidateAll = () => askValidation(
     'Valider la sourate entière ?',
     `Tous les versets de la sourate ${sourate.name_french} seront marqués comme mémorisés.`,
@@ -531,7 +535,7 @@ const SourateDetailDialog = ({
                 onClick={askValidateAll}
                 className="ml-auto mr-7 shrink-0 self-start max-w-[7.5rem] rounded-xl bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 text-xs font-bold leading-tight text-white text-center shadow-sm active:scale-95 transition-transform"
               >
-                ✅ Valider sourate entière
+                ✅ Valider la sourate entière
               </button>
             )}
           </DialogTitle>
@@ -689,8 +693,10 @@ const SourateDetailDialog = ({
                   const cdnAudio = sourate.number === 1000
                     ? `/audio/ayat-al-kursi/002_e${String(num).padStart(2, '0')}.mp3`
                     : getCdnAudioUrl(sourate.number, num);
-                  const isVerseValidated = verseProgress.get(`${dbId}-${num}`) || false;
-                  const verseData = verses.find(v => v.id === num);
+                  const covered = coveredBy(num);
+                  const isVerseValidated = covered.every((n) => verseProgress.get(`${dbId}-${n}`));
+                  const groupLabel = covered.length > 1 ? `Versets ${covered[0]} à ${covered[covered.length - 1]}` : `Verset ${num}`;
+                  const coveredData = covered.map((n) => verses.find(v => v.id === n)).filter((v): v is NonNullable<typeof v> => !!v);
                   return (
                     <div
                       key={num}
@@ -703,7 +709,7 @@ const SourateDetailDialog = ({
                     >
                       <Checkbox
                         checked={isVerseValidated}
-                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, num, sourate.number, checkCount) : askValidation('Valider ce verset ?', `Le verset ${num} de la sourate ${sourate.name_french} sera marqué comme mémorisé.`, () => onVerseToggle(dbId, num, sourate.number, checkCount))}
+                        onCheckedChange={() => isVerseValidated ? onVerseToggle(dbId, covered, sourate.number, checkCount) : askValidation(covered.length > 1 ? 'Valider ces versets ?' : 'Valider ce verset ?', `${covered.length > 1 ? `Les ${groupLabel.toLowerCase()}` : `Le verset ${num}`} de la sourate ${sourate.name_french} ${covered.length > 1 ? 'seront marqués comme mémorisés' : 'sera marqué comme mémorisé'}.`, () => onVerseToggle(dbId, covered, sourate.number, checkCount))}
                         className={cn(
                           'h-5 w-5 rounded border-2 mt-1 shrink-0',
                           isVerseValidated ? 'border-green-500 bg-green-500 data-[state=checked]:bg-green-500' : 'border-gold'
@@ -713,22 +719,28 @@ const SourateDetailDialog = ({
                         {parts.map((part, i) => (
                           <img key={i} src={part.imageUrl} alt={`Verset ${num}`} className="w-full object-contain" style={{ maxHeight: '80px' }} />
                         ))}
-                        {verseData?.transliteration && (
-                          <p className="text-xs italic leading-relaxed" style={{ color: '#0f766e' }}>
-                            {verseData.transliteration}
-                          </p>
-                        )}
-                        {verseData?.translation_fr && (
-                          <p className="text-xs leading-relaxed text-muted-foreground">
-                            « {verseData.translation_fr} »
-                          </p>
-                        )}
-                        {cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
+                        {coveredData.map((verseData) => (
+                          <div key={verseData.id} className="space-y-1">
+                            {verseData.transliteration && (
+                              <p className="text-xs italic leading-relaxed" style={{ color: '#0f766e' }}>
+                                {verseData.transliteration}
+                              </p>
+                            )}
+                            {verseData.translation_fr && (
+                              <p className="text-xs leading-relaxed text-muted-foreground">
+                                « {verseData.translation_fr} »
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                        {covered.length > 1
+                          ? covered.map((n) => <LecteurVerset key={n} audioUrl={getCdnAudioUrl(sourate.number, n)} />)
+                          : cdnAudio && <LecteurVerset audioUrl={cdnAudio} />}
                         <p className={cn(
                           'text-[10px] font-medium',
                           isVerseValidated ? 'text-green-500' : 'text-muted-foreground/60'
                         )}>
-                          Verset {num}
+                          {groupLabel}
                         </p>
                       </div>
                       {isVerseValidated && <Check className="h-4 w-4 text-green-500 shrink-0 mt-1" />}

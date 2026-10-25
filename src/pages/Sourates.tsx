@@ -392,6 +392,7 @@ const SouratesPage = () => {
       const { error } = await supabase.from('user_sourate_verse_progress')
         .upsert(rows, { onConflict: 'user_id,sourate_id,verse_number,context' });
       if (error) throw error;
+      fireConfetti(); // 🎉 confettis : sourate entière cochée (idée 2 acceptée par Nadia, 2026-10-25)
       await afterVersesChanged(sourateDbId, newVerseProgress, versesCount);
     } catch (error) {
       console.error('Error validating sourate:', error);
@@ -400,40 +401,43 @@ const SouratesPage = () => {
     }
   };
 
-  const handleVerseToggle = async (sourateDbId: string, verseNumber: number, sourateNumber: number, versesCount: number) => {
+  const handleVerseToggle = async (sourateDbId: string, verseNumber: number | number[], sourateNumber: number, versesCount: number) => {
     if (!user) return;
 
-    const key = `${sourateDbId}-${verseNumber}`;
-    const currentValue = verseProgress.get(key) || false;
+    // Plusieurs versets d'un coup quand une ligne en regroupe plusieurs (sourate 56, 2026-10-25)
+    const nums = Array.isArray(verseNumber) ? verseNumber : [verseNumber];
+    const keys = nums.map((n) => `${sourateDbId}-${n}`);
+    const currentValue = keys.every((k) => verseProgress.get(k));
     const newValue = !currentValue;
+    const previous = new Map(verseProgress);
 
     setVerseProgress(prev => {
       const newMap = new Map(prev);
-      newMap.set(key, newValue);
+      keys.forEach((k) => newMap.set(k, newValue));
       return newMap;
     });
 
     try {
       const { error } = await supabase
         .from('user_sourate_verse_progress')
-        .upsert({
+        .upsert(nums.map((n) => ({
           user_id: user.id,
           sourate_id: sourateDbId,
-          verse_number: verseNumber,
+          verse_number: n,
           is_memorized: newValue,
           context: 'sourates',
-        }, { onConflict: 'user_id,sourate_id,verse_number,context' });
+        })), { onConflict: 'user_id,sourate_id,verse_number,context' });
 
       if (error) throw error;
 
       const newVerseProgress = new Map(verseProgress);
-      newVerseProgress.set(key, newValue);
+      keys.forEach((k) => newVerseProgress.set(k, newValue));
       await afterVersesChanged(sourateDbId, newVerseProgress, versesCount);
     } catch (error) {
       console.error('Error updating verse:', error);
       setVerseProgress(prev => {
         const newMap = new Map(prev);
-        newMap.set(key, currentValue);
+        keys.forEach((k) => newMap.set(k, previous.get(k) || false));
         return newMap;
       });
     }
