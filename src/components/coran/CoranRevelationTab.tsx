@@ -128,6 +128,8 @@ function StoryDialog({ n, story, onClose, onRead }: { n: number; story?: Story; 
   const s = CORAN_ORDERED.find((x) => x.number === n)!;
   const page = SURA_PAGE[n - 1];
   const [editing, setEditing] = useState(false);
+  // Quiz : affiché seul, la fiche (versets, Juz', lieu…) est cachée pour ne pas donner les réponses (2026-10-26)
+  const [quiz, setQuiz] = useState(false);
   const visible = story && (story.validated || isAdmin);
   const sources = (story?.sources as unknown as Source[]) || [];
 
@@ -140,6 +142,9 @@ function StoryDialog({ n, story, onClose, onRead }: { n: number; story?: Story; 
             <span className="font-arabic text-2xl text-[#7a1d22] dark:text-[#e08a8f] shrink-0">{s.name_arabic}</span>
           </DialogTitle>
         </DialogHeader>
+        {quiz ? (
+          <SourateQuiz n={n} onBack={() => setQuiz(false)} />
+        ) : (<>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[[s.verses_count, 'versets'], [`p. ${page}`, 'dans le Coran'], [juzOfPage(page), "Juz'"], [`${SURA_REVELATION_ORDER[n - 1]}ᵉ`, 'révélée']].map(([v, l]) => (
             <div key={String(l)} className="rounded-xl bg-[#f1e5da] dark:bg-[#33201e] px-2 py-2 text-center">
@@ -180,13 +185,20 @@ function StoryDialog({ n, story, onClose, onRead }: { n: number; story?: Story; 
           <p className="rounded-xl bg-[#f5ead1] dark:bg-[#3b2e14] px-3 py-3 text-sm">✨ L'histoire de cette sourate est en préparation par ton professeur. Reviens bientôt !</p>
         )}
 
-        {!editing && <SourateQuiz n={n} />}
+        {/* Après la lecture de la fiche : le quiz (il cache la fiche pendant qu'on répond) */}
+        {!editing && (
+          <button type="button" onClick={() => setQuiz(true)}
+            className="w-full rounded-xl border-2 border-dashed border-[#c39a3e] px-3 py-2.5 text-sm font-bold text-[#8a6512] dark:text-[#e0bb62]">
+            🧠 Petit quiz sur cette sourate (3 questions)
+          </button>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => { onRead(page); onClose(); }} className="bg-[#7a1d22] hover:bg-[#561216] text-white">📖 Lire la sourate (page {page})</Button>
           {isAdmin && story && !editing && <Button variant="outline" onClick={() => setEditing(true)}>✏️ Corriger la fiche</Button>}
           {isAdmin && story && !editing && <ValidateButton story={story} />}
         </div>
+        </>)}
       </DialogContent>
     </Dialog>
   );
@@ -263,7 +275,7 @@ function StoryEditor({ story, onDone }: { story: Story; onDone: () => void }) {
 }
 
 /** 🧠 Petit quiz après la fiche (idée acceptée le 2026-10-25) : 3 questions tirées des vraies données de la sourate */
-function SourateQuiz({ n }: { n: number }) {
+function SourateQuiz({ n, onBack }: { n: number; onBack: () => void }) {
   const { fireConfetti, fireSuccess } = useConfetti();
   const s = CORAN_ORDERED.find((x) => x.number === n)!;
   const page = SURA_PAGE[n - 1];
@@ -282,7 +294,6 @@ function SourateQuiz({ n }: { n: number }) {
       { q: "Dans quel Juz' commence-t-elle ?", choices: near(juz, [1, -1, 2, -2, 3], 1, 30).map((v) => `Juz' ${v}`), good: `Juz' ${juz}` },
     ];
   }, [n, s.revelation_type, s.verses_count, juz]);
-  const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<(string | null)[]>([null, null, null]);
   const score = answers.filter((a, i) => a === questions[i].good).length;
   const allAnswered = answers.every((a) => a !== null);
@@ -295,16 +306,9 @@ function SourateQuiz({ n }: { n: number }) {
       if (sc === 3) fireConfetti(); else if (sc >= 2) fireSuccess();
     }
   };
-  if (!started) {
-    return (
-      <button type="button" onClick={() => setStarted(true)}
-        className="w-full rounded-xl border-2 border-dashed border-[#c39a3e] px-3 py-2.5 text-sm font-bold text-[#8a6512] dark:text-[#e0bb62]">
-        🧠 Petit quiz sur cette sourate (3 questions)
-      </button>
-    );
-  }
   return (
     <div className="rounded-2xl border border-[#c39a3e]/50 bg-[#fbf7ef] dark:bg-[#2a1918] p-3 space-y-3">
+      <p className="text-sm font-extrabold text-[#8a6512] dark:text-[#e0bb62]">🧠 Petit quiz : réponds de mémoire, la fiche est cachée !</p>
       {questions.map((qu, i) => (
         <div key={qu.q} className="space-y-1.5">
           <p className="text-sm font-bold">{i + 1}. {qu.q}</p>
@@ -331,6 +335,9 @@ function SourateQuiz({ n }: { n: number }) {
           <button type="button" onClick={() => setAnswers([null, null, null])} className="text-xs font-bold text-[#7a1d22] dark:text-[#e08a8f]">🔄 Recommencer</button>
         </div>
       )}
+      <button type="button" onClick={onBack} className="w-full rounded-xl bg-[#7a1d22] text-white px-3 py-2 text-sm font-bold">
+        {allAnswered ? '📜 Revoir la fiche' : '← Revenir à la fiche'}
+      </button>
     </div>
   );
 }
