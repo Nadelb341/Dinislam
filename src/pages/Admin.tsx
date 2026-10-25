@@ -33,7 +33,7 @@ import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminContent from '@/components/admin/AdminContent';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
-import AdminCoranContent from '@/components/admin/AdminCoranContent';
+import AdminCoranManager from '@/components/coran/AdminCoranManager';
 
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -486,7 +486,7 @@ const Admin = () => {
     if (mod) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={mod.id} moduleTitle="Grammaire & Conjugaison" onBack={handleBack} /></div></AppLayout>;
   }
 
-  if (currentView === 'coran-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminCoranContent onBack={handleBack} /></div></AppLayout>;
+  if (currentView === 'coran-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminCoranManager onBack={handleBack} /></div></AppLayout>;
 
   const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
     'vocabulaire-manage': { slug: '/module/vocabulaire', title: 'Vocabulaire' },

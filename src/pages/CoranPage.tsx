@@ -1,332 +1,215 @@
-import { useEffect, useState, useCallback } from 'react';
-import { withName } from '@/lib/encouragements';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
-import { Search, BookOpen, Download } from 'lucide-react';
-import { CORAN_ORDERED, type SourateData } from '@/data/sourates';
-import type { Tables } from '@/integrations/supabase/types';
-import { useRealtimeRefresh, useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
+import { useAuth } from '@/contexts/AuthContext';
+import { useConfetti } from '@/hooks/useConfetti';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { useCoranProgress, type Bookmark } from '@/hooks/useCoranProgress';
+import { CoranReader, type ReaderMode } from '@/components/coran/CoranReader';
+import { BookmarkButton, SommaireButton, ListenButton } from '@/components/coran/CoranTools';
+import { CoranJuzTab } from '@/components/coran/CoranJuzTab';
+import { CoranRevelationTab } from '@/components/coran/CoranRevelationTab';
+import { CoranProgrammeTab } from '@/components/coran/CoranProgrammeTab';
+import { CoranStudentsTab } from '@/components/coran/CoranStudentsTab';
+import { JUZ, A_SAVOIR, indexOfPage, pageOfIndex } from '@/data/coranMeta';
+import { SOURATES_DATA } from '@/data/sourates';
+import { pagesForDay, localDay, type Programme } from '@/lib/coranPlan';
+import { errorMessage, cn } from '@/lib/utils';
+import { describeIndex } from '@/lib/coranPages';
+
+/**
+ * Carte « Coran » (refaite le 2026-10-25, ancienne carte retirée à la demande de Nadia) :
+ * le Coran Al-Tajwid à feuilleter + un en-tête à onglets. Les onglets ouvrent les MÊMES pages, mais chacun
+ * garde sa propre progression (bande de couleur en haut de la page : vert Lire, or Juz', bleu Programme).
+ */
+type Tab = 'lire' | 'juz' | 'lieu' | 'programme' | 'savoir' | 'eleves';
+type Reading = { kind: 'free' } | { kind: 'juz'; juz: number; sura: number } | { kind: 'prog'; day: number };
+
+const TABS: { id: Tab; emoji: string; label: string; admin?: boolean }[] = [
+  { id: 'lire', emoji: '📖', label: 'Lire' },
+  { id: 'juz', emoji: '📚', label: "Juz'" },
+  { id: 'lieu', emoji: '🕋', label: 'Lieu révélation' },
+  { id: 'programme', emoji: '🗓️', label: 'Programme' },
+  { id: 'savoir', emoji: '💡', label: 'À savoir' },
+  { id: 'eleves', emoji: '👀', label: 'Élèves', admin: true },
+];
+const nameOf = (n: number) => SOURATES_DATA.find((s) => s.number === n)?.name_french.split(' (')[0] ?? '';
 
 const CoranPage = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSourate, setSelectedSourate] = useState<SourateData | null>(null);
-  const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
-  const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
-  const [sourateContents, setSourateContents] = useState<Tables<'sourate_content'>[]>([]);
-  const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const { isAdmin } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const initialTab = (params.get('tab') === 'programme' ? 'programme' : (params.get('tab') as Tab)) || 'lire';
+  const [tab, setTabState] = useState<Tab>(TABS.some((t) => t.id === initialTab) ? initialTab : 'lire');
+  const setTab = useCallback((t: Tab) => {
+    setTabState(t);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    setParams((p) => { const n = new URLSearchParams(p); if (t === 'lire') n.delete('tab'); else n.set('tab', t); return n; }, { replace: true });
+  }, [setParams]);
 
-  const loadAll = useCallback(async (silent = false) => {
-    if (!user) return;
-    if (!silent) setLoading(true);
+  const { lecture, juzDone, programme, save, remove } = useCoranProgress();
+  const { fireConfetti, fireSuccess } = useConfetti();
+  const { askValidation, validationDialog } = useConfirmValidation();
+
+  // La carte s'ouvre sur la couverture ; « Reprendre » ramène à la dernière page lue (lecture libre)
+  const [reading, setReading] = useState<Reading>({ kind: 'free' });
+  const [index, setIndex] = useState(() => { const n = Number(params.get('page')); return n >= 1 && n <= 676 ? n : 1; });
+  const [juzSel, setJuzSel] = useState(30);
+
+  // Lecture libre : la page est retenue (enregistrée 1 s après le dernier changement)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lectureRef = useRef(lecture);
+  lectureRef.current = lecture;
+  const changeIndex = useCallback((i: number) => {
+    setIndex(i);
+    if (reading.kind !== 'free') return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      save('lecture', 'main', { ...lectureRef.current, index: i }).catch(() => { /* réessayé au prochain changement */ });
+    }, 1000);
+  }, [reading.kind, save]);
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  const saveBookmarks = (bookmarks: Bookmark[]) =>
+    save('lecture', 'main', { ...lecture, bookmarks }).then(() => toast.success('🔖 Marque-pages enregistrés')).catch((e) => toast.error(errorMessage(e)));
+
+  const readFreeNoSave = (i: number) => { setReading({ kind: 'free' }); setIndex(i); setTab('lire'); };
+
+  // Juz' : coche / décoche une sourate du parcours (confirmation pour cocher seulement)
+  const toggleSura = async (juz: number, sura: number) => {
+    const done = juzDone(juz);
+    const isDone = done.includes(sura);
+    const next = isDone ? done.filter((n) => n !== sura) : [...done, sura];
     try {
-      const [
-        { data: progressData },
-        { data: verseData },
-        { data: contentData },
-        { data: souratesDb },
-      ] = await Promise.all([
-        supabase.from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
-        supabase.from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'coran'),
-        supabase.from('sourate_content').select('*').order('display_order'),
-        supabase.from('sourates').select('id, number'),
-      ]);
-
-      const idMap = new Map<number, string>();
-      souratesDb?.forEach(s => idMap.set(s.number, s.id));
-      setDbSourates(idMap);
-
-      const pMap = new Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>();
-      progressData?.forEach(p => {
-        pMap.set(p.sourate_id, {
-          is_validated: p.is_validated,
-          is_memorized: p.is_memorized ?? false,
-          progress_percentage: p.progress_percentage,
-        });
-      });
-      setSourateProgress(pMap);
-
-      const vMap = new Map<string, boolean>();
-      verseData?.forEach((v) => {
-        vMap.set(`${v.sourate_id}-${v.verse_number}`, v.is_memorized);
-      });
-      setVerseProgress(vMap);
-      setSourateContents(contentData || []);
-    } catch (error) {
-      console.error('Error loading Coran data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) loadAll();
-  }, [user, loadAll]);
-
-  // 🔄 En direct : versets cochés (autre appareil) et sourates, sans écran de chargement
-  useRealtimeRefresh(['user_sourate_verse_progress', 'sourates'], () => { void loadAll(true); }, !!user);
-  const pdfVersion = useRealtimeVersion(['module_cards', 'module_card_content']);
-
-  // Charger le PDF — d'abord depuis la base, sinon le fichier intégré à l'app
-  useEffect(() => {
-    const fetchPdf = async () => {
-      const { data: mod } = await supabase
-        .from('learning_modules')
-        .select('id')
-        .eq('builtin_path', '/coran')
-        .maybeSingle();
-      if (mod) {
-        const { data: cards } = await supabase
-          .from('module_cards')
-          .select('id')
-          .eq('module_id', mod.id)
-          .order('display_order')
-          .limit(5);
-        if (cards?.length) {
-          const cardIds = cards.map((c) => c.id);
-          const { data: contents } = await supabase
-            .from('module_card_content')
-            .select('file_url')
-            .in('card_id', cardIds)
-            .eq('content_type', 'fichier')
-            .not('file_url', 'is', null)
-            .limit(1);
-          if (contents?.length) {
-            setPdfUrl(contents[0].file_url);
-            return;
-          }
-        }
+      await save('juz', String(juz), { done: next });
+      if (!isDone) {
+        const full = JUZ[juz - 1].sourates.every((s) => next.includes(s.n));
+        if (full) { fireConfetti(); toast.success(`🎉 Juz' ${juz} terminé, ma shā' Allah !`); }
+        else { fireSuccess(); toast.success(`✅ ${nameOf(sura)} terminée`); }
       }
-      // Fallback : PDF intégré directement dans l'application
-      setPdfUrl('/pdf/coran.pdf');
-    };
-    fetchPdf();
-  }, [pdfVersion]);
-
-  const handleVerseToggle = async (sourateDbId: string, verseNumber: number | number[], _sourateNumber: number, versesCount: number) => {
-    if (!user) return;
-
-    // Plusieurs versets d'un coup quand une ligne en regroupe plusieurs (sourate 56, 2026-10-25)
-    const nums = Array.isArray(verseNumber) ? verseNumber : [verseNumber];
-    const keys = nums.map((n) => `${sourateDbId}-${n}`);
-    const currentValue = keys.every((k) => verseProgress.get(k));
-    const newValue = !currentValue;
-
-    setVerseProgress(prev => {
-      const newMap = new Map(prev);
-      keys.forEach((k) => newMap.set(k, newValue));
-      return newMap;
-    });
-
-    try {
-      await supabase
-        .from('user_sourate_verse_progress')
-        .upsert(
-          nums.map((n) => ({ user_id: user.id, sourate_id: sourateDbId, verse_number: n, is_memorized: newValue, context: 'coran' })),
-          { onConflict: 'user_id,sourate_id,verse_number,context' }
-        );
-
-      const newVerseProgress = new Map(verseProgress);
-      keys.forEach((k) => newVerseProgress.set(k, newValue));
-
-      let validatedVerses = 0;
-      for (let i = 1; i <= versesCount; i++) {
-        if (newVerseProgress.get(`${sourateDbId}-${i}`)) validatedVerses++;
-      }
-      const percentage = Math.round((validatedVerses / versesCount) * 100);
-      const allValidated = validatedVerses === versesCount;
-
-      await supabase
-        .from('user_sourate_progress')
-        .upsert(
-          {
-            user_id: user.id,
-            sourate_id: sourateDbId,
-            progress_percentage: percentage,
-            is_validated: sourateProgress.get(sourateDbId)?.is_validated || false,
-            context: 'coran',
-          },
-          { onConflict: 'user_id,sourate_id,context' }
-        );
-
-      setSourateProgress(prev => {
-        const newMap = new Map(prev);
-        const existing = newMap.get(sourateDbId) || { is_validated: false, is_memorized: false, progress_percentage: 0 };
-        newMap.set(sourateDbId, { ...existing, progress_percentage: percentage });
-        return newMap;
-      });
-
-      // Auto-validation sans demande admin pour la carte Coran
-      if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
-        setSelectedSourate(null);
-        await supabase
-          .from('user_sourate_progress')
-          .upsert(
-            { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'coran' },
-            { onConflict: 'user_id,sourate_id,context' }
-          );
-        setSourateProgress(prev => {
-          const newMap = new Map(prev);
-          newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
-          return newMap;
-        });
-        toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { toast.error(errorMessage(e)); }
   };
 
-  const filtered = CORAN_ORDERED.filter(s =>
-    s.name_french.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.name_arabic.includes(searchQuery) ||
-    String(s.number).includes(searchQuery)
+  // Programme : coche la lecture d'un jour (confirmation pour cocher seulement)
+  const toggleDay = async (p: Programme, day: number) => {
+    const isDone = p.doneDays.includes(day);
+    const doneDays = isDone ? p.doneDays.filter((d) => d !== day) : [...p.doneDays, day].sort((a, b) => a - b);
+    const finished = doneDays.length >= p.totalDays;
+    try {
+      await save('programme', 'active', { ...p, doneDays, finished, finishedOn: finished ? (p.finishedOn || localDay()) : undefined });
+      if (!isDone) {
+        if (finished) { setTab('programme'); toast.success('🏆 Tu as lu tout le Coran, ma shā\' Allah !'); }
+        else { fireSuccess(); toast.success(`✅ Lecture du jour ${day} faite`); }
+      }
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
+
+  let mode: ReaderMode = { kind: 'free', label: '📖 Ma lecture', sub: lecture.index > 1 ? `🔖 Dernière page lue : ${describeIndex(lecture.index).title}` : undefined };
+  let action: ReactNode = null;
+  let range: { from: number; to: number } | undefined;
+  if (reading.kind === 'juz') {
+    const done = juzDone(reading.juz).includes(reading.sura);
+    mode = { kind: 'juz', label: `📚 Juz' ${reading.juz} · ${nameOf(reading.sura)}`, sub: 'ne change pas « Ma lecture »' };
+    action = (
+      <button type="button" onClick={() => done ? void toggleSura(reading.juz, reading.sura) : askValidation('Sourate terminée ?', `${nameOf(reading.sura)} sera cochée dans le parcours du Juz' ${reading.juz}.`, () => void toggleSura(reading.juz, reading.sura))}
+        className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold text-white active:scale-95 transition-transform', done ? 'bg-[#7a1d22]' : 'bg-[#c39a3e]')}>
+        {done ? '✓ Terminée' : '✅ Sourate terminée'}
+      </button>
+    );
+  } else if (reading.kind === 'prog' && programme) {
+    range = pagesForDay(programme, reading.day);
+    const done = programme.doneDays.includes(reading.day);
+    mode = { kind: 'prog', label: `🗓️ Programme · jour ${reading.day}`, sub: `pages ${range.from} à ${range.to}` };
+    action = (
+      <button type="button" onClick={() => done ? void toggleDay(programme, reading.day) : askValidation('Lecture du jour faite ?', `Le jour ${reading.day} (pages ${range!.from} à ${range!.to}) sera coché dans ton programme.`, () => void toggleDay(programme, reading.day))}
+        className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold text-white active:scale-95 transition-transform', done ? 'bg-[#183e7c]' : 'bg-[#2457a5]')}>
+        {done ? '✓ Jour fait' : '✅ Lecture du jour faite'}
+      </button>
+    );
+  }
+
+  const tools = (
+    <>
+      <BookmarkButton index={index} bookmarks={lecture.bookmarks} onChange={(b) => void saveBookmarks(b)} />
+      <SommaireButton bookmarks={lecture.bookmarks} onGo={(i) => (reading.kind === 'free' ? changeIndex(i) : setIndex(i))} />
+      <ListenButton index={index} />
+    </>
   );
-
-  const totalValidated = CORAN_ORDERED.filter(s => {
-    const dbId = dbSourates.get(s.number);
-    return dbId && sourateProgress.get(dbId)?.is_validated;
-  }).length;
-
-  const selectedDbId = selectedSourate ? dbSourates.get(selectedSourate.number) : undefined;
 
   return (
     <AppLayout title="Coran">
-      <div className="p-3 md:p-6 space-y-4">
-
-        {/* Section PDF */}
-        <div className="rounded-xl border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 shrink-0">
-              <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
+      <div className="p-3 md:p-6 space-y-4 max-w-5xl mx-auto">
+        {/* En-tête de la carte : couleurs de la couverture (bordeaux et or) */}
+        <div className="rounded-2xl overflow-hidden shadow-sm bg-gradient-to-br from-[#7a1d22] to-[#561216] text-white">
+          <div className="flex items-center justify-between gap-3 px-4 pt-3">
             <div className="min-w-0">
-              <h3 className="font-semibold text-emerald-800 dark:text-emerald-200 font-arabic text-lg">القرآن الكريم</h3>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">Coran complet avec Tajwid (Français)</p>
+              <h1 className="text-lg font-extrabold leading-tight">Coran Al-Tajwid</h1>
+              <p className="text-[11px] text-white/80">Avec la traduction des sens en français</p>
             </div>
+            <span className="font-arabic text-xl text-[#f3d38b] shrink-0">مصحف التجويد</span>
           </div>
-          {pdfUrl ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950"
-              onClick={() => window.open(pdfUrl, '_blank', 'noopener,noreferrer')}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Ouvrir / Télécharger le PDF
-            </Button>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">
-              PDF non encore disponible — l'enseignant peut l'ajouter via le panneau admin → Coran.
-            </p>
-          )}
-        </div>
-
-        {/* Barre de progression */}
-        <div className="rounded-xl border bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-              {totalValidated} / 114 sourates validées
-            </span>
-            <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
-              {Math.round((totalValidated / 114) * 100)}%
-            </span>
-          </div>
-          <Progress value={Math.round((totalValidated / 114) * 100)} className="h-2" />
-        </div>
-
-        {/* Barre de recherche */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une sourate..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9"
-            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-          />
-        </div>
-
-        {/* Liste des sourates */}
-        {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-xl" />
+          <div role="tablist" className="mt-2 grid grid-flow-col auto-cols-fr overflow-x-auto">
+            {TABS.filter((t) => !t.admin || isAdmin).map((t) => (
+              <button key={t.id} role="tab" type="button" aria-selected={tab === t.id}
+                onClick={() => { if (t.id === 'lire' && reading.kind !== 'free') { setReading({ kind: 'free' }); setIndex(lecture.index > 1 ? lecture.index : 1); } setTab(t.id); }}
+                className={cn('px-1 pt-1.5 pb-2 text-center text-[11px] sm:text-xs font-bold leading-tight border-b-[3px] transition-colors min-w-[64px]',
+                  tab === t.id ? 'text-white border-[#f3d38b]' : 'text-white/70 border-transparent hover:text-white')}>
+                <span className="block text-lg leading-none mb-0.5">{t.emoji}</span>{t.label}
+              </button>
             ))}
           </div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map(sourate => {
-              const dbId = dbSourates.get(sourate.number);
-              const progress = dbId ? sourateProgress.get(dbId) : undefined;
-              const isValidated = progress?.is_validated || false;
-              const pct = progress?.progress_percentage || 0;
+        </div>
 
-              return (
-                <button
-                  key={sourate.number}
-                  onClick={() => setSelectedSourate(sourate)}
-                  className="w-full text-left rounded-xl border bg-card hover:bg-muted/50 transition-colors p-3 flex items-center gap-3"
-                >
-                  {/* Numéro */}
-                  <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                    isValidated
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {isValidated ? '✓' : sourate.number}
-                  </div>
-
-                  {/* Noms */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-arabic text-base">{sourate.name_arabic}</span>
-                      <span className="text-xs text-muted-foreground">· {sourate.verses_count} v.</span>
-                    </div>
-                    <p className="text-sm text-foreground/80 [overflow-wrap:anywhere]">{sourate.name_french}</p>
-                    {pct > 0 && !isValidated && (
-                      <Progress value={pct} className="h-1 mt-1" />
-                    )}
-                  </div>
-
-                  {/* Badge type */}
-                  <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full hidden sm:inline ${
-                    sourate.revelation_type === 'Mecquoise'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                  }`}>
-                    {sourate.revelation_type === 'Mecquoise' ? 'Mecque' : 'Médine'}
-                  </span>
-                </button>
-              );
-            })}
+        {tab === 'lire' && (
+          <div className="space-y-3">
+            {reading.kind === 'free' && lecture.index > 1 && index !== lecture.index && (
+              <button type="button" onClick={() => setIndex(lecture.index)}
+                className="w-full rounded-2xl bg-gradient-to-br from-[#c39a3e] to-[#a77a1c] text-white px-4 py-3 text-left font-bold shadow-sm active:scale-[0.99] transition-transform">
+                ▶️ Reprendre où j'en étais
+                <span className="block text-xs font-semibold opacity-90">{describeIndex(lecture.index).title} · {describeIndex(lecture.index).sub}</span>
+              </button>
+            )}
+            {reading.kind !== 'free' && (
+              <button type="button" onClick={() => setTab(reading.kind === 'juz' ? 'juz' : 'programme')} className="text-sm font-bold text-[#7a1d22] dark:text-[#e08a8f]">
+                ← Retour {reading.kind === 'juz' ? `au Juz' ${reading.juz}` : 'à mon programme'}
+              </button>
+            )}
+            <CoranReader index={index} onIndexChange={changeIndex} mode={mode} action={action} tools={tools} range={range} />
+            <p className="text-center text-[11px] text-muted-foreground">Glisse le doigt vers la droite pour tourner la page · deux doigts pour zoomer · tablette à l'horizontale : double page</p>
           </div>
         )}
-      </div>
 
-      {/* Dialog détail sourate */}
-      {selectedSourate && (
-        <SourateDetailDialog
-          open={!!selectedSourate}
-          onOpenChange={open => { if (!open) setSelectedSourate(null); }}
-          sourate={selectedSourate}
-          dbId={selectedDbId}
-          verseProgress={verseProgress}
-          sourateProgress={selectedDbId ? sourateProgress.get(selectedDbId) : undefined}
-          contents={sourateContents.filter((c) => c.sourate_id === selectedDbId)}
-          onVerseToggle={handleVerseToggle}
-        />
-      )}
+        {tab === 'juz' && (
+          <CoranJuzTab selected={juzSel} onSelect={setJuzSel} juzDone={juzDone}
+            onOpen={(juz, sura, page) => { setReading({ kind: 'juz', juz, sura }); setIndex(indexOfPage(page)); setTab('lire'); }} />
+        )}
+
+        {tab === 'lieu' && <CoranRevelationTab onRead={(page) => readFreeNoSave(indexOfPage(page))} />}
+
+        {tab === 'programme' && (
+          <CoranProgrammeTab programme={programme}
+            onSave={(p) => save('programme', 'active', p).catch((e) => { toast.error(errorMessage(e)); })}
+            onStop={() => remove('programme', 'active', 'Programme de lecture du Coran').then(() => { toast.success('Programme arrêté (il est dans la corbeille de Paramètres)'); }).catch((e) => { toast.error(errorMessage(e)); })}
+            onReadDay={(day) => { if (!programme) return; setReading({ kind: 'prog', day }); setIndex(indexOfPage(pagesForDay(programme, day).from)); setTab('lire'); }} />
+        )}
+
+        {tab === 'savoir' && (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Les pages de la fin du livre : index des thèmes, piliers de l'islam, croyance et règles du tajwid.</p>
+            {A_SAVOIR.map((a) => (
+              <button key={a.index} type="button" onClick={() => readFreeNoSave(a.index)}
+                className="w-full flex items-center gap-3 rounded-xl border border-[#e6d9cc] dark:border-[#3a2523] bg-white dark:bg-[#221413] px-4 py-3 text-left">
+                <span className="text-2xl">{a.emoji}</span>
+                <span className="flex-1 font-bold text-sm">{a.title}</span>
+                <span className="text-xs text-muted-foreground">{pageOfIndex(a.index) ? `page ${pageOfIndex(a.index)}` : 'fin du livre'}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab === 'eleves' && isAdmin && <CoranStudentsTab />}
+      </div>
+      {validationDialog}
     </AppLayout>
   );
 };

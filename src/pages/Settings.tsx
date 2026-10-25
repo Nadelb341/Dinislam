@@ -72,6 +72,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   alphabet_line_model: 'Modèle audio (Alphabet)',
   school_holiday: 'Vacances scolaires',
   sourate_admin_unlock: 'Sourate débloquée à la main',
+  coran_progress: 'Programme de lecture du Coran',
+  sourate_story: "Fiche d'histoire d'une sourate",
 };
 
 const Settings = () => {

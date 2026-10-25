@@ -81,6 +81,10 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Tableau de bord › 99 Noms d\'Allah', noun: 'nouveau nom', route: '/admin?section=allah-names-manage', adminOnly: true,
     labelOf: (d) => { const v = d as { nameFr?: string; nameAr?: string } | null; return text(v?.nameFr) || text(v?.nameAr); },
   },
+  dinislam_sourate_story: {
+    place: 'Tableau de bord › Coran › Fiches des sourates', noun: 'fiche de sourate', route: '/admin?section=coran-manage', adminOnly: true,
+    labelOf: (d) => text((d as { titre?: string } | null)?.titre),
+  },
   dinislam_invocation: {
     place: 'Tableau de bord › Invocations', noun: 'nouvelle invocation', route: '/admin?section=invocations-manage', adminOnly: true,
     labelOf: (d) => { const v = d as { title?: string; titleAr?: string } | null; return text(v?.title) || text(v?.titleAr); },

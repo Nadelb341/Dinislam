@@ -710,6 +710,48 @@ export type Database = {
         }
         Relationships: []
       }
+      coran_progress: {
+        Row: {
+          data: Json
+          id: string
+          key: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          id?: string
+          key: string
+          kind: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          key?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coran_reminder_logs: {
+        Row: {
+          sent_on: string
+          user_id: string
+        }
+        Insert: {
+          sent_on: string
+          user_id: string
+        }
+        Update: {
+          sent_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       crash_alert_settings: {
         Row: {
           id: number
@@ -1588,6 +1630,7 @@ export type Database = {
           notif_adm_reg: boolean
           notif_adm_task: boolean
           notif_adm_valid: boolean
+          notif_coran: boolean | null
           notif_hw_new: boolean
           notif_hw_rem: boolean
           notif_hw_res: boolean
@@ -1622,6 +1665,7 @@ export type Database = {
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
+          notif_coran?: boolean | null
           notif_hw_new?: boolean
           notif_hw_rem?: boolean
           notif_hw_res?: boolean
@@ -1656,6 +1700,7 @@ export type Database = {
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
+          notif_coran?: boolean | null
           notif_hw_new?: boolean
           notif_hw_rem?: boolean
           notif_hw_res?: boolean
@@ -2719,6 +2764,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sourate_stories: {
+        Row: {
+          cause_authentique: boolean
+          merite: string | null
+          sourate_number: number
+          sources: Json
+          texte: string
+          titre: string
+          updated_at: string
+          validated: boolean
+        }
+        Insert: {
+          cause_authentique?: boolean
+          merite?: string | null
+          sourate_number: number
+          sources?: Json
+          texte?: string
+          titre?: string
+          updated_at?: string
+          validated?: boolean
+        }
+        Update: {
+          cause_authentique?: boolean
+          merite?: string | null
+          sourate_number?: number
+          sources?: Json
+          texte?: string
+          titre?: string
+          updated_at?: string
+          validated?: boolean
+        }
+        Relationships: []
       }
       sourate_validation_requests: {
         Row: {

@@ -17,7 +17,7 @@ import { toast } from 'sonner';
  */
 
 type PrefKey =
-  | 'notif_msg' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
+  | 'notif_msg' | 'notif_coran' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
   | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task' | 'notif_prog_week' | 'notif_adm_recap' | 'notif_adm_crash'
   | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
 
@@ -53,6 +53,7 @@ const FAMILIES: Family[] = [
     items: [
       { key: 'notif_rec', label: 'Résultat de récitation', hint: 'Sourates, Nourania, invocations' },
       { key: 'notif_lesson', label: "Note de l'enseignante", hint: 'Et nouvelle leçon débloquée' },
+      { key: 'notif_coran', label: 'Mon programme de lecture du Coran 📖', hint: 'À 20 h, si la lecture du jour n\'est pas faite' },
     ],
   },
   {
