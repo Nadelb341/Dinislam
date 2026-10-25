@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -51,6 +52,16 @@ const StudentSettingsOverview = ({ userId }: { userId: string }) => {
     db.from('connexion_logs').select('login_at, user_agent').eq('user_id', userId).order('login_at', { ascending: false }).limit(8)
       .then(({ data }) => setLogins(data ?? []));
   }, [userId]);
+
+  // 🔄 En direct : réglages de notifications de l'élève et choix de l'Espace parents (autre appareil)
+  useRealtimeRefresh(['notification_preferences'], () => {
+    supabase.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle()
+      .then(({ data }) => setPrefs(data ?? {}));
+  });
+  useRealtimeRefresh(['parent_lock_settings'], () => {
+    supabase.from('parent_lock_settings').select('mode').eq('user_id', userId).maybeSingle()
+      .then(({ data }) => setMode((data?.mode as Mode | undefined) ?? 'auto'));
+  });
 
   const changeMode = async (m: Mode) => {
     const previous = mode;

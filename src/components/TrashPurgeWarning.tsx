@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +17,8 @@ const TrashPurgeWarning = () => {
   const navigate = useNavigate();
   const [days, setDays] = useState<number | null>(null);
   const [hidden, setHidden] = useState(false);
+  // 🔄 En direct : corbeille vidée/restaurée ailleurs → l'alerte se recalcule
+  const trashVersion = useRealtimeVersion(['trash_items'], !!user && !isAdmin);
 
   useEffect(() => {
     if (loading || !user || isAdmin) return;
@@ -30,12 +33,12 @@ const TrashPurgeWarning = () => {
       }
       if (age !== null && age <= 12) return;
       const { data: items } = await supabase.from('trash_items').select('deleted_at').eq('user_id', user.id).order('deleted_at', { ascending: true }).limit(1);
-      if (!items?.length) return;
+      if (!items?.length) { setDays(null); return; }
       const purgeAt = new Date(items[0].deleted_at).getTime() + STUDENT_TRASH_DAYS * DAY;
       const left = Math.ceil((purgeAt - Date.now()) / DAY);
-      if (left >= 1 && left <= 3) setDays(left);
+      setDays(left >= 1 && left <= 3 ? left : null);
     })();
-  }, [user, isAdmin, loading]);
+  }, [user, isAdmin, loading, trashVersion]);
 
   if (days === null || hidden) return null;
 

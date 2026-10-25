@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { NPM_VERSETS } from './npmVersets';
 import { getCdnAudioUrl } from './cdnAudio';
 import { getHoussaryEmbedUrl } from '@/data/houssaryVideos';
@@ -18,6 +18,7 @@ import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import type { Tables } from '@/integrations/supabase/types';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 
 function LecteurVerset({ audioUrl }: { audioUrl: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -217,24 +218,33 @@ const SourateDetailDialog = ({
   const [versetsAudio, setVersetsAudio] = useState<Tables<'sourate_versets_audio'>[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
+  // Audios des versets + vidéo : rechargés aussi en direct quand l'enseignante les change
+  const loadMedia = useCallback(() => {
+    if (!open || !dbId) return;
+    supabase
+      .from('sourate_versets_audio')
+      .select('*')
+      .eq('sourate_id', dbId)
+      .order('verset_number', { ascending: true })
+      .then(({ data }) => setVersetsAudio(data || []));
+
+    supabase
+      .from('sourates')
+      .select('video_url')
+      .eq('id', dbId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setVideoUrl(data?.video_url || null);
+      });
+  }, [open, dbId]);
+  useRealtimeRefresh(['sourate_versets_audio', 'sourates'], loadMedia, open && !!dbId);
+
+  useEffect(() => {
+    loadMedia();
+  }, [loadMedia]);
+
   useEffect(() => {
     if (open && dbId) {
-      supabase
-        .from('sourate_versets_audio')
-        .select('*')
-        .eq('sourate_id', dbId)
-        .order('verset_number', { ascending: true })
-        .then(({ data }) => setVersetsAudio(data || []));
-
-      supabase
-        .from('sourates')
-        .select('video_url')
-        .eq('id', dbId)
-        .maybeSingle()
-        .then(({ data }) => {
-          setVideoUrl(data?.video_url || null);
-        });
-
       // Mark targeted content as viewed
       const targetedIds = contents.filter((c) => c.target_user_id && !c.viewed_at).map((c) => c.id);
       if (targetedIds.length > 0) {

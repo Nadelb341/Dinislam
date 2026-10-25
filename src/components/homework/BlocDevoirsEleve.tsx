@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { withName } from '@/lib/encouragements';
 import { Mic, Square, Send, CheckCircle, BookOpen, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -306,6 +307,8 @@ export default function BlocDevoirsEleve() {
   useEffect(() => {
     chargerDevoirs();
   }, [chargerDevoirs]);
+  // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
+  useRealtimeRefresh(['devoirs', 'student_group_members'], () => { void chargerDevoirs(); }, !!user);
 
   const handleRendu = async (devoirId: string, audioBlob: Blob) => {
     if (!user) return;

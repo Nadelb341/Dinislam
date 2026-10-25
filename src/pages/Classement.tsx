@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { groupColorProps } from '@/lib/studentGroups';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -161,6 +162,10 @@ const Classement = () => {
     return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 🔄 En direct : barème modifié, groupes ou membres changés
+  useRealtimeRefresh(['point_settings'], () => { void chargerBareme(); });
+  useRealtimeRefresh(['student_groups', 'student_group_members'], () => { void chargerClassement(); });
 
   const updateBaremePoints = async (id: string, newPoints: number) => {
     await supabase

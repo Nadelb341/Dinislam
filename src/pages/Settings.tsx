@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,6 +103,9 @@ const Settings = () => {
     const items = await fetchTrash(user.id);
     setTrashItems(items);
   }, [user]);
+
+  // 🔄 En direct : corbeille mise à jour depuis un autre appareil
+  useRealtimeRefresh(['trash_items'], () => { void loadTrash(); }, !!user);
 
   const handleRestore = async (item: TrashItem) => {
     const ok = await restoreTrashItem(item);

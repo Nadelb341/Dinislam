@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,6 +31,8 @@ export function useParentLock() {
   const { user, isAdmin } = useAuth();
   const [isChild, setIsChild] = useState(false);
   const [unlocked, setUnlocked] = useState(unlockedNow);
+  // 🔄 En direct : l'enseignante change le verrou de l'Espace parents
+  const lockVersion = useRealtimeVersion(['parent_lock_settings'], !!user && !isAdmin);
 
   useEffect(() => {
     if (!user || isAdmin) { setIsChild(false); return; }
@@ -43,7 +46,7 @@ export function useParentLock() {
       const a = childAge(profile);
       setIsChild(a !== null && a < 12);
     });
-  }, [user, isAdmin]);
+  }, [user, isAdmin, lockVersion]);
 
   /** Vérifie le mot de passe de connexion de l'enfant ; true si correct */
   const unlock = async (password: string): Promise<boolean> => {

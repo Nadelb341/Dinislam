@@ -12,6 +12,7 @@ import SourateDetailDialog from '@/components/sourates/SourateDetailDialog';
 import { Search, BookOpen, Download } from 'lucide-react';
 import { CORAN_ORDERED, type SourateData } from '@/data/sourates';
 import type { Tables } from '@/integrations/supabase/types';
+import { useRealtimeRefresh, useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 
 const CoranPage = () => {
   const { user } = useAuth();
@@ -25,9 +26,9 @@ const CoranPage = () => {
   const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const [
         { data: progressData },
@@ -72,6 +73,10 @@ const CoranPage = () => {
     if (user) loadAll();
   }, [user, loadAll]);
 
+  // 🔄 En direct : versets cochés (autre appareil) et sourates, sans écran de chargement
+  useRealtimeRefresh(['user_sourate_verse_progress', 'sourates'], () => { void loadAll(true); }, !!user);
+  const pdfVersion = useRealtimeVersion(['module_cards', 'module_card_content']);
+
   // Charger le PDF — d'abord depuis la base, sinon le fichier intégré à l'app
   useEffect(() => {
     const fetchPdf = async () => {
@@ -106,7 +111,7 @@ const CoranPage = () => {
       setPdfUrl('/pdf/coran.pdf');
     };
     fetchPdf();
-  }, []);
+  }, [pdfVersion]);
 
   const handleVerseToggle = async (sourateDbId: string, verseNumber: number | number[], _sourateNumber: number, versesCount: number) => {
     if (!user) return;

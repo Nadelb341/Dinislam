@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { groupColorProps } from '@/lib/studentGroups';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -50,6 +51,12 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
       }
     }).finally(() => setLoading(false));
   }, [open, module]);
+
+  // 🔄 En direct : seulement la liste des groupes (les cases déjà cochées ne sont jamais touchées)
+  useRealtimeRefresh(['student_groups'], () => {
+    supabase.from('student_groups').select('id, name, color').order('name')
+      .then(({ data }) => { if (data) setGroups(data as Group[]); });
+  }, open && !!module);
 
   const toggleUser = (uid: string) =>
     setUserIds(prev => prev.includes(uid) ? prev.filter(x => x !== uid) : [...prev, uid]);

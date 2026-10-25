@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 import { Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,12 +102,14 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
   const { user, isAdmin } = useAuth();
   const [prefs, setPrefs] = useState<Prefs>({});
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  // 🔄 En direct : réglage changé sur un autre appareil (interrupteurs enregistrés tout de suite, pas de saisie à perdre)
+  const prefsVersion = useRealtimeVersion(['notification_preferences'], !!user);
 
   useEffect(() => {
     if (!user) return;
     supabase.from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle()
       .then(({ data }: { data: Prefs | null }) => { if (data) setPrefs(data); });
-  }, [user]);
+  }, [user, prefsVersion]);
 
   // Absent = activé (tout est activé par défaut), sauf le mode calme
   const isOn = (k: PrefKey) => prefs[k] !== false;

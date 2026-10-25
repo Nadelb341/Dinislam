@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { Upload, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -55,6 +56,8 @@ const AdminSourateVersets = ({ sourate }: AdminSourateVersetsProps) => {
   useEffect(() => {
     if (ouvert) chargerVersets();
   }, [ouvert, chargerVersets]);
+  // 🔄 En direct (autre appareil de l'enseignante)
+  useRealtimeRefresh(['sourate_versets_audio'], () => { void chargerVersets(); }, ouvert);
 
   const getVersetAudio = (versetNum: number) =>
     versets.find((v) => v.verset_number === versetNum);

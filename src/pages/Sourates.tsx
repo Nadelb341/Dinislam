@@ -18,6 +18,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import type { Tables } from '@/integrations/supabase/types';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 
 // Complete list of 114 Surahs
 const SOURATES_DATA = [
@@ -167,9 +168,9 @@ const SouratesPage = () => {
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; sourateName: string; sourateNumber: number }>({ open: false, sourateName: '', sourateNumber: 0 });
   const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
 
-  const loadAll = useCallback(async () => {
+  const loadAll = useCallback(async (silent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
 
     try {
       const [
@@ -221,6 +222,9 @@ const SouratesPage = () => {
   useEffect(() => {
     if (user) loadAll();
   }, [user, loadAll]);
+
+  // 🔄 En direct : versets cochés (autre appareil), déblocages de l'enseignante, sourates (sans écran de chargement)
+  useRealtimeRefresh(['user_sourate_verse_progress', 'sourate_admin_unlocks', 'sourates'], () => { void loadAll(true); }, !!user);
 
   useEffect(() => {
     if (!user) return;

@@ -8,6 +8,7 @@ import { useSwNavigate } from "@/hooks/useSwNavigate";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from 'react';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import RealtimeSync from '@/components/RealtimeSync';
 
 // Vérification automatique de version — force le rechargement si nouvelle version disponible
 const checkAppVersion = async () => {
@@ -144,6 +145,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <RealtimeSync />
             <AppRoutes />
           </AuthProvider>
         </BrowserRouter>

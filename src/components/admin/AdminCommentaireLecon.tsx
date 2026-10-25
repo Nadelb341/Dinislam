@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { sortByName } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,6 +77,8 @@ const AdminCommentaireLecon = ({ leconId }: Props) => {
     chargerCommentaires();
     chargerLecons();
   }, [chargerEleves, chargerCommentaires, chargerLecons]);
+  // 🔄 En direct : liste des leçons (le commentaire en cours de saisie n'est jamais touché)
+  useRealtimeRefresh(['nourania_lessons'], () => { void chargerLecons(); });
 
   const chargerUnlocksEleve = async (studentId: string) => {
     const { data } = await supabase
