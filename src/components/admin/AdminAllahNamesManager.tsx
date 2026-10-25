@@ -4,7 +4,7 @@
  */
 import { DraftDot } from '@/components/shared/DraftDot';
 import { editDraftKey } from '@/lib/pendingDrafts';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -75,6 +75,18 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       return data || [];
     },
   });
+
+  // Même chose ouverte sur un autre appareil : mise à jour en direct (2026-10-25)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-allah-names-content')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allah_name_media' },
+        () => queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allah_names' },
+        () => queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const getNameMedia = (nameId: number) => allMedia.filter((m) => m.name_id === nameId);
 

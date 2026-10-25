@@ -104,6 +104,18 @@ const AllahNamesPage = () => {
     onError: (e) => toast.error(e.message || 'Erreur'),
   });
 
+  // « Partagé = instantané » : audio, image ou texte d'un nom changé par l'enseignante → visible tout de suite (2026-10-25)
+  useEffect(() => {
+    const channel = supabase
+      .channel('allah-names-content')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allah_name_media' },
+        () => queryClient.invalidateQueries({ queryKey: ['allah-name-media'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allah_names' },
+        () => queryClient.invalidateQueries({ queryKey: ['allah-names'] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
   // Audio validé ou corrigé par l'enseignante : message tout de suite (même si la page reste ouverte)
   useEffect(() => {
     if (!user) return;

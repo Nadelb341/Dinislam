@@ -320,6 +320,86 @@ const SouratesPage = () => {
     return prevProgress?.is_validated === true;
   };
 
+  // Pourcentage + fin de sourate (+20 ans : validée seule ; moins de 20 ans : il reste la récitation)
+  const afterVersesChanged = async (sourateDbId: string, newVerseProgress: Map<string, boolean>, versesCount: number) => {
+    if (!user) return;
+
+    let validatedVerses = 0;
+    for (let i = 1; i <= versesCount; i++) {
+      if (newVerseProgress.get(`${sourateDbId}-${i}`)) validatedVerses++;
+    }
+    const percentage = Math.round((validatedVerses / versesCount) * 100);
+    const allValidated = validatedVerses === versesCount;
+
+    // Update progress percentage, preserving existing is_validated and is_memorized
+    const existing = sourateProgress.get(sourateDbId);
+    await supabase
+      .from('user_sourate_progress')
+      .upsert({
+        user_id: user.id,
+        sourate_id: sourateDbId,
+        progress_percentage: percentage,
+        is_validated: existing?.is_validated || false,
+        context: 'sourates',
+      }, { onConflict: 'user_id,sourate_id,context' });
+
+    setSourateProgress(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(sourateDbId) || { is_validated: false, is_memorized: false, progress_percentage: 0 };
+      newMap.set(sourateDbId, { ...existing, progress_percentage: percentage });
+      return newMap;
+    });
+
+    if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
+      if (isOver20) {
+        setSelectedSourate(null);
+        // Auto-validation pour les +20 ans — pas besoin de l'admin
+        await supabase
+          .from('user_sourate_progress')
+          .upsert(
+            { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'sourates' },
+            { onConflict: 'user_id,sourate_id,context' }
+          );
+        setSourateProgress(prev => {
+          const newMap = new Map(prev);
+          newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
+          return newMap;
+        });
+        toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
+      } else {
+        // Moins de 20 ans : cocher n'envoie plus de demande. C'est la récitation que l'enseignante valide
+        // (la fiche reste ouverte, le cadre « Envoyer ma récitation » est juste en dessous de la barre).
+        toast({
+          title: '🎉 Tous tes versets sont cochés !',
+          description: withName(user, '{prenom}, envoie maintenant ta récitation à ta maîtresse 🎙️ juste sous la barre de progression.'),
+        });
+      }
+    }
+  };
+
+  // « Valider sourate entière » : coche d'un coup tous les versets pas encore cochés (2026-10-25)
+  const handleValidateAll = async (sourateDbId: string, verseNums: number[], versesCount: number) => {
+    if (!user) return;
+    const before = verseProgress;
+    const newVerseProgress = new Map(verseProgress);
+    const rows = [];
+    for (const i of verseNums) {
+      newVerseProgress.set(`${sourateDbId}-${i}`, true);
+      rows.push({ user_id: user.id, sourate_id: sourateDbId, verse_number: i, is_memorized: true, context: 'sourates' });
+    }
+    setVerseProgress(newVerseProgress);
+    try {
+      const { error } = await supabase.from('user_sourate_verse_progress')
+        .upsert(rows, { onConflict: 'user_id,sourate_id,verse_number,context' });
+      if (error) throw error;
+      await afterVersesChanged(sourateDbId, newVerseProgress, versesCount);
+    } catch (error) {
+      console.error('Error validating sourate:', error);
+      setVerseProgress(before);
+      toast({ title: 'Oups', description: "La sourate n'a pas pu être validée, réessaie.", variant: 'destructive' });
+    }
+  };
+
   const handleVerseToggle = async (sourateDbId: string, verseNumber: number, sourateNumber: number, versesCount: number) => {
     if (!user) return;
 
@@ -348,58 +428,7 @@ const SouratesPage = () => {
 
       const newVerseProgress = new Map(verseProgress);
       newVerseProgress.set(key, newValue);
-
-      let validatedVerses = 0;
-      for (let i = 1; i <= versesCount; i++) {
-        if (newVerseProgress.get(`${sourateDbId}-${i}`)) validatedVerses++;
-      }
-      const percentage = Math.round((validatedVerses / versesCount) * 100);
-      const allValidated = validatedVerses === versesCount;
-
-      // Update progress percentage, preserving existing is_validated and is_memorized
-      const existing = sourateProgress.get(sourateDbId);
-      await supabase
-        .from('user_sourate_progress')
-        .upsert({
-          user_id: user.id,
-          sourate_id: sourateDbId,
-          progress_percentage: percentage,
-          is_validated: existing?.is_validated || false,
-          context: 'sourates',
-        }, { onConflict: 'user_id,sourate_id,context' });
-
-      setSourateProgress(prev => {
-        const newMap = new Map(prev);
-        const existing = newMap.get(sourateDbId) || { is_validated: false, is_memorized: false, progress_percentage: 0 };
-        newMap.set(sourateDbId, { ...existing, progress_percentage: percentage });
-        return newMap;
-      });
-
-      if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
-        if (isOver20) {
-          setSelectedSourate(null);
-          // Auto-validation pour les +20 ans — pas besoin de l'admin
-          await supabase
-            .from('user_sourate_progress')
-            .upsert(
-              { user_id: user.id, sourate_id: sourateDbId, is_validated: true, is_memorized: true, progress_percentage: 100, context: 'sourates' },
-              { onConflict: 'user_id,sourate_id,context' }
-            );
-          setSourateProgress(prev => {
-            const newMap = new Map(prev);
-            newMap.set(sourateDbId, { is_validated: true, is_memorized: true, progress_percentage: 100 });
-            return newMap;
-          });
-          toast({ title: 'بارك الله فيك 🎉', description: withName(user, 'Sourate validée, bravo {prenom} ! Bonne continuation.') });
-        } else {
-          // Moins de 20 ans : cocher n'envoie plus de demande. C'est la récitation que l'enseignante valide
-          // (la fiche reste ouverte, le cadre « Envoyer ma récitation » est juste en dessous de la barre).
-          toast({
-            title: '🎉 Tous tes versets sont cochés !',
-            description: withName(user, '{prenom}, envoie maintenant ta récitation à ta maîtresse 🎙️ juste sous la barre de progression.'),
-          });
-        }
-      }
+      await afterVersesChanged(sourateDbId, newVerseProgress, versesCount);
     } catch (error) {
       console.error('Error updating verse:', error);
       setVerseProgress(prev => {
@@ -516,6 +545,7 @@ const SouratesPage = () => {
           sourateProgress={dbSourates.get(selectedSourate.number) ? sourateProgress.get(dbSourates.get(selectedSourate.number)!) : undefined}
           contents={dbSourates.get(selectedSourate.number) ? sourateContents.filter(c => c.sourate_id === dbSourates.get(selectedSourate.number) && (!c.target_user_id || c.target_user_id === user?.id)) : []}
           onVerseToggle={handleVerseToggle}
+          onValidateAll={handleValidateAll}
           needsRecitation={!isOver20 && !isAdmin}
         />
       )}

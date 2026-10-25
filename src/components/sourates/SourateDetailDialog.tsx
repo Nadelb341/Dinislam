@@ -193,6 +193,8 @@ interface SourateDetailDialogProps {
   sourateProgress: { is_validated: boolean; is_memorized: boolean; progress_percentage: number } | undefined;
   contents: Tables<'sourate_content'>[];
   onVerseToggle: (dbId: string, verseNum: number, sourateNumber: number, versesCount: number) => void;
+  /** « Valider sourate entière » : coche tous les versets d'un coup */
+  onValidateAll?: (dbId: string, verseNums: number[], versesCount: number) => Promise<void>;
   /** Moins de 20 ans : c'est la récitation validée par l'enseignante qui ouvre la sourate suivante */
   needsRecitation?: boolean;
 }
@@ -206,6 +208,7 @@ const SourateDetailDialog = ({
   sourateProgress,
   contents,
   onVerseToggle,
+  onValidateAll,
   needsRecitation = false,
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
@@ -254,6 +257,17 @@ const SourateDetailDialog = ({
     if (verseProgress.get(`${dbId}-${i}`)) validatedVerses++;
   }
   const versePercentage = Math.round((validatedVerses / checkCount) * 100);
+  // Versets à cocher par « Valider sourate entière » : ceux affichés + ceux comptés dans le pourcentage
+  // (sourate 56 : 3 versets absents des pages NPM, les deux listes ne sont pas identiques)
+  const shownNums = NPM_VERSETS[sourate.number]
+    ? NPM_VERSETS[sourate.number].filter((v) => v.num > 0).map((v) => v.num)
+    : Array.from({ length: sourate.verses_count }, (_, i) => i + 1);
+  const allVerseNums = [...new Set([...shownNums, ...Array.from({ length: checkCount }, (_, i) => i + 1)])];
+  const askValidateAll = () => askValidation(
+    'Valider la sourate entière ?',
+    `Tous les versets de la sourate ${sourate.name_french} seront marqués comme mémorisés.`,
+    () => { void onValidateAll?.(dbId, allVerseNums, checkCount); },
+  );
 
   const handlePrintSourate = () => {
     const sourateVerses = NPM_VERSETS[sourate.number];
@@ -503,13 +517,23 @@ const SourateDetailDialog = ({
             )}>
               {sourateProgress?.is_validated ? <Check className="h-5 w-5" /> : sourate.number === 1000 ? '2-255' : sourate.number}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-arabic text-lg">{sourate.name_arabic}</p>
               <p className="text-sm text-muted-foreground font-normal">{sourate.name_french}</p>
               <p className="text-xs text-muted-foreground/70 font-normal">
                 {sourate.verses_count} versets • {sourate.revelation_type} • {validatedVerses}/{checkCount} validés
               </p>
             </div>
+            {/* En haut à droite du nom, rouge comme « Commencer l'enregistrement » (2026-10-25) ; mr-7 : place pour la croix */}
+            {onValidateAll && versePercentage < 100 && (
+              <button
+                type="button"
+                onClick={askValidateAll}
+                className="ml-auto mr-7 shrink-0 self-start max-w-[7.5rem] rounded-xl bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 text-xs font-bold leading-tight text-white text-center shadow-sm active:scale-95 transition-transform"
+              >
+                ✅ Valider sourate entière
+              </button>
+            )}
           </DialogTitle>
         </DialogHeader>
           {/* Progress bar */}
