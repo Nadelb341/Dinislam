@@ -189,7 +189,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
           unreadCount: msgs.filter(m => m.sender_type === 'user' && !m.is_read).length,
         });
       }
-      list.sort((a, b) => (a.profile.full_name || '').localeCompare(b.profile.full_name || '', 'fr'));
+      // Dernier message arrivé en haut, jusqu'au plus ancien (demande de Nadia, 2026-10-26)
+      list.sort((a, b) => (b.lastMessageDate || '').localeCompare(a.lastMessageDate || ''));
       return list;
     },
     enabled: open,
