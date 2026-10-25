@@ -528,14 +528,19 @@ const SourateDetailDialog = ({
                 {sourate.verses_count} versets • {sourate.revelation_type} • {validatedVerses}/{checkCount} validés
               </p>
             </div>
-            {/* En haut à droite du nom, rouge comme « Commencer l'enregistrement » (2026-10-25) ; mr-7 : place pour la croix */}
-            {onValidateAll && versePercentage < 100 && (
+            {/* En haut à droite du nom, rouge comme « Commencer l'enregistrement » (2026-10-25) ; mr-7 : place pour la croix.
+                Une fois la sourate validée (par l'enseignante, ou seule pour les 20 ans et plus) : badge vert « Sourate validée ». */}
+            {sourateProgress?.is_validated ? (
+              <span className="ml-auto mr-7 shrink-0 self-start max-w-[7.5rem] rounded-xl bg-green-500 px-2.5 py-1.5 text-xs font-bold leading-tight text-white text-center shadow-sm">
+                ✅ Sourate validée
+              </span>
+            ) : onValidateAll && versePercentage < 100 && (
               <button
                 type="button"
                 onClick={askValidateAll}
                 className="ml-auto mr-7 shrink-0 self-start max-w-[7.5rem] rounded-xl bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 text-xs font-bold leading-tight text-white text-center shadow-sm active:scale-95 transition-transform"
               >
-                ✅ Valider la sourate entière
+                ✅ Valider sourate entière
               </button>
             )}
           </DialogTitle>
