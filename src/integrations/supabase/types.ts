@@ -140,6 +140,7 @@ export type Database = {
       }
       admin_tasks: {
         Row: {
+          attachments: Json
           carried: number
           created_at: string
           created_by: string | null
@@ -161,6 +162,7 @@ export type Database = {
           urgent: boolean
         }
         Insert: {
+          attachments?: Json
           carried?: number
           created_at?: string
           created_by?: string | null
@@ -182,6 +184,7 @@ export type Database = {
           urgent?: boolean
         }
         Update: {
+          attachments?: Json
           carried?: number
           created_at?: string
           created_by?: string | null

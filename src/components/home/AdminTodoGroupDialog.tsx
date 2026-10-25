@@ -21,7 +21,10 @@ import { moveToTrash } from '@/lib/trash';
 import { openAdminSection, openGroupMessage } from '@/lib/adminBridge';
 import { errorMessage } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Paperclip, Loader2 } from 'lucide-react';
+import { TodoAttachments } from './TodoAttachments';
+import { uploadTodoFile, asAttachments, type TodoAttachment } from '@/lib/todoAttachments';
+import type { Json } from '@/integrations/supabase/types';
 import { courseItems, draftKeyOf, isLate, sortTasks, todayParis, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
 import { AnnounceDialog, CourseModeDialog } from './NextCourse';
 
@@ -127,6 +130,11 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
   const [spoken, setSpoken] = useState<string | null>(null);
   const [homeworkFor, setHomeworkFor] = useState<AdminTask | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Fichiers (documents, photos, vidéos…) sur une ligne (2026-10-25) : nouvelle ligne, ou ligne existante choisie dans 📌
+  const newFileRef = useRef<HTMLInputElement>(null);
+  const addFileRef = useRef<HTMLInputElement>(null);
+  const [fileTarget, setFileTarget] = useState<AdminTask | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Idée 8 : modèles (lignes qui reviennent souvent), communs à tous les groupes
   const { data: templates = [] } = useQuery({
@@ -203,6 +211,46 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     }
   };
 
+  const saveAttachments = async (task: AdminTask, next: TodoAttachment[]) => {
+    const { error } = await supabase.from('admin_tasks')
+      .update({ attachments: next as unknown as Json, updated_at: new Date().toISOString() }).eq('id', task.id);
+    if (error) throw error;
+    refresh();
+  };
+
+  /** 📎 à côté du micro : une nouvelle ligne avec le(s) fichier(s) ; son titre = le texte écrit, sinon le nom du fichier */
+  const addWithFiles = async (files: File[]) => {
+    if (!group || !files.length) return;
+    setUploading(true);
+    try {
+      const title = text.trim() || files[0].name.replace(/\.[^.]+$/, '');
+      const minPos = Math.min(0, ...tasks.map((t) => t.position));
+      const { data: row, error } = await supabase.from('admin_tasks').insert({
+        group_id: group.id, title, position: minPos - 10, ...toRow({ ...options, ...flagsOf(kind) }),
+      }).select('id').single();
+      if (error || !row) throw error || new Error('Ligne non créée');
+      const atts: TodoAttachment[] = [];
+      for (const f of files) atts.push(await uploadTodoFile(row.id, f));
+      const { error: e2 } = await supabase.from('admin_tasks').update({ attachments: atts as unknown as Json }).eq('id', row.id);
+      if (e2) throw e2;
+      setText(''); clearDraft(draftKey); setOptions(EMPTY_OPTIONS);
+      toast.success(files.length > 1 ? `📎 ${files.length} fichiers ajoutés` : '📎 Fichier ajouté');
+      refresh();
+    } catch (e) { toast.error(errorMessage(e)); } finally { setUploading(false); }
+  };
+
+  /** 📌 › « 📎 Ajouter un fichier » sur une ligne existante */
+  const addFilesTo = async (task: AdminTask, files: File[]) => {
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const atts = [...asAttachments(task.attachments)];
+      for (const f of files) atts.push(await uploadTodoFile(task.id, f));
+      await saveAttachments(task, atts);
+      toast.success(files.length > 1 ? `📎 ${files.length} fichiers ajoutés` : '📎 Fichier ajouté');
+    } catch (e) { toast.error(errorMessage(e)); } finally { setUploading(false); setFileTarget(null); }
+  };
+
   const toggleMic = () => {
     if (listening) { recognitionRef.current?.stop(); return; }
     const Api = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -257,6 +305,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
           group_id: task.group_id, title: task.title, due_date: addDays(base, 7), remind_at: nextRemind,
           student_id: task.student_id, recurrence: 'weekly', urgent: task.urgent, position: task.position,
           next_course: task.next_course, to_bring: task.to_bring, to_prepare: task.to_prepare,
+          attachments: task.attachments ?? [],
         });
         if (e2) throw e2;
         toast.success(`🔁 Prochaine fois prévue le ${fmtDate(addDays(base, 7))}`);
@@ -392,6 +441,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="z-[700]">
             <DropdownMenuItem onClick={() => startEdit(task)}>✏️ Modifier</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { setFileTarget(task); addFileRef.current?.click(); }}>📎 Ajouter un fichier</DropdownMenuItem>
             {!task.done && <DropdownMenuItem onClick={() => toggleUrgent(task)}>{task.urgent ? '☆ Plus urgent' : '⭐ Urgent'}</DropdownMenuItem>}
             {!task.done && KINDS.filter((k) => k.key !== kindOf(task)).map((k) => (
               <DropdownMenuItem key={k.key} onClick={() => moveTo(task, k.key)}>{k.icon} Déplacer vers « {k.label} »</DropdownMenuItem>
@@ -416,6 +466,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
             {(task.carried ?? 0) > 0 && !task.done && <span className="font-semibold text-amber-700 dark:text-amber-300">🔁 reportée ×{task.carried}</span>}
             {task.to_prepare && <span>🗓️ notée le {new Date(task.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>}
           </div>
+          <TodoAttachments taskId={task.id} taskTitle={task.title} attachments={asAttachments(task.attachments)}
+            onChange={(next) => saveAttachments(task, next)} />
           {task.to_prepare && !task.done && (
             <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => toHomework(task)}
               className="mt-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 text-xs font-bold">
@@ -526,6 +578,14 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
                 className="h-12 bg-card text-base"
                 autoFocus
               />
+              <Button type="button" variant="outline" disabled={uploading} onClick={() => newFileRef.current?.click()}
+                className="h-12 w-12 shrink-0 rounded-xl bg-card" aria-label="Ajouter un document, une photo ou une vidéo">
+                {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Paperclip className="h-5 w-5" />}
+              </Button>
+              <input ref={newFileRef} type="file" multiple className="hidden" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.txt"
+                onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ''; void addWithFiles(fs); }} />
+              <input ref={addFileRef} type="file" multiple className="hidden" accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.txt"
+                onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ''; if (fileTarget) void addFilesTo(fileTarget, fs); }} />
               <Button type="button" onClick={toggleMic} variant={listening ? 'destructive' : 'default'} className={`h-12 w-12 shrink-0 rounded-xl text-xl ${listening ? 'animate-pulse' : ''}`} aria-label="Parler">
                 {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
               </Button>

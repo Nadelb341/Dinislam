@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment";
 
 export interface TrashItem {
   id: string;
@@ -21,7 +21,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -145,6 +145,20 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
+  // Fichier retiré d'une ligne « À FAIRE » : on le remet sur sa ligne (le fichier est resté dans le stockage)
+  if (item.item_type === "admin_task_attachment") {
+    const d = item.item_data as { task_id?: string; attachment?: { path: string; name: string; type: string } } | null;
+    if (!d?.task_id || !d.attachment) return false;
+    const { data: task } = await supabase.from("admin_tasks").select("attachments").eq("id", d.task_id).maybeSingle();
+    if (!task) return false;
+    const list = Array.isArray(task.attachments) ? (task.attachments as { path: string }[]) : [];
+    if (!list.some((a) => a.path === d.attachment!.path)) {
+      const { error } = await supabase.from("admin_tasks").update({ attachments: [...list, d.attachment] as unknown as Json }).eq("id", d.task_id);
+      if (error) return false;
+    }
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
   // Séance de présence : on recrée la date (même sans aucune présence notée) puis les présences
   if (item.item_type === "attendance_day") {
     const rows = Array.isArray(item.item_data) ? item.item_data : [];
@@ -157,7 +171,7 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
-  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model">];
+  const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment">];
   if (!table) return false;
   const { __children, ...row } = (item.item_data || {}) as { __children?: TrashChildren } & Record<string, unknown>;
   const { error } = await untypedDb.from(table).insert(__children ? row : item.item_data);

@@ -73,6 +73,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   school_holiday: 'Vacances scolaires',
   sourate_admin_unlock: 'Sourate débloquée à la main',
   coran_progress: 'Programme de lecture du Coran',
+  admin_task_attachment: 'Fichier d\'une ligne À FAIRE',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 
