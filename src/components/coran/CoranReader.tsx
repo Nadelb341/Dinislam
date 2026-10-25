@@ -63,9 +63,11 @@ interface Props {
   tools?: ReactNode;
   /** Limites de lecture (programme du jour) : rien n'empêche d'aller plus loin, on les affiche juste */
   range?: { from: number; to: number };
+  /** Marque-page posé sur une page : ruban de couleur dans le coin de la page */
+  bookmarkOf?: (index: number) => { dot: string; label: string } | null;
 }
 
-export function CoranReader({ index, onIndexChange, mode, action, tools, range }: Props) {
+export function CoranReader({ index, onIndexChange, mode, action, tools, range, bookmarkOf }: Props) {
   const [double, setDouble] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(orientation: landscape) and (min-width: 900px)');
@@ -146,9 +148,13 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range }
 
   return (
     <div className="flex flex-col rounded-2xl overflow-hidden border border-[#e6d9cc] dark:border-[#3a2523] bg-white dark:bg-[#1b1110] shadow-sm">
-      <div className={cn('flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-bold', MODE_STYLE[mode.kind])}>
-        <span className="[overflow-wrap:anywhere]">{mode.label}</span>
-        {mode.sub && <span className="text-right opacity-80 [overflow-wrap:anywhere]">{mode.sub}</span>}
+      {/* En haut : le mode de lecture à gauche, les outils (marque-page, sommaire, écouter) à droite (2026-10-25) */}
+      <div className={cn('flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs font-bold', MODE_STYLE[mode.kind])}>
+        <div className="min-w-0">
+          <p className="[overflow-wrap:anywhere]">{mode.label}</p>
+          {mode.sub && <p className="text-[11px] font-semibold opacity-80 [overflow-wrap:anywhere]">{mode.sub}</p>}
+        </div>
+        {tools && <div className="flex flex-wrap items-center justify-end gap-1.5">{tools}</div>}
       </div>
 
       <div className="relative bg-white flex items-center justify-center overflow-hidden touch-none select-none"
@@ -156,11 +162,20 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range }
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <div className="h-full w-full flex items-center justify-center gap-1 transition-transform duration-150"
           style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
-          {pages.map((i) => (
-            <div key={i} className={cn('h-full', pages.length > 1 ? 'w-1/2' : 'w-full')}>
-              <PageImage index={i} alt={`${describeIndex(i).title} · ${describeIndex(i).sub}`} />
-            </div>
-          ))}
+          {pages.map((i) => {
+            const bm = bookmarkOf?.(i);
+            return (
+              <div key={i} className={cn('relative h-full', pages.length > 1 ? 'w-1/2' : 'w-full')}>
+                <PageImage index={i} alt={`${describeIndex(i).title} · ${describeIndex(i).sub}`} />
+                {bm && (
+                  <span className="absolute top-0 right-3 flex flex-col items-center pointer-events-none" aria-label={`Marque-page : ${bm.label}`}>
+                    <span className={cn('block w-7 h-12 shadow-md [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]', bm.dot)} />
+                    <span className="mt-1 rounded-full bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 whitespace-nowrap">🔖 {bm.label}</span>
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
         <button type="button" onClick={() => go(1)} disabled={rightIndex >= READER_COUNT} aria-label="Page suivante"
           className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-[#7a1d22]/85 text-white grid place-items-center shadow disabled:opacity-30">
@@ -183,14 +198,15 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range }
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-t border-[#e6d9cc] dark:border-[#3a2523] bg-[#fbf7ef] dark:bg-[#221413]">
+      {/* En bas : le numéro de la page, centré (2026-10-25) */}
+      <div className="flex flex-col items-center gap-1.5 px-3 py-2 text-center border-t border-[#e6d9cc] dark:border-[#3a2523] bg-[#fbf7ef] dark:bg-[#221413]">
         <div className="min-w-0">
           <p className="text-sm font-extrabold tabular-nums text-[#2a1414] dark:text-[#f3e9e4]">
             {leftInfo ? `${info.title} – ${leftInfo.title.replace('Page ', '')}` : info.title}
           </p>
           <p className="text-[11px] text-[#75605a] dark:text-[#bfa79f] [overflow-wrap:anywhere]">{info.sub}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">{tools}{action}</div>
+        {action}
       </div>
     </div>
   );

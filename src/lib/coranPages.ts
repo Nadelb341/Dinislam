@@ -24,3 +24,6 @@ export const BOOKMARK_COLORS: Record<BookmarkColor, { dot: string; label: string
   vert: { dot: 'bg-[#1f7a52]', label: 'Ma page préférée' },
   bleu: { dot: 'bg-[#2457a5]', label: 'Important' },
 };
+
+/** Fiches à relire avec attention avant validation (doutes signalés le 2026-10-25) */
+export const STORIES_WITH_DOUBT = [3, 8, 16, 17, 24, 30, 36, 60, 64, 66, 83, 96];

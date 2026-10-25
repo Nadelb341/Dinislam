@@ -19,7 +19,7 @@ import { errorMessage, cn } from '@/lib/utils';
 import { pickEncouragement } from '@/lib/coranEncouragements';
 import { withName } from '@/lib/encouragements';
 import { percentRead } from '@/lib/coranPlan';
-import { describeIndex } from '@/lib/coranPages';
+import { describeIndex, BOOKMARK_COLORS } from '@/lib/coranPages';
 
 /**
  * Carte « Coran » (refaite le 2026-10-25, ancienne carte retirée à la demande de Nadia) :
@@ -181,7 +181,20 @@ const CoranPage = () => {
                 ← Retour {reading.kind === 'juz' ? `au Juz' ${reading.juz}` : 'à mon programme'}
               </button>
             )}
-            <CoranReader index={index} onIndexChange={changeIndex} mode={mode} action={action} tools={tools} range={range} />
+            {lecture.bookmarks.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1" aria-label="Mes marque-pages">
+                <span className="shrink-0 text-xs font-extrabold text-[#8a6512] dark:text-[#e0bb62]">🔖 Mes marque-pages :</span>
+                {[...lecture.bookmarks].sort((a, b) => a.index - b.index).map((b) => (
+                  <button key={b.index} type="button" onClick={() => (reading.kind === 'free' ? changeIndex(b.index) : setIndex(b.index))}
+                    className={cn('shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold bg-white dark:bg-[#221413]', b.index === index ? 'border-[#c39a3e] ring-2 ring-[#c39a3e]/50' : 'border-[#e6d9cc] dark:border-[#3a2523]')}>
+                    <span className={cn('h-2.5 w-2.5 rounded-full', BOOKMARK_COLORS[b.color].dot)} />
+                    {describeIndex(b.index).title} · {b.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <CoranReader index={index} onIndexChange={changeIndex} mode={mode} action={action} tools={tools} range={range}
+              bookmarkOf={(i) => { const b = lecture.bookmarks.find((x) => x.index === i); return b ? BOOKMARK_COLORS[b.color] && { dot: BOOKMARK_COLORS[b.color].dot, label: b.label } : null; }} />
             <p className="text-center text-[11px] text-muted-foreground">Glisse le doigt vers la droite pour tourner la page · deux doigts pour zoomer · tablette à l'horizontale : double page</p>
           </div>
         )}
@@ -191,7 +204,7 @@ const CoranPage = () => {
             onOpen={(juz, sura, page) => { setReading({ kind: 'juz', juz, sura }); setIndex(indexOfPage(page)); setTab('lire'); }} />
         )}
 
-        {tab === 'lieu' && <CoranRevelationTab onRead={(page) => readFreeNoSave(indexOfPage(page))} />}
+        {tab === 'lieu' && <CoranRevelationTab initialOpen={Number(params.get('sourate')) || undefined} onRead={(page) => readFreeNoSave(indexOfPage(page))} />}
 
         {tab === 'programme' && (
           <CoranProgrammeTab programme={programme}

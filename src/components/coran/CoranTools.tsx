@@ -19,7 +19,7 @@ export function BookmarkButton({ index, bookmarks, onChange }: { index: number; 
   return (
     <>
       <button type="button" className={cn(toolBtn, current && 'ring-2 ring-[#c39a3e]')} onClick={() => setOpen(true)} aria-label="Marque-page">
-        🔖{current && <span className={cn('ml-1 inline-block h-2.5 w-2.5 rounded-full align-middle', BOOKMARK_COLORS[current.color].dot)} />}
+        🔖 Marque-page{current && <span className={cn('ml-1 inline-block h-2.5 w-2.5 rounded-full align-middle', BOOKMARK_COLORS[current.color].dot)} />}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm" level="nested">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
+import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
@@ -490,6 +491,9 @@ const handleModuleClick = (mod) => {
               <p className="text-xs text-muted-foreground text-right mt-2">— {todayHadith.source}</p>
             </div>
           </div>
+
+          {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
+          <SourateDuJour />
 
           {/* Quick Stats - right after welcome message */}
           {progress && modules && (() => {
