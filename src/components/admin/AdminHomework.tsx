@@ -117,6 +117,17 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     },
   });
 
+  // 💎 Cases « J'ai travaillé ce devoir » cochées par les élèves (2026-10-26)
+  const { data: checks = [] } = useQuery({
+    queryKey: ['admin-devoirs', 'checks'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('devoir_checks').select('devoir_id, student_id, checked_at');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const checkedAt = (devoirId: string, studentId: string) => checks.find((c) => c.devoir_id === devoirId && c.student_id === studentId)?.checked_at;
+
   // Fetch rendus with student info
   const { data: rendus = [] } = useQuery({
     queryKey: ['admin-devoirs-rendus'],
@@ -270,7 +281,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       const devoir = devoirs.find((d) => d.id === id);
       // Corbeille d'abord : si elle échoue, rien n'est supprimé
       if (devoir && user?.id) {
-        const ok = await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir', devoir);
+        // Les cases « J'ai travaillé » partent avec le devoir (suppression en cascade) : gardées avec lui dans la corbeille
+        const { data: checksRows } = await supabase.from('devoir_checks').select('*').eq('devoir_id', id);
+        // Copie = la vraie ligne de la table (sans les noms ajoutés pour l'affichage, sinon la restauration échoue)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { student_name, group_name, ...row } = devoir;
+        const ok = await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir',
+          checksRows?.length ? { ...row, __children: [{ table: 'devoir_checks', rows: checksRows }] } : row);
         if (!ok) throw new Error("Le devoir n'a pas pu être mis dans la corbeille, rien n'a été supprimé");
       }
       const { error } = await supabase.from('devoirs').delete().eq('id', id);
@@ -519,6 +536,12 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                         <p className="text-xs text-muted-foreground">
                           {d.date_limite ? `📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}` : 'Sans date limite'}
                         </p>
+                        {(() => {
+                          const at = checkedAt(d.id, eleve.user_id);
+                          return at
+                            ? <p className="mt-1 inline-block rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 px-2 py-0.5 text-[11px] font-bold">💎 Travaillé le {new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>
+                            : <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">⏳ Pas encore coché</p>;
+                        })()}
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
                         onClick={() => deleteDevoir.mutate(d.id)}>

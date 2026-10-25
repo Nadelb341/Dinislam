@@ -871,6 +871,32 @@ export type Database = {
         }
         Relationships: []
       }
+      devoir_checks: {
+        Row: {
+          checked_at: string
+          devoir_id: string
+          student_id: string
+        }
+        Insert: {
+          checked_at?: string
+          devoir_id: string
+          student_id: string
+        }
+        Update: {
+          checked_at?: string
+          devoir_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoir_checks_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devoirs: {
         Row: {
           assigned_to: string
@@ -3734,6 +3760,10 @@ export type Database = {
       program_item_done: {
         Args: { p_item: string; p_module: string; p_user: string }
         Returns: boolean
+      }
+      program_items: {
+        Args: { p_stored: Json; p_user: string; p_week: string }
+        Returns: Json
       }
       recalculate_student_points: {
         Args: { p_user_id: string }

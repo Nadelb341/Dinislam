@@ -24,6 +24,7 @@ const PROGRESS_VIEWS = ['weekly-program', 'weekly-program-admin', 'student-engag
 
 export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   coran_progress: ['coran-progress', 'coran-admin-progress'],
+  devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs'],
   sourate_stories: ['sourate-stories'],
   admin_card_order: ['admin-card-ordering'],
   admin_task_templates: ['admin-task-templates'],

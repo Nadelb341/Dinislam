@@ -10,6 +10,9 @@ import { sendPushNotification } from "@/lib/pushHelper";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
 import type { WeeklyProgram } from "@/lib/weeklyProgram";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConfirmValidation } from "@/hooks/useConfirmValidation";
+import { useConfetti } from "@/hooks/useConfetti";
 
 type Devoir = {
   id: string;
@@ -21,9 +24,12 @@ type Devoir = {
   rendu: boolean;
   statut_rendu: string | null;
   commentaire_admin: string | null;
+  /** L'élève a coché « J'ai travaillé ce devoir » : son diamant brille (2026-10-26) */
+  travaille: boolean;
 };
 
-function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string, audioBlob: Blob) => void }) {
+function CarteDevoir({ devoir, onRendu, onTravaille }: { devoir: Devoir; onRendu: (id: string, audioBlob: Blob) => void; onTravaille: (id: string, value: boolean) => void }) {
+  const { askValidation, validationDialog } = useConfirmValidation();
   const [enregistrement, setEnregistrement] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -82,8 +88,8 @@ function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string
   const isAFaire = !devoir.rendu;
 
   return (
-    <div className={cn(
-      "rounded-2xl p-4 mb-3 shadow-sm border-2",
+    <div id={`devoir-${devoir.id}`} className={cn(
+      "rounded-2xl p-4 mb-3 shadow-sm border-2 scroll-mt-24",
       isCorrige
         ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
         : isARefaire
@@ -118,6 +124,20 @@ function CarteDevoir({ devoir, onRendu }: { devoir: Devoir; onRendu: (id: string
             : '⏳ À faire'}
         </span>
       </div>
+
+      {/* 💎 Case « J'ai travaillé ce devoir » : allume le diamant du chemin de la semaine (confirmation pour cocher) */}
+      <button type="button"
+        onClick={() => devoir.travaille ? onTravaille(devoir.id, false) : askValidation("Tu as travaillé ce devoir ?", `« ${devoir.titre} » sera coché, et ton diamant va briller 💎`, () => onTravaille(devoir.id, true))}
+        className={cn("w-full flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 mb-2 text-left transition-colors",
+          devoir.travaille ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : "border-dashed border-sky-400 bg-white dark:bg-slate-900")}
+        aria-pressed={devoir.travaille}>
+        <span className={cn("h-6 w-6 shrink-0 rounded-md border-2 grid place-items-center text-sm font-extrabold",
+          devoir.travaille ? "bg-emerald-500 border-emerald-500 text-white" : "border-sky-500")}>{devoir.travaille ? '✓' : ''}</span>
+        <span className="text-sm font-bold">
+          {devoir.travaille ? "✅ J'ai travaillé ce devoir · mon diamant brille 💎" : "J'ai travaillé ce devoir 💎"}
+        </span>
+      </button>
+      {validationDialog}
 
       {devoir.date_limite && (() => {
         const deadline = new Date(devoir.date_limite);
@@ -240,7 +260,10 @@ export default function BlocDevoirsEleve() {
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [devoirsTermines, setDevoirsTermines] = useState<Devoir[]>([]);
   const [loading, setLoading] = useState(true);
-  const [ouvert, setOuvert] = useState(false);
+  // Ouvert par défaut à l'ouverture de l'appli ; la flèche le referme et le rouvre (demande de Nadia, 2026-10-26)
+  const [ouvert, setOuvert] = useState(true);
+  const queryClient = useQueryClient();
+  const { fireSuccess } = useConfetti();
 
   // 💎 Chemin de la semaine (le plus récent seulement : les anciens se rangent tout seuls)
   const { data: program = null } = useQuery({
@@ -282,6 +305,9 @@ export default function BlocDevoirsEleve() {
       .from('devoirs_rendus')
       .select('devoir_id, statut, commentaire_admin')
       .eq('student_id', user.id);
+    // Cases « J'ai travaillé ce devoir »
+    const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', user.id);
+    const travailles = new Set((checks || []).map((c) => c.devoir_id));
 
     const enrichis: Devoir[] = (data || []).map(d => {
       const rendu = rendus?.find(r => r.devoir_id === d.id);
@@ -295,6 +321,7 @@ export default function BlocDevoirsEleve() {
         rendu: !!rendu,
         statut_rendu: rendu?.statut || null,
         commentaire_admin: rendu?.commentaire_admin || null,
+        travaille: travailles.has(d.id),
       };
     });
 
@@ -308,7 +335,26 @@ export default function BlocDevoirsEleve() {
     chargerDevoirs();
   }, [chargerDevoirs]);
   // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
-  useRealtimeRefresh(['devoirs', 'student_group_members'], () => { void chargerDevoirs(); }, !!user);
+  useRealtimeRefresh(['devoirs', 'student_group_members', 'devoir_checks'], () => { void chargerDevoirs(); }, !!user);
+
+  // 💎 Coche / décoche « J'ai travaillé ce devoir » : le diamant du chemin de la semaine suit (2026-10-26)
+  const handleTravaille = async (devoirId: string, value: boolean) => {
+    if (!user) return;
+    const { error } = value
+      ? await supabase.from('devoir_checks').upsert({ devoir_id: devoirId, student_id: user.id }, { onConflict: 'devoir_id,student_id' })
+      : await supabase.from('devoir_checks').delete().eq('devoir_id', devoirId).eq('student_id', user.id);
+    if (error) { toast.error('Erreur : ' + error.message); return; }
+    if (value) {
+      fireSuccess();
+      toast.success(withName(user, '💎 Bravo {prenom}, ton diamant brille !'));
+      const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      const adminIds = adminRoles?.map((r) => r.user_id) || [];
+      const devoir = devoirs.find((d) => d.id === devoirId);
+      if (adminIds.length) sendPushNotification({ userIds: adminIds, title: '💎 Devoir travaillé', category: 'adm_hw', body: `${user.user_metadata?.full_name || 'Un élève'} a travaillé : ${devoir?.titre || 'un devoir'}`, data: { url: '/?admin=cahier-texte' } });
+    }
+    queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });
+    void chargerDevoirs();
+  };
 
   const handleRendu = async (devoirId: string, audioBlob: Blob) => {
     if (!user) return;
@@ -451,7 +497,7 @@ export default function BlocDevoirsEleve() {
           )}
 
           {devoirs.map(d => (
-            <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} />
+            <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} />
           ))}
 
           {devoirsTermines.length > 0 && (
@@ -460,7 +506,7 @@ export default function BlocDevoirsEleve() {
                 ✅ Devoirs terminés ({devoirsTermines.length})
               </p>
               {devoirsTermines.map(d => (
-                <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} />
+                <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} />
               ))}
             </>
           )}

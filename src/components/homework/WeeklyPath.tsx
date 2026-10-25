@@ -12,11 +12,12 @@ import { nextCourseDay, type ProgramItem, type WeeklyProgram } from '@/lib/weekl
 const GEM: Record<string, [string, string]> = {
   nourania: ['#fb923c', '#ea580c'], sourates: ['#4ade80', '#15803d'], allah_names: ['#fde047', '#ca8a04'],
   alphabet: ['#60a5fa', '#1d4ed8'], invocations: ['#2dd4bf', '#0f766e'], priere: ['#c084fc', '#7e22ce'],
+  devoir: ['#f472b6', '#be185d'],
 };
 
 function Diamond({ item }: { item: ProgramItem }) {
   const [light, dark] = GEM[item.module] ?? ['#a5b4fc', '#4338ca'];
-  const id = `gem-${item.module}`;
+  const id = `gem-${item.module}-${item.item_id}`;
   return (
     <span className={`relative inline-block ${item.done ? 'gem-shine' : ''}`}>
       <svg viewBox="0 0 48 44" className="h-14 w-14" aria-hidden="true"
@@ -68,7 +69,12 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
 
       <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3">
         {program.items.map((item) => (
-          <button key={`${item.module}-${item.item_id}`} type="button" onClick={() => navigate(item.path)}
+          <button key={`${item.module}-${item.item_id}`} type="button"
+            onClick={() => {
+              // Diamant d'un devoir : on descend jusqu'au devoir dans le cahier de texte (même page)
+              const el = item.module === 'devoir' ? document.getElementById(`devoir-${item.item_id}`) : null;
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else navigate(item.path);
+            }}
             aria-label={`${item.label} : ${item.detail}, ${item.done ? 'validé' : 'à faire'}`}
             className="w-[5.5rem] flex flex-col items-center gap-0.5 rounded-xl p-1 transition-transform active:scale-95 hover:bg-white/60 dark:hover:bg-white/5">
             <Diamond item={item} />
@@ -95,7 +101,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
       {program.teacher_note && (
         <p className="rounded-xl bg-card border-s-4 border-amber-400 px-3 py-2 text-sm [overflow-wrap:anywhere]">💬 <b>Mot de ton prof :</b> {program.teacher_note}</p>
       )}
-      <p className="text-[11px] text-muted-foreground text-center">Commence par la matière que tu veux : touche un diamant 💎</p>
+      <p className="text-[11px] text-muted-foreground text-center">Un diamant par devoir : touche-le pour aller au devoir, puis coche « J'ai travaillé ce devoir » 💎</p>
     </div>
   );
 }
