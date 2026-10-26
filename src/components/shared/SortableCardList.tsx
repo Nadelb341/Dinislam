@@ -22,6 +22,8 @@ interface SortableCardListProps<T extends { id: string | number }> {
   renderItem: (item: T, dragProps: DragItemProps) => ReactNode;
   /** Grille (grid-cols-...) → rectSortingStrategy. Liste verticale (défaut) → verticalListSortingStrategy. */
   strategy?: SortingStrategy;
+  /** Au moment où la carte se « détache » (ex. petite vibration du téléphone) */
+  onDragStart?: () => void;
 }
 
 /**
@@ -30,7 +32,7 @@ interface SortableCardListProps<T extends { id: string | number }> {
  * activationConstraint.delay évite qu'un simple tap/clic (checkbox, menu...) ne déclenche un déplacement.
  */
 export function SortableCardList<T extends { id: string | number }>({
-  items, onReorder, renderItem, strategy = verticalListSortingStrategy,
+  items, onReorder, renderItem, strategy = verticalListSortingStrategy, onDragStart,
 }: SortableCardListProps<T>) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
@@ -47,7 +49,7 @@ export function SortableCardList<T extends { id: string | number }>({
   };
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={handleDragEnd}>
       <SortableContext items={items.map((i) => i.id)} strategy={strategy}>
         {items.map((item) => (
           <SortableItemRenderer key={item.id} id={item.id} item={item} renderItem={renderItem} />

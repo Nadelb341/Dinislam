@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_card_order: {
@@ -1729,6 +1704,35 @@ export type Database = {
             foreignKeyName: "module_visibility_module_id_fkey"
             columns: ["module_id"]
             isOneToOne: true
+            referencedRelation: "learning_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_visits: {
+        Row: {
+          created_at: string
+          day: string
+          module_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day?: string
+          module_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          module_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_visits_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
             referencedRelation: "learning_modules"
             referencedColumns: ["id"]
           },
@@ -4203,9 +4207,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "student"],

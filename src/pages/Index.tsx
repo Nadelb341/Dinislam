@@ -259,6 +259,21 @@ const Index = () => {
     enabled: !!user && !isAdmin,
   });
 
+  // 👁️ Élèves différents qui ont ouvert chaque carte ces 7 derniers jours (admin, idée B du 2026-10-27)
+  const { data: visitsByModule = {} } = useQuery({
+    queryKey: ['module-visits', 'week'],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 6 * 86400000);
+      const day = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, '0')}-${String(since.getDate()).padStart(2, '0')}`;
+      const { data, error } = await supabase.from('module_visits').select('module_id, user_id').gte('day', day);
+      if (error) throw error;
+      const sets: Record<string, Set<string>> = {};
+      for (const r of data || []) (sets[r.module_id] ??= new Set()).add(r.user_id);
+      return Object.fromEntries(Object.entries(sets).map(([k, v]) => [k, v.size])) as Record<string, number>;
+    },
+  });
+
   // Map module_id → visibilité
   const visibilityMap = Object.fromEntries((visibilityRows || []).map(v => [v.module_id, v]));
 
@@ -275,17 +290,26 @@ const Index = () => {
   });
 
   // Réordonner les cartes par appui long + glisser (admin, 2026-10-27 : remplace les flèches ▲▼)
-  const reorderModules = useCallback(async (newOrder: NonNullable<typeof modules>) => {
-    const updated = newOrder.map((m, i) => ({ ...m, display_order: i }));
+  const saveModuleOrder = useCallback(async (order: NonNullable<typeof modules>) => {
+    const updated = order.map((m, i) => ({ ...m, display_order: i }));
     queryClient.setQueryData(['learning-modules', isAdmin], updated);
     const results = await Promise.all(updated.map((m) => supabase.from('learning_modules').update({ display_order: m.display_order }).eq('id', m.id)));
     if (results.some((r) => r.error)) {
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       toast.error('Erreur lors de la mise à jour');
-    } else {
-      toast.success('Ordre mis à jour');
+      return false;
     }
+    return true;
   }, [isAdmin, queryClient]);
+  const reorderModules = useCallback(async (newOrder: NonNullable<typeof modules>) => {
+    const before = modules ? [...modules] : null;
+    if (!(await saveModuleOrder(newOrder))) return;
+    // ↩️ Pendant quelques secondes, on peut remettre l'ordre d'avant (idée C, 2026-10-27)
+    toast.success('Ordre mis à jour', {
+      duration: 8000,
+      action: before ? { label: '↩️ Remettre l\'ordre d\'avant', onClick: () => { void saveModuleOrder(before).then((ok) => ok && toast.success('Ordre d\'avant remis')); } } : undefined,
+    });
+  }, [modules, saveModuleOrder]);
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active, title }: {id: string;is_active: boolean;title?: string;}) => {
@@ -387,6 +411,8 @@ const Index = () => {
   };
 
 const handleModuleClick = (mod) => {
+    // 👁️ Une visite par élève, par carte et par jour (« Vu par N élèves cette semaine », 2026-10-27)
+    if (user && !isAdmin) void supabase.from('module_visits').upsert({ user_id: user.id, module_id: mod.id }, { ignoreDuplicates: true });
     if (mod.is_builtin && mod.builtin_path) {
       navigate(mod.builtin_path);
     } else {
@@ -667,6 +693,9 @@ const handleModuleClick = (mod) => {
                               </>
                             );
                           })()}
+                          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border mb-1">
+                            👁️ Vu par {visitsByModule[mod.id] ?? 0} élève{(visitsByModule[mod.id] ?? 0) > 1 ? 's' : ''} cette semaine
+                          </div>
                           <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
@@ -690,7 +719,7 @@ const handleModuleClick = (mod) => {
               };
               // Admin : appui long sur une carte puis glisser pour la déplacer ; élèves : simple grille
               return isAdmin
-                ? <SortableCardList items={visibleModules} strategy={rectSortingStrategy} onReorder={reorderModules} renderItem={(mod, dp) => renderModule(mod, visibleModules.indexOf(mod), dp)} />
+                ? <SortableCardList items={visibleModules} strategy={rectSortingStrategy} onReorder={reorderModules} onDragStart={() => { try { navigator.vibrate?.(15); } catch { /* pas de vibration (iPhone) */ } }} renderItem={(mod, dp) => renderModule(mod, visibleModules.indexOf(mod), dp)} />
                 : visibleModules.map((mod, index) => renderModule(mod, index));
             })()}
           </div>

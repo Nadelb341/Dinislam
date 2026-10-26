@@ -58,6 +58,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_cards: ['admin-module-cards', 'coran-extra-card', 'coran-pdf-card', 'generic-module-cards', 'grammaire-cards', 'module-cards'],
   module_content: ['module-content'],
   module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts'],
+  // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
+  module_visits: ['module-visits'],
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin'],
   notification_preferences: ['admin-push-stats'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
