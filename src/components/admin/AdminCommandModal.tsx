@@ -57,7 +57,7 @@ const BOUTONS_ACTIONS = [
 const BOUTONS_MODULES = [
   { id: 'eleves', label: 'Élèves', section: 'eleves', emoji: '👨‍🎓' },
   { id: 'registre', label: 'Registre', section: 'registre-presence', emoji: '📋' },
-  { id: 'cahier', label: 'Cahier de texte', section: 'cahier-texte-module', emoji: '📓' },
+  // « Cahier de texte » retiré le 2026-10-27 (demande de Nadia) : il est dans la carte « Cahier de texte » de l'accueil
   { id: 'inscriptions', label: 'Inscriptions', section: 'users', emoji: '📝' },
 ];
 
@@ -230,8 +230,8 @@ const AdminCommandModal = ({
             {/* Séparateur */}
             <div className="border-t border-border pt-1" />
 
-            {/* Boutons modules — 2 par ligne */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Boutons modules — 3 par ligne (Élèves, Registre, Inscriptions) */}
+            <div className="grid grid-cols-3 gap-2">
               {BOUTONS_MODULES.map((btn) => {
                 const count = compteurs[btn.id] || 0;
                 const hasAction = count > 0;
@@ -253,7 +253,7 @@ const AdminCommandModal = ({
               })}
               <button
                 onClick={() => setModalSection(BOUTON_BROUILLONS.section)}
-                className={`col-span-2 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${drafts.length > 0 ? 'bg-amber-400 text-amber-950' : 'bg-emerald-500 text-white'}`}
+                className={`col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${drafts.length > 0 ? 'bg-amber-400 text-amber-950' : 'bg-emerald-500 text-white'}`}
               >
                 <span>{BOUTON_BROUILLONS.emoji} {BOUTON_BROUILLONS.label}</span>
                 {drafts.length > 0 && (

@@ -83,6 +83,18 @@ export function AdminTodoCard() {
     },
   });
 
+  // 🟠 Devoirs envoyés par les élèves et pas encore validés (idée C, 2026-10-27) : pastille par post-it
+  const { data: aValider = [] } = useQuery({
+    queryKey: ['admin-devoirs-rendus', 'todo-a-valider'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('devoirs_rendus').select('student_id').eq('statut', 'rendu');
+      if (error) throw error;
+      return (data || []).map((r) => r.student_id);
+    },
+  });
+  // « Général » = toute la classe ; un groupe = ses élèves
+  const aValiderDe = (g: TodoGroup) => (g.id === null ? aValider.length : aValider.filter((id) => g.memberIds.includes(id)).length);
+
   const allGroups: TodoGroup[] = useMemo(() => [...groups, { ...GENERAL, memberIds: [] }], [groups]);
   // Une tâche dont le groupe a été supprimé retombe dans « Général »
   const groupIds = useMemo(() => new Set(groups.map((g) => g.id)), [groups]);
@@ -145,6 +157,11 @@ export function AdminTodoCard() {
                   <span className="flex items-start gap-1.5">
                     <span className="flex-1 min-w-0 text-[13px] font-bold leading-tight text-foreground [overflow-wrap:anywhere]">{g.name}</span>
                     <DraftDot draftKey={draftKeyOf(g.id)} />
+                    {aValiderDe(g) > 0 && (
+                      <span className="shrink-0 h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center bg-orange-500 text-white" title="Devoirs envoyés à valider">
+                        🟠 {aValiderDe(g)}
+                      </span>
+                    )}
                     {open.length > 0 && (
                       <span className={`shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${late ? 'animate-pulse' : ''}`}>
                         {open.length}

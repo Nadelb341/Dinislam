@@ -654,7 +654,8 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
           Devoirs assignés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
         </h3>
         {nomGroupe && <p className="text-xs text-muted-foreground mb-2">👥 Seulement les élèves du groupe « {nomGroupe} »</p>}
-        {devoirsParEleve.filter(({ devoirsEleve }) => devoirsEleve.length > 0).map(({ eleve, devoirsEleve, aRefaire, enAttente, aJour }) => {
+        {/* Depuis un groupe : TOUS les élèves du groupe, même sans devoir (2026-10-27, demande de Nadia) */}
+        {devoirsParEleve.filter(({ devoirsEleve }) => membresGroupe || devoirsEleve.length > 0).map(({ eleve, devoirsEleve, aRefaire, enAttente, aJour }) => {
           const ouvert = elevesOuverts[eleve.user_id];
           return (
             <Card key={eleve.user_id} className={`mb-2 overflow-hidden border-2 ${couleurCarte({ aRefaire, enAttente, aJour })}`}>
@@ -669,6 +670,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               </button>
               {ouvert && (
                 <div className="px-3 pb-3 space-y-2">
+                  {devoirsEleve.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun devoir pour l'instant</p>}
                   {devoirsEleve.map((d) => (
                     <div key={d.id} className="bg-background rounded-xl p-3 flex items-center justify-between shadow-sm">
                       <div>
