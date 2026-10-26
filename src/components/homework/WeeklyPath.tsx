@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfetti } from '@/hooks/useConfetti';
-import { bonusEarned, itemFill, nextCourseDay, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { bonusEarned, courseDeadline, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { TreasureChest } from './TreasureChest';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 /**
@@ -56,7 +59,8 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const allDone = total > 0 && done === total;
   const bonus = bonusEarned(program);
   const pct = total ? (program.items.reduce((s, i) => s + itemFill(i), 0) / total) * 100 : 0;
-  const courseDay = nextCourseDay(program.week_start);
+  const queryClient = useQueryClient();
+  const courseDay = courseDeadline(program);
   const day = courseDay.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const reward = treasureFor(program.program_id);
 
@@ -70,6 +74,30 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
     },
   });
 
+  // 🎁 Récompenses déjà obtenues cette semaine (trésor ouvert : +10 points ; bonus : +5 points)
+  const rewardsKey = ['weekly-program', program.student_id, 'rewards', program.program_id];
+  const { data: rewards = [] } = useQuery({
+    queryKey: rewardsKey,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('program_rewards').select('kind').eq('program_id', program.program_id);
+      if (error) throw error;
+      return (data || []).map((r) => r.kind);
+    },
+  });
+  const chestOpened = rewards.includes('tresor');
+  const claim = async (kind: 'tresor' | 'bonus') => {
+    const { data, error } = await supabase.rpc('claim_program_reward', { p_kind: kind });
+    if (error || !data) return false;
+    queryClient.invalidateQueries({ queryKey: rewardsKey });
+    return true;
+  };
+  // 🌟 Bonus gagné : les 5 points sont donnés tout seuls (la base vérifie)
+  useEffect(() => {
+    if (!bonus || rewards.includes('bonus')) return;
+    void claim('bonus').then((ok) => { if (ok) toast.success('🌟 Diamant bonus : +5 points au classement !'); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bonus, rewards.join(',')]);
+
   // Confettis une seule fois, quand tous les diamants brillent
   useEffect(() => {
     if (!allDone) return;
@@ -81,7 +109,15 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
     window.setTimeout(fireConfetti, 300);
   }, [allDone, program.program_id, fireConfetti]);
 
-  const openChest = () => { if (!allDone) return; setChestOpen(true); window.setTimeout(fireConfetti, 250); };
+  const openChest = async () => {
+    if (!allDone) return;
+    if (!chestOpened) {
+      const ok = await claim('tresor');
+      if (ok) toast.success('🎁 Trésor ouvert : +10 points au classement !');
+    }
+    setChestOpen(true);
+    window.setTimeout(fireConfetti, 250);
+  };
 
   return (
     <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 p-3 space-y-3 mb-3">
@@ -123,24 +159,27 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
           <div className="w-[5.5rem] flex flex-col items-center gap-0.5 p-1" aria-label={bonus ? 'Diamant bonus gagné' : 'Diamant bonus à gagner'}>
             <Diamond item={{ module: 'bonus', item_id: program.program_id, emoji: '🌟' }} fill={bonus ? 1 : 0} />
             <span className="text-xs font-extrabold">Bonus</span>
-            <span className="text-[11px] text-muted-foreground text-center leading-tight">{bonus ? 'Gagné, bravo !' : `tout finir avant le ${courseDay.toLocaleDateString('fr-FR', { weekday: 'long' })}`}</span>
+            <span className="text-[11px] text-muted-foreground text-center leading-tight">{bonus ? 'Gagné · +5 pts !' : `tout finir avant le ${courseDay.toLocaleDateString('fr-FR', { weekday: 'long' })} · +5 pts`}</span>
           </div>
         )}
 
         {/* 🎁 Le trésor : son rond se remplit à chaque diamant ; il s'ouvre quand tout brille */}
-        <button type="button" onClick={openChest} disabled={!allDone} aria-label={allDone ? 'Ouvrir le trésor' : 'Trésor fermé'}
+        <button type="button" onClick={() => void openChest()} disabled={!allDone} aria-label={chestOpened ? 'Trésor ouvert, revoir la récompense' : allDone ? 'Ouvrir le trésor' : 'Trésor fermé'}
           className="w-[5.5rem] flex flex-col items-center gap-0.5 p-1 rounded-xl disabled:cursor-default enabled:hover:bg-white/60 dark:enabled:hover:bg-white/5">
-          <span className="grid place-items-center h-14 w-14 rounded-full transition-all duration-500"
-            style={{ background: `conic-gradient(#16a34a ${pct}%, rgba(100,116,139,.25) 0)` }}>
-            <span className={`grid place-items-center h-11 w-11 rounded-full bg-card text-2xl ${allDone ? 'animate-bounce' : ''}`}>{allDone ? '🎁' : '🔒'}</span>
+          <span className={`relative grid place-items-center h-14 w-16 ${allDone && !chestOpened ? 'animate-bounce' : ''}`}>
+            <TreasureChest open={chestOpened} locked={!allDone} className="h-14 w-16" />
+          </span>
+          {/* La jauge se remplit à chaque diamant */}
+          <span className="h-1.5 w-14 rounded-full bg-slate-300/60 dark:bg-slate-700 overflow-hidden">
+            <span className="block h-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </span>
           <span className="text-xs font-extrabold">Trésor</span>
-          <span className="text-[11px] text-muted-foreground">{allDone ? 'touche-moi !' : `${done}/${total} 💎`}</span>
+          <span className="text-[11px] text-muted-foreground text-center leading-tight">{chestOpened ? 'ouvert · +10 pts ✨' : allDone ? 'touche-moi !' : `${done}/${total} 💎`}</span>
         </button>
       </div>
 
       <p className="text-center text-sm font-bold">
-        {allDone ? `🎉 Tous tes diamants brillent, machaAllah ! Touche le trésor pour l'ouvrir 🎁` : `Fais briller tes ${total} diamants pour ouvrir le trésor 🎁`}
+        {chestOpened ? `✨ Trésor ouvert, machaAllah ! Tu as gagné 10 points au classement 🏆` : allDone ? `🎉 Tous tes diamants brillent, machaAllah ! Touche le trésor pour l'ouvrir (+10 points) 🎁` : `Fais briller tes ${total} diamants pour ouvrir le trésor (+10 points) 🎁`}
       </p>
       {program.teacher_note && (
         <p className="rounded-xl bg-card border-s-4 border-amber-400 px-3 py-2 text-sm [overflow-wrap:anywhere]">💬 <b>Mot de ton prof :</b> {program.teacher_note}</p>
@@ -152,8 +191,9 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
         <DialogContent className="max-w-sm text-center" level="nested">
           <DialogTitle className="sr-only">Le trésor de la semaine</DialogTitle>
           <div className="treasure-pop space-y-3 py-2">
-            <p className="text-6xl">🎁</p>
+            <div className="mx-auto w-fit"><TreasureChest open locked={false} className="h-28 w-32" /></div>
             <p className="text-lg font-extrabold">Trésor ouvert, machaAllah !</p>
+            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">🏆 +10 points au classement</p>
             {bonus && <p className="text-sm font-bold text-amber-600 dark:text-amber-400">🌟 Et tu as gagné le diamant bonus !</p>}
             <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/30 border border-amber-300 dark:border-amber-800 px-4 py-3">
               <p className="text-2xl mb-1">{reward.emoji}</p>

@@ -5,6 +5,8 @@ export interface ProgramItem {
   done_at?: string | null;
   /** Devoir en étapes (ex. 3 lignes) : le diamant se remplit petit à petit */
   steps_total?: number; steps_done?: number;
+  /** Date où le devoir a été donné */
+  created_at?: string;
 }
 export interface WeeklyProgram {
   program_id: string; student_id: string; week_start: string; items: ProgramItem[]; message_index: number;
@@ -25,10 +27,22 @@ export function itemFill(i: ProgramItem): number {
   return t > 0 ? Math.min(1, (i.steps_done ?? 0) / t) : 0;
 }
 
+/**
+ * Jour du cours visé : le premier mercredi APRÈS le dernier devoir donné (ou après le début de la semaine).
+ * Même règle que la fonction SQL program_deadline (vacances comprises : jamais une date déjà passée).
+ */
+export function courseDeadline(p: WeeklyProgram): Date {
+  const dates = [new Date(`${p.week_start}T12:00:00`), ...p.items.filter((i) => i.created_at).map((i) => new Date(i.created_at!))];
+  const d = new Date(Math.max(...dates.map((x) => x.getTime())));
+  d.setHours(12, 0, 0, 0);
+  do d.setDate(d.getDate() + 1); while (d.getDay() !== 3);
+  return d;
+}
+
 /** 🌟 Diamant bonus : tous les diamants allumés avant le jour du cours */
 export function bonusEarned(p: WeeklyProgram): boolean {
   if (!p.items.length || !p.items.every((i) => i.done)) return false;
-  const course = nextCourseDay(p.week_start);
+  const course = courseDeadline(p);
   course.setHours(0, 0, 0, 0);
   return p.items.every((i) => !i.done_at || new Date(i.done_at) < course);
 }

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { sendPushNotification } from "@/lib/pushHelper";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
-import { praiseFor, nextCourseDay, type WeeklyProgram } from "@/lib/weeklyProgram";
+import { praiseFor, courseDeadline, type WeeklyProgram } from "@/lib/weeklyProgram";
 import { matiereOf } from "@/lib/devoirMatieres";
 
 /** Mercredi prochain (jour du cours), aujourd'hui compris */
@@ -557,6 +557,7 @@ export default function BlocDevoirsEleve() {
     }
 
     toast.success(withName(user, "🎉 Bravo {prenom}, ton devoir est envoyé à ton prof !"));
+    queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });
     chargerDevoirs();
   };
 
@@ -629,7 +630,7 @@ export default function BlocDevoirsEleve() {
 
           {(devoirs.length > 0 || devoirsTermines.length > 0) && (
             <CahierPapier devoirs={[...devoirs, ...devoirsTermines]}
-              pourLe={program && nextCourseDay(program.week_start).getTime() >= Date.now() - 86400000 ? nextCourseDay(program.week_start) : prochainMercredi()}
+              pourLe={program ? courseDeadline(program) : prochainMercredi()}
               renderDetail={(d) => <CarteDevoir devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />} />
           )}
         </div>

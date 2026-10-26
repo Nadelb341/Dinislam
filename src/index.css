@@ -411,7 +411,14 @@
 .treasure-pop { animation: treasure-pop .55s cubic-bezier(.2,.9,.3,1.2) both; }
 @media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine, .treasure-pop { animation: none; } }
 
-/* 📓 Papier ligné du cahier de texte de l'élève (2026-10-26) */
-.cahier-papier { background: repeating-linear-gradient(hsl(var(--card)) 0 31px, hsl(214 60% 88% / .7) 31px 32px); border-left: 3px solid hsl(0 80% 78%); }
-.dark .cahier-papier { background: repeating-linear-gradient(hsl(var(--card)) 0 31px, hsl(214 40% 30% / .6) 31px 32px); border-left-color: hsl(0 45% 40%); }
+/* 📓 Papier du cahier de texte de l'élève (2026-10-26 ; traits retirés à la demande de Nadia) */
+.cahier-papier { background: hsl(var(--card)); border-left: 3px solid hsl(0 80% 78%); }
+.dark .cahier-papier { border-left-color: hsl(0 45% 40%); }
 .cahier-main { font-family: 'Patrick Hand', 'Comic Sans MS', cursive; }
+
+/* 🎁 Trésor ouvert : l'or scintille (2026-10-26) */
+@keyframes tresor-scintille { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(45deg); } }
+.tresor-etincelle { animation: tresor-scintille 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes tresor-lueur { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.tresor-lueur { animation: tresor-lueur 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tresor-etincelle, .tresor-lueur { animation: none; } }

@@ -2269,6 +2269,35 @@ export type Database = {
         }
         Relationships: []
       }
+      program_rewards: {
+        Row: {
+          created_at: string
+          kind: string
+          program_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          program_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          program_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_rewards_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth_key: string
@@ -3739,6 +3768,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_program_reward: { Args: { p_kind: string }; Returns: boolean }
       class_program_streaks: {
         Args: never
         Returns: {
@@ -3800,6 +3830,10 @@ export type Database = {
       }
       my_program_streak: { Args: never; Returns: number }
       next_program_items: { Args: { p_user: string }; Returns: Json }
+      program_deadline: {
+        Args: { p_items: Json; p_week: string }
+        Returns: string
+      }
       program_item_done: {
         Args: { p_item: string; p_module: string; p_user: string }
         Returns: boolean

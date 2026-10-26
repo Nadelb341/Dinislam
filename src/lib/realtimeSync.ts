@@ -40,7 +40,10 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   attendance_sessions: ['attendance-sessions'],
   dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
   dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
-  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges'],
+  // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
+  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement'],
+  // Audio envoyé ou corrigé : le diamant suit
+  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus'],
   homework_submissions: ['my-homework-submissions'],
   invocation_content: ['admin-invocation-contents', 'admin-invocation-contents-full', 'invocation-contents-all'],
   invocations: ['admin-dashboard-stats', 'admin-invocation-validations', 'admin-invocations-full', 'admin-invocations-list', 'admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'invocations-list', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
