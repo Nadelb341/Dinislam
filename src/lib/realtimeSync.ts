@@ -41,9 +41,13 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
   dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
   // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
-  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans'],
+  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours'],
   // Audio envoyé ou corrigé : le diamant suit
-  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans'],
+  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours'],
+  // 🎒 Prêt pour le cours et 🎯 objectif du jour de l'élève (2026-10-26)
+  course_ready: ['course-ready'],
+  daily_goals: ['daily-goals'],
+  group_schedules: ['course-ready-info'],
   homework_submissions: ['my-homework-submissions'],
   invocation_content: ['admin-invocation-contents', 'admin-invocation-contents-full', 'invocation-contents-all'],
   invocations: ['admin-dashboard-stats', 'admin-invocation-validations', 'admin-invocations-full', 'admin-invocations-list', 'admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'invocations-list', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
@@ -68,13 +72,13 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   ramadan_quizzes: ['admin-global-stats', 'admin-quiz-student-detail', 'admin-ramadan-quizzes', 'admin-ramadan-student-detail', 'ramadan-quizzes'],
   ramadan_settings: ['ramadan-settings'],
   scheduled_notifications: ['scheduled-notifications'],
-  school_holidays: ['school-holidays', 'bilans'],
+  school_holidays: ['school-holidays', 'bilans', 'course-ready-info'],
   // 📈 Bilans des élèves (note, appréciation, texto aux parents)
   student_reports: ['bilans'],
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
   sourate_versets_audio: [],
   sourates: ['admin-dashboard-stats', 'admin-module-progress', 'admin-recitations', 'admin-sourate-validations', 'admin-sourates', 'admin-sourates-list', 'admin-stats', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
-  student_group_members: ['attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin'],
+  student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin'],
   student_groups: ['admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
   trash_items: [],
   user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],

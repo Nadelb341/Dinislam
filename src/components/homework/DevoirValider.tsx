@@ -10,6 +10,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 import { envoyerDevoir, lienTravail } from '@/lib/devoirTravail';
 import { withName } from '@/lib/encouragements';
 import { errorMessage, cn } from '@/lib/utils';
+import { AudioProf } from './AudioProf';
 
 export interface DevoirAValider {
   id: string; titre: string; type: string;
@@ -17,6 +18,8 @@ export interface DevoirAValider {
   /** null = pas encore envoyé ; 'rendu' = en attente ; 'corrige' = validé ; 'a_refaire' = à refaire */
   statut: string | null;
   commentaire?: string | null;
+  /** 🎧 Correction audio du professeur (devoirs_rendus.correction_audio_url) */
+  correction_audio_url?: string | null;
 }
 
 /**
@@ -50,7 +53,12 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
   };
 
   if (devoir.statut === 'corrige') {
-    return <p className="rounded-xl bg-green-100 dark:bg-green-950/40 px-3 py-2 text-sm font-bold text-green-800 dark:text-green-200">✅ Devoir validé par ton professeur · ton diamant brille 💎</p>;
+    return (
+      <div className="space-y-2">
+        <p className="rounded-xl bg-green-100 dark:bg-green-950/40 px-3 py-2 text-sm font-bold text-green-800 dark:text-green-200">✅ Devoir validé par ton professeur · ton diamant brille 💎</p>
+        <AudioProf url={devoir.correction_audio_url} kind="correction" />
+      </div>
+    );
   }
   if (devoir.statut === 'rendu') {
     return <p className="rounded-xl bg-orange-100 dark:bg-orange-950/40 px-3 py-2 text-sm font-bold text-orange-800 dark:text-orange-200">⏳ Devoir envoyé · ton professeur va le valider (diamant orange 🟠)</p>;
@@ -63,6 +71,7 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
           🔄 À refaire{devoir.commentaire ? ` : « ${devoir.commentaire} »` : ''}
         </p>
       )}
+      {devoir.statut === 'a_refaire' && <AudioProf url={devoir.correction_audio_url} kind="correction" />}
       {!dansLaCarte && lien && (
         <button type="button" onClick={() => navigate(lien)}
           className="w-full rounded-xl bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 text-sm font-extrabold active:scale-[0.98] transition-transform">
