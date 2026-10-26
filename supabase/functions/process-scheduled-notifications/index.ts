@@ -197,9 +197,12 @@ serve(async (req) => {
         if (!logErr) {
           const { data: created } = await supabase.rpc('generate_weekly_programs', { p_week: today });
           programs = Number(created) || 0;
-          const { data: rows } = await supabase.from('weekly_programs').select('student_id, items').eq('week_start', today);
-          for (const r of (rows ?? []) as { student_id: string; items: unknown[] }[]) {
+          // Depuis le 2026-10-26 : les diamants = devoirs donnés + 99 noms, calculés par weekly_program_view
+          const { data: view } = await supabase.rpc('weekly_program_view', {});
+          const rows = ((view ?? []) as { student_id: string; week_start: string; items: unknown[] }[]).filter((r) => r.week_start === today);
+          for (const r of rows) {
             const n = Array.isArray(r.items) ? r.items.length : 0;
+            if (n === 0) continue;
             try {
               await sendPushInternal({
                 userId: r.student_id,
@@ -212,6 +215,31 @@ serve(async (req) => {
               });
             } catch (e) { console.error('Chemin de la semaine : notification non envoyée', r.student_id, e); }
           }
+        }
+      }
+    }
+
+    // 💎 Mardi 18 h (veille du cours du mercredi) : rappel aux élèves à qui il reste des diamants à faire briller
+    let eveReminded = 0;
+    if (!inHolidays && isoWeekday(today) === 2 && currTotal >= 18 * 60 && currTotal < 18 * 60 + 5) {
+      const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'veille_cours', sent_on: today });
+      if (!logErr) {
+        const { data: view } = await supabase.rpc('weekly_program_view', {});
+        for (const p of (view ?? []) as { student_id: string; items: { done: boolean }[] }[]) {
+          const left = (p.items || []).filter((i) => !i.done).length;
+          if (!left) continue;
+          try {
+            await sendPushInternal({
+              userId: p.student_id,
+              title: '💎 Demain, c\'est le cours !',
+              body: `{prenom}, il te reste ${left} diamant${left > 1 ? 's' : ''} à faire briller avant demain 💪 Le diamant bonus 🌟 t'attend !`,
+              tag: `veille-${today}`,
+              type: 'weekly_program_eve',
+              category: 'prog_eve',
+              data: { url: '/?open=devoirs' },
+            });
+            eveReminded++;
+          } catch (e) { console.error('Veille du cours : notification non envoyée', p.student_id, e); }
         }
       }
     }
@@ -344,6 +372,7 @@ serve(async (req) => {
       programs,
       recap,
       prepReminded,
+      eveReminded,
       processed: (notifications || []).length,
       totalSent,
       tasksReminded,

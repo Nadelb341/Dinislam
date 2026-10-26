@@ -404,4 +404,7 @@
 @keyframes gem-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
 .gem-sparkle { animation: gem-twinkle 1.6s ease-in-out infinite; }
 .gem-shine { animation: gem-glow 2.4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine { animation: none; } }
+/* 🎁 Trésor qui s'ouvre (2026-10-26) */
+@keyframes treasure-pop { 0% { transform: scale(.6) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.08) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+.treasure-pop { animation: treasure-pop .55s cubic-bezier(.2,.9,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine, .treasure-pop { animation: none; } }

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { sendPushNotification } from "@/lib/pushHelper";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
-import type { WeeklyProgram } from "@/lib/weeklyProgram";
+import { praiseFor, type WeeklyProgram } from "@/lib/weeklyProgram";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmValidation } from "@/hooks/useConfirmValidation";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -26,10 +26,14 @@ type Devoir = {
   commentaire_admin: string | null;
   /** L'élève a coché « J'ai travaillé ce devoir » : son diamant brille (2026-10-26) */
   travaille: boolean;
+  /** Devoir en étapes (ex. « Ligne 1 », « Ligne 2 »…) et étapes déjà cochées (numéros à partir de 1) */
+  etapes: string[];
+  etapesFaites: number[];
 };
 
-function CarteDevoir({ devoir, onRendu, onTravaille }: { devoir: Devoir; onRendu: (id: string, audioBlob: Blob) => void; onTravaille: (id: string, value: boolean) => void }) {
+function CarteDevoir({ devoir, onRendu, onTravaille, onEtape }: { devoir: Devoir; onRendu: (id: string, audioBlob: Blob) => void; onTravaille: (id: string, value: boolean) => void; onEtape: (id: string, step: number, value: boolean) => void }) {
   const { askValidation, validationDialog } = useConfirmValidation();
+  const { user } = useAuth();
   const [enregistrement, setEnregistrement] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -125,7 +129,25 @@ function CarteDevoir({ devoir, onRendu, onTravaille }: { devoir: Devoir; onRendu
         </span>
       </div>
 
-      {/* 💎 Case « J'ai travaillé ce devoir » : allume le diamant du chemin de la semaine (confirmation pour cocher) */}
+      {/* 💎 Devoir en étapes : une case par étape, le diamant se remplit petit à petit (2026-10-26) */}
+      {devoir.etapes.length > 0 ? (
+        <div className="rounded-xl border-2 border-dashed border-sky-400 bg-white dark:bg-slate-900 p-2.5 mb-2 space-y-1.5">
+          <p className="text-xs font-extrabold text-sky-700 dark:text-sky-300">💎 Coche chaque étape travaillée ({devoir.etapesFaites.length}/{devoir.etapes.length})</p>
+          {devoir.etapes.map((label, k) => {
+            const n = k + 1;
+            const fait = devoir.etapesFaites.includes(n);
+            return (
+              <button key={n} type="button" aria-pressed={fait}
+                onClick={() => fait ? onEtape(devoir.id, n, false) : askValidation('Étape travaillée ?', `« ${label} » sera cochée 💎`, () => onEtape(devoir.id, n, true))}
+                className={cn("w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm", fait ? "bg-emerald-50 dark:bg-emerald-950/30" : "hover:bg-muted/50")}>
+                <span className={cn("h-5 w-5 shrink-0 rounded-md border-2 grid place-items-center text-xs font-extrabold", fait ? "bg-emerald-500 border-emerald-500 text-white" : "border-sky-500")}>{fait ? '✓' : ''}</span>
+                <span className={cn("font-semibold [overflow-wrap:anywhere]", fait && "line-through text-muted-foreground")}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+      /* 💎 Case « J'ai travaillé ce devoir » : allume le diamant du chemin de la semaine (confirmation pour cocher) */
       <button type="button"
         onClick={() => devoir.travaille ? onTravaille(devoir.id, false) : askValidation("Tu as travaillé ce devoir ?", `« ${devoir.titre} » sera coché, et ton diamant va briller 💎`, () => onTravaille(devoir.id, true))}
         className={cn("w-full flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 mb-2 text-left transition-colors",
@@ -137,6 +159,11 @@ function CarteDevoir({ devoir, onRendu, onTravaille }: { devoir: Devoir; onRendu
           {devoir.travaille ? "✅ J'ai travaillé ce devoir · mon diamant brille 💎" : "J'ai travaillé ce devoir 💎"}
         </span>
       </button>
+      )}
+      {/* ⭐ Petit mot automatique, le même à chaque ouverture */}
+      {devoir.travaille && user && (
+        <p className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-1.5 mb-2 text-sm font-semibold">{withName(user, praiseFor(devoir.id, user.id))}</p>
+      )}
       {validationDialog}
 
       {devoir.date_limite && (() => {
@@ -308,6 +335,7 @@ export default function BlocDevoirsEleve() {
     // Cases « J'ai travaillé ce devoir »
     const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', user.id);
     const travailles = new Set((checks || []).map((c) => c.devoir_id));
+    const { data: steps } = await supabase.from('devoir_steps').select('devoir_id, step').eq('student_id', user.id);
 
     const enrichis: Devoir[] = (data || []).map(d => {
       const rendu = rendus?.find(r => r.devoir_id === d.id);
@@ -322,6 +350,8 @@ export default function BlocDevoirsEleve() {
         statut_rendu: rendu?.statut || null,
         commentaire_admin: rendu?.commentaire_admin || null,
         travaille: travailles.has(d.id),
+        etapes: Array.isArray(d.etapes) ? (d.etapes as unknown[]).map(String) : [],
+        etapesFaites: (steps || []).filter((x) => x.devoir_id === d.id).map((x) => x.step),
       };
     });
 
@@ -335,7 +365,25 @@ export default function BlocDevoirsEleve() {
     chargerDevoirs();
   }, [chargerDevoirs]);
   // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
-  useRealtimeRefresh(['devoirs', 'student_group_members', 'devoir_checks'], () => { void chargerDevoirs(); }, !!user);
+  useRealtimeRefresh(['devoirs', 'student_group_members', 'devoir_checks', 'devoir_steps'], () => { void chargerDevoirs(); }, !!user);
+
+  // 💎 Étape d'un devoir : quand toutes les étapes sont cochées, le devoir est « travaillé » (diamant plein)
+  const handleEtape = async (devoirId: string, step: number, value: boolean) => {
+    if (!user) return;
+    const devoir = devoirs.find((d) => d.id === devoirId);
+    if (!devoir) return;
+    const { error } = value
+      ? await supabase.from('devoir_steps').upsert({ devoir_id: devoirId, student_id: user.id, step }, { onConflict: 'devoir_id,student_id,step' })
+      : await supabase.from('devoir_steps').delete().eq('devoir_id', devoirId).eq('student_id', user.id).eq('step', step);
+    if (error) { toast.error('Erreur : ' + error.message); return; }
+    const faites = value ? [...new Set([...devoir.etapesFaites, step])] : devoir.etapesFaites.filter((n) => n !== step);
+    const complet = faites.length >= devoir.etapes.length;
+    if (complet && !devoir.travaille) { await handleTravaille(devoirId, true); return; }
+    if (!complet && devoir.travaille) { await handleTravaille(devoirId, false); return; }
+    if (value) { fireSuccess(); toast.success(withName(user, `💎 Étape cochée, bravo {prenom} ! (${faites.length}/${devoir.etapes.length})`)); }
+    queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });
+    void chargerDevoirs();
+  };
 
   // 💎 Coche / décoche « J'ai travaillé ce devoir » : le diamant du chemin de la semaine suit (2026-10-26)
   const handleTravaille = async (devoirId: string, value: boolean) => {
@@ -497,7 +545,7 @@ export default function BlocDevoirsEleve() {
           )}
 
           {devoirs.map(d => (
-            <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} />
+            <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />
           ))}
 
           {devoirsTermines.length > 0 && (
@@ -506,7 +554,7 @@ export default function BlocDevoirsEleve() {
                 ✅ Devoirs terminés ({devoirsTermines.length})
               </p>
               {devoirsTermines.map(d => (
-                <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} />
+                <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />
               ))}
             </>
           )}

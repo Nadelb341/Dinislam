@@ -897,6 +897,35 @@ export type Database = {
           },
         ]
       }
+      devoir_steps: {
+        Row: {
+          checked_at: string
+          devoir_id: string
+          step: number
+          student_id: string
+        }
+        Insert: {
+          checked_at?: string
+          devoir_id: string
+          step: number
+          student_id: string
+        }
+        Update: {
+          checked_at?: string
+          devoir_id?: string
+          step?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoir_steps_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devoirs: {
         Row: {
           assigned_to: string
@@ -904,6 +933,7 @@ export type Database = {
           created_by: string | null
           date_limite: string | null
           description: string | null
+          etapes: Json
           fichier_pdf_url: string | null
           group_id: string | null
           id: string
@@ -918,6 +948,7 @@ export type Database = {
           created_by?: string | null
           date_limite?: string | null
           description?: string | null
+          etapes?: Json
           fichier_pdf_url?: string | null
           group_id?: string | null
           id?: string
@@ -932,6 +963,7 @@ export type Database = {
           created_by?: string | null
           date_limite?: string | null
           description?: string | null
+          etapes?: Json
           fichier_pdf_url?: string | null
           group_id?: string | null
           id?: string
@@ -1665,6 +1697,7 @@ export type Database = {
           notif_hw_res: boolean
           notif_lesson: boolean
           notif_msg: boolean
+          notif_prog_eve: boolean | null
           notif_prog_week: boolean
           notif_rec: boolean
           notif_sched: boolean
@@ -1700,6 +1733,7 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_prog_eve?: boolean | null
           notif_prog_week?: boolean
           notif_rec?: boolean
           notif_sched?: boolean
@@ -1735,6 +1769,7 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_prog_eve?: boolean | null
           notif_prog_week?: boolean
           notif_rec?: boolean
           notif_sched?: boolean
@@ -3704,6 +3739,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      class_program_streaks: {
+        Args: never
+        Returns: {
+          streak: number
+          student_id: string
+        }[]
+      }
       course_reminder_targets: {
         Args: never
         Returns: {
@@ -3756,15 +3798,21 @@ export type Database = {
         Args: { p_from: string; p_to: string }
         Returns: undefined
       }
+      my_program_streak: { Args: never; Returns: number }
       next_program_items: { Args: { p_user: string }; Returns: Json }
       program_item_done: {
         Args: { p_item: string; p_module: string; p_user: string }
         Returns: boolean
       }
+      program_item_done_at: {
+        Args: { p_item: string; p_module: string; p_user: string }
+        Returns: string
+      }
       program_items: {
         Args: { p_stored: Json; p_user: string; p_week: string }
         Returns: Json
       }
+      program_streak: { Args: { p_user: string }; Returns: number }
       recalculate_student_points: {
         Args: { p_user_id: string }
         Returns: undefined

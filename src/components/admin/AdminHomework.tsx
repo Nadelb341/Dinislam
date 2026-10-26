@@ -19,12 +19,12 @@ import { takeDraftResume } from '@/lib/pendingDrafts';
 import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogDescription, AlertDialogFooter,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -52,10 +52,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     titre: '', type: 'recitation', description: '',
     lien_lecon: '', date_limite: '', assigned_to: 'all',
     group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[],
+    // 💎 Devoir en étapes (une par ligne, ex. « Ligne 1 ») : le diamant de l'élève se remplit étape par étape (2026-10-26)
+    etapes: '',
     // Ligne « 📚 Devoirs à préparer » d'où vient ce devoir : cochée toute seule une fois le devoir envoyé (2026-10-08)
     source_task_id: '' as string,
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
+  const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
 
   useEffect(() => {
     const draft = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
@@ -166,6 +169,15 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     },
   });
 
+  // Appartenance aux groupes : un devoir de groupe ne s'affiche que chez les élèves de CE groupe (corrigé le 2026-10-26)
+  const { data: memberships = [] } = useQuery({
+    queryKey: ['admin-devoirs', 'group-members'],
+    queryFn: async () => {
+      const { data } = await supabase.from('student_group_members').select('user_id, group_id');
+      return data || [];
+    },
+  });
+
   // Fetch approved students
   const { data: eleves = [] } = useQuery({
     queryKey: ['admin-eleves-list'],
@@ -188,6 +200,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
         description: form.description || null,
         lien_lecon: form.lien_lecon || null,
         date_limite: form.date_limite || null,
+        etapes: form.etapes.split('\n').map((l) => l.trim()).filter(Boolean),
         assigned_to: form.assigned_to,
         created_by: user?.id,
       };
@@ -270,7 +283,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       toast.success(`✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '' });
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '' });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -281,13 +294,22 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       const devoir = devoirs.find((d) => d.id === id);
       // Corbeille d'abord : si elle échoue, rien n'est supprimé
       if (devoir && user?.id) {
-        // Les cases « J'ai travaillé » partent avec le devoir (suppression en cascade) : gardées avec lui dans la corbeille
-        const { data: checksRows } = await supabase.from('devoir_checks').select('*').eq('devoir_id', id);
+        // Les audios rendus et les cases « J'ai travaillé » partent avec le devoir (suppression en cascade) : gardés avec lui dans la corbeille
+        const [{ data: checksRows }, { data: rendusRows }, { data: stepsRows }] = await Promise.all([
+          supabase.from('devoir_checks').select('*').eq('devoir_id', id),
+          supabase.from('devoirs_rendus').select('*').eq('devoir_id', id),
+          supabase.from('devoir_steps').select('*').eq('devoir_id', id),
+        ]);
+        const children = [
+          ...(rendusRows?.length ? [{ table: 'devoirs_rendus', rows: rendusRows }] : []),
+          ...(checksRows?.length ? [{ table: 'devoir_checks', rows: checksRows }] : []),
+          ...(stepsRows?.length ? [{ table: 'devoir_steps', rows: stepsRows }] : []),
+        ];
         // Copie = la vraie ligne de la table (sans les noms ajoutés pour l'affichage, sinon la restauration échoue)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { student_name, group_name, ...row } = devoir;
         const ok = await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir',
-          checksRows?.length ? { ...row, __children: [{ table: 'devoir_checks', rows: checksRows }] } : row);
+          children.length ? { ...row, __children: children } : row);
         if (!ok) throw new Error("Le devoir n'a pas pu être mis dans la corbeille, rien n'a été supprimé");
       }
       const { error } = await supabase.from('devoirs').delete().eq('id', id);
@@ -352,7 +374,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     const devoirsEleve = devoirs.filter(d =>
       d.assigned_to === 'all' ||
       d.student_id === eleve.user_id ||
-      (d.assigned_to === 'group' && d.group_id) // simplified
+      (d.assigned_to === 'group' && !!d.group_id && memberships.some((m) => m.user_id === eleve.user_id && m.group_id === d.group_id))
     );
     const rendusEleve = rendus.filter(r => r.student_id === eleve.user_id);
     const aRefaire = rendusEleve.some(r => r.statut === 'a_refaire');
@@ -408,6 +430,11 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
               onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
             <Input placeholder="Lien vers la leçon (optionnel)" value={form.lien_lecon}
               onChange={e => setForm({ ...form, lien_lecon: e.target.value })} />
+            <div className="space-y-1 mb-3">
+              <label className="text-xs font-medium text-muted-foreground">💎 Étapes (optionnel, une par ligne) : le diamant de l'élève se remplit à chaque étape cochée</label>
+              <Textarea placeholder={'Ex. :\nLigne 1\nLigne 2\nLigne 3'} value={form.etapes} rows={3}
+                onChange={e => setForm({ ...form, etapes: e.target.value })} />
+            </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">📅 Date butoir (optionnel)</label>
               <Input type="datetime-local" value={form.date_limite}
@@ -544,7 +571,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                         })()}
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                        onClick={() => deleteDevoir.mutate(d.id)}>
+                        onClick={() => setDevoirToDelete({ id: d.id, titre: d.titre })} aria-label="Supprimer ce devoir">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -685,6 +712,22 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       </Dialog>
 
       {/* Dialog récupération brouillon devoir */}
+      {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
+      <AlertDialog open={!!devoirToDelete} onOpenChange={(open) => { if (!open) setDevoirToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce devoir ?</AlertDialogTitle>
+            <AlertDialogDescription className="[overflow-wrap:anywhere]">
+              « {devoirToDelete?.titre} » ira dans la corbeille de Paramètres, avec les audios rendus et les cases cochées par les élèves. Tu pourras le restaurer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (devoirToDelete) deleteDevoir.mutate(devoirToDelete.id); setDevoirToDelete(null); }}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!homeworkDraft} onOpenChange={(open) => { if (!open) setHomeworkDraft(null); }}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
@@ -705,7 +748,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '' });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '' });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

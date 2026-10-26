@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { byName, errorMessage } from '@/lib/utils';
-import { nextCourseDay, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { bonusEarned, nextCourseDay, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { sortGroups } from '@/lib/studentGroups';
 import { encouragementLabel, useEngagement, useRecentEncouragements } from '@/hooks/useEngagement';
 import { dropoutLevel, dropoutReason, type Engagement } from '@/lib/engagement';
@@ -47,6 +47,16 @@ export function WeeklyProgramAdmin() {
     },
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['weekly-program-admin'] });
+  // 🔥 Séries de semaines de chaque élève
+  const { data: streaks = new Map<string, number>() } = useQuery({
+    queryKey: ['weekly-program-admin', 'streaks'],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('class_program_streaks');
+      if (error) throw error;
+      return new Map(((data || []) as { student_id: string; streak: number }[]).map((r) => [r.student_id, r.streak]));
+    },
+  });
 
   const saveSettings = async (patch: { enabled?: boolean; disabled_group_ids?: string[]; auto_nudge?: boolean }) => {
     const { error } = await supabase.from('weekly_program_settings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1);
@@ -83,7 +93,7 @@ export function WeeklyProgramAdmin() {
       </button>
       {open && (
         <>
-          <p className="text-xs text-muted-foreground">Chaque mercredi à 21 h, chaque élève reçoit son chemin : l'étape suivante de chaque carte qu'il voit (Nourania, Sourates, 99 Noms…). Quand tu valides une étape, son diamant brille tout seul. Pause pendant les vacances scolaires. Tu n'as rien d'autre à faire.</p>
+          <p className="text-xs text-muted-foreground">Chaque mercredi à 21 h, chaque élève reçoit son chemin : un diamant par devoir que tu lui as donné (à lui, à son groupe ou à tous) + son nom d'Allah. Le diamant brille quand l'élève coche « J'ai travaillé ce devoir » (ou envoie son audio) ; un devoir en étapes se remplit petit à petit. 🌟 Bonus si tout est fait avant le cours, 🔥 série de semaines, 🎁 trésor avec un hadith. Pause pendant les vacances scolaires.</p>
           <div className="flex items-center justify-between gap-2 rounded-xl bg-card p-2.5">
             <span className="text-sm font-semibold">Programme automatique</span>
             <Switch checked={enabled} onCheckedChange={(v) => saveSettings({ enabled: v })} />
@@ -104,6 +114,45 @@ export function WeeklyProgramAdmin() {
                   <Switch checked={!(data!.settings?.disabled_group_ids ?? []).includes(g.id)} onCheckedChange={(v) => toggleGroup(g.id, v)} />
                 </div>
               ))}
+            </div>
+          )}
+          {/* 📊 Diamants de la classe d'un coup d'œil (idée acceptée le 2026-10-26) */}
+          {progs.length > 0 && (
+            <div className="rounded-xl bg-card p-2.5 space-y-1.5">
+              <p className="text-sm font-extrabold">📊 Diamants de la classe</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[11px] text-muted-foreground text-left">
+                      <th className="py-1 pe-2 font-semibold">Élève</th>
+                      <th className="py-1 px-2 font-semibold text-center">💎 Semaine</th>
+                      <th className="py-1 px-2 font-semibold text-center">🌟</th>
+                      <th className="py-1 ps-2 font-semibold text-center">🔥</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...progs].sort((a, b) => {
+                      const ra = a.items.length ? a.items.filter((i) => i.done).length / a.items.length : -1;
+                      const rb = b.items.length ? b.items.filter((i) => i.done).length / b.items.length : -1;
+                      return rb - ra;
+                    }).map((p) => {
+                      const d = p.items.filter((i) => i.done).length;
+                      const t = p.items.length;
+                      const st = streaks.get(p.student_id) ?? 0;
+                      return (
+                        <tr key={p.program_id} className="border-t border-border/60">
+                          <td className="py-1.5 pe-2 font-semibold [overflow-wrap:anywhere]">{p.full_name || 'Élève'}</td>
+                          <td className="py-1.5 px-2 text-center tabular-nums">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${t === 0 ? 'bg-muted text-muted-foreground' : d === t ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : d === 0 ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'}`}>{t ? `${d}/${t}` : '—'}</span>
+                          </td>
+                          <td className="py-1.5 px-2 text-center">{bonusEarned(p) ? '🌟' : ''}</td>
+                          <td className="py-1.5 ps-2 text-center tabular-nums text-xs font-bold">{st > 0 ? `🔥 ${st}` : ''}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
           <button type="button" onClick={() => setShowStudents((s) => !s)} className="w-full rounded-xl bg-card p-2.5 flex items-center justify-between gap-2 text-sm font-semibold">
