@@ -5,7 +5,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsOver20 } from '@/hooks/useIsOver20';
+import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
+import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { sendPushNotification } from '@/lib/pushHelper';
 import AppLayout from '@/components/layout/AppLayout';
@@ -27,13 +28,14 @@ const Nourania = () => {
   const queryClient = useQueryClient();
   const { fireSuccess } = useConfetti();
   const isOver20 = useIsOver20();
+  const ageReady = useIsOver20Ready();
   const [searchParams] = useSearchParams();
   const lessonParam = searchParams.get('lesson');
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; lessonNumber: number; lessonId: string } | null>(null);
 
   // Fetch lessons
-  const { data: lessons = [] } = useQuery({
+  const { data: lessons = [], isFetched: lessonsFetched } = useQuery({
     queryKey: ['nourania-lessons'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,7 +61,7 @@ const Nourania = () => {
   });
 
   // Fetch user's progress
-  const { data: userProgress = [] } = useQuery({
+  const { data: userProgress = [], isFetched: progressFetched } = useQuery({
     queryKey: ['nourania-progress', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -107,7 +109,7 @@ const Nourania = () => {
   }, [user?.id, queryClient]);
 
   // Fetch admin unlocks for this user
-  const { data: adminUnlocks = [] } = useQuery({
+  const { data: adminUnlocks = [], isFetched: unlocksFetched } = useQuery({
     queryKey: ['nourania-admin-unlocks', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -364,6 +366,22 @@ const Nourania = () => {
       }
     }
   };
+
+  // « Commencer mon travail » d'un devoir : ?item=<id de la leçon> → la leçon s'ouvre toute seule (une fois)
+  useOpenItemFromUrl(
+    lessonsFetched && ageReady && (!user?.id || (progressFetched && unlocksFetched)),
+    (item) => {
+      const index = lessons.findIndex((l) => l.id === item);
+      if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
+      const lesson = lessons[index];
+      // Leçon verrouillée : son contenu ne s'affiche pas (et la valider sauterait l'ordre) → message clair
+      if (!isLessonUnlocked(index)) { toast.info(lockedItemMessage('Cette leçon')); return; }
+      if (expandedLesson !== lesson.id) handleLessonClick(lesson, index);
+      setTimeout(() => {
+        document.getElementById(`lesson-${lesson.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    },
+  );
 
   // Get moon color classes based on lesson status
   const getMoonColors = (lessonId: string, index: number) => {

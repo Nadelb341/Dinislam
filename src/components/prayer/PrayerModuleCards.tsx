@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { trashThenDelete } from '@/lib/trash';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useOpenItemFromUrl, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { Plus, Trash2, Upload, Edit2, Eye, Download, FileText, Play, Music, Image, X, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,7 +103,7 @@ const PrayerModuleCards = () => {
     ? activeGroup
     : visibleGroups[0]?.key || 'petits';
 
-  const { data: cards = [] } = useQuery({
+  const { data: cards = [], isFetched: cardsFetched } = useQuery({
     queryKey: ['prayer-cards'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -130,6 +131,15 @@ const PrayerModuleCards = () => {
   });
 
   const groupCards = cards.filter(c => c.group_key === effectiveActiveGroup);
+
+  // « Commencer mon travail » d'un devoir : /priere?item=<id de la carte> → la carte s'ouvre (une fois).
+  // Pas de verrou ici : la carte s'ouvre même si elle est rangée dans un autre groupe d'âge.
+  useOpenItemFromUrl(cardsFetched, (item) => {
+    const card = cards.find((c) => c.id === item.trim());
+    if (!card) { toast.info(MISSING_ITEM_MESSAGE); return; }
+    if (visibleGroups.some((g) => g.key === card.group_key)) setActiveGroup(card.group_key);
+    setSelectedCard(card);
+  });
 
   const uploadContentMutation = useMutation({
     mutationFn: async (file: File) => {

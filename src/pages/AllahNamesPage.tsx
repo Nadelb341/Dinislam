@@ -6,7 +6,8 @@ import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsOver20 } from '@/hooks/useIsOver20';
+import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
+import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import type { Tables } from '@/integrations/supabase/types';
 const AllahNamesPage = () => {
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
+  const ageReady = useIsOver20Ready();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Tables<'allah_names'> | null>(null);
   const [mediaOpen, setMediaOpen] = useState<'video' | 'pdf' | null>(null);
@@ -24,7 +26,7 @@ const AllahNamesPage = () => {
   // Moins de 20 ans : chaque nom s'ouvre quand l'enseignante a validé l'audio du nom précédent (2026-10-19)
   const needsAudio = !isAdmin && !isOver20;
 
-  const { data: names = [], isLoading } = useQuery({
+  const { data: names = [], isLoading, isFetched: namesFetched } = useQuery({
     queryKey: ['allah-names'],
     queryFn: async () => {
       const { data, error } = await supabase.from('allah_names').select('*').order('display_order');
@@ -33,7 +35,7 @@ const AllahNamesPage = () => {
     },
   });
 
-  const { data: progress = [] } = useQuery({
+  const { data: progress = [], isFetched: progressFetched } = useQuery({
     queryKey: ['allah-name-progress', user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -159,6 +161,16 @@ const AllahNamesPage = () => {
     setSelected(name);
     setMediaOpen(null);
   };
+
+  // « Commencer mon travail » d'un devoir : ?item=<id du nom> → la fiche du nom s'ouvre (une fois)
+  useOpenItemFromUrl(namesFetched && ageReady && (!user || progressFetched), (item) => {
+    const index = names.findIndex((n) => String(n.id) === item.trim());
+    if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
+    // Nom verrouillé : l'ouvrir permettrait de l'envoyer / le valider hors de l'ordre → message clair
+    if (!isNameAccessible(index)) { toast.info(lockedItemMessage('Ce nom', false)); return; }
+    setSelected(names[index]);
+    setMediaOpen(null);
+  });
 
   return (
     <AppLayout title="99 Noms d'Allah">

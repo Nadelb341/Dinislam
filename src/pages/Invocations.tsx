@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
-import { useIsOver20 } from '@/hooks/useIsOver20';
+import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
+import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
@@ -270,9 +271,10 @@ const Invocations = () => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isOver20 = useIsOver20();
+  const ageReady = useIsOver20Ready();
   const [selectedInvocation, setSelectedInvocation] = useState<Tables<'invocations'> | null>(null);
 
-  const { data: invocations = [], isLoading } = useQuery({
+  const { data: invocations = [], isLoading, isFetched: invocationsFetched } = useQuery({
     queryKey: ['invocations-list'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -296,7 +298,7 @@ const Invocations = () => {
     },
   });
 
-  const { data: progress = [] } = useQuery({
+  const { data: progress = [], isFetched: progressFetched } = useQuery({
     queryKey: ['user-invocation-progress', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -484,6 +486,15 @@ const Invocations = () => {
     }
     setSelectedInvocation(invocation);
   };
+
+  // « Commencer mon travail » d'un devoir : ?item=<id de l'invocation> → l'invocation s'ouvre (une fois)
+  useOpenItemFromUrl(invocationsFetched && ageReady && (!user || progressFetched), (item) => {
+    const index = invocations.findIndex((inv) => String(inv.id) === item.trim());
+    if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
+    // Invocation verrouillée : l'ouvrir permettrait de demander sa validation hors de l'ordre → message clair
+    if (!isCardUnlocked(index)) { toast.info(lockedItemMessage('Cette invocation')); return; }
+    setSelectedInvocation(invocations[index]);
+  });
 
   return (
     <AppLayout title="Invocations">

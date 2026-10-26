@@ -7,10 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
  * Utilisé pour l'auto-validation (sans attente de l'admin).
  * Priorité : date_of_birth (plus précis) → age (stocké manuellement).
  */
-export const useIsOver20 = (): boolean => {
+const useAgeCheckQuery = () => {
   const { user } = useAuth();
 
-  const { data: isOver20 = false } = useQuery({
+  return useQuery({
     queryKey: ['user-age-check', user?.id],
     enabled: !!user,
     staleTime: 60 * 60 * 1000, // 1h de cache
@@ -40,6 +40,16 @@ export const useIsOver20 = (): boolean => {
       return false;
     },
   });
+};
 
+export const useIsOver20 = (): boolean => {
+  const { data: isOver20 = false } = useAgeCheckQuery();
   return isOver20;
+};
+
+/** Vrai quand l'âge est connu (réponse reçue, même en erreur) : évite de juger « verrouillé » trop tôt. */
+export const useIsOver20Ready = (): boolean => {
+  const { user } = useAuth();
+  const { isFetched } = useAgeCheckQuery();
+  return !user || isFetched;
 };

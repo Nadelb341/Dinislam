@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { useOpenItemFromUrl, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { useCoranProgress, type Bookmark, type BookmarkNote } from '@/hooks/useCoranProgress';
 import { moveToTrash } from '@/lib/trash';
 import { REVIEW_NEXT_DAYS } from '@/lib/coranPages';
@@ -45,7 +46,9 @@ const nameOf = (n: number) => SOURATES_DATA.find((s) => s.number === n)?.name_fr
 const CoranPage = () => {
   const { isAdmin, user } = useAuth();
   const [params, setParams] = useSearchParams();
-  const initialTab = (params.get('tab') === 'programme' ? 'programme' : (params.get('tab') as Tab)) || 'lire';
+  // « Commencer mon travail » d'un devoir : ?item=<page du Coran 1..604> → lecteur ouvert sur cette page, onglet Lire
+  const itemIndex = (() => { const p = Number(params.get('item')); return Number.isInteger(p) && p >= 1 && p <= 604 ? indexOfPage(p) : null; })();
+  const initialTab = itemIndex !== null ? 'lire' : (params.get('tab') === 'programme' ? 'programme' : (params.get('tab') as Tab)) || 'lire';
   const [tab, setTabState] = useState<Tab>(TABS.some((t) => t.id === initialTab) ? initialTab : 'lire');
   const setTab = useCallback((t: Tab) => {
     setTabState(t);
@@ -59,7 +62,7 @@ const CoranPage = () => {
 
   // La carte s'ouvre sur la couverture ; « Reprendre » ramène à la dernière page lue (lecture libre)
   const [reading, setReading] = useState<Reading>({ kind: 'free' });
-  const [index, setIndex] = useState(() => { const n = Number(params.get('page')); return n >= 1 && n <= 676 ? n : 1; });
+  const [index, setIndex] = useState(() => { if (itemIndex !== null) return itemIndex; const n = Number(params.get('page')); return n >= 1 && n <= 676 ? n : 1; });
   const [juzSel, setJuzSel] = useState(30);
 
   // Lecture libre : la page est retenue (enregistrée 1 s après le dernier changement)
@@ -96,6 +99,15 @@ const CoranPage = () => {
   };
 
   const readFreeNoSave = (i: number) => { setReading({ kind: 'free' }); setIndex(i); setTab('lire'); };
+
+  // Lien de devoir qui change alors que la carte est déjà ouverte (le 1er affichage est réglé plus haut)
+  useOpenItemFromUrl(true, (item) => {
+    const p = Number(item);
+    if (!Number.isInteger(p) || p < 1 || p > 604) { toast.info(MISSING_ITEM_MESSAGE); return; }
+    const i = indexOfPage(p);
+    if (reading.kind === 'free' && index === i && tab === 'lire') return;
+    readFreeNoSave(i);
+  });
 
   // Juz' : coche / décoche une sourate du parcours (confirmation pour cocher seulement)
   const toggleSura = async (juz: number, sura: number) => {

@@ -8,7 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from '@/hooks/useConfetti';
-import { useIsOver20 } from '@/hooks/useIsOver20';
+import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
+import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import SourateUnlockDialog from '@/components/sourates/SourateUnlockDialog';
 import SouratePathView from '@/components/sourates/SouratePathView';
@@ -156,6 +157,7 @@ const SouratesPage = () => {
   const { toast } = useToast();
   const { fireSuccess, fireConfetti } = useConfetti();
   const isOver20 = useIsOver20();
+  const ageReady = useIsOver20Ready();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showMethodsModal, setShowMethodsModal] = useState(false);
@@ -458,6 +460,15 @@ const SouratesPage = () => {
     }
     setSelectedSourate(sourate);
   };
+
+  // « Commencer mon travail » d'un devoir : ?item=<numéro de la sourate> (1000 = Ayat al-Kursi) → la fiche s'ouvre (une fois)
+  useOpenItemFromUrl(!loading && dbSourates.size > 0 && ageReady, (item) => {
+    const sourate = SOURATES_ORDERED.find((s) => String(s.number) === item.trim());
+    if (!sourate) { toast({ title: MISSING_ITEM_MESSAGE }); return; }
+    // Sourate verrouillée : l'ouvrir laisserait cocher et envoyer la récitation hors de l'ordre → message clair
+    if (!isSourateAccessible(sourate.number)) { toast({ title: lockedItemMessage('Cette sourate') }); return; }
+    setSelectedSourate(sourate);
+  });
 
   const filteredSourates = searchQuery
     ? SOURATES_ORDERED.filter(s =>

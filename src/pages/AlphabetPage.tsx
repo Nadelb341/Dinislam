@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Check, Lock } from 'lucide-react';
 import { FitText } from '@/components/shared/FitText';
-import { useIsOver20 } from '@/hooks/useIsOver20';
+import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
+import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { AlphabetLetterSheet } from '@/components/alphabet/AlphabetLetterSheet';
 import { ReadingGameDialog, type ReadingMode } from '@/components/alphabet/ReadingGameDialog';
 import type { AlphabetSubmission } from '@/components/alphabet/AlphabetLineRow';
@@ -37,6 +38,7 @@ const TABS: { key: Tab; label: string }[] = [
 const AlphabetPage = () => {
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
+  const ageReady = useIsOver20Ready();
   const queryClient = useQueryClient();
   const [selectedLetter, setSelectedLetter] = useState<Tables<'alphabet_letters'> | null>(null);
   const [tab, setTabState] = useState<Tab>(readTab);
@@ -49,7 +51,7 @@ const AlphabetPage = () => {
     try { localStorage.setItem(TAB_KEY, t); } catch { /* stockage indisponible : on garde l'onglet en mémoire seulement */ }
   };
 
-  const { data: letters = [], isLoading } = useQuery({
+  const { data: letters = [], isLoading, isFetched: lettersFetched } = useQuery({
     queryKey: ['alphabet-letters-page'],
     queryFn: async () => {
       const { data, error } = await supabase.from('alphabet_letters').select('*').order('display_order');
@@ -67,7 +69,7 @@ const AlphabetPage = () => {
     },
   });
 
-  const { data: progress = [] } = useQuery({
+  const { data: progress = [], isFetched: progressFetched } = useQuery({
     queryKey: ['user-alphabet-progress-page', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -78,7 +80,7 @@ const AlphabetPage = () => {
     enabled: !!user,
   });
 
-  const { data: adminUnlocks = [] } = useQuery({
+  const { data: adminUnlocks = [], isFetched: unlocksFetched } = useQuery({
     queryKey: ['alphabet-admin-unlocks', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -247,6 +249,15 @@ const AlphabetPage = () => {
     }
     setSelectedLetter(letter);
   };
+
+  // « Commencer mon travail » d'un devoir : ?item=<id de la lettre> → la fiche de la lettre s'ouvre (une fois)
+  useOpenItemFromUrl(lettersFetched && ageReady && (!user || (progressFetched && unlocksFetched)), (item) => {
+    const letter = letters.find((l) => String(l.id) === item.trim());
+    if (!letter) { toast(MISSING_ITEM_MESSAGE); return; }
+    // Lettre fermée : même règle que dans la grille (elle s'ouvre dans l'ordre) → message clair
+    if (!unlocked.has(letter.id)) { toast(lockedItemMessage('Cette lettre')); return; }
+    setSelectedLetter(letter);
+  });
 
   return (
     <AppLayout title="Alphabet Arabe">
