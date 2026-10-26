@@ -85,7 +85,7 @@ const FAMILIES: Family[] = [
       { key: 'notif_adm_hw', label: 'Devoir rendu' },
       { key: 'notif_adm_valid', label: 'Demande de validation' },
       { key: 'notif_adm_reg', label: 'Nouvelle inscription' },
-      { key: 'notif_adm_task', label: 'Rappel d\'une tâche « À FAIRE »' },
+      { key: 'notif_adm_task', label: 'Rappel d\'une ligne du « Cahier de texte »' },
       { key: 'notif_adm_recap', label: 'Récap du lundi 💎', hint: 'Qui a fait briller ses diamants la semaine passée' },
       { key: 'notif_adm_crash', label: 'Plantage chez un élève 😿', hint: 'Revient toutes les heures tant que ce n\'est pas résolu (réglable dans Monitoring)' },
     ],

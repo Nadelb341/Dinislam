@@ -9,7 +9,6 @@ import { SortableCardList } from '@/components/shared/SortableCardList';
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
 import AdminSourateValidations from '@/components/admin/AdminSourateValidations';
 import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
-import AdminHomework from '@/components/admin/AdminHomework';
 import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
 import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminStudentDetails from '@/components/admin/AdminStudentDetails';
@@ -377,7 +376,8 @@ function AdminSectionRenderer({
       return <AdminAlphabetValidations onBack={onClose} />;
     case 'cahier-texte':
     case 'cahier-texte-module':
-      return <AdminHomework onBack={onClose} />;
+      // Le cahier de texte est maintenant dans la carte « Cahier de texte » de l'accueil (2026-10-26) : simple raccourci
+      return <CahierRedirect onGo={() => onNavigate('/?open=todo&cahier=1')} />;
     case 'recitations-audio':
       return <AdminRecitationReview onBack={onClose} kind="sourates" />;
     case 'allah-names-audio':
@@ -412,3 +412,10 @@ function AdminSectionRenderer({
 }
 
 export default AdminCommandModal;
+
+/** Raccourci du bouclier : ouvre la carte « Cahier de texte » de l'accueil (le cahier y a été déplacé le 2026-10-26) */
+function CahierRedirect({ onGo }: { onGo: () => void }) {
+  const done = useRef(false);
+  useEffect(() => { if (done.current) return; done.current = true; onGo(); }, [onGo]);
+  return <p className="py-8 text-center text-sm text-muted-foreground">📓 Ouverture du cahier de texte…</p>;
+}

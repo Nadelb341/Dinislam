@@ -111,7 +111,7 @@ export function TodoAttachments({ taskId, taskTitle, attachments, onChange }: Pr
     if (!user) return;
     setBusy(true);
     try {
-      const ok = await moveToTrash(user.id, 'admin_task_attachment', taskId, `${a.name} (À FAIRE · ${taskTitle})`, { task_id: taskId, attachment: a } as unknown as Json);
+      const ok = await moveToTrash(user.id, 'admin_task_attachment', taskId, `${a.name} (Cahier de texte · ${taskTitle})`, { task_id: taskId, attachment: a } as unknown as Json);
       if (!ok) throw new Error("Mise en corbeille impossible : rien n'a été retiré");
       await onChange(attachments.filter((x) => x.path !== a.path));
       toast.success('Fichier retiré (il est dans la corbeille de Paramètres)');

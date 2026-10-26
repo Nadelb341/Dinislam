@@ -68,7 +68,7 @@ export function CourseModeDialog({ groupId, groupName, open, onClose }: { groupI
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" level="nested">
         <DialogTitle className="text-2xl pe-8 [overflow-wrap:anywhere]">🎒 Cours · {groupName}</DialogTitle>
         {todo.length === 0 && bring.length === 0 && (
-          <p className="text-center text-muted-foreground py-6">Rien de prévu pour ce cours. Ajoute des lignes avec 🎒 dans la carte À FAIRE.</p>
+          <p className="text-center text-muted-foreground py-6">Rien de prévu pour ce cours. Ajoute des lignes avec 🎒 dans la carte Cahier de texte.</p>
         )}
         {todo.length > 0 && (
           <div className="space-y-2">

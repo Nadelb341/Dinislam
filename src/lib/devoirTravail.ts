@@ -47,7 +47,7 @@ export async function envoyerDevoir(opts: { devoirId: string; userId: string; us
   if (adminIds.length) {
     sendPushNotification({
       userIds: adminIds, title: audio ? '🎙️ Devoir à valider (avec audio)' : '📚 Devoir à valider', category: 'adm_hw',
-      body: `${userName || 'Un élève'} a validé : ${titre}`, data: { url: '/?admin=cahier-texte' },
+      body: `${userName || 'Un élève'} a validé : ${titre}`, data: { url: '/?open=todo&cahier=1' },
     });
   }
 }

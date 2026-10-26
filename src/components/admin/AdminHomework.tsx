@@ -31,6 +31,8 @@ type HomeworkDraft = { titre: string; type: string; description: string; lien_le
 
 interface AdminHomeworkProps {
   onBack: () => void;
+  /** Ouvert depuis un groupe de la carte « Cahier de texte » : un nouveau devoir est proposé pour ce groupe (2026-10-26) */
+  groupeId?: string | null;
 }
 
 const TYPE_OPTIONS = [
@@ -46,7 +48,7 @@ const TYPE_OPTIONS = [
   { value: 'autre', label: '✏️ Autre' },
 ];
 
-const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
+const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -431,7 +433,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && !form.date_limite) { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId })); if (!showForm && !form.date_limite) { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
       </div>

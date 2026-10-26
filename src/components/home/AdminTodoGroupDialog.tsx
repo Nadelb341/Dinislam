@@ -27,6 +27,7 @@ import { uploadTodoFile, asAttachments, type TodoAttachment } from '@/lib/todoAt
 import type { Json } from '@/integrations/supabase/types';
 import { courseItems, draftKeyOf, isLate, sortTasks, todayParis, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
 import { AnnounceDialog, CourseModeDialog } from './NextCourse';
+import AdminHomework from '@/components/admin/AdminHomework';
 
 const fmtDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 const toLocalInput = (iso: string | null) => {
@@ -104,9 +105,11 @@ interface Props {
   tasks: AdminTask[];
   students: TodoStudent[];
   onClose: () => void;
+  /** Ouvrir directement le cahier de texte du groupe (raccourci du bouclier, notification, brouillon de devoir) */
+  openCahier?: boolean;
 }
 
-export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props) {
+export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahier = false }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
@@ -127,6 +130,9 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
   const [manageTemplates, setManageTemplates] = useState(false);
   const [confirmTemplateDelete, setConfirmTemplateDelete] = useState<{ id: string; title: string } | null>(null);
   const [kind, setKind] = useState<Kind>('cours');
+  // 📓 Cahier de texte du groupe (déplacé du bouclier le 2026-10-26, tel quel) : devoirs, rendus à corriger, chemin de la semaine
+  const [showCahier, setShowCahier] = useState(false);
+  const [cahierKey, setCahierKey] = useState(0);
   const [spoken, setSpoken] = useState<string | null>(null);
   const [homeworkFor, setHomeworkFor] = useState<AdminTask | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -157,7 +163,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     setShowOld(false);
     setKind('cours');
     setSpoken(null);
-  }, [group]);
+    setShowCahier(openCahier);
+  }, [group, openCahier]);
   useEffect(() => {
     if (!draftKey) return;
     if (text.trim()) saveDraft(draftKey, text); else clearDraft(draftKey);
@@ -412,8 +419,9 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
     });
     requestDraftResume('dinislam_homework');
     setHomeworkFor(null);
-    onClose();
-    openAdminSection({ section: 'cahier-texte' });
+    // Le cahier de texte est dans ce groupe (2026-10-26) : on l'ouvre ici, le devoir prérempli s'affiche
+    setCahierKey((k) => k + 1);
+    setShowCahier(true);
   };
   const toMessage = (task: AdminTask) => {
     onClose();
@@ -541,6 +549,21 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose }: Props)
                   {showOld && oldDone.map((t) => renderTask(t))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* 📓 Le cahier de texte (devoirs, rendus à corriger, chemin de la semaine), déplacé ici depuis le bouclier */}
+          <button type="button" onClick={() => setShowCahier((v) => !v)} aria-expanded={showCahier}
+            className="w-full flex items-center justify-between gap-2 rounded-2xl border-2 border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-2.5 text-start">
+            <span className="min-w-0">
+              <span className="block font-extrabold text-red-800 dark:text-red-200">📓 Devoirs du cahier de texte</span>
+              <span className="block text-[11px] text-red-700/80 dark:text-red-300/80">Nouveau devoir · devoirs par élève · à valider · chemin de la semaine 💎</span>
+            </span>
+            <span className="text-red-700 dark:text-red-300 shrink-0">{showCahier ? '▲' : '▼'}</span>
+          </button>
+          {showCahier && (
+            <div className="rounded-2xl border border-red-200 dark:border-red-900 p-2">
+              <AdminHomework key={cahierKey} onBack={() => setShowCahier(false)} groupeId={group.id} />
             </div>
           )}
 

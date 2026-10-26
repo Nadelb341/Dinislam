@@ -139,7 +139,7 @@ serve(async (req) => {
       try {
         await sendPushInternal({
           userId: task.created_by,
-          title: '📝 À FAIRE',
+          title: '📓 Cahier de texte',
           body: task.title,
           tag: `admin-task-${task.id}`,
           type: 'admin_task',

@@ -28,11 +28,11 @@ const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
 export const DRAFT_DEFS: Record<string, DraftDef> = {
   dinislam_homework: {
-    place: 'Admin › Devoirs', noun: 'nouveau devoir', route: '/admin?section=homework', adminOnly: true,
+    place: 'Accueil › Cahier de texte › Devoirs', noun: 'nouveau devoir', route: '/?open=todo&cahier=1', adminOnly: true,
     labelOf: (d) => { const v = d as { titre?: string; lignes?: Record<string, string> } | null; return text(v?.titre) || text(Object.values(v?.lignes || {}).find((x) => x.trim())); },
   },
   dinislam_admin_task_: {
-    place: 'Accueil › À FAIRE', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
+    place: 'Accueil › Cahier de texte', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
     labelOf: (d) => text(d),
   },
   messaging_student_: {

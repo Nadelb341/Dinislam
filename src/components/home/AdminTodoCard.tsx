@@ -27,10 +27,14 @@ export function AdminTodoCard() {
   const location = useLocation();
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Notification « 📝 À FAIRE » touchée (?open=todo) : la carte s'ouvre et on la montre
+  // Notification « 📝 À FAIRE » touchée (?open=todo) : la carte s'ouvre et on la montre ;
+  // « &cahier=1 » (raccourci du bouclier, devoir à valider, brouillon de devoir) : ouvre aussi le cahier de texte (groupe Général)
+  const [openCahier, setOpenCahier] = useState(false);
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('open') !== 'todo') return;
+    const q = new URLSearchParams(location.search);
+    if (q.get('open') !== 'todo') return;
     setCollapsed(false);
+    if (q.get('cahier') === '1') { setOpenCahier(true); setOpenId(null); }
     setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     window.history.replaceState({}, '', location.pathname);
   }, [location.search, location.pathname]);
@@ -106,8 +110,9 @@ export function AdminTodoCard() {
   return (
     <section ref={sectionRef} className="scroll-mt-20 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm animate-fade-in">
       <button type="button" onClick={toggleCollapsed} className="w-full flex items-center gap-2 px-4 py-3 text-start" aria-expanded={!collapsed}>
-        <span className="text-xl">📝</span>
-        <span className="font-bold tracking-wide text-foreground">À FAIRE</span>
+        <span className="text-xl">📓</span>
+        {/* Renommée « Cahier de texte » le 2026-10-26 (identifiants internes « todo / admin_tasks » inchangés) */}
+        <span className="font-bold tracking-wide text-foreground">CAHIER DE TEXTE</span>
         <DraftDot draftKey="dinislam_admin_task_" />
         {openCount > 0 && (
           <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${lateCount ? 'animate-pulse' : ''}`}>
@@ -175,7 +180,8 @@ export function AdminTodoCard() {
         group={openGroup}
         tasks={openGroup ? tasksOf(openGroup.id) : []}
         students={students}
-        onClose={() => setOpenId(undefined)}
+        onClose={() => { setOpenId(undefined); setOpenCahier(false); }}
+        openCahier={openCahier}
       />
     </section>
   );
