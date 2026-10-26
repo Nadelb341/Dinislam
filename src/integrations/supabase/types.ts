@@ -755,6 +755,24 @@ export type Database = {
         }
         Relationships: []
       }
+      course_ready: {
+        Row: {
+          course_date: string
+          ready_at: string
+          student_id: string
+        }
+        Insert: {
+          course_date: string
+          ready_at?: string
+          student_id: string
+        }
+        Update: {
+          course_date?: string
+          ready_at?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       crash_alert_settings: {
         Row: {
           id: number
@@ -776,6 +794,27 @@ export type Database = {
           last_sent_at?: string | null
           until_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_goals: {
+        Row: {
+          day: string
+          done_at: string
+          label: string | null
+          student_id: string
+        }
+        Insert: {
+          day: string
+          done_at?: string
+          label?: string | null
+          student_id: string
+        }
+        Update: {
+          day?: string
+          done_at?: string
+          label?: string | null
+          student_id?: string
         }
         Relationships: []
       }
@@ -932,6 +971,7 @@ export type Database = {
           audio_requis: boolean
           cible_id: string | null
           cible_module: string | null
+          consigne_audio_url: string | null
           created_at: string | null
           created_by: string | null
           date_limite: string | null
@@ -950,6 +990,7 @@ export type Database = {
           audio_requis?: boolean
           cible_id?: string | null
           cible_module?: string | null
+          consigne_audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           date_limite?: string | null
@@ -968,6 +1009,7 @@ export type Database = {
           audio_requis?: boolean
           cible_id?: string | null
           cible_module?: string | null
+          consigne_audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           date_limite?: string | null
@@ -995,6 +1037,7 @@ export type Database = {
         Row: {
           audio_url: string | null
           commentaire_admin: string | null
+          correction_audio_url: string | null
           devoir_id: string | null
           id: string
           rendu_at: string | null
@@ -1004,6 +1047,7 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           commentaire_admin?: string | null
+          correction_audio_url?: string | null
           devoir_id?: string | null
           id?: string
           rendu_at?: string | null
@@ -1013,6 +1057,7 @@ export type Database = {
         Update: {
           audio_url?: string | null
           commentaire_admin?: string | null
+          correction_audio_url?: string | null
           devoir_id?: string | null
           id?: string
           rendu_at?: string | null
@@ -1079,6 +1124,105 @@ export type Database = {
           student_id?: string
         }
         Relationships: []
+      }
+      group_levels: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          member_ids: string[]
+          name: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          member_ids?: string[]
+          name: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          member_ids?: string[]
+          name?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_levels_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_schedules: {
+        Row: {
+          group_id: string
+          start_time: string
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          group_id: string
+          start_time: string
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          group_id?: string
+          start_time?: string
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_schedules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_sessions: {
+        Row: {
+          group_id: string
+          id: string
+          seen: string | null
+          seen_sent_at: string | null
+          session_date: string
+          updated_at: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          seen?: string | null
+          seen_sent_at?: string | null
+          session_date: string
+          updated_at?: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          seen?: string | null
+          seen_sent_at?: string | null
+          session_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       homework_assignments: {
         Row: {
@@ -1693,6 +1837,7 @@ export type Database = {
           isha_reminder: boolean | null
           maghrib_reminder: boolean | null
           notif_act: boolean
+          notif_adm_bilan: boolean | null
           notif_adm_crash: boolean
           notif_adm_hw: boolean
           notif_adm_msg: boolean
@@ -1701,6 +1846,7 @@ export type Database = {
           notif_adm_task: boolean
           notif_adm_valid: boolean
           notif_coran: boolean | null
+          notif_cours_prep: boolean | null
           notif_hw_new: boolean
           notif_hw_rem: boolean
           notif_hw_res: boolean
@@ -1729,6 +1875,7 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_bilan?: boolean | null
           notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
@@ -1737,6 +1884,7 @@ export type Database = {
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
           notif_coran?: boolean | null
+          notif_cours_prep?: boolean | null
           notif_hw_new?: boolean
           notif_hw_rem?: boolean
           notif_hw_res?: boolean
@@ -1765,6 +1913,7 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_bilan?: boolean | null
           notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
@@ -1773,6 +1922,7 @@ export type Database = {
           notif_adm_task?: boolean
           notif_adm_valid?: boolean
           notif_coran?: boolean | null
+          notif_cours_prep?: boolean | null
           notif_hw_new?: boolean
           notif_hw_rem?: boolean
           notif_hw_res?: boolean
@@ -2224,6 +2374,7 @@ export type Database = {
           notification_prompt_dismissed: string | null
           notification_prompt_later_at: string | null
           notification_prompt_later_count: number | null
+          parent_phone: string | null
           phone: string | null
           points: number | null
           prayer_group: string | null
@@ -2247,6 +2398,7 @@ export type Database = {
           notification_prompt_dismissed?: string | null
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
+          parent_phone?: string | null
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
@@ -2270,6 +2422,7 @@ export type Database = {
           notification_prompt_dismissed?: string | null
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
+          parent_phone?: string | null
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
@@ -3131,6 +3284,39 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           week_points?: number | null
+        }
+        Relationships: []
+      }
+      student_reports: {
+        Row: {
+          appreciation: string | null
+          id: string
+          motivation: string | null
+          note: number | null
+          period_label: string
+          sent_at: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          appreciation?: string | null
+          id?: string
+          motivation?: string | null
+          note?: number | null
+          period_label: string
+          sent_at?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          appreciation?: string | null
+          id?: string
+          motivation?: string | null
+          note?: number | null
+          period_label?: string
+          sent_at?: string | null
+          student_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
