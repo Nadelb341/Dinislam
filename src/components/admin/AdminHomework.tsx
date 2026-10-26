@@ -18,6 +18,8 @@ import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { takeDraftResume } from '@/lib/pendingDrafts';
 import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
 import { MATIERES } from '@/lib/devoirMatieres';
+import { CibleSelect } from './CibleSelect';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -25,7 +27,7 @@ import {
 import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string> };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -62,11 +64,17 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     etapes: '',
     // ✍️ Consignes écrites sur les lignes des matières (gardées dans le brouillon, 2026-10-26)
     lignes: {} as Record<string, string>,
+    // 📍 Élément ouvert par « Commencer mon travail » et 🎙️ audio demandé, par matière (2026-10-26)
+    cibles: {} as Record<string, string>,
+    audios: {} as Record<string, boolean>,
+    cible_id: '',
+    audio_requis: false,
     // Ligne « 📚 Devoirs à préparer » d'où vient ce devoir : cochée toute seule une fois le devoir envoyé (2026-10-08)
     source_task_id: '' as string,
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
+  const { askValidation, validationDialog } = useConfirmValidation();
   // ✍️ Matières prêtes à compléter (2026-10-26) : une ligne par matière, il suffit d'écrire la consigne
   const [parMatiere, setParMatiere] = useState(true);
   const lignes = form.lignes;
@@ -79,7 +87,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     if (!draft || !remplie(draft)) return;
     if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
       // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {} }));
+      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false }));
       setShowForm(true);
     } else {
       setHomeworkDraft(draft);
@@ -133,17 +141,6 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       }));
     },
   });
-
-  // 💎 Cases « J'ai travaillé ce devoir » cochées par les élèves (2026-10-26)
-  const { data: checks = [] } = useQuery({
-    queryKey: ['admin-devoirs', 'checks'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('devoir_checks').select('devoir_id, student_id, checked_at');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-  const checkedAt = (devoirId: string, studentId: string) => checks.find((c) => c.devoir_id === devoirId && c.student_id === studentId)?.checked_at;
 
   // Fetch rendus with student info
   const { data: rendus = [] } = useQuery({
@@ -210,11 +207,12 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
     mutationFn: async () => {
       // Par matière : un devoir par ligne remplie ; sinon le devoir détaillé du formulaire
       const items = parMatiere
-        ? lignesRemplies.map((m) => ({ titre: (lignes[m.type] || '').trim(), type: m.type }))
-        : [{ titre: form.titre.trim(), type: form.type }];
+        ? lignesRemplies.map((m) => ({ titre: (lignes[m.type] || '').trim(), type: m.type, cible: form.cibles[m.type] || '', audio: !!form.audios[m.type] }))
+        : [{ titre: form.titre.trim(), type: form.type, cible: form.cible_id, audio: form.audio_requis }];
+      if (!form.date_limite) throw new Error('Choisis la date à rendre 📅');
       if (!items.length || items.some((it) => !it.titre)) throw new Error(parMatiere ? 'Écris au moins une consigne sur une ligne' : 'Le titre est obligatoire');
       let total = 0;
-      for (const it of items) total = await creerUn(it.titre, it.type);
+      for (const it of items) total = await creerUn(it.titre, it.type, it.cible, it.audio);
       return total;
     },
     onSuccess: (count) => {
@@ -223,16 +221,17 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       toast.success(parMatiere && lignesRemplies.length > 1 ? `✅ ${lignesRemplies.length} devoirs assignés à ${count} élève(s) !` : `✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {} });
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false });
     },
     onError: (err) => toast.error(err.message),
   });
 
   /** Crée un devoir (titre + matière) pour les destinataires choisis ; renvoie le nombre d'élèves */
-  const creerUn = async (titre: string, type: string): Promise<number> => {
+  const creerUn = async (titre: string, type: string, cible: string, audio: boolean): Promise<number> => {
     {
       const payload: TablesInsert<'devoirs'> = {
         titre, type,
+        cible_module: cible ? type : null, cible_id: cible || null, audio_requis: audio,
         description: form.description || null,
         lien_lecon: form.lien_lecon || null,
         date_limite: form.date_limite || null,
@@ -432,7 +431,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && !form.date_limite) { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
       </div>
@@ -454,14 +453,29 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             {parMatiere ? (
               <div className="space-y-1.5">
                 <p className="text-xs text-muted-foreground">Écris la consigne sur la ligne de la matière : un devoir (et un diamant 💎) par ligne remplie. Les lignes vides sont ignorées.</p>
-                {MATIERES.map((m) => (
-                  <div key={m.type} className="flex items-center gap-2">
-                    <span className="w-[7.5rem] shrink-0 text-sm font-semibold [overflow-wrap:anywhere]">{m.emoji} {m.label}</span>
-                    <Input value={lignes[m.type] || ''} placeholder={`ex. ${m.exemple}`} aria-label={`Devoir de ${m.label}`}
-                      onChange={(e) => setLignes((l) => ({ ...l, [m.type]: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.parentElement?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
-                  </div>
-                ))}
+                {MATIERES.map((m) => {
+                  const rempli = !!(lignes[m.type] || '').trim();
+                  return (
+                    <div key={m.type} data-ligne className={`rounded-xl px-2 py-1.5 ${rempli ? 'bg-sky-50 dark:bg-sky-950/30' : ''}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="w-[7.5rem] shrink-0 text-sm font-semibold [overflow-wrap:anywhere]">{m.emoji} {m.label}</span>
+                        <Input value={lignes[m.type] || ''} placeholder={`ex. ${m.exemple}`} aria-label={`Devoir de ${m.label}`}
+                          onChange={(e) => setLignes((l) => ({ ...l, [m.type]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('[data-ligne]')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
+                      </div>
+                      {/* 📍 Leçon / sourate / nom… ouvert par « Commencer mon travail » · 🎙️ audio demandé */}
+                      {rempli && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5 ps-[7.5rem]">
+                          <CibleSelect type={m.type} value={form.cibles[m.type] || ''} onChange={(v) => setForm((f) => ({ ...f, cibles: { ...f.cibles, [m.type]: v } }))} />
+                          <label className="flex items-center gap-1.5 text-xs font-semibold">
+                            <input type="checkbox" checked={!!form.audios[m.type]} onChange={(e) => setForm((f) => ({ ...f, audios: { ...f.audios, [m.type]: e.target.checked } }))} className="h-4 w-4 accent-orange-500" />
+                            🎙️ audio demandé
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (<>
             <Input placeholder="Titre du devoir *" value={form.titre}
@@ -472,6 +486,13 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
+            <div className="flex flex-wrap items-center gap-2">
+              <CibleSelect type={form.type} value={form.cible_id} onChange={(v) => setForm({ ...form, cible_id: v })} />
+              <label className="flex items-center gap-1.5 text-xs font-semibold">
+                <input type="checkbox" checked={form.audio_requis} onChange={(e) => setForm({ ...form, audio_requis: e.target.checked })} className="h-4 w-4 accent-orange-500" />
+                🎙️ audio demandé
+              </label>
+            </div>
             <Textarea placeholder="Description (optionnel)" value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
             <Input placeholder="Lien vers la leçon (optionnel)" value={form.lien_lecon}
@@ -483,7 +504,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             </div>
             </>)}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">📅 Date butoir (optionnel)</label>
+              <label className="text-xs font-medium text-muted-foreground">📅 Date à rendre * (pas de cours pendant les vacances : choisis la bonne date)</label>
               <Input type="datetime-local" value={form.date_limite}
                 onChange={e => setForm({ ...form, date_limite: e.target.value })} />
               {form.date_limite && (
@@ -576,7 +597,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                 )}
               </div>
             )}
-            <Button onClick={() => createDevoir.mutate()} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
+            <Button onClick={() => createDevoir.mutate()} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
               {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
             </Button>
           </CardContent>
@@ -611,10 +632,15 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                           {d.date_limite ? `📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}` : 'Sans date limite'}
                         </p>
                         {(() => {
-                          const at = checkedAt(d.id, eleve.user_id);
-                          return at
-                            ? <p className="mt-1 inline-block rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 px-2 py-0.5 text-[11px] font-bold">💎 Travaillé le {new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>
-                            : <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">⏳ Pas encore coché</p>;
+                          // État du devoir pour cet élève (2026-10-26) : envoyé par « Je valide mon devoir », puis validé par toi
+                          const r = rendus.find((x) => x.devoir_id === d.id && x.student_id === eleve.user_id);
+                          return r?.statut === 'corrige'
+                            ? <p className="mt-1 inline-block rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 px-2 py-0.5 text-[11px] font-bold">✅ Validé · diamant doré</p>
+                            : r?.statut === 'rendu'
+                              ? <p className="mt-1 inline-block rounded-full bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200 px-2 py-0.5 text-[11px] font-bold">🟠 Envoyé le {new Date(r.rendu_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · à valider</p>
+                              : r?.statut === 'a_refaire'
+                                ? <p className="mt-1 inline-block rounded-full bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200 px-2 py-0.5 text-[11px] font-bold">🔄 À refaire</p>
+                                : <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">⏳ Pas encore envoyé</p>;
                         })()}
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
@@ -690,6 +716,9 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                         <p className="text-xs text-muted-foreground mb-2">
                           {new Date(r.rendu_at).toLocaleDateString('fr-FR')}
                         </p>
+                        {!r.audio_url && r.statut === 'rendu' && (
+                          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">✅ L'élève a validé son devoir (sans audio demandé)</p>
+                        )}
                         {r.audio_url && (
                           <div className="mb-2">
                             <audio
@@ -708,9 +737,9 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                         {r.statut === 'rendu' && (
                           <div className="flex gap-2">
                             <Button size="sm" className="flex-1 gap-1"
-                              onClick={() => markCorrige.mutate({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre })}
+                              onClick={() => askValidation('Valider ce devoir ?', `« ${r.devoir_titre} » de ${r.student_name} : son diamant va briller ✨`, () => markCorrige.mutate({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre }))}
                               disabled={markCorrige.isPending}>
-                              ✅ Corrigé
+                              ✅ Valider le devoir
                             </Button>
                             <Button size="sm" variant="destructive" className="flex-1 gap-1"
                               onClick={() => setModalARefaire({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre })}>
@@ -719,7 +748,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
                           </div>
                         )}
                         {r.statut === 'corrige' && (
-                          <Badge className="bg-green-500 text-white">✅ Corrigé</Badge>
+                          <Badge className="bg-green-500 text-white">✅ Validé</Badge>
                         )}
                         {r.statut === 'a_refaire' && (
                           <Badge variant="destructive">🔄 À refaire</Badge>
@@ -759,6 +788,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
       </Dialog>
 
       {/* Dialog récupération brouillon devoir */}
+      {validationDialog}
       {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
       <AlertDialog open={!!devoirToDelete} onOpenChange={(open) => { if (!open) setDevoirToDelete(null); }}>
         <AlertDialogContent>
@@ -795,7 +825,7 @@ const AdminHomework = ({ onBack }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {} });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

@@ -93,7 +93,7 @@ export function WeeklyProgramAdmin() {
       </button>
       {open && (
         <>
-          <p className="text-xs text-muted-foreground">Chaque mercredi à 21 h, chaque élève reçoit son chemin : un diamant par devoir que tu lui as donné (à lui, à son groupe ou à tous) + son nom d'Allah. Le diamant brille quand l'élève coche « J'ai travaillé ce devoir » (ou envoie son audio) ; un devoir en étapes se remplit petit à petit. 🌟 Bonus si tout est fait avant le cours, 🔥 série de semaines, 🎁 trésor avec un hadith. Pause pendant les vacances scolaires.</p>
+          <p className="text-xs text-muted-foreground">Chaque mercredi à 21 h, chaque élève reçoit son chemin : un diamant par devoir que tu lui as donné (à lui, à son groupe ou à tous) + son nom d'Allah. L'élève touche « Commencer mon travail » (la bonne leçon s'ouvre), puis « Je valide mon devoir » (avec un audio si tu l'as demandé) : diamant 🟠 en attente ; quand tu valides, il devient doré ✨. Un devoir en étapes se remplit petit à petit. 🌟 Bonus si tout est fait avant le cours, 🔥 série de semaines, 🎁 trésor avec un hadith. Pause pendant les vacances scolaires.</p>
           <div className="flex items-center justify-between gap-2 rounded-xl bg-card p-2.5">
             <span className="text-sm font-semibold">Programme automatique</span>
             <Switch checked={enabled} onCheckedChange={(v) => saveSettings({ enabled: v })} />

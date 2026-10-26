@@ -929,6 +929,9 @@ export type Database = {
       devoirs: {
         Row: {
           assigned_to: string
+          audio_requis: boolean
+          cible_id: string | null
+          cible_module: string | null
           created_at: string | null
           created_by: string | null
           date_limite: string | null
@@ -944,6 +947,9 @@ export type Database = {
         }
         Insert: {
           assigned_to: string
+          audio_requis?: boolean
+          cible_id?: string | null
+          cible_module?: string | null
           created_at?: string | null
           created_by?: string | null
           date_limite?: string | null
@@ -959,6 +965,9 @@ export type Database = {
         }
         Update: {
           assigned_to?: string
+          audio_requis?: boolean
+          cible_id?: string | null
+          cible_module?: string | null
           created_at?: string | null
           created_by?: string | null
           date_limite?: string | null
@@ -3841,6 +3850,10 @@ export type Database = {
       program_item_done_at: {
         Args: { p_item: string; p_module: string; p_user: string }
         Returns: string
+      }
+      program_item_pending: {
+        Args: { p_item: string; p_module: string; p_user: string }
+        Returns: boolean
       }
       program_items: {
         Args: { p_stored: Json; p_user: string; p_week: string }

@@ -5,8 +5,11 @@ export interface ProgramItem {
   done_at?: string | null;
   /** Devoir en étapes (ex. 3 lignes) : le diamant se remplit petit à petit */
   steps_total?: number; steps_done?: number;
-  /** Date où le devoir a été donné */
+  /** Date où le devoir a été donné, et date à rendre choisie par l'enseignante */
   created_at?: string;
+  due?: string | null;
+  /** Envoyé par l'élève, en attente de la validation de l'enseignante (diamant orange) */
+  pending?: boolean;
 }
 export interface WeeklyProgram {
   program_id: string; student_id: string; week_start: string; items: ProgramItem[]; message_index: number;
@@ -39,12 +42,18 @@ export function courseDeadline(p: WeeklyProgram): Date {
   return d;
 }
 
-/** 🌟 Diamant bonus : tous les diamants allumés avant le jour du cours */
+/** 🌟 Diamant bonus : chaque devoir envoyé avant SA date à rendre (sinon avant le jour du cours), puis validé (même règle que la base) */
 export function bonusEarned(p: WeeklyProgram): boolean {
   if (!p.items.length || !p.items.every((i) => i.done)) return false;
   const course = courseDeadline(p);
   course.setHours(0, 0, 0, 0);
-  return p.items.every((i) => !i.done_at || new Date(i.done_at) < course);
+  return p.items.every((i) => !i.done_at || (i.due ? new Date(i.done_at) <= new Date(i.due) : new Date(i.done_at) < course));
+}
+
+/** Date affichée « pour le … » : la plus proche date à rendre d'un devoir pas encore validé, sinon le jour du cours */
+export function nextDue(p: WeeklyProgram): Date {
+  const dues = p.items.filter((i) => !i.done && i.due).map((i) => new Date(i.due!).getTime());
+  return dues.length ? new Date(Math.min(...dues)) : courseDeadline(p);
 }
 
 /** Petit hash stable : même devoir + même élève = même message (il ne change pas à chaque ouverture) */

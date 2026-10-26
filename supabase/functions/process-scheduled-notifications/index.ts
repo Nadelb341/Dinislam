@@ -231,8 +231,8 @@ serve(async (req) => {
           try {
             await sendPushInternal({
               userId: p.student_id,
-              title: '💎 Demain, c\'est le cours !',
-              body: `{prenom}, il te reste ${left} diamant${left > 1 ? 's' : ''} à faire briller avant demain 💪 Le diamant bonus 🌟 t'attend !`,
+              title: '🏁 C\'est la dernière ligne droite !',
+              body: `{prenom}, valide ${left > 1 ? `tes ${left} devoirs` : 'ton devoir'} avant demain et gagne le diamant bonus 🌟 (+5 points au classement) 💪`,
               tag: `veille-${today}`,
               type: 'weekly_program_eve',
               category: 'prog_eve',

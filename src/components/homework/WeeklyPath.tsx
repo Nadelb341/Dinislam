@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfetti } from '@/hooks/useConfetti';
-import { bonusEarned, courseDeadline, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { bonusEarned, courseDeadline, itemFill, nextDue, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TreasureChest } from './TreasureChest';
@@ -18,17 +18,18 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 const GEM: Record<string, [string, string]> = {
   nourania: ['#fb923c', '#ea580c'], sourates: ['#4ade80', '#15803d'], allah_names: ['#fde047', '#ca8a04'],
   alphabet: ['#60a5fa', '#1d4ed8'], invocations: ['#2dd4bf', '#0f766e'], priere: ['#c084fc', '#7e22ce'],
-  devoir: ['#f472b6', '#be185d'], bonus: ['#fef08a', '#f59e0b'],
+  devoir: ['#fde047', '#ca8a04'], bonus: ['#fef08a', '#f59e0b'],
 };
 
-function Diamond({ item, fill }: { item: Pick<ProgramItem, 'module' | 'item_id' | 'emoji'>; fill: number }) {
-  const [light, dark] = GEM[item.module] ?? ['#a5b4fc', '#4338ca'];
+function Diamond({ item, fill, pending = false }: { item: Pick<ProgramItem, 'module' | 'item_id' | 'emoji'>; fill: number; pending?: boolean }) {
+  // Orange = envoyé, en attente de la validation du professeur (2026-10-26) ; doré qui brille = validé
+  const [light, dark] = pending ? ['#fdba74', '#ea580c'] : (GEM[item.module] ?? ['#a5b4fc', '#4338ca']);
   const lit = fill >= 1;
   const id = `gem-${item.module}-${item.item_id}`;
   // Remplissage par le bas : la partie colorée monte à chaque étape cochée
   const stop = `${Math.round(fill * 100)}%`;
   return (
-    <span className={`relative inline-block ${lit ? 'gem-shine' : ''}`}>
+    <span className={`relative inline-block ${lit && !pending ? 'gem-shine' : ''}`}>
       <svg viewBox="0 0 48 44" className="h-14 w-14" aria-hidden="true"
         style={lit ? { filter: `drop-shadow(0 0 8px ${light})` } : undefined}>
         <defs>
@@ -45,7 +46,7 @@ function Diamond({ item, fill }: { item: Pick<ProgramItem, 'module' | 'item_id' 
         <polygon points="17,15 24,2 31,15" fill={lit ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.04)'} />
       </svg>
       <span className="absolute inset-0 grid place-items-center text-lg pb-2" style={{ opacity: lit ? 1 : 0.6 }}>{item.emoji}</span>
-      {lit && <span className="gem-sparkle absolute -top-1 -right-1 text-sm" aria-hidden="true">✨</span>}
+      {lit && !pending && <span className="gem-sparkle absolute -top-1 -right-1 text-sm" aria-hidden="true">✨</span>}
     </span>
   );
 }
@@ -61,7 +62,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const pct = total ? (program.items.reduce((s, i) => s + itemFill(i), 0) / total) * 100 : 0;
   const queryClient = useQueryClient();
   const courseDay = courseDeadline(program);
-  const day = courseDay.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  const day = nextDue(program).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const reward = treasureFor(program.program_id);
 
   // 🔥 Série de semaines d'affilée avec le trésor ouvert
@@ -133,7 +134,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
 
       <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3">
         {program.items.map((item) => {
-          const fill = itemFill(item);
+          const fill = item.pending && !item.done ? 1 : itemFill(item);
           const steps = item.steps_total ?? 0;
           return (
             <button key={`${item.module}-${item.item_id}`} type="button"
@@ -144,11 +145,11 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
               }}
               aria-label={`${item.label} : ${item.detail}, ${item.done ? 'validé' : 'à faire'}`}
               className="w-[5.5rem] flex flex-col items-center gap-0.5 rounded-xl p-1 transition-transform active:scale-95 hover:bg-white/60 dark:hover:bg-white/5">
-              <Diamond item={item} fill={fill} />
+              <Diamond item={item} fill={fill} pending={!!item.pending && !item.done} />
               <span className="text-xs font-extrabold leading-tight text-center [overflow-wrap:anywhere]">{item.label}</span>
               <span className="text-[11px] text-muted-foreground leading-tight text-center [overflow-wrap:anywhere]">{item.detail}</span>
               <span className="text-base leading-none mt-0.5">
-                {item.done ? '✅' : steps > 0 ? <span className="text-[11px] font-extrabold tabular-nums">{item.steps_done ?? 0}/{steps}</span> : '⏳'}
+                {item.done ? '✅' : item.pending ? <span className="text-[10px] font-extrabold text-orange-600 dark:text-orange-400">🟠 en attente</span> : steps > 0 ? <span className="text-[11px] font-extrabold tabular-nums">{item.steps_done ?? 0}/{steps}</span> : '⏳'}
               </span>
             </button>
           );
@@ -184,7 +185,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
       {program.teacher_note && (
         <p className="rounded-xl bg-card border-s-4 border-amber-400 px-3 py-2 text-sm [overflow-wrap:anywhere]">💬 <b>Mot de ton prof :</b> {program.teacher_note}</p>
       )}
-      <p className="text-[11px] text-muted-foreground text-center">Un diamant par devoir : touche-le pour aller au devoir, puis coche « J'ai travaillé ce devoir » 💎</p>
+      <p className="text-[11px] text-muted-foreground text-center">Un diamant par devoir : touche-le pour aller au devoir, « Commencer mon travail », puis « Je valide mon devoir ». 🟠 = en attente de ton professeur, ✨ = validé</p>
 
       {/* 🎁 Le trésor ouvert : un hadith en récompense, le même toute la semaine */}
       <Dialog open={chestOpen} onOpenChange={setChestOpen}>

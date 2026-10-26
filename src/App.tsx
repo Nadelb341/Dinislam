@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from 'react';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import RealtimeSync from '@/components/RealtimeSync';
+import DevoirEnCours from '@/components/homework/DevoirEnCours';
 
 // Vérification automatique de version — force le rechargement si nouvelle version disponible
 const checkAppVersion = async () => {
@@ -146,6 +147,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <RealtimeSync />
+            <DevoirEnCours />
             <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
