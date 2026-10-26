@@ -302,6 +302,13 @@ const AdminStudentGroups = () => {
     setDialogOpen(true);
   };
 
+  // Élèves déjà dans un AUTRE groupe : affichés en grisé (toujours sélectionnables), avec le nom du groupe
+  const otherGroupsOf = new Map<string, string[]>();
+  for (const g of groups) {
+    if (editingGroup && g.id === editingGroup.id) continue;
+    for (const m of g.members) otherGroupsOf.set(m.user_id, [...(otherGroupsOf.get(m.user_id) ?? []), g.name]);
+  }
+
   const filteredStudents = allStudents.filter((s) => {
     if (studentSearch) {
       const q = studentSearch.toLowerCase();
@@ -445,7 +452,10 @@ const AdminStudentGroups = () => {
               <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
                 {filteredStudents.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">Aucun élève</p>
-                ) : filteredStudents.map((s) => (
+                ) : filteredStudents.map((s) => {
+                  const ailleurs = otherGroupsOf.get(s.user_id);
+                  const grise = !!ailleurs && !selectedStudents.has(s.user_id);
+                  return (
                   <div
                     key={s.user_id}
                     onClick={() => {
@@ -453,18 +463,22 @@ const AdminStudentGroups = () => {
                       if (next.has(s.user_id)) next.delete(s.user_id); else next.add(s.user_id);
                       setSelectedStudents(next);
                     }}
-                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                    className={`flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/50 transition-colors ${grise ? 'bg-muted/40 opacity-50 hover:opacity-80' : ''}`}
                   >
                     <Checkbox checked={selectedStudents.has(s.user_id)} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium [overflow-wrap:anywhere]">{s.full_name || 'Élève'}</p>
                       <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                      {ailleurs && (
+                        <p className="text-[11px] font-semibold text-muted-foreground [overflow-wrap:anywhere]">👥 Déjà dans : {ailleurs.join(', ')}</p>
+                      )}
                     </div>
                     {s.gender && (
                       <span className="text-xs shrink-0">{s.gender === 'fille' ? '👧' : '👦'}</span>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
