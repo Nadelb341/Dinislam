@@ -35,6 +35,16 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Accueil › Cahier de texte', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
     labelOf: (d) => text(d),
   },
+  // 📈 Bilan d'un élève pas encore enregistré (clé : préfixe + id de l'élève), 2026-10-26
+  dinislam_bilan_: {
+    place: 'Accueil › Cahier de texte › 📈 Bilans', noun: 'bilan pas encore enregistré', route: '/?open=todo', adminOnly: true,
+    labelOf: (d) => { const v = d as { appreciation?: string; motivation?: string; note?: unknown; period?: string } | null; return text(v?.appreciation) || text(v?.motivation) || (v?.note != null && v?.note !== '' ? `Note ${String(v.note)}/20` : '') || text(v?.period); },
+  },
+  // 📝 « Ce qu'on a vu » pas encore enregistré (clé : préfixe + groupe), 2026-10-26
+  dinislam_ce_quon_a_vu_: {
+    place: 'Accueil › Cahier de texte › déroulé du cours', noun: '« ce qu\'on a vu » pas encore enregistré', route: '/?open=todo', adminOnly: true,
+    labelOf: (d) => text(d),
+  },
   messaging_student_: {
     place: 'Messagerie', noun: 'message pas encore envoyé', route: '/?open=messages', perUser: true,
     labelOf: (d) => text(d),
