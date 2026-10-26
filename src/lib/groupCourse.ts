@@ -3,6 +3,9 @@
  * scolaires de la zone C (table school_holidays). Utilisé par le déroulé du cours, la date à rendre automatique,
  * « Prêt pour le cours » et le message 2 h avant le cours.
  */
+/** Écrans du cahier de texte d'un groupe */
+export type CahierVue = 'devoirs' | 'tableau' | 'recap' | 'bilans' | 'niveaux';
+
 export interface GroupSchedule { group_id: string; weekday: number; start_time: string }
 export interface Holiday { label: string; start_date: string; end_date: string }
 

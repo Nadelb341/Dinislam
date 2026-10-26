@@ -353,7 +353,7 @@ serve(async (req) => {
       rec: 'notif_rec', lesson: 'notif_lesson', act: 'notif_act', sched: 'notif_sched',
       adm_msg: 'notif_adm_msg', adm_hw: 'notif_adm_hw', adm_valid: 'notif_adm_valid', adm_reg: 'notif_adm_reg', adm_task: 'notif_adm_task',
       prog_week: 'notif_prog_week', adm_recap: 'notif_adm_recap', adm_crash: 'notif_adm_crash',
-      coran: 'notif_coran', prog_eve: 'notif_prog_eve',
+      coran: 'notif_coran', prog_eve: 'notif_prog_eve', cours_prep: 'notif_cours_prep', adm_bilan: 'notif_adm_bilan',
     };
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {
@@ -404,7 +404,7 @@ serve(async (req) => {
       hw_new: '/?open=devoirs', hw_rem: '/?open=devoirs', hw_res: '/?open=devoirs',
       lesson: '/nourania', adm_hw: '/?admin=cahier-texte', adm_reg: '/?admin=users', adm_task: '/?open=todo',
       prog_week: '/?open=devoirs', adm_recap: '/?admin=cahier-texte', adm_crash: '/monitoring',
-      coran: '/coran?tab=programme', prog_eve: '/?open=devoirs',
+      coran: '/coran?tab=programme', prog_eve: '/?open=devoirs', cours_prep: '/?open=devoirs', adm_bilan: '/?open=todo',
     };
     const givenData = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
     const url = typeof givenData.url === 'string' ? givenData.url

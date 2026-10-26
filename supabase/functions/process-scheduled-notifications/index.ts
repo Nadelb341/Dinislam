@@ -244,6 +244,82 @@ serve(async (req) => {
       }
     }
 
+    // 🎒 2 h avant le cours de chaque groupe (horaires décalés, pas pendant les vacances) : « Es-tu prêt ? » (2026-10-26)
+    let coursPrep = 0;
+    if (!inHolidays) {
+      const { data: schedules } = await supabase.from('group_schedules').select('group_id, weekday, start_time').eq('weekday', isoWeekday(today));
+      for (const sch of (schedules ?? []) as { group_id: string; weekday: number; start_time: string }[]) {
+        const [h, m] = sch.start_time.split(':').map(Number);
+        const rappel = h * 60 + (m || 0) - 120;
+        if (currTotal < rappel || currTotal >= rappel + 5) continue;
+        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: `pret_cours_${sch.group_id}`, sent_on: today });
+        if (logErr) continue;
+        const { data: membres } = await supabase.from('student_group_members').select('user_id').eq('group_id', sch.group_id);
+        const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+        const admins = new Set((adminRoles ?? []).map((a: { user_id: string }) => a.user_id));
+        const ids = (membres ?? []).map((x: { user_id: string }) => x.user_id).filter((id: string) => !admins.has(id));
+        if (!ids.length) continue;
+        try {
+          await sendPushInternal({
+            userIds: ids,
+            title: `🎒 Ton cours commence dans 2 h (${String(h).padStart(2, '0')} h${m ? String(m).padStart(2, '0') : ''}) !`,
+            body: "{prenom}, as-tu tout préparé ? Touche ici et coche « Je suis prêt pour le cours » ✅",
+            tag: `pret-${sch.group_id}-${today}`, type: 'cours_prep', category: 'cours_prep',
+            data: { url: '/?open=devoirs' },
+          });
+          coursPrep += ids.length;
+        } catch (e) { console.error('Prêt pour le cours : notification non envoyée', sch.group_id, e); }
+      }
+    }
+
+    // 📝 20 h : « Ce qu'on a vu » envoyé aux élèves notés absents (seulement si l'enseignante l'a écrit)
+    let vuEnvoye = 0;
+    if (currTotal >= 20 * 60 && currTotal < 20 * 60 + 5) {
+      const { data: sessions } = await supabase.from('group_sessions').select('id, group_id, session_date, seen').eq('session_date', today).is('seen_sent_at', null).not('seen', 'is', null);
+      for (const se of (sessions ?? []) as { id: string; group_id: string; session_date: string; seen: string }[]) {
+        if (!se.seen?.trim()) continue;
+        const { data: membres } = await supabase.from('student_group_members').select('user_id').eq('group_id', se.group_id);
+        const ids = (membres ?? []).map((x: { user_id: string }) => x.user_id);
+        const { data: absents } = ids.length
+          ? await supabase.from('attendance_records').select('user_id').eq('date', today).eq('status', 'absent').in('user_id', ids)
+          : { data: [] };
+        for (const a of (absents ?? []) as { user_id: string }[]) {
+          const texte = `📖 Tu n'étais pas là aujourd'hui, voici ce qu'on a vu en cours :\n${se.seen.trim()}\nN'hésite pas à poser tes questions à ton professeur 😊`;
+          const { error: mErr } = await supabase.from('user_messages').insert({ user_id: a.user_id, message: texte, sender_type: 'admin', message_type: 'text' });
+          if (mErr) { console.error('Ce qu\'on a vu : message non enregistré', a.user_id, mErr); continue; }
+          try {
+            await sendPushInternal({ userId: a.user_id, title: "📖 {prenom}, voici ce qu'on a vu en cours", body: se.seen.trim().substring(0, 100), type: 'cours_vu', category: 'msg', data: { url: '/?open=messages' } });
+          } catch (e) { console.error(e); }
+          vuEnvoye++;
+        }
+        await supabase.from('group_sessions').update({ seen_sent_at: new Date().toISOString() }).eq('id', se.id);
+      }
+    }
+
+    // 📈 3 jours avant les vacances, 10 h : rappel à l'enseignante d'envoyer les bilans aux parents
+    let bilanRappel = false;
+    if (currTotal >= 10 * 60 && currTotal < 10 * 60 + 5) {
+      const dans3 = new Date(`${today}T12:00:00Z`); dans3.setUTCDate(dans3.getUTCDate() + 3);
+      const j3 = dans3.toISOString().slice(0, 10);
+      const { data: vac } = await supabase.from('school_holidays').select('label').eq('start_date', j3).maybeSingle();
+      if (vac) {
+        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'bilans_vacances', sent_on: today });
+        if (!logErr) {
+          const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+          try {
+            await sendPushInternal({
+              userIds: (adminRoles ?? []).map((a: { user_id: string }) => a.user_id),
+              title: `📈 ${vac.label} dans 3 jours`,
+              body: 'Pense à envoyer les bilans de tes élèves à leurs parents 📱 (Cahier de texte › groupe › 📈 Bilans)',
+              tag: `bilans-${today}`, type: 'bilans', category: 'adm_bilan',
+              data: { url: '/?open=todo' },
+            });
+            bilanRappel = true;
+          } catch (e) { console.error('Rappel des bilans non envoyé', e); }
+        }
+      }
+    }
+
     // 📊 Lundi 9 h : récap pour l'enseignante (qui a fait briller ses diamants depuis mercredi)
     let recap = false;
     if (isoWeekday(today) === 1 && currTotal >= 9 * 60 && currTotal < 9 * 60 + 5) {
@@ -373,6 +449,9 @@ serve(async (req) => {
       recap,
       prepReminded,
       eveReminded,
+      coursPrep,
+      vuEnvoye,
+      bilanRappel,
       processed: (notifications || []).length,
       totalSent,
       tasksReminded,

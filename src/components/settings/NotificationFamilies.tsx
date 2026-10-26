@@ -17,7 +17,7 @@ import { toast } from 'sonner';
  */
 
 type PrefKey =
-  | 'notif_msg' | 'notif_coran' | 'notif_prog_eve' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
+  | 'notif_msg' | 'notif_coran' | 'notif_prog_eve' | 'notif_cours_prep' | 'notif_adm_bilan' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
   | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task' | 'notif_prog_week' | 'notif_adm_recap' | 'notif_adm_crash'
   | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
 
@@ -46,6 +46,7 @@ const FAMILIES: Family[] = [
       { key: 'notif_hw_res', label: 'Devoir corrigé', hint: 'Validé ou à refaire' },
       { key: 'notif_prog_week', label: 'Mon chemin de la semaine 💎', hint: 'Chaque mercredi à 21 h' },
       { key: 'notif_prog_eve', label: 'Rappel la veille du cours 💎', hint: 'Mardi à 18 h, s\'il reste des diamants à faire briller' },
+      { key: 'notif_cours_prep', label: 'Mon cours commence dans 2 h 🎒', hint: '2 h avant ton cours, pour cocher « Je suis prêt »' },
     ],
   },
   {
@@ -86,6 +87,7 @@ const FAMILIES: Family[] = [
       { key: 'notif_adm_valid', label: 'Demande de validation' },
       { key: 'notif_adm_reg', label: 'Nouvelle inscription' },
       { key: 'notif_adm_task', label: 'Rappel d\'une ligne du « Cahier de texte »' },
+      { key: 'notif_adm_bilan', label: 'Bilans à envoyer avant les vacances 📈', hint: '3 jours avant chaque vacances, à 10 h' },
       { key: 'notif_adm_recap', label: 'Récap du lundi 💎', hint: 'Qui a fait briller ses diamants la semaine passée' },
       { key: 'notif_adm_crash', label: 'Plantage chez un élève 😿', hint: 'Revient toutes les heures tant que ce n\'est pas résolu (réglable dans Monitoring)' },
     ],

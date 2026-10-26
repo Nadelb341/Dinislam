@@ -75,6 +75,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   coran_progress: 'Programme de lecture du Coran',
   admin_task_attachment: 'Fichier d\'une ligne du Cahier de texte',
   coran_note: 'Note d\'un marque-page du Coran',
+  group_level: 'Niveau d\'un groupe',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 

@@ -28,6 +28,12 @@ import type { Json } from '@/integrations/supabase/types';
 import { courseItems, draftKeyOf, isLate, sortTasks, todayParis, type AdminTask, type TodoGroup, type TodoStudent } from '@/lib/adminTasks';
 import { AnnounceDialog, CourseModeDialog } from './NextCourse';
 import AdminHomework from '@/components/admin/AdminHomework';
+import { GroupCockpit } from '@/components/cahier/GroupCockpit';
+import type { CahierVue } from '@/lib/groupCourse';
+import NiveauxGroupe from '@/components/cahier/NiveauxGroupe';
+import TableauClasse from '@/components/cahier/TableauClasse';
+import Recapitulatif from '@/components/cahier/Recapitulatif';
+import Bilans from '@/components/cahier/Bilans';
 
 const fmtDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 const toLocalInput = (iso: string | null) => {
@@ -131,8 +137,11 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
   const [confirmTemplateDelete, setConfirmTemplateDelete] = useState<{ id: string; title: string } | null>(null);
   const [kind, setKind] = useState<Kind>('cours');
   // 📓 Cahier de texte du groupe (déplacé du bouclier le 2026-10-26, tel quel) : devoirs, rendus à corriger, chemin de la semaine
-  const [showCahier, setShowCahier] = useState(false);
+  const [vue, setVue] = useState<CahierVue | null>(null);
   const [cahierKey, setCahierKey] = useState(0);
+  // 🗂️ Mémo (les 4 onglets) : ouvert ou fermé, retenu sur l'appareil
+  const [memoOpen, setMemoOpenState] = useState(() => { try { return localStorage.getItem('dinislam_cahier_memo') !== '0'; } catch { return true; } });
+  const setMemoOpen = (v: boolean) => { setMemoOpenState(v); try { localStorage.setItem('dinislam_cahier_memo', v ? '1' : '0'); } catch { /* stockage indisponible */ } };
   const [spoken, setSpoken] = useState<string | null>(null);
   const [homeworkFor, setHomeworkFor] = useState<AdminTask | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -163,7 +172,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
     setShowOld(false);
     setKind('cours');
     setSpoken(null);
-    setShowCahier(openCahier);
+    setVue(openCahier ? 'devoirs' : null);
   }, [group, openCahier]);
   useEffect(() => {
     if (!draftKey) return;
@@ -421,7 +430,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
     setHomeworkFor(null);
     // Le cahier de texte est dans ce groupe (2026-10-26) : on l'ouvre ici, le devoir prérempli s'affiche
     setCahierKey((k) => k + 1);
-    setShowCahier(true);
+    setVue('devoirs');
   };
   const toMessage = (task: AdminTask) => {
     onClose();
@@ -552,21 +561,21 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
             </div>
           )}
 
-          {/* 📓 Le cahier de texte (devoirs, rendus à corriger, chemin de la semaine), déplacé ici depuis le bouclier */}
-          <button type="button" onClick={() => setShowCahier((v) => !v)} aria-expanded={showCahier}
-            className="w-full flex items-center justify-between gap-2 rounded-2xl border-2 border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-3 py-2.5 text-start">
-            <span className="min-w-0">
-              <span className="block font-extrabold text-red-800 dark:text-red-200">📓 Devoirs du cahier de texte</span>
-              <span className="block text-[11px] text-red-700/80 dark:text-red-300/80">Nouveau devoir · devoirs par élève · à valider · chemin de la semaine 💎</span>
-            </span>
-            <span className="text-red-700 dark:text-red-300 shrink-0">{showCahier ? '▲' : '▼'}</span>
-          </button>
-          {showCahier && (
-            <div className="rounded-2xl border border-red-200 dark:border-red-900 p-2">
-              <AdminHomework key={cahierKey} onBack={() => setShowCahier(false)} groupeId={group.id} />
+          {/* 📓 Déroulé du cours (proposition D) ; les écrans du cahier s'ouvrent à la place (← Retour pour revenir) */}
+          {vue === null ? (
+            <GroupCockpit group={group} tasks={tasks} onOpen={(v) => { if (v === 'devoirs') setCahierKey((k) => k + 1); setVue(v); }}
+              onCourseMode={() => setCourseOpen(true)} memoOpen={memoOpen} onMemo={() => setMemoOpen(!memoOpen)} />
+          ) : (
+            <div className="rounded-2xl border border-border p-2">
+              {vue === 'devoirs' && <AdminHomework key={cahierKey} onBack={() => setVue(null)} groupeId={group.id} />}
+              {vue === 'niveaux' && group.id && <NiveauxGroupe groupId={group.id} groupName={group.name} students={groupStudents} onBack={() => setVue(null)} />}
+              {vue === 'tableau' && <TableauClasse groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
+              {vue === 'recap' && <Recapitulatif groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
+              {vue === 'bilans' && <Bilans groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
             </div>
           )}
 
+          {vue === null && memoOpen && (<>
           {/* Les 4 onglets de couleur */}
           <div role="tablist" className="grid grid-cols-4 gap-1">
             {KINDS.map((k) => {
@@ -663,6 +672,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
               </div>
             )}
           </div>
+          </>)}
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
 

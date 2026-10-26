@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,11 @@ import { takeDraftResume } from '@/lib/pendingDrafts';
 import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
 import { MATIERES } from '@/lib/devoirMatieres';
 import { CibleSelect } from './CibleSelect';
+import { useGroupCourse } from '@/hooks/useGroupCourse';
+import { useNiveaux } from '@/hooks/useNiveaux';
+import { toLocalInput } from '@/lib/groupCourse';
+import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
+import { deposerAudioProf } from '@/lib/audioProf';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -77,6 +82,13 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
   const { askValidation, validationDialog } = useConfirmValidation();
+  // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2) et ses niveaux (idée 1)
+  const { next: prochainCours } = useGroupCourse(groupeId);
+  const { data: niveaux = [] } = useNiveaux(groupeId);
+  // Idée 3 : consigne audio ; idée 4 : correction audio
+  const [consigneAudio, setConsigneAudio] = useState<Blob | null>(null);
+  const [correctionAudio, setCorrectionAudio] = useState<Blob | null>(null);
+  const [enregistreurKey, setEnregistreurKey] = useState(0);
   // ✍️ Matières prêtes à compléter (2026-10-26) : une ligne par matière, il suffit d'écrire la consigne
   const [parMatiere, setParMatiere] = useState(true);
   const lignes = form.lignes;
@@ -212,6 +224,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         ? lignesRemplies.map((m) => ({ titre: (lignes[m.type] || '').trim(), type: m.type, cible: form.cibles[m.type] || '', audio: !!form.audios[m.type] }))
         : [{ titre: form.titre.trim(), type: form.type, cible: form.cible_id, audio: form.audio_requis }];
       if (!form.date_limite) throw new Error('Choisis la date à rendre 📅');
+      consigneUrl.current = consigneAudio && user ? await deposerAudioProf(user.id, consigneAudio, 'consignes') : null;
       if (!items.length || items.some((it) => !it.titre)) throw new Error(parMatiere ? 'Écris au moins une consigne sur une ligne' : 'Le titre est obligatoire');
       let total = 0;
       for (const it of items) total = await creerUn(it.titre, it.type, it.cible, it.audio);
@@ -224,9 +237,11 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
       setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false });
+      setConsigneAudio(null); setEnregistreurKey((k) => k + 1);
     },
     onError: (err) => toast.error(err.message),
   });
+  const consigneUrl = useRef<string | null>(null);
 
   /** Crée un devoir (titre + matière) pour les destinataires choisis ; renvoie le nombre d'élèves */
   const creerUn = async (titre: string, type: string, cible: string, audio: boolean): Promise<number> => {
@@ -234,6 +249,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       const payload: TablesInsert<'devoirs'> = {
         titre, type,
         cible_module: cible ? type : null, cible_id: cible || null, audio_requis: audio,
+        consigne_audio_url: consigneUrl.current,
         description: form.description || null,
         lien_lecon: form.lien_lecon || null,
         date_limite: form.date_limite || null,
@@ -334,7 +350,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
           ...(stepsRows?.length ? [{ table: 'devoir_steps', rows: stepsRows }] : []),
         ];
         // Copie = la vraie ligne de la table (sans les noms ajoutés pour l'affichage, sinon la restauration échoue)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { student_name, group_name, ...row } = devoir;
         const ok = await moveToTrash(user.id, 'devoir', id, devoir.titre || 'Devoir',
           children.length ? { ...row, __children: children } : row);
@@ -378,7 +393,8 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       if (!modalARefaire) throw new Error('Aucun rendu sélectionné');
       const { error } = await supabase
         .from('devoirs_rendus')
-        .update({ statut: 'a_refaire', commentaire_admin: commentaire || null })
+        .update({ statut: 'a_refaire', commentaire_admin: commentaire || null,
+          correction_audio_url: correctionAudio && user ? await deposerAudioProf(user.id, correctionAudio, 'corrections') : null })
         .eq('id', modalARefaire.renduId);
       if (error) throw error;
 
@@ -394,6 +410,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       toast.success('📢 Élève notifié — devoir à refaire');
       setModalARefaire(null);
       setCommentaire('');
+      setCorrectionAudio(null);
     },
   });
 
@@ -433,7 +450,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId })); if (!showForm && !form.date_limite) { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } setShowForm(!showForm); }} size="sm">
+        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId })); if (!showForm && !form.date_limite) { if (prochainCours) setForm((f) => ({ ...f, date_limite: toLocalInput(prochainCours) })); else { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } } setShowForm(!showForm); }} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
       </div>
@@ -521,6 +538,21 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               <option value="student">👤 Un élève</option>
               <option value="students">👥 Plusieurs élèves</option>
             </select>
+            {niveaux.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-bold text-muted-foreground">🎚️ Niveau :</span>
+                {niveaux.map((n) => {
+                  const actif = form.assigned_to === 'students' && form.student_ids.length === n.member_ids.length && n.member_ids.every((i) => form.student_ids.includes(i));
+                  return (
+                    <button key={n.id} type="button" aria-pressed={actif} disabled={!n.member_ids.length}
+                      onClick={() => setForm((f) => ({ ...f, assigned_to: 'students', student_ids: [...n.member_ids], group_id: '', group_ids: [] }))}
+                      className={`rounded-full px-3 py-1 text-xs font-bold border ${actif ? 'bg-[#2457a5] text-white border-[#2457a5]' : 'bg-card'} disabled:opacity-40`}>
+                      {n.name} ({n.member_ids.length})
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {form.assigned_to === 'group' && (
               <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
                 className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
@@ -599,6 +631,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 )}
               </div>
             )}
+            <EnregistreurAudio key={enregistreurKey} label="Consigne audio pour les élèves (facultatif)" onChange={setConsigneAudio} />
             <Button onClick={() => createDevoir.mutate()} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
               {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
             </Button>
@@ -778,6 +811,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             onChange={e => setCommentaire(e.target.value)}
             rows={3}
           />
+          <EnregistreurAudio label="Correction audio (facultatif) : l'élève l'écoute avant de refaire" onChange={setCorrectionAudio} />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => { setModalARefaire(null); setCommentaire(''); }}>
               Annuler
