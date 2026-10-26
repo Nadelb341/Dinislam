@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfetti } from '@/hooks/useConfetti';
-import { ENCOURAGEMENTS, personalize } from '@/lib/encouragements';
 import { bonusEarned, itemFill, nextCourseDay, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
@@ -57,7 +56,6 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const allDone = total > 0 && done === total;
   const bonus = bonusEarned(program);
   const pct = total ? (program.items.reduce((s, i) => s + itemFill(i), 0) / total) * 100 : 0;
-  const message = personalize(ENCOURAGEMENTS[program.message_index % ENCOURAGEMENTS.length], program.full_name, program.gender);
   const courseDay = nextCourseDay(program.week_start);
   const day = courseDay.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const reward = treasureFor(program.program_id);
@@ -144,7 +142,6 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
       <p className="text-center text-sm font-bold">
         {allDone ? `🎉 Tous tes diamants brillent, machaAllah ! Touche le trésor pour l'ouvrir 🎁` : `Fais briller tes ${total} diamants pour ouvrir le trésor 🎁`}
       </p>
-      <p className="rounded-xl bg-violet-100 dark:bg-violet-950/40 px-3 py-2 text-sm font-semibold [overflow-wrap:anywhere]">{message}</p>
       {program.teacher_note && (
         <p className="rounded-xl bg-card border-s-4 border-amber-400 px-3 py-2 text-sm [overflow-wrap:anywhere]">💬 <b>Mot de ton prof :</b> {program.teacher_note}</p>
       )}

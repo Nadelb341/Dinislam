@@ -9,7 +9,11 @@ import { cn } from "@/lib/utils";
 import { sendPushNotification } from "@/lib/pushHelper";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
-import { praiseFor, type WeeklyProgram } from "@/lib/weeklyProgram";
+import { praiseFor, nextCourseDay, type WeeklyProgram } from "@/lib/weeklyProgram";
+import { matiereOf } from "@/lib/devoirMatieres";
+
+/** Mercredi prochain (jour du cours), aujourd'hui compris */
+const prochainMercredi = () => { const d = new Date(); d.setHours(12, 0, 0, 0); while (d.getDay() !== 3) d.setDate(d.getDate() + 1); return d; };
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmValidation } from "@/hooks/useConfirmValidation";
 import { useConfetti } from "@/hooks/useConfetti";
@@ -29,7 +33,91 @@ type Devoir = {
   /** Devoir en étapes (ex. « Ligne 1 », « Ligne 2 »…) et étapes déjà cochées (numéros à partir de 1) */
   etapes: string[];
   etapesFaites: number[];
+  /** Date où le devoir a été donné */
+  cree_le: string;
 };
+
+/** Un devoir est fait quand l'élève l'a coché, ou quand son audio est envoyé (sauf « à refaire ») */
+const estFait = (d: Devoir) => d.travaille || (d.rendu && d.statut_rendu !== 'a_refaire');
+const jourLong = (d: Date) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+/**
+ * 📓 Le cahier de l'élève (proposition A choisie par Nadia, 2026-10-26) : papier ligné, « Pour mercredi … : »,
+ * une ligne par devoir reliée à son diamant ; toucher une ligne l'ouvre (case « J'ai travaillé », étapes, audio).
+ * Chaque devoir est obligatoire : il reste dans « à faire » tant qu'il n'est pas fait.
+ */
+function CahierPapier({ devoirs, pourLe, renderDetail }: { devoirs: Devoir[]; pourLe: Date; renderDetail: (d: Devoir) => React.ReactNode }) {
+  const [ouvertId, setOuvertId] = useState<string | null>(null);
+  const aFaire = devoirs.filter((d) => !estFait(d)).sort((a, b) => (a.date_limite || '9999').localeCompare(b.date_limite || '9999'));
+  const faits = devoirs.filter(estFait).sort((a, b) => b.cree_le.localeCompare(a.cree_le));
+  const ilYa7Jours = new Date(Date.now() - 7 * 86400000).toISOString();
+  const faitsRecents = faits.filter((d) => d.cree_le >= ilYa7Jours);
+  const anciens = faits.filter((d) => d.cree_le < ilYa7Jours);
+  // Anciens devoirs faits, rangés par jour où ils ont été donnés
+  const parJour = new Map<string, Devoir[]>();
+  anciens.forEach((d) => { const k = d.cree_le.slice(0, 10); parJour.set(k, [...(parJour.get(k) || []), d]); });
+  const now = Date.now();
+
+  const ligne = (d: Devoir) => {
+    const m = matiereOf(d.type);
+    const fait = estFait(d);
+    const enRetard = !fait && !!d.date_limite && new Date(d.date_limite).getTime() < now;
+    const sous = d.etapes.length > 0 && !fait
+      ? `💎 ${d.etapesFaites.length}/${d.etapes.length} étape${d.etapes.length > 1 ? 's' : ''}`
+      : d.date_limite ? `📅 pour le ${new Date(d.date_limite).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : m.label;
+    const chip = d.statut_rendu === 'a_refaire' ? { t: '🔄 à refaire', c: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' }
+      : enRetard ? { t: '⚠️ en retard', c: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' }
+      : !fait ? { t: 'à faire', c: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' }
+      : d.statut_rendu === 'corrige' ? { t: '✅ corrigé', c: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200' }
+      : d.statut_rendu === 'rendu' ? { t: '🎧 envoyé', c: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200' }
+      : { t: '✓ fait', c: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200' };
+    const ouvert = ouvertId === d.id;
+    return (
+      <div key={d.id} id={`devoir-${d.id}`} className="scroll-mt-24">
+        <button type="button" onClick={() => setOuvertId(ouvert ? null : d.id)} aria-expanded={ouvert}
+          className={cn("w-full flex items-center gap-2.5 rounded-xl border bg-card/95 px-3 py-2.5 text-left shadow-sm transition-colors",
+            ouvert ? "border-sky-400" : "border-border hover:border-sky-300")}>
+          <span className="text-xl shrink-0">{m.emoji}</span>
+          <span className="flex-1 min-w-0">
+            <b className={cn("block text-sm [overflow-wrap:anywhere]", fait && "text-muted-foreground")}>{d.titre}</b>
+            <span className="block text-[11px] text-muted-foreground">{sous}</span>
+          </span>
+          <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold", chip.c)}>{chip.t}</span>
+        </button>
+        {ouvert && <div className="mt-1.5">{renderDetail(d)}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="cahier-papier rounded-r-2xl px-3 pt-2 pb-3 space-y-2">
+      <p className="cahier-main text-lg leading-8">Pour {jourLong(pourLe)} :</p>
+      {aFaire.length ? aFaire.map(ligne) : <p className="cahier-main text-lg leading-8 text-green-700 dark:text-green-400">Rien à faire, bravo ! ✓</p>}
+      {aFaire.length > 0 && (
+        <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">📌 Chaque devoir compte : fais-les tous pour faire briller tes diamants et ouvrir le trésor 🎁</p>
+      )}
+      {faitsRecents.length > 0 && (
+        <>
+          <p className="cahier-main text-lg leading-8 text-muted-foreground">Déjà fait cette semaine ✓</p>
+          {faitsRecents.map(ligne)}
+        </>
+      )}
+      {parJour.size > 0 && (
+        <details className="pt-1">
+          <summary className="cahier-main text-lg leading-8 text-muted-foreground cursor-pointer">📅 Semaines d'avant</summary>
+          <div className="space-y-2 pt-1">
+            {[...parJour.entries()].map(([jour, liste]) => (
+              <div key={jour} className="space-y-1.5">
+                <p className="cahier-main text-base text-muted-foreground">{new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ✓ tout est fait</p>
+                {liste.map(ligne)}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
 
 function CarteDevoir({ devoir, onRendu, onTravaille, onEtape }: { devoir: Devoir; onRendu: (id: string, audioBlob: Blob) => void; onTravaille: (id: string, value: boolean) => void; onEtape: (id: string, step: number, value: boolean) => void }) {
   const { askValidation, validationDialog } = useConfirmValidation();
@@ -78,13 +166,6 @@ function CarteDevoir({ devoir, onRendu, onTravaille, onEtape }: { devoir: Devoir
     setSending(false);
   };
 
-  const emoji: Record<string, string> = {
-    sourate: '📖',
-    nourania: '🔤',
-    recitation: '🎙️',
-    exercice_pdf: '📄',
-    autre: '✏️'
-  };
 
   const isARefaire = devoir.statut_rendu === 'a_refaire';
   const isCorrige = devoir.statut_rendu === 'corrige';
@@ -92,8 +173,8 @@ function CarteDevoir({ devoir, onRendu, onTravaille, onEtape }: { devoir: Devoir
   const isAFaire = !devoir.rendu;
 
   return (
-    <div id={`devoir-${devoir.id}`} className={cn(
-      "rounded-2xl p-4 mb-3 shadow-sm border-2 scroll-mt-24",
+    <div className={cn(
+      "rounded-2xl p-4 mb-3 shadow-sm border-2",
       isCorrige
         ? "border-green-400 bg-green-50 dark:bg-green-950/20 dark:border-green-700"
         : isARefaire
@@ -104,7 +185,7 @@ function CarteDevoir({ devoir, onRendu, onTravaille, onEtape }: { devoir: Devoir
     )}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{emoji[devoir.type] || '✏️'}</span>
+          <span className="text-2xl">{matiereOf(devoir.type).emoji}</span>
           <div>
             <p className="font-bold text-foreground text-sm">{devoir.titre}</p>
             {devoir.description && (
@@ -350,6 +431,7 @@ export default function BlocDevoirsEleve() {
         statut_rendu: rendu?.statut || null,
         commentaire_admin: rendu?.commentaire_admin || null,
         travaille: travailles.has(d.id),
+        cree_le: d.created_at || new Date().toISOString(),
         etapes: Array.isArray(d.etapes) ? (d.etapes as unknown[]).map(String) : [],
         etapesFaites: (steps || []).filter((x) => x.devoir_id === d.id).map((x) => x.step),
       };
@@ -480,12 +562,13 @@ export default function BlocDevoirsEleve() {
 
   if (loading || (devoirs.length === 0 && devoirsTermines.length === 0 && !program)) return null;
 
-  const totalAFaire = devoirs.length;
+  // Devoirs pas encore faits (cochés ou audio envoyé), comme les diamants
+  const totalAFaire = [...devoirs, ...devoirsTermines].filter((d) => !estFait(d)).length;
   const toutAJour = totalAFaire === 0 && diamondsLeft === 0;
 
   // Date butoir la plus proche parmi les devoirs non rendus
-  const prochaineDateButoir = devoirs
-    .filter(d => d.date_limite)
+  const prochaineDateButoir = [...devoirs, ...devoirsTermines]
+    .filter(d => d.date_limite && !estFait(d))
     .map(d => new Date(d.date_limite!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
 
@@ -514,7 +597,7 @@ export default function BlocDevoirsEleve() {
           {toutAJour
             ? '✅ Tout est à jour !'
             : [
-                totalAFaire > 0 ? `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à rendre` : '',
+                totalAFaire > 0 ? `${totalAFaire} devoir${totalAFaire > 1 ? 's' : ''} à faire` : '',
                 diamondsLeft > 0 ? `💎 ${diamondsLeft} diamant${diamondsLeft > 1 ? 's' : ''} à faire briller` : '',
               ].filter(Boolean).join(' · ')}
         </p>
@@ -544,19 +627,10 @@ export default function BlocDevoirsEleve() {
             </p>
           )}
 
-          {devoirs.map(d => (
-            <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />
-          ))}
-
-          {devoirsTermines.length > 0 && (
-            <>
-              <p className="text-sm font-semibold text-muted-foreground mt-3 mb-2">
-                ✅ Devoirs terminés ({devoirsTermines.length})
-              </p>
-              {devoirsTermines.map(d => (
-                <CarteDevoir key={d.id} devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />
-              ))}
-            </>
+          {(devoirs.length > 0 || devoirsTermines.length > 0) && (
+            <CahierPapier devoirs={[...devoirs, ...devoirsTermines]}
+              pourLe={program && nextCourseDay(program.week_start).getTime() >= Date.now() - 86400000 ? nextCourseDay(program.week_start) : prochainMercredi()}
+              renderDetail={(d) => <CarteDevoir devoir={d} onRendu={handleRendu} onTravaille={(id, v) => void handleTravaille(id, v)} onEtape={(id, n, v) => void handleEtape(id, n, v)} />} />
           )}
         </div>
       )}

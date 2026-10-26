@@ -9,6 +9,8 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Tajawal:wght@300;400;500;700;800&display=swap');
 /* Noto Naskh Arabic, réduite aux seuls signes de la hamza sous le alif (إ ِ ٍ ي) : avec Amiri la kasra et le tanouine collaient à la hamza */
+/* Écriture « cahier » du cahier de texte de l'élève (2026-10-26) */
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@700&text=%D8%A5%D9%90%D9%8A%D9%8D%D8%A7%D9%95&display=swap');
 
 @layer base {
@@ -408,3 +410,8 @@
 @keyframes treasure-pop { 0% { transform: scale(.6) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.08) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
 .treasure-pop { animation: treasure-pop .55s cubic-bezier(.2,.9,.3,1.2) both; }
 @media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine, .treasure-pop { animation: none; } }
+
+/* 📓 Papier ligné du cahier de texte de l'élève (2026-10-26) */
+.cahier-papier { background: repeating-linear-gradient(hsl(var(--card)) 0 31px, hsl(214 60% 88% / .7) 31px 32px); border-left: 3px solid hsl(0 80% 78%); }
+.dark .cahier-papier { background: repeating-linear-gradient(hsl(var(--card)) 0 31px, hsl(214 40% 30% / .6) 31px 32px); border-left-color: hsl(0 45% 40%); }
+.cahier-main { font-family: 'Patrick Hand', 'Comic Sans MS', cursive; }
