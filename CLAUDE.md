@@ -30,7 +30,30 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 
 ## 📓 Carte « À FAIRE » → « Cahier de texte » (2026-10-26)
 - ✅ Fait (option 1 de Nadia : déplacement TEL QUEL d'abord) : la carte de l'accueil s'appelle « CAHIER DE TEXTE » (identifiants internes inchangés : AdminTodoCard, admin_tasks, ?open=todo, clés `dinislam_admin_task_`). Dans chaque groupe (AdminTodoGroupDialog), bouton rouge « 📓 Devoirs du cahier de texte » qui déplie `AdminHomework` tel quel (prop `groupeId` : un nouveau devoir est proposé pour ce groupe). « 📚 En faire un devoir… » ouvre ce cahier dans le groupe (brouillon prérempli). Bouclier (`cahier-texte`, `cahier-texte-module`) et Tableau de bord (`homework`) = simples raccourcis vers `/?open=todo&cahier=1` (carte ouverte, groupe Général, cahier déplié) ; les anciennes notifications `/?admin=cahier-texte` passent par ce raccourci. Textes « À FAIRE » visibles renommés (notifications, corbeille, brouillons).
-- ⏳ **ACTION EN ATTENTE (Nadia, à relancer à chaque réponse)** : choisir la disposition finale parmi les 5 propositions https://claude.ai/artifact/TTUxbC1QU48M6fLtFcYRgC (A par séance, B Classroom, C tableau de la classe, D déroulé du cours, E colonnes ; conseil A + C) et les idées (1 à 9).
+- ✅ 2026-10-26 : disposition choisie par Nadia = D (déroulé du cours) + bouton « 📊 Tableau de la classe » (C, élèves du groupe seulement) + bouton « 📋 Récapitulatif » (E) + idées 1 à 9 → voir section « 🧑‍🏫 Cahier de texte du professeur » ci-dessous.
+
+## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
+- **Où** : carte CAHIER DE TEXTE de l'accueil › un groupe (`AdminTodoGroupDialog`). En haut : `src/components/cahier/GroupCockpit.tsx` (proposition D). Les boutons ouvrent un écran dans la même fenêtre (`vue` : `devoirs` | `tableau` | `recap` | `bilans` | `niveaux`, type `CahierVue` dans `src/lib/groupCourse.ts`, « ← Retour »). Les 4 onglets d'avant (Prochain cours, Devoirs à préparer, À apporter, Mémo) sont sous « 🗂️ Mémo » (ouvert par défaut, `localStorage dinislam_cahier_memo`).
+- **Heure de cours de chaque groupe** (idée 7) : table `group_schedules` (jour 1–7 + heure), réglée dans le cockpit. Tant qu'elle n'est pas réglée, il n'y a ni rappel 2 h avant ni date automatique. Calculs : `src/lib/groupCourse.ts` (`nextCourse` saute les vacances de la zone C de `school_holidays` ; il y a des tests) et `src/hooks/useGroupCourse.ts`.
+- **D, déroulé du cours** : ligne « ⏳ Prochain cours : … · dans X jours ».
+  - Bloc « Cette semaine » : diamants, à valider, prêts, à apporter.
+  - Tuile ① Avant : ouvre le tableau.
+  - Tuile ② Pendant : ▶️ Mode cours, « 📝 Ce qu'on a vu » (table `group_sessions`, brouillon `dinislam_ce_quon_a_vu_<groupe>`), « 🔁 Dupliquer » vers le cours d'après (confirmation).
+  - Tuile ③ Après : 📚 Distribuer → devoirs ; 🎚️ Niveaux.
+- **C, Tableau de la classe** : `TableauClasse.tsx`, les élèves du groupe seulement, devoirs des 35 derniers jours. Valider un rendu passe par `ValiderRenduDialog` (confirmation) ; il y a aussi un bouton pour encourager.
+- **E, Récapitulatif** : `Recapitulatif.tsx`. Données dans `useCahierClasse.ts` (queryKey `cahier-classe`).
+- **Idées**
+  - (1) La date à rendre est proposée automatiquement : le prochain cours du groupe, hors vacances de la zone C.
+  - (2) 🎚️ Niveaux : table `group_levels`, `NiveauxGroupe.tsx`. Une puce « Niveau » dans le formulaire de devoir donne le devoir aux élèves de ce niveau. Supprimer un niveau l'envoie à la corbeille (type `group_level`).
+  - (3) Consigne audio du professeur : `devoirs.consigne_audio_url`, `EnregistreurAudio.tsx` + `src/lib/audioProf.ts`, bucket `devoirs-audios`, dossier `<admin>/consignes`.
+  - (4) Correction audio dans « À refaire » : `devoirs_rendus.correction_audio_url`. L'élève l'écoute avec `AudioProf.tsx`.
+  - (5) « 🎒 Prêt pour le cours » côté élève : table `course_ready`, `CahierDuJour.tsx`, de la veille 18 h jusqu'au début du cours + 1 h. Il n'apparaît que si le professeur a mis des lignes 🎒/🧳.
+  - (6) « 🎯 Objectif du jour » de l'élève : table `daily_goals`, série 🔥, `objectifJour.ts`.
+  - (7) Message automatique aux élèves 2 h avant LEUR cours (`process-scheduled-notifications`, catégorie `cours_prep`, interrupteur `notif_cours_prep`, une fois par jour via `auto_reminder_logs` kind `pret_cours_<groupe>`, rien pendant les vacances).
+  - (8) À 20 h, « ce qu'on a vu » est envoyé dans la messagerie aux élèves notés ABSENTS ce jour-là (`group_sessions.seen_sent_at`).
+  - (9) 📈 Bilans (`Bilans.tsx`, table `student_reports` : note /20, appréciation, message de motivation ; `profiles.parent_phone`). Le bouton « 📱 Texto » ouvre l'appli SMS du téléphone avec le texte prêt (cela ne marche que sur un téléphone ; sur ordinateur, il y a « Copier »). Brouillon `dinislam_bilan_<élève>`. Le professeur est prévenu 3 jours avant chaque début de vacances à 10 h (catégorie `adm_bilan`, interrupteur `notif_adm_bilan`).
+- Migration `20261026230000_cahier_professeur.sql` : tables avec RLS, toutes en direct, clés dans `realtimeSync.ts`.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : régler l'heure de cours de CHAQUE groupe dans le cockpit. Sans cela, il n'y a ni rappel 2 h avant ni date automatique. Vérifier en base (`select * from group_schedules`) en début de séance, et le rappeler tant que des groupes n'ont pas d'heure.
 
 ## 💎 Diamants = devoirs donnés à chaque élève (2026-10-26, demande de Nadia)
 - Cahier de texte de l'élève **ouvert par défaut** (`BlocDevoirsEleve`, flèche pour fermer/rouvrir).
