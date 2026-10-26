@@ -24,12 +24,12 @@ const PROGRESS_VIEWS = ['weekly-program', 'weekly-program-admin', 'student-engag
 
 export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   coran_progress: ['coran-progress', 'coran-admin-progress'],
-  devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs'],
+  devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs', 'cahier-classe'],
   devoir_steps: ['weekly-program', 'weekly-program-admin', 'admin-devoirs'],
   sourate_stories: ['sourate-stories'],
   admin_card_order: ['admin-card-ordering'],
   admin_task_templates: ['admin-task-templates'],
-  admin_tasks: ['admin-tasks'],
+  admin_tasks: ['admin-tasks', 'cahier-classe'],
   alphabet_admin_unlocks: ['admin-alphabet-grid', 'alphabet-admin-unlocks', 'alphabet-student-summary', 'alphabet-unlock-student', 'fully-unlocked-students'],
   alphabet_content: ['admin-alphabet-contents', 'alphabet-contents-page'],
   alphabet_game_scores: ['alphabet-game-scores', 'alphabet-student-summary'],
@@ -41,9 +41,11 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
   dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
   // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
-  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement'],
+  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'cahier-classe'],
   // Audio envoyé ou corrigé : le diamant suit
-  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus'],
+  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'cahier-classe'],
+  // « Prêt pour le cours » coché par l'élève : colonne ✅ du Tableau de la classe (2026-10-26)
+  course_ready: ['cahier-classe'],
   homework_submissions: ['my-homework-submissions'],
   invocation_content: ['admin-invocation-contents', 'admin-invocation-contents-full', 'invocation-contents-all'],
   invocations: ['admin-dashboard-stats', 'admin-invocation-validations', 'admin-invocations-full', 'admin-invocations-list', 'admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'invocations-list', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
@@ -86,7 +88,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   user_ramadan_video_watched: ['ramadan-video-watched'],
   user_sourate_verse_progress: [],
   weekly_program_settings: ['weekly-program', 'weekly-program-admin'],
-  weekly_programs: ['weekly-program', 'weekly-program-admin', 'student-engagement'],
+  weekly_programs: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'cahier-classe'],
 };
 
 export const REALTIME_TABLES = Object.keys(REALTIME_TABLE_QUERY_KEYS);
