@@ -14,6 +14,8 @@ import { DevoirValider } from "./DevoirValider";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmValidation } from "@/hooks/useConfirmValidation";
 import { useConfetti } from "@/hooks/useConfetti";
+import { AudioProf } from "./AudioProf";
+import { PretPourLeCours, ObjectifDuJour } from "./CahierDuJour";
 
 /** Mercredi prochain (jour du cours), aujourd'hui compris */
 const prochainMercredi = () => { const d = new Date(); d.setHours(12, 0, 0, 0); while (d.getDay() !== 3) d.setDate(d.getDate() + 1); return d; };
@@ -38,6 +40,9 @@ type Devoir = {
   /** Élément visé (« Commencer mon travail ») et audio demandé par l'enseignante */
   cible_id: string | null;
   audio_requis: boolean;
+  /** 🎧 Consigne audio du professeur et correction audio (2026-10-26) */
+  consigne_audio_url: string | null;
+  correction_audio_url: string | null;
 };
 
 /** Un devoir est fait (pour l'élève) dès qu'il l'a envoyé : en attente de validation ou validé ; « à refaire » = à faire */
@@ -155,6 +160,9 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
         </div>
       </div>
 
+      {/* 🎧 Consigne audio du professeur */}
+      <AudioProf url={devoir.consigne_audio_url} kind="consigne" />
+
       {/* 💎 Devoir en étapes : une case par étape, le diamant se remplit petit à petit (2026-10-26) */}
       {devoir.etapes.length > 0 && statut !== 'corrige' && (
         <div className="rounded-xl border-2 border-dashed border-sky-400 bg-white dark:bg-slate-900 p-2.5 space-y-1.5">
@@ -183,7 +191,7 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
 
       {/* ▶️ Commencer mon travail · ✅ Je valide mon devoir (audio si demandé) · états envoyé / validé / à refaire */}
       <DevoirValider onSent={onSent}
-        devoir={{ id: devoir.id, titre: devoir.titre, type: devoir.type, cible_id: devoir.cible_id, audio_requis: devoir.audio_requis, statut, commentaire: devoir.commentaire_admin }} />
+        devoir={{ id: devoir.id, titre: devoir.titre, type: devoir.type, cible_id: devoir.cible_id, audio_requis: devoir.audio_requis, statut, commentaire: devoir.commentaire_admin, correction_audio_url: devoir.correction_audio_url }} />
 
       {/* ⭐ Petit mot automatique quand le devoir est validé */}
       {statut === 'corrige' && user && (
@@ -242,7 +250,7 @@ export default function BlocDevoirsEleve() {
     // Fetch rendus for this student
     const { data: rendus } = await supabase
       .from('devoirs_rendus')
-      .select('devoir_id, statut, commentaire_admin')
+      .select('devoir_id, statut, commentaire_admin, correction_audio_url')
       .eq('student_id', user.id);
     // Cases « J'ai travaillé ce devoir »
     const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', user.id);
@@ -265,6 +273,8 @@ export default function BlocDevoirsEleve() {
         cree_le: d.created_at || new Date().toISOString(),
         cible_id: d.cible_id ?? null,
         audio_requis: !!d.audio_requis,
+        consigne_audio_url: d.consigne_audio_url ?? null,
+        correction_audio_url: rendu?.correction_audio_url ?? null,
         etapes: Array.isArray(d.etapes) ? (d.etapes as unknown[]).map(String) : [],
         etapesFaites: (steps || []).filter((x) => x.devoir_id === d.id).map((x) => x.step),
       };
@@ -280,7 +290,7 @@ export default function BlocDevoirsEleve() {
     chargerDevoirs();
   }, [chargerDevoirs]);
   // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
-  useRealtimeRefresh(['devoirs', 'student_group_members', 'devoir_checks', 'devoir_steps'], () => { void chargerDevoirs(); }, !!user);
+  useRealtimeRefresh(['devoirs', 'devoirs_rendus', 'student_group_members', 'devoir_checks', 'devoir_steps'], () => { void chargerDevoirs(); }, !!user);
 
   // 💎 Étape d'un devoir : le diamant se remplit ; ensuite l'élève touche « Je valide mon devoir »
   const handleEtape = async (devoirId: string, step: number, value: boolean) => {
@@ -362,6 +372,9 @@ export default function BlocDevoirsEleve() {
 
       {ouvert && (
         <div className="p-3 bg-background">
+          {/* 🎒 Prêt pour le cours (veille 18 h → début du cours + 1 h) et 🎯 objectif du jour */}
+          <PretPourLeCours />
+          <ObjectifDuJour devoirs={[...devoirs, ...devoirsTermines]} />
           {program && <WeeklyPath program={program} />}
           {devoirs.length === 0 && devoirsTermines.length === 0 && !program && (
             <p className="text-muted-foreground text-sm text-center py-2">
