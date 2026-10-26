@@ -50,6 +50,7 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - bug corrigé : les ressources « fichier » et « youtube » ne s'affichaient jamais dans la fiche.
 - **Cartes d'annonce** (`dashboard_cards`, ancien bouton « + ») : 0 en base, page `/ressources` reliée nulle part → plus de bouton pour en créer. `AdminDynamicCardDialog`/`AdminDynamicCardContent` sont gardés dans le code, inutilisés.
 - **Brouillons** : textes « Accueil › … › ⋮ › Gérer le contenu » ; `DraftDef.routeOf` permet d'ouvrir le bon module pour une carte de module.
+- ✅ Idées A, B, C (2026-10-27) : (A) cartes de l'accueil réordonnées par appui long + glisser (`SortableCardList`, admin seulement ; flèches ▲▼ retirées ; `reorderModules` enregistre `display_order`) ; (B) pastille 📝 sur le ⋮ et sur « Gérer le contenu » quand un brouillon attend à l'intérieur (`manageDraftKeys`) ; (C) « 📝 Suivi des quiz » dans le ⋮ de Ramadan (`ramadan-quiz-tracking`) — les statistiques globales étaient déjà dans le bouclier (« 📈 Stats »).
 - **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
 
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
