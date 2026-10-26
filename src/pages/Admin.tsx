@@ -1,13 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import { DraftDot } from '@/components/shared/DraftDot';
-import { editDraftKey } from '@/lib/pendingDrafts';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { trashThenDelete, collectChildren } from '@/lib/trash';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
-import AdminModuleCard from '@/components/admin/AdminModuleCard';
 import AdminModuleProgress from '@/components/admin/AdminModuleProgress';
 import AdminUsersList from '@/components/admin/AdminUsersList';
 import AdminStudentDetails from '@/components/admin/AdminStudentDetails';
@@ -15,8 +11,6 @@ import AdminRamadanManager from '@/components/admin/AdminRamadanManager';
 import AdminMessaging from '@/components/admin/AdminMessaging';
 import AdminNouraniaContent from '@/components/admin/AdminNouraniaContent';
 import AdminSourateContent from '@/components/admin/AdminSourateContent';
-import AdminAlphabetContent from '@/components/admin/AdminAlphabetContent';
-import AdminInvocationContent from '@/components/admin/AdminInvocationContent';
 import AdminInvocationManager from '@/components/admin/AdminInvocationManager';
 import AdminGenericModuleManager from '@/components/admin/AdminGenericModuleManager';
 import AdminAllahNamesManager from '@/components/admin/AdminAllahNamesManager';
@@ -24,8 +18,6 @@ import AdminSourateValidations from '@/components/admin/AdminSourateValidations'
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
 import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
 import AdminInvocationValidations from '@/components/admin/AdminInvocationValidations';
-import AdminDynamicCardDialog from '@/components/admin/AdminDynamicCardDialog';
-import AdminDynamicCardContent from '@/components/admin/AdminDynamicCardContent';
 import AdminRamadanQuizTracking from '@/components/admin/AdminRamadanQuizTracking';
 import AdminAttendance from '@/components/admin/AdminAttendance';
 import AdminGlobalStats from '@/components/admin/AdminGlobalStats';
@@ -33,414 +25,59 @@ import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminContent from '@/components/admin/AdminContent';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
 import AdminCoranManager from '@/components/coran/AdminCoranManager';
-
-import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Users, GraduationCap, Moon, Sparkles, BookOpen, MessageSquare,
-  BookMarked, Hand, Settings, Mail, ClipboardCheck, UserCheck,
-  Plus, Trash2,
-  FileText, List, Video, Star, Heart, Bell, Calendar, Image, Music,
-  ClipboardList, LayoutGrid, Book, Scroll, Eye, EyeOff, Wrench, Mic
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { SortableCardList, withResequencedOrder, rectSortingStrategy, DragItemProps } from '@/components/shared/SortableCardList';
-import { LucideIcon } from 'lucide-react';
-import { toast } from 'sonner';
-import type { Tables } from '@/integrations/supabase/types';
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  FileText, List, Video, BookOpen, Star, Heart, Bell, Calendar, Image, Music,
+/**
+ * Écrans de gestion (ex-« Tableau de bord »).
+ * 2026-10-27 (demande de Nadia) : plus de grille de cartes ici. Chaque carte de l'accueil a, dans son menu ⋮,
+ * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
+ * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
+ */
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage';
+
+const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
+  'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
+  'vocabulaire-manage': { slug: '/module/vocabulaire', title: 'Vocabulaire' },
+  'lecture-coran-manage': { slug: '/module/lecture-coran', title: 'Lecture du Coran' },
+  'darija-manage': { slug: '/module/darija', title: 'Darija (Marocain)' },
+  'dictionnaire-manage': { slug: '/module/dictionnaire', title: 'Dictionnaire' },
+  'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
+  'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
+  'histoires-prophetes-manage': { slug: '/module/histoires-prophetes', title: 'Histoires des Prophètes' },
 };
 
-type ViewType = 'dashboard' | 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'dynamic-card-content' | 'homework' | 'attendance' | 'modules' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage';
-
-interface GenericModuleManageState { moduleId: string; moduleTitle: string; }
-
-interface CardItem {
-  id: string;
-  type: 'static' | 'dynamic';
-  key: string;
-  order: number;
-  dynamicCard?: Tables<'dashboard_cards'>;
-}
-
-// Wrapper appui long — appliqué sur toute la carte, pas de poignée dédiée
-const SortableCard = ({ children, dragProps }: { children: React.ReactNode; dragProps?: DragItemProps }) => {
-  const { ref, style, isDragging, ...dragAttrs } = dragProps ?? {};
-  return (
-    <div ref={ref} style={style} {...dragAttrs} className={`relative ${isDragging ? 'opacity-60' : ''}`}>
-      {children}
-    </div>
-  );
-};
+const PROGRESS_VIEWS = ['ramadan', 'nourania', 'alphabet', 'invocations', 'sourates', 'prayer'] as const;
 
 const Admin = () => {
-  const { isAdmin, loading, user } = useAuth();
-  const queryClient = useQueryClient();
+  const { isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-  const [pendingCount, setPendingCount] = useState(0);
-  const [pendingRegistrations, setPendingRegistrations] = useState(0);
-  const [pendingNourania, setPendingNourania] = useState(0);
-  const [pendingInvocations, setPendingInvocations] = useState(0);
-  const [cardDialogOpen, setCardDialogOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<Tables<'dashboard_cards'> | null>(null);
-  const [deleteCardOpen, setDeleteCardOpen] = useState(false);
-  const [cardToDelete, setCardToDelete] = useState<string | null>(null);
-  const [selectedDynamicCard, setSelectedDynamicCard] = useState<Tables<'dashboard_cards'> | null>(null);
-  const [genericModuleManage, setGenericModuleManage] = useState<GenericModuleManageState | null>(null);
-  const [deleteModuleOpen, setDeleteModuleOpen] = useState(false);
-  const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType | null>(() => searchParams.get('section') as ViewType | null);
+  const [moduleId, setModuleId] = useState<string | null>(() => searchParams.get('module'));
 
-  // Fetch pending validation count
-  const { data: pendingValidations } = useQuery({
-    queryKey: ['admin-pending-validations-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('sourate_validation_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      if (error) throw error;
-      return count || 0;
-    },
-  });
+  // Un nouvel écran demandé alors que la page est déjà ouverte (notification, bouclier, menu ⋮ de l'accueil)
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section) {
+      setCurrentView(section as ViewType);
+      setModuleId(searchParams.get('module'));
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
-  // Fetch pending registration count
-  const { data: pendingRegCount } = useQuery({
-    queryKey: ['admin-pending-registrations-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_approved', false);
-      if (error) throw error;
-      return count || 0;
-    },
-  });
-
-  // Fetch pending nourania validation count
-  const { data: pendingNouraniaCount } = useQuery({
-    queryKey: ['admin-pending-nourania-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('nourania_validation_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      if (error) throw error;
-      return count || 0;
-    },
-  });
-
-  // Fetch pending homework count (devoirs à corriger)
-  const { data: pendingHomeworkCount } = useQuery({
-    queryKey: ['admin-pending-homework-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('devoirs_rendus')
-        .select('*', { count: 'exact', head: true })
-        .eq('statut', 'rendu');
-      if (error) throw error;
-      return count || 0;
-    },
-  });
-
-  // Fetch dynamic dashboard cards (announcements/info cards)
-  const { data: dynamicCards } = useQuery({
-    queryKey: ['admin-dynamic-cards'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('dashboard_cards')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // Fetch learning modules (non-builtin: 99 Noms, Grammaire, etc.)
   const { data: learningModules, isLoading: loadingModules, refetch: refetchModules } = useQuery({
     queryKey: ['admin-learning-modules'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('learning_modules')
-        .select('*')
-        .order('display_order');
+      const { data, error } = await supabase.from('learning_modules').select('*').order('display_order');
       if (error) throw error;
       return data || [];
     },
     staleTime: 0,
   });
 
-  // Fetch card ordering
-  const { data: cardOrdering } = useQuery({
-    queryKey: ['admin-card-ordering'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_card_order')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  useEffect(() => { setPendingCount(pendingValidations || 0); }, [pendingValidations]);
-  useEffect(() => { setPendingRegistrations(pendingRegCount || 0); }, [pendingRegCount]);
-  useEffect(() => { setPendingNourania(pendingNouraniaCount || 0); }, [pendingNouraniaCount]);
-  useEffect(() => { setPendingInvocations(pendingHomeworkCount || 0); }, [pendingHomeworkCount]);
-
-  // Handle section query param from admin command modal
-  useEffect(() => {
-    const section = searchParams.get('section');
-    if (section) {
-      setCurrentView(section as ViewType);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
-
-  // Realtime subscription for pending count updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('admin-pending-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_validation_requests' }, async () => {
-        const { count } = await supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        setPendingCount(count || 0);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
-        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false);
-        setPendingRegistrations(count || 0);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'nourania_validation_requests' }, async () => {
-        const { count } = await supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        setPendingNourania(count || 0);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, async () => {
-        const { count } = await supabase.from('devoirs_rendus').select('*', { count: 'exact', head: true }).eq('statut', 'rendu');
-        setPendingInvocations(count || 0);
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  const { data: stats } = useQuery({
-    queryKey: ['admin-dashboard-stats'],
-    queryFn: async () => {
-      const [
-        { count: totalUsers },
-        { count: totalRamadanDays },
-        { count: totalNouraniaLessons },
-        { count: totalAlphabetLetters },
-        { count: totalInvocations },
-        { count: totalSourates },
-        { count: totalPrayerCategories },
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('ramadan_days').select('*', { count: 'exact', head: true }),
-        supabase.from('nourania_lessons').select('*', { count: 'exact', head: true }),
-        supabase.from('alphabet_letters').select('*', { count: 'exact', head: true }),
-        supabase.from('invocations').select('*', { count: 'exact', head: true }),
-        supabase.from('sourates').select('*', { count: 'exact', head: true }),
-        supabase.from('prayer_categories').select('*', { count: 'exact', head: true }),
-      ]);
-      return {
-        users: totalUsers || 0, ramadan: totalRamadanDays || 0, nourania: totalNouraniaLessons || 0,
-        alphabet: totalAlphabetLetters || 0, invocations: totalInvocations || 0,
-        sourates: totalSourates || 0, prayer: totalPrayerCategories || 0,
-      };
-    },
-  });
-
-  // Static cards definition
-  const STATIC_CARDS = useMemo(() => [
-    { key: 'ramadan', title: 'Ramadan', icon: Moon, value: `${stats?.ramadan || 0} jours`, subtitle: 'Progression par élève', color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', cardBgColor: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800', view: 'ramadan' as ViewType, manageView: 'ramadan-manage' as ViewType },
-    { key: 'nourania', title: 'Nourania', icon: Sparkles, value: `${stats?.nourania || 0} leçons`, subtitle: 'Progression par élève', color: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/30', cardBgColor: 'bg-sky-50/50 dark:bg-sky-950/20 border-sky-200 dark:border-sky-800', view: 'nourania' as ViewType, manageView: 'nourania-manage' as ViewType },
-    { key: 'alphabet', title: 'Alphabet', icon: BookOpen, value: `${stats?.alphabet || 0} lettres`, subtitle: 'Progression par élève', color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-100 dark:bg-orange-900/30', cardBgColor: 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800', view: 'alphabet' as ViewType, manageView: 'alphabet-manage' as ViewType },
-    { key: 'invocations', title: 'Invocations', icon: MessageSquare, value: `${stats?.invocations || 0} disponibles`, subtitle: 'Progression par élève', color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-100 dark:bg-teal-900/30', cardBgColor: 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800', view: 'invocations' as ViewType, manageView: 'invocations-manage' as ViewType },
-    { key: 'sourates', title: 'Sourates', icon: BookMarked, value: `${stats?.sourates || 0} sourates`, subtitle: 'Progression par élève', color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30', cardBgColor: 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800', view: 'sourates' as ViewType, manageView: 'sourates-manage' as ViewType },
-    { key: 'prayer', title: 'Prière', icon: Hand, value: `${stats?.prayer || 0} catégories`, subtitle: 'Progression par élève', color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/30', cardBgColor: 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800', view: 'prayer' as ViewType, manageView: 'prayer-manage' as ViewType },
-    { key: 'grammaire', title: 'Grammaire & Conjugaison', icon: BookOpen, value: 'Gérer', subtitle: 'Règles et leçons', color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-100 dark:bg-blue-900/30', cardBgColor: 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800', view: 'grammaire-manage' as ViewType },
-    { key: 'allah-names', title: '99 Noms d\'Allah', icon: Star, value: 'Gérer', subtitle: 'Asmaoul Husna', color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-100 dark:bg-amber-900/30', cardBgColor: 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800', view: 'allah-names-manage' as ViewType },
-    { key: 'vocabulaire', title: 'Vocabulaire', icon: BookOpen, value: 'Gérer', subtitle: 'Mots et expressions', color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', cardBgColor: 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800', view: 'vocabulaire-manage' as ViewType },
-    { key: 'lecture-coran', title: 'Lecture du Coran', icon: BookMarked, value: 'Gérer', subtitle: 'Tajwid et récitation', color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-100 dark:bg-teal-900/30', cardBgColor: 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800', view: 'lecture-coran-manage' as ViewType },
-    { key: 'darija', title: 'Darija (Marocain)', icon: MessageSquare, value: 'Gérer', subtitle: 'Dialecte marocain', color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-100 dark:bg-orange-900/30', cardBgColor: 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800', view: 'darija-manage' as ViewType },
-    { key: 'dictionnaire', title: 'Dictionnaire', icon: List, value: 'Gérer', subtitle: 'Arabe-Français', color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30', cardBgColor: 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800', view: 'dictionnaire-manage' as ViewType },
-    { key: 'dhikr', title: 'Dhikr', icon: Heart, value: 'Gérer', subtitle: 'Rappels d\'Allah', color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/30', cardBgColor: 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800', view: 'dhikr-manage' as ViewType },
-    { key: 'hadiths', title: 'Hadiths', icon: Scroll, value: 'Gérer', subtitle: 'Paroles du Prophète ﷺ', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30', cardBgColor: 'bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800', view: 'hadiths-manage' as ViewType },
-    { key: 'histoires-prophetes', title: 'Histoires des Prophètes', icon: Users, value: 'Gérer', subtitle: 'Récits coraniques', color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/30', cardBgColor: 'bg-violet-50/50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800', view: 'histoires-prophetes-manage' as ViewType },
-    { key: 'coran', title: 'Coran', icon: BookMarked, value: 'Gérer', subtitle: 'Le Saint Coran', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900/30', cardBgColor: 'bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800', view: 'coran-manage' as ViewType },
-  ], [stats]);
-
-  // Combine static + dynamic cards with ordering
-  const orderedCards = useMemo(() => {
-    const orderMap = new Map<string, number>();
-    cardOrdering?.forEach(o => orderMap.set(o.card_key, o.display_order));
-
-    const items: CardItem[] = [];
-
-    // Add static cards
-    STATIC_CARDS.forEach((card, idx) => {
-      items.push({
-        id: `static-${card.key}`,
-        type: 'static',
-        key: card.key,
-        order: orderMap.get(`static-${card.key}`) ?? idx,
-      });
-    });
-
-    // Add dynamic cards
-    dynamicCards?.forEach((card, idx) => {
-      items.push({
-        id: `dynamic-${card.id}`,
-        type: 'dynamic',
-        key: card.id,
-        order: orderMap.get(`dynamic-${card.id}`) ?? (STATIC_CARDS.length + idx),
-        dynamicCard: card,
-      });
-    });
-
-    items.sort((a, b) => a.order - b.order);
-    return items;
-  }, [STATIC_CARDS, dynamicCards, cardOrdering]);
-
-  const saveOrderMutation = useMutation({
-    mutationFn: async (newOrder: CardItem[]) => {
-      const resequenced = withResequencedOrder(newOrder);
-      await Promise.all(
-        resequenced.map((item) =>
-          supabase
-            .from('admin_card_order')
-            .upsert(
-              { card_key: item.id, display_order: item.sort_order, updated_at: new Date().toISOString(), user_id: user?.id },
-              { onConflict: 'card_key' }
-            )
-        )
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-card-ordering'] });
-    },
-  });
-
-  const deleteCardMutation = useMutation({
-    mutationFn: async (cardId: string) => {
-      const card = dynamicCards?.find((c) => c.id === cardId);
-      if (!card || !user?.id) throw new Error('Carte introuvable');
-      await trashThenDelete({ userId: user.id, type: 'dashboard_card', id: cardId, label: card.title || 'Carte', data: card,
-        children: [await collectChildren('dashboard_card_visibility', 'card_id', [cardId])],
-        remove: () => supabase.from('dashboard_cards').delete().eq('id', cardId) });
-      // Also remove from ordering
-      await supabase.from('admin_card_order').delete().eq('card_key', `dynamic-${cardId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-dynamic-cards'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-card-ordering'] });
-      toast.success('Carte supprimée');
-      setDeleteCardOpen(false);
-      setCardToDelete(null);
-    },
-    onError: (err) => toast.error('Erreur: ' + err.message),
-  });
-
-  const deleteModuleMutation = useMutation({
-    mutationFn: async (moduleId: string) => {
-      const mod = learningModules?.find((m) => m.id === moduleId);
-      if (!mod || !user?.id) throw new Error('Module introuvable');
-      // Tout ce qui part avec le module (cartes, contenus, flashcards, progression) est gardé avec lui dans la corbeille
-      const cards = await collectChildren('module_cards', 'module_id', [moduleId]);
-      const cardIds = cards.rows.map((c) => String(c.id));
-      const flash = await collectChildren('module_flashcards', 'module_card_id', cardIds);
-      await trashThenDelete({ userId: user.id, type: 'learning_module', id: moduleId, label: mod.title || 'Module', data: mod,
-        children: [
-          await collectChildren('module_content', 'module_id', [moduleId]),
-          await collectChildren('module_visibility', 'module_id', [moduleId]),
-          cards,
-          await collectChildren('module_card_content', 'card_id', cardIds),
-          flash,
-          await collectChildren('user_flashcard_learned', 'flashcard_id', flash.rows.map((f) => String(f.id))),
-        ],
-        remove: () => supabase.from('learning_modules').delete().eq('id', moduleId) });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
-      queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
-      toast.success('Module supprimé');
-      setDeleteModuleOpen(false);
-      setModuleToDelete(null);
-    },
-    onError: (err) => toast.error('Erreur: ' + err.message),
-  });
-
-  const toggleModuleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from('learning_modules').update({ is_active }).eq('id', id);
-      if (error) throw error;
-      return is_active;
-    },
-    onSuccess: (is_active) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
-      queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
-      toast.success(is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
-    },
-    onError: (err) => toast.error('Erreur: ' + err.message),
-  });
-
-  // Map static card keys to builtin_path for visibility toggle
-  const CARD_KEY_TO_BUILTIN_PATH: Record<string, string> = {
-    users: '/admin/users',
-    messages: '/admin/messages',
-    students: '/admin/students',
-    ramadan: '/ramadan',
-    nourania: '/nourania',
-    alphabet: '/alphabet',
-    invocations: '/invocations',
-    sourates: '/sourates',
-    prayer: '/priere',
-    grammaire: '/grammaire',
-    'allah-names': '/allah-names',
-    vocabulaire: '/module/vocabulaire',
-    'lecture-coran': '/module/lecture-coran',
-    darija: '/module/darija',
-    dictionnaire: '/module/dictionnaire',
-    dhikr: '/module/dhikr',
-    hadiths: '/module/hadiths',
-    'histoires-prophetes': '/module/histoires-prophetes',
-    coran: '/coran',
-    homework: '/admin/homework',
-    attendance: '/admin/attendance',
-  };
-
-  const getModuleForCardKey = (key: string) => {
-    const path = CARD_KEY_TO_BUILTIN_PATH[key];
-    if (!path) return null;
-    return learningModules?.find(m => m.builtin_path === path) || null;
-  };
-
-  const ADMIN_ONLY_CARDS = ['messages', 'students', 'attendance', 'homework', 'recitations'];
-
-  const renderVisibilityToggle = (cardKey: string) => {
-    if (ADMIN_ONLY_CARDS.includes(cardKey)) return undefined;
-    const mod = getModuleForCardKey(cardKey);
-    if (!mod) return undefined;
-    return (
-      <button
-        className="w-6 h-6 rounded-full bg-muted/80 flex items-center justify-center hover:bg-muted transition-colors"
-        onClick={() => toggleModuleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active })}
-        title={mod.is_active ? 'Masquer aux élèves' : 'Afficher aux élèves'}
-      >
-        {mod.is_active ? (
-          <Eye className="h-3.5 w-3.5 text-green-600" />
-        ) : (
-          <EyeOff className="h-3.5 w-3.5 text-destructive" />
-        )}
-      </button>
-    );
-  };
-
   if (loading) {
     return (
-      <AppLayout title="Tableau de bord">
+      <AppLayout title="Gestion">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin h-8 w-8 border-2 border-gold border-t-transparent rounded-full" />
         </div>
@@ -449,246 +86,68 @@ const Admin = () => {
   }
 
   if (!isAdmin) return <Navigate to="/" replace />;
+  // Plus de grille de cartes : sans écran demandé, on revient à l'accueil
+  if (!currentView) return <Navigate to="/" replace />;
 
-  const handleBack = () => {
-    setCurrentView('dashboard');
-    setSelectedDynamicCard(null);
-    setGenericModuleManage(null);
-  };
+  // Retour : là d'où l'on vient (accueil, Monitoring…), sinon l'accueil (appli ouverte directement sur cet écran)
+  const handleBack = () => { if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) navigate(-1); else navigate('/'); };
+  const page = (children: React.ReactNode) => <AppLayout title="Gestion"><div className="p-4">{children}</div></AppLayout>;
+  const withBack = (children: React.ReactNode) => page(<><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button>{children}</>);
 
-  // Sub-view rendering
-  if (currentView === 'users') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminUsersList onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'students') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminStudentDetails onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'ramadan-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminRamadanManager onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'ramadan-quiz-tracking') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminRamadanQuizTracking onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'nourania-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminNouraniaContent /></div></AppLayout>;
-  if (currentView === 'sourates-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminSourateContent /></div></AppLayout>;
-  if (currentView === 'alphabet-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminAlphabetContent /></div></AppLayout>;
-  if (currentView === 'invocations-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminInvocationManager onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'sourates-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminSourateValidations onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'nourania-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminNouraniaValidations onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'invocations-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminInvocationValidations onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'registration-validations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminRegistrationValidations onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'messages') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminMessaging /></div></AppLayout>;
-  // Le cahier de texte est dans la carte « Cahier de texte » de l'accueil depuis le 2026-10-26 : simple raccourci
-  if (currentView === 'homework') return <Navigate to="/?open=todo&cahier=1" replace />;
-  if (currentView === 'recitations') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminRecitationReview onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'attendance') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAttendance onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'global-stats') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGlobalStats onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'notifications') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminNotifications /></div></AppLayout>;
-  if (currentView === 'prayer-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><Button variant="ghost" onClick={handleBack} className="mb-4">← Retour</Button><AdminContent /></div></AppLayout>;
-  
-  if (currentView === 'dynamic-card-content' && selectedDynamicCard) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminDynamicCardContent card={selectedDynamicCard} onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'allah-names-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminAllahNamesManager onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'generic-module-manage' && genericModuleManage) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={genericModuleManage.moduleId} moduleTitle={genericModuleManage.moduleTitle} onBack={handleBack} /></div></AppLayout>;
-  if (currentView === 'grammaire-manage') {
-    const mod = learningModules?.find(m => m.builtin_path === '/grammaire');
-    if (mod) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={mod.id} moduleTitle="Grammaire & Conjugaison" onBack={handleBack} /></div></AppLayout>;
+  switch (currentView) {
+    case 'users': return page(<AdminUsersList onBack={handleBack} />);
+    case 'students': return page(<AdminStudentDetails onBack={handleBack} />);
+    case 'ramadan-manage': return page(<AdminRamadanManager onBack={handleBack} />);
+    case 'ramadan-quiz-tracking': return page(<AdminRamadanQuizTracking onBack={handleBack} />);
+    case 'nourania-manage': return withBack(<AdminNouraniaContent />);
+    case 'sourates-manage': return withBack(<AdminSourateContent />);
+    // L'Alphabet se gère dans sa nouvelle carte (📎 ressources dans la fiche de chaque lettre), choix de Nadia du 2026-10-27
+    case 'alphabet-manage': return <Navigate to="/alphabet" replace />;
+    case 'invocations-manage': return page(<AdminInvocationManager onBack={handleBack} />);
+    case 'sourates-validations': return page(<AdminSourateValidations onBack={handleBack} />);
+    case 'nourania-validations': return page(<AdminNouraniaValidations onBack={handleBack} />);
+    case 'invocations-validations': return page(<AdminInvocationValidations onBack={handleBack} />);
+    case 'registration-validations': return page(<AdminRegistrationValidations onBack={handleBack} />);
+    case 'messages': return withBack(<AdminMessaging />);
+    // Le cahier de texte est dans la carte « Cahier de texte » de l'accueil depuis le 2026-10-26
+    case 'homework': return <Navigate to="/?open=todo&cahier=1" replace />;
+    case 'recitations': return page(<AdminRecitationReview onBack={handleBack} />);
+    case 'attendance': return page(<AdminAttendance onBack={handleBack} />);
+    case 'global-stats': return page(<AdminGlobalStats onBack={handleBack} />);
+    case 'notifications': return withBack(<AdminNotifications />);
+    case 'prayer-manage': return withBack(<AdminContent />);
+    case 'allah-names-manage': return page(<AdminAllahNamesManager onBack={handleBack} />);
+    case 'coran-manage': return page(<AdminCoranManager onBack={handleBack} />);
+    default: break;
   }
 
-  if (currentView === 'coran-manage') return <AppLayout title="Tableau de bord"><div className="p-4"><AdminCoranManager onBack={handleBack} /></div></AppLayout>;
+  // Carte ajoutée à la main (module non intégré) : /admin?section=generic-module-manage&module=<id>
+  if (currentView === 'generic-module-manage' && moduleId) {
+    const mod = learningModules?.find((m) => m.id === moduleId);
+    if (mod) return page(<AdminGenericModuleManager moduleId={mod.id} moduleTitle={mod.title} onBack={handleBack} />);
+  }
 
-  const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
-    'vocabulaire-manage': { slug: '/module/vocabulaire', title: 'Vocabulaire' },
-    'lecture-coran-manage': { slug: '/module/lecture-coran', title: 'Lecture du Coran' },
-    'darija-manage': { slug: '/module/darija', title: 'Darija (Marocain)' },
-    'dictionnaire-manage': { slug: '/module/dictionnaire', title: 'Dictionnaire' },
-    'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
-    'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
-    'histoires-prophetes-manage': { slug: '/module/histoires-prophetes', title: 'Histoires des Prophètes' },
-  };
   if (currentView in SLUG_VIEWS) {
     const info = SLUG_VIEWS[currentView];
-    const mod = learningModules?.find(m => m.builtin_path === info.slug);
-    if (mod) return <AppLayout title="Tableau de bord"><div className="p-4"><AdminGenericModuleManager moduleId={mod.id} moduleTitle={info.title} onBack={handleBack} /></div></AppLayout>;
-    return (
-      <AppLayout title="Tableau de bord">
-        <div className="p-4 space-y-4">
-          <Button variant="ghost" onClick={handleBack} className="mb-2">← Retour</Button>
-          {loadingModules ? (
-            <p className="text-sm text-muted-foreground">Chargement du module…</p>
-          ) : (
-            <div className="rounded-xl border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-4 space-y-3">
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                ⚠️ Module « {info.title} » non trouvé en base de données.
-              </p>
-              <p className="text-xs text-amber-700 dark:text-amber-400">
-                Le SQL d'insertion a-t-il bien été exécuté ? Si oui, clique sur Actualiser.
-              </p>
-              <Button size="sm" variant="outline" onClick={() => refetchModules()}>
-                🔄 Actualiser
-              </Button>
-            </div>
-          )}
-        </div>
-      </AppLayout>
-    );
+    const mod = learningModules?.find((m) => m.builtin_path === info.slug);
+    if (mod) return page(<AdminGenericModuleManager moduleId={mod.id} moduleTitle={info.title} onBack={handleBack} />);
   }
 
-  if (['ramadan', 'nourania', 'alphabet', 'invocations', 'sourates', 'prayer'].includes(currentView)) {
-    return (
-      <AppLayout title="Tableau de bord">
-        <div className="p-4">
-          <AdminModuleProgress 
-            module={currentView as 'ramadan' | 'nourania' | 'alphabet' | 'invocations' | 'sourates' | 'prayer'} 
-            onBack={handleBack} 
-          />
-        </div>
-      </AppLayout>
-    );
+  if ((PROGRESS_VIEWS as readonly string[]).includes(currentView)) {
+    return page(<AdminModuleProgress module={currentView as (typeof PROGRESS_VIEWS)[number]} onBack={handleBack} />);
   }
 
-  // Pastille 📝 sur une carte du tableau de bord : création ou modification pas terminée à l'intérieur (2026-10-19)
-  const tileDraftKeys = (key: string): string[] | undefined => {
-    const withEdits = (k: string) => [k, editDraftKey(k, '')];
-    const moduleKeys = (path: string) => {
-      const mod = learningModules?.find((m) => m.builtin_path === path);
-      return mod ? withEdits(`dinislam_module_card_${mod.id}`) : undefined;
-    };
-    if (key === 'ramadan') return ['dinislam_ramadan_quiz_'];
-    if (key === 'invocations') return withEdits('dinislam_invocation');
-    if (key === 'allah-names') return withEdits('dinislam_allah_name');
-    if (key === 'grammaire') return moduleKeys('/grammaire');
-    const slug = `/module/${key}`;
-    return learningModules?.some((m) => m.builtin_path === slug) ? moduleKeys(slug) : undefined;
-  };
-
-  // Dashboard view
-  return (
-    <AppLayout title="Tableau de bord">
-      <div className="p-4 space-y-4">
-        <h2 className="text-xl font-bold text-foreground mb-2">Modules</h2>
-
-        {/* Sortable cards area - 3 col grid (2 col on small screens) */}
-        <div className="grid grid-cols-3 gap-3">
-          <SortableCardList
-            items={orderedCards}
-            onReorder={(newOrder) => saveOrderMutation.mutate(newOrder)}
-            strategy={rectSortingStrategy}
-            renderItem={(item, dragProps) => {
-               if (item.type === 'static') {
-                  const card = STATIC_CARDS.find(c => c.key === item.key);
-                  if (!card) return null;
-                  const hasMultipleActions = !!card.manageView;
-
-                  if (hasMultipleActions) {
-                    return (
-                      <SortableCard key={item.id} dragProps={dragProps}>
-                         <Popover>
-                          <PopoverTrigger asChild>
-                            <div>
-                              <AdminModuleCard
-                                title={card.title}
-                                icon={card.icon}
-                                value={card.value}
-                                subtitle={card.subtitle}
-                                color={card.color}
-                                bgColor={card.bgColor}
-                                cardBgColor={card.cardBgColor}
-                                onClick={() => {}}
-                                actionButton={renderVisibilityToggle(card.key)}
-                                draftKeys={tileDraftKeys(card.key)}
-                              />
-                            </div>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-52 p-1.5" align="center" sideOffset={6}>
-                            <button
-                              className="flex items-center gap-2 w-full rounded-md px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
-                              onClick={() => setCurrentView(card.view)}
-                            >
-                              <Eye className="h-4 w-4 text-primary" />
-                              📖 Voir progression
-                            </button>
-                            <button
-                              className="flex items-center gap-2 w-full rounded-md px-3 py-2.5 text-sm hover:bg-muted transition-colors text-left"
-                              onClick={() => setCurrentView(card.manageView)}
-                            >
-                              <Wrench className="h-4 w-4 text-muted-foreground" />
-                              ⚙️ Gérer le contenu
-                            </button>
-                          </PopoverContent>
-                        </Popover>
-                      </SortableCard>
-                    );
-                  }
-
-                  return (
-                    <SortableCard key={item.id} dragProps={dragProps}>
-                      <AdminModuleCard
-                        title={card.title}
-                        icon={card.icon}
-                        value={card.value}
-                        subtitle={card.subtitle}
-                        color={card.color}
-                        bgColor={card.bgColor}
-                        cardBgColor={card.cardBgColor}
-                        onClick={() => setCurrentView(card.view)}
-                        actionButton={renderVisibilityToggle(card.key)}
-                        draftKeys={tileDraftKeys(card.key)}
-                      />
-                    </SortableCard>
-                  );
-                }
-
-                // Dynamic dashboard announcement card
-                const dynCard = item.dynamicCard;
-                if (!dynCard) return null;
-                const DynIcon = ICON_MAP[dynCard.icon] || FileText;
-                return (
-                  <SortableCard key={item.id} dragProps={dragProps}>
-                    <AdminModuleCard
-                      title={dynCard.title}
-                      icon={DynIcon}
-                      value={dynCard.content_type === 'text' ? 'Texte' : dynCard.content_type === 'list' ? 'Liste' : dynCard.content_type === 'video' ? 'Vidéo' : 'Document'}
-                      subtitle={dynCard.is_public ? 'Public' : 'Restreint'}
-                      color="text-foreground"
-                      bgColor={dynCard.bg_color}
-                      cardBgColor={`${dynCard.bg_color.replace('dark:bg-', 'dark:border-').replace('/30', '/50')} border`}
-                      onClick={() => {
-                        setSelectedDynamicCard(dynCard);
-                        setCurrentView('dynamic-card-content');
-                      }}
-                    />
-                  </SortableCard>
-                );
-            }}
-          />
-        </div>
-
-        {/* Floating add button for dashboard announcement cards */}
-        <button
-          onClick={() => { setEditingCard(null); setCardDialogOpen(true); }}
-          className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all z-40"
-        >
-          <Plus className="h-6 w-6" />
-          <DraftDot draftKey="dinislam_dynamic_card" className="absolute -top-1 -right-1" />
-        </button>
-
-        <AdminDynamicCardDialog
-          open={cardDialogOpen}
-          onOpenChange={(open) => { setCardDialogOpen(open); if (!open) setEditingCard(null); }}
-          editCard={editingCard}
-        />
-
-        <ConfirmDeleteDialog
-          open={deleteCardOpen}
-          onOpenChange={setDeleteCardOpen}
-          onConfirm={() => cardToDelete && deleteCardMutation.mutate(cardToDelete)}
-          title="Supprimer la carte"
-          description="Cette carte et tout son contenu iront dans la corbeille (Paramètres), d'où tu pourras les restaurer."
-        />
-
-        <ConfirmDeleteDialog
-          open={deleteModuleOpen}
-          onOpenChange={setDeleteModuleOpen}
-          onConfirm={() => moduleToDelete && deleteModuleMutation.mutate(moduleToDelete)}
-          title="Supprimer le module"
-          description="Ce module et toutes ses cartes iront dans la corbeille (Paramètres), d'où tu pourras les restaurer."
-        />
+  // Module pas (encore) trouvé
+  return withBack(
+    loadingModules ? (
+      <p className="text-sm text-muted-foreground">Chargement…</p>
+    ) : (
+      <div className="rounded-xl border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-4 space-y-3">
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">⚠️ Cet écran n'a pas été trouvé.</p>
+        <Button size="sm" variant="outline" onClick={() => refetchModules()}>🔄 Actualiser</Button>
       </div>
-    </AppLayout>
+    ),
   );
 };
 
 export default Admin;
-

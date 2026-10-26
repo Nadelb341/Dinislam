@@ -16,6 +16,8 @@ export interface DraftDef {
   noun: string;
   /** Page à ouvrir pour continuer */
   route: string;
+  /** Page qui dépend de la clé du brouillon (ex. le module d'une carte), sinon `route` */
+  routeOf?: (key: string) => string;
   /** Réservé à l'admin (ex. création de devoir) */
   adminOnly?: boolean;
   /** Brouillon lié à un compte : la clé se termine par l'id de l'utilisateur connecté */
@@ -88,19 +90,21 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     labelOf: (d) => text((d as { name?: string } | null)?.name),
   },
   dinislam_allah_name: {
-    place: 'Tableau de bord › 99 Noms d\'Allah', noun: 'nouveau nom', route: '/admin?section=allah-names-manage', adminOnly: true,
+    place: 'Accueil › 99 Noms d\'Allah › ⋮ › Gérer le contenu', noun: 'nouveau nom', route: '/admin?section=allah-names-manage', adminOnly: true,
     labelOf: (d) => { const v = d as { nameFr?: string; nameAr?: string } | null; return text(v?.nameFr) || text(v?.nameAr); },
   },
   dinislam_sourate_story: {
-    place: 'Tableau de bord › Coran › Fiches des sourates', noun: 'fiche de sourate', route: '/admin?section=coran-manage', adminOnly: true,
+    place: 'Accueil › Coran › ⋮ › Gérer le contenu › Fiches des sourates', noun: 'fiche de sourate', route: '/admin?section=coran-manage', adminOnly: true,
     labelOf: (d) => text((d as { titre?: string } | null)?.titre),
   },
   dinislam_invocation: {
-    place: 'Tableau de bord › Invocations', noun: 'nouvelle invocation', route: '/admin?section=invocations-manage', adminOnly: true,
+    place: 'Accueil › Invocations › ⋮ › Gérer le contenu', noun: 'nouvelle invocation', route: '/admin?section=invocations-manage', adminOnly: true,
     labelOf: (d) => { const v = d as { title?: string; titleAr?: string } | null; return text(v?.title) || text(v?.titleAr); },
   },
   dinislam_module_card_: {
-    place: 'Tableau de bord › carte d\'un module', noun: 'nouvelle carte', route: '/admin', adminOnly: true,
+    place: 'Accueil › carte d\'un module › ⋮ › Gérer le contenu', noun: 'nouvelle carte', route: '/', adminOnly: true,
+    // Clé : dinislam_module_card_<module> (création) ou …<module>__edit_<carte> (modification)
+    routeOf: (key) => `/admin?section=generic-module-manage&module=${key.slice('dinislam_module_card_'.length).split('__edit_')[0]}`,
     labelOf: (d) => {
       const v = d as { title?: string; titleAr?: string; module?: string } | null;
       const t = text(v?.title) || text(v?.titleAr);
@@ -108,19 +112,16 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     },
   },
   dinislam_flashcard_: {
-    place: 'Tableau de bord › carte d\'un module › Flashcards', noun: 'flashcard pas encore ajoutée', route: '/admin', adminOnly: true,
+    place: 'Accueil › carte d\'un module › ⋮ › Gérer le contenu › Flashcards', noun: 'flashcard pas encore ajoutée', route: '/', adminOnly: true,
     labelOf: (d) => {
       const v = d as { front?: string; arabic?: string; card?: string } | null;
       const t = text(v?.front) || text(v?.arabic);
       return t && text(v?.card) ? `${t} (carte ${text(v?.card)})` : t;
     },
   },
-  dinislam_dynamic_card: {
-    place: 'Tableau de bord', noun: 'nouvelle carte', route: '/admin', adminOnly: true,
-    labelOf: (d) => text((d as { title?: string } | null)?.title),
-  },
+
   dinislam_ramadan_quiz_: {
-    place: 'Tableau de bord › Ramadan › quiz d\'un jour', noun: 'questions de quiz', route: '/admin?section=ramadan-manage', adminOnly: true,
+    place: 'Accueil › Ramadan › ⋮ › Gérer le contenu › quiz d\'un jour', noun: 'questions de quiz', route: '/admin?section=ramadan-manage', adminOnly: true,
     labelOf: (d) => {
       const qs = (d as { questions?: { question?: string }[] } | null)?.questions ?? [];
       return qs.map((q) => text(q.question)).filter(Boolean).join(' · ');

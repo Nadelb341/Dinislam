@@ -52,7 +52,7 @@ const PendingDraftsCenter = () => {
     remove(d);
     setOpen(false);
     requestDraftResume(d.key);
-    navigate(d.def.route);
+    navigate(d.def.routeOf ? d.def.routeOf(d.key) : d.def.route);
   };
 
   const confirmDelete = async () => {

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Clock, User, Shield, Send, Trash2, RotateCcw } from 'lucide-react';
+import { Bell, Moon, Clock, User, Send, Trash2, RotateCcw } from 'lucide-react';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import { supabase } from '@/integrations/supabase/client';
@@ -302,25 +302,7 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Admin Access */}
-        {isAdmin && (
-          <Card
-            className="cursor-pointer hover:bg-muted/50 transition-colors"
-            onClick={() => navigate('/admin')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-gold" />
-                </div>
-                <div>
-                  <p className="font-bold">Panneau d'administration</p>
-                  <p className="text-sm text-muted-foreground">Gérer le contenu et les élèves</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* « Panneau d'administration » retiré le 2026-10-27 : le Tableau de bord n'existe plus (menu ⋮ de chaque carte de l'accueil) */}
 
         {/* Notifications Section — élèves seulement : l'enseignante a tout dans le bouclier › Notifs (demande de Nadia 2026-09-30) */}
         {!isAdmin && (

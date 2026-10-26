@@ -22,6 +22,31 @@ import {
 '@/components/ui/dropdown-menu';
 import ModuleVisibilityDialog from '@/components/admin/ModuleVisibilityDialog';
 
+/**
+ * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
+ * `manage` / `progress` = écran du Tableau de bord (ouvert par /admin?section=…), ou une adresse complète (« / » au début).
+ */
+const ADMIN_SCREENS: Record<string, { manage: string; progress?: string }> = {
+  '/ramadan': { manage: 'ramadan-manage', progress: 'ramadan' },
+  '/nourania': { manage: 'nourania-manage', progress: 'nourania' },
+  // Alphabet : la nouvelle carte garde ses outils (📎 ressources dans la fiche de chaque lettre, déblocage, modèles audio)
+  '/alphabet': { manage: '/alphabet', progress: 'alphabet' },
+  '/invocations': { manage: 'invocations-manage', progress: 'invocations' },
+  '/sourates': { manage: 'sourates-manage', progress: 'sourates' },
+  '/priere': { manage: 'prayer-manage', progress: 'prayer' },
+  '/grammaire': { manage: 'grammaire-manage' },
+  '/allah-names': { manage: 'allah-names-manage' },
+  '/coran': { manage: 'coran-manage' },
+  '/module/vocabulaire': { manage: 'vocabulaire-manage' },
+  '/module/lecture-coran': { manage: 'lecture-coran-manage' },
+  '/module/darija': { manage: 'darija-manage' },
+  '/module/dictionnaire': { manage: 'dictionnaire-manage' },
+  '/module/dhikr': { manage: 'dhikr-manage' },
+  '/module/hadiths': { manage: 'hadiths-manage' },
+  '/module/histoires-prophetes': { manage: 'histoires-prophetes-manage' },
+};
+const adminScreenUrl = (target: string) => (target.startsWith('/') ? target : `/admin?section=${target}`);
+
 const PRAYER_EMOJI: Record<string, string> = {
   'Sobh (Fajr)': '🌅',
   'Lever du soleil': '🌄',
@@ -619,7 +644,25 @@ const handleModuleClick = (mod) => {
                             <MoreVertical className="h-3.5 w-3.5 text-foreground" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-52">
+                          {(() => {
+                            const screens = mod.builtin_path ? ADMIN_SCREENS[mod.builtin_path] : undefined;
+                            const manage = screens ? adminScreenUrl(screens.manage) : !mod.is_builtin ? `/admin?section=generic-module-manage&module=${mod.id}` : null;
+                            return (
+                              <>
+                                {manage && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(manage); }}>
+                                    <span className="mr-2">⚙️</span><span className="font-semibold">Gérer le contenu</span>
+                                  </DropdownMenuItem>
+                                )}
+                                {screens?.progress && (
+                                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(adminScreenUrl(screens.progress!)); }}>
+                                    <span className="mr-2">📖</span><span className="font-semibold">Voir la progression</span>
+                                  </DropdownMenuItem>
+                                )}
+                              </>
+                            );
+                          })()}
                           <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();

@@ -14,6 +14,7 @@ import { Check, FileText, Volume2 } from 'lucide-react';
 import { AdminLineModelRecorder } from './AdminLineModelRecorder';
 import { AlphabetLineRow, type AlphabetSubmission } from './AlphabetLineRow';
 import { LetterTracer } from './LetterTracer';
+import { AlphabetLetterResources } from './AlphabetLetterResources';
 import { RoundAudioButton } from './RoundAudioButton';
 import { letterGradient } from '@/lib/alphabetFamilies';
 import { useMyAge } from '@/hooks/useMyAge';
@@ -163,7 +164,6 @@ export function AlphabetLetterSheet({
     );
   })();
 
-  const selectedContents = contents.filter((c) => c.letter_id === letter.id);
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -272,30 +272,8 @@ export function AlphabetLetterSheet({
             </div>
           )}
 
-          {/* Ressources ajoutées par l'enseignante */}
-          {selectedContents.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Ressources</h4>
-              {selectedContents.map((content) => (
-                <div key={content.id} className="border border-border rounded-xl overflow-hidden">
-                  {content.content_type === 'video' && <video src={content.file_url} controls className="w-full" controlsList="nodownload" />}
-                  {content.content_type === 'image' && <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />}
-                  {(content.content_type === 'pdf' || content.content_type === 'document') && (
-                    <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50">
-                      <FileText className="h-5 w-5 text-red-500" />
-                      <span className="text-sm font-medium [overflow-wrap:anywhere]">{content.file_name}</span>
-                    </a>
-                  )}
-                  {content.content_type === 'audio' && (
-                    <div className="p-3 flex items-center gap-3">
-                      <Volume2 className="h-5 w-5 text-primary" />
-                      <audio src={content.file_url} controls className="flex-1 h-8" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Ressources ajoutées par le professeur (📎 Ajouter une ressource, 2026-10-27) */}
+          <AlphabetLetterResources letterId={letter.id} contents={contents} isAdmin={isAdmin} />
 
           {/* Mot du prof */}
           {lastComment && !isAdmin && lastFinal?.status !== 'to_review' && (

@@ -276,7 +276,7 @@ const AdminNotificationCenter = () => {
     markProcessing(notif.id, true);
     // Navigate to admin and remove from list by marking as "seen" (we just navigate)
     setOpen(false);
-    navigate('/admin');
+    navigate('/?open=todo&cahier=1');
     markProcessing(notif.id, false);
   };
 
@@ -346,7 +346,7 @@ const AdminNotificationCenter = () => {
           <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 flex-1" onClick={() => handleMarkMessageRead(notif)} disabled={isProc}>
             {isProc ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Marquer lu</>}
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => { setOpen(false); navigate('/admin'); }}>
+          <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => { setOpen(false); navigate('/?open=messages'); }}>
             <ChevronRight className="h-3 w-3 mr-1" />Répondre
           </Button>
         </div>
@@ -435,9 +435,9 @@ const AdminNotificationCenter = () => {
             variant="ghost"
             size="sm"
             className="w-full text-xs text-muted-foreground"
-            onClick={() => { setOpen(false); navigate('/admin'); }}
+            onClick={() => { setOpen(false); navigate('/'); }}
           >
-            Voir le tableau de bord complet
+            Retour à l'accueil
             <ChevronRight className="h-3 w-3 ml-1" />
           </Button>
         </div>

@@ -158,7 +158,7 @@ const AdminCommandModal = ({
     setModalSection(null);
     onClose();
     requestDraftResume(d.key);
-    navigate(d.def.route);
+    navigate(d.def.routeOf ? d.def.routeOf(d.key) : d.def.route);
   };
 
   return (
@@ -267,13 +267,7 @@ const AdminCommandModal = ({
             {/* Séparateur */}
             <div className="border-t border-border pt-1" />
 
-            {/* Bouton tableau de bord */}
-            <button
-              onClick={() => { onClose(); navigate('/admin'); }}
-              className="w-full py-3 rounded-2xl font-semibold text-primary-foreground text-sm bg-primary"
-            >
-              Voir le tableau de bord complet →
-            </button>
+            {/* « Voir le tableau de bord complet » retiré le 2026-10-27 : chaque carte de l'accueil se gère par son menu ⋮ */}
 
             {/* Boutons navigation en grille */}
             <div className="grid grid-cols-3 gap-2">

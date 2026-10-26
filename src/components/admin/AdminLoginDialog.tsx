@@ -81,7 +81,7 @@ const AdminLoginDialog = ({ open, onOpenChange }: AdminLoginDialogProps) => {
 
         if (roleData) {
           onOpenChange(false);
-          navigate('/admin');
+          navigate('/');
         } else {
           setShowUnauthorized(true);
           await supabase.auth.signOut();
