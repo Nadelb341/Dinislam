@@ -309,6 +309,10 @@ const AdminStudentGroups = () => {
     for (const m of g.members) otherGroupsOf.set(m.user_id, [...(otherGroupsOf.get(m.user_id) ?? []), g.name]);
   }
 
+  // Élèves qui ne sont dans AUCUN groupe (idées A et C de Nadia, 2026-10-26)
+  const dansUnGroupe = new Set(groups.flatMap((g) => g.members.map((m) => m.user_id)));
+  const sansGroupe = allStudents.filter((s) => !dansUnGroupe.has(s.user_id));
+
   const filteredStudents = allStudents.filter((s) => {
     if (studentSearch) {
       const q = studentSearch.toLowerCase();
@@ -321,7 +325,7 @@ const AdminStudentGroups = () => {
       if (s.gender !== genderFilter) return false;
     }
     return true;
-  });
+  }).sort((a, b) => Number(dansUnGroupe.has(a.user_id)) - Number(dansUnGroupe.has(b.user_id)));
 
   return (
     <div className="space-y-3">
@@ -352,6 +356,22 @@ const AdminStudentGroups = () => {
               />
             )}
           />
+        </div>
+      )}
+
+      {sansGroupe.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-3">
+          <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
+            ⚠️ {sansGroupe.length} élève{sansGroupe.length > 1 ? 's n\'ont' : ' n\'a'} aucun groupe
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {sansGroupe.map((s) => (
+              <span key={s.user_id} className="rounded-full bg-white/80 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-100 [overflow-wrap:anywhere]">
+                {s.full_name || 'Élève'}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-amber-800 dark:text-amber-200">Ouvre un groupe (⋮ › Modifier) : ils sont en haut de la liste.</p>
         </div>
       )}
 

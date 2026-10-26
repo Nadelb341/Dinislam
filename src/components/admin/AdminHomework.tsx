@@ -414,8 +414,17 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     },
   });
 
+  // Ouvert depuis un groupe (2026-10-26, demande de Nadia) : seulement les élèves de CE groupe
+  const membresGroupe = groupeId ? new Set(memberships.filter((m) => m.group_id === groupeId).map((m) => m.user_id)) : null;
+  const elevesVus = membresGroupe ? eleves.filter((e) => membresGroupe.has(e.user_id)) : eleves;
+  const nomGroupe = groupeId ? groupes.find((g) => g.id === groupeId)?.name : null;
+  // Dans le formulaire : élèves du groupe + ceux déjà choisis (un brouillon peut en contenir d'autres)
+  const elevesFormulaire = membresGroupe
+    ? eleves.filter((e) => membresGroupe.has(e.user_id) || e.user_id === form.student_id || form.student_ids.includes(e.user_id))
+    : eleves;
+
   // Group devoirs by student
-  const devoirsParEleve = eleves.map(eleve => {
+  const devoirsParEleve = elevesVus.map(eleve => {
     const devoirsEleve = devoirs.filter(d =>
       d.assigned_to === 'all' ||
       d.student_id === eleve.user_id ||
@@ -527,7 +536,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               <Input type="datetime-local" value={form.date_limite}
                 onChange={e => setForm({ ...form, date_limite: e.target.value })} />
               {form.date_limite && (
-                <p className="text-xs text-muted-foreground">Les élèves seront rappelés toutes les 2h jusqu'au rendu.</p>
+                <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>
               )}
             </div>
             <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
@@ -598,7 +607,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
                 className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
                 <option value="">Sélectionner un élève...</option>
-                {eleves.map((e) => (
+                {elevesFormulaire.map((e) => (
                   <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
                 ))}
               </select>
@@ -607,7 +616,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               <div className="space-y-2 mb-3">
                 <p className="text-xs text-muted-foreground font-medium">Sélectionner les élèves :</p>
                 <div className="flex flex-wrap gap-2">
-                  {eleves.map((e) => {
+                  {elevesFormulaire.map((e) => {
                     const selected = form.student_ids.includes(e.user_id);
                     return (
                       <button
@@ -642,8 +651,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       {/* Devoirs grouped by student */}
       <div>
         <h3 className="font-semibold text-foreground mb-2">
-          Devoirs assignés ({devoirs.length})
+          Devoirs assignés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
         </h3>
+        {nomGroupe && <p className="text-xs text-muted-foreground mb-2">👥 Seulement les élèves du groupe « {nomGroupe} »</p>}
         {devoirsParEleve.filter(({ devoirsEleve }) => devoirsEleve.length > 0).map(({ eleve, devoirsEleve, aRefaire, enAttente, aJour }) => {
           const ouvert = elevesOuverts[eleve.user_id];
           return (
@@ -694,12 +704,13 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       {/* Rendus grouped by student */}
       <div>
         <h3 className="font-semibold text-foreground mb-2">
-          Rendus à corriger ({rendus.filter((r) => r.statut === 'rendu').length})
+          Rendus à corriger ({rendus.filter((r) => r.statut === 'rendu' && (!membresGroupe || membresGroupe.has(r.student_id))).length})
         </h3>
         {(() => {
           // Group rendus by student_id directly from rendus data
           const rendusParEleve: Record<string, { name: string; items: (typeof rendus)[number][] }> = {};
           rendus.forEach((r) => {
+            if (membresGroupe && !membresGroupe.has(r.student_id)) return;
             if (!rendusParEleve[r.student_id]) {
               rendusParEleve[r.student_id] = { name: r.student_name || 'Inconnu', items: [] };
             }
