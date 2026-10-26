@@ -32,6 +32,26 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 - ✅ Fait (option 1 de Nadia : déplacement TEL QUEL d'abord) : la carte de l'accueil s'appelle « CAHIER DE TEXTE » (identifiants internes inchangés : AdminTodoCard, admin_tasks, ?open=todo, clés `dinislam_admin_task_`). Dans chaque groupe (AdminTodoGroupDialog), bouton rouge « 📓 Devoirs du cahier de texte » qui déplie `AdminHomework` tel quel (prop `groupeId` : un nouveau devoir est proposé pour ce groupe). « 📚 En faire un devoir… » ouvre ce cahier dans le groupe (brouillon prérempli). Bouclier (`cahier-texte`, `cahier-texte-module`) et Tableau de bord (`homework`) = simples raccourcis vers `/?open=todo&cahier=1` (carte ouverte, groupe Général, cahier déplié) ; les anciennes notifications `/?admin=cahier-texte` passent par ce raccourci. Textes « À FAIRE » visibles renommés (notifications, corbeille, brouillons).
 - ✅ 2026-10-26 : disposition choisie par Nadia = D (déroulé du cours) + bouton « 📊 Tableau de la classe » (C, élèves du groupe seulement) + bouton « 📋 Récapitulatif » (E) + idées 1 à 9 → voir section « 🧑‍🏫 Cahier de texte du professeur » ci-dessous.
 
+## 🗂️ Tableau de bord supprimé : tout se gère depuis les cartes de l'accueil (✅ 2026-10-27, demande de Nadia)
+- **Menu ⋮ de chaque carte de l'accueil** (Index.tsx, constante `ADMIN_SCREENS`, admin seulement) :
+  - « ⚙️ Gérer le contenu » sur les 16 cartes ;
+  - « 📖 Voir la progression » sur Ramadan, Nourania, Alphabet, Invocations, Sourates et Prière ;
+  - ils ouvrent les MÊMES écrans qu'avant via `/admin?section=<écran>` ;
+  - un module ajouté à la main ouvre `/admin?section=generic-module-manage&module=<id>`.
+- **`src/pages/Admin.tsx`** n'est plus qu'un aiguillage d'écrans (titre « Gestion ») :
+  - plus de grille, d'ordre des cartes, d'œil, ni de bouton « + » ;
+  - `/admin` sans écran renvoie à l'accueil ;
+  - « ← Retour » revient en arrière (sinon à l'accueil).
+- **Accès retirés** : « Voir le tableau de bord complet » (bouclier), « Panneau d'administration » (Paramètres) ; le bouton « 📓 Cahier de texte » du bouclier aussi (il reste « Devoirs à corriger »).
+- **Coran** : « Gérer le contenu » = `AdminCoranManager` (fiches, version du 25-26/10).
+- **Alphabet** (choix de Nadia) :
+  - on garde la nouvelle carte ; « Gérer le contenu » ouvre `/alphabet` ;
+  - l'ancien écran `AdminAlphabetContent` est supprimé et remplacé par « 📎 Ajouter une ressource » en bas de la fiche de chaque lettre (`AlphabetLetterResources.tsx`, admin : ajouter fichier/YouTube/audio, renommer, retirer → corbeille) ;
+  - bug corrigé : les ressources « fichier » et « youtube » ne s'affichaient jamais dans la fiche.
+- **Cartes d'annonce** (`dashboard_cards`, ancien bouton « + ») : 0 en base, page `/ressources` reliée nulle part → plus de bouton pour en créer. `AdminDynamicCardDialog`/`AdminDynamicCardContent` sont gardés dans le code, inutilisés.
+- **Brouillons** : textes « Accueil › … › ⋮ › Gérer le contenu » ; `DraftDef.routeOf` permet d'ouvrir le bon module pour une carte de module.
+- **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
+
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
 - **Où** : carte CAHIER DE TEXTE de l'accueil › un groupe (`AdminTodoGroupDialog`). En haut : `src/components/cahier/GroupCockpit.tsx` (proposition D). Les boutons ouvrent un écran dans la même fenêtre (`vue` : `devoirs` | `tableau` | `recap` | `bilans` | `niveaux`, type `CahierVue` dans `src/lib/groupCourse.ts`, « ← Retour »). Les 4 onglets d'avant (Prochain cours, Devoirs à préparer, À apporter, Mémo) sont sous « 🗂️ Mémo » (ouvert par défaut, `localStorage dinislam_cahier_memo`).
 - **Heure de cours de chaque groupe** (idée 7) : table `group_schedules` (jour 1–7 + heure), réglée dans le cockpit. Tant qu'elle n'est pas réglée, il n'y a ni rappel 2 h avant ni date automatique. Calculs : `src/lib/groupCourse.ts` (`nextCourse` saute les vacances de la zone C de `school_holidays` ; il y a des tests) et `src/hooks/useGroupCourse.ts`.
