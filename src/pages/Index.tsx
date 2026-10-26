@@ -21,13 +21,17 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
 '@/components/ui/dropdown-menu';
 import ModuleVisibilityDialog from '@/components/admin/ModuleVisibilityDialog';
+import { SortableCardList, rectSortingStrategy, type DragItemProps } from '@/components/shared/SortableCardList';
+import { DraftDot } from '@/components/shared/DraftDot';
+import { editDraftKey } from '@/lib/pendingDrafts';
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
  * `manage` / `progress` = écran du Tableau de bord (ouvert par /admin?section=…), ou une adresse complète (« / » au début).
  */
-const ADMIN_SCREENS: Record<string, { manage: string; progress?: string }> = {
-  '/ramadan': { manage: 'ramadan-manage', progress: 'ramadan' },
+const ADMIN_SCREENS: Record<string, { manage: string; progress?: string; extra?: { emoji: string; label: string; target: string }[] }> = {
+  // Suivi des quiz : écran qui n'était relié à rien (idée C de Nadia, 2026-10-27)
+  '/ramadan': { manage: 'ramadan-manage', progress: 'ramadan', extra: [{ emoji: '📝', label: 'Suivi des quiz', target: 'ramadan-quiz-tracking' }] },
   '/nourania': { manage: 'nourania-manage', progress: 'nourania' },
   // Alphabet : la nouvelle carte garde ses outils (📎 ressources dans la fiche de chaque lettre, déblocage, modèles audio)
   '/alphabet': { manage: '/alphabet', progress: 'alphabet' },
@@ -44,6 +48,18 @@ const ADMIN_SCREENS: Record<string, { manage: string; progress?: string }> = {
   '/module/dhikr': { manage: 'dhikr-manage' },
   '/module/hadiths': { manage: 'hadiths-manage' },
   '/module/histoires-prophetes': { manage: 'histoires-prophetes-manage' },
+};
+/** 📝 Brouillons pas terminés à l'intérieur de « Gérer le contenu » d'une carte (idée B, 2026-10-27) */
+const manageDraftKeys = (mod: { id: string; builtin_path: string | null }): string[] => {
+  const withEdits = (k: string) => [k, editDraftKey(k, '')];
+  switch (mod.builtin_path) {
+    case '/ramadan': return ['dinislam_ramadan_quiz_'];
+    case '/invocations': return withEdits('dinislam_invocation');
+    case '/allah-names': return withEdits('dinislam_allah_name');
+    case '/coran': return ['dinislam_sourate_story'];
+    case '/nourania': case '/sourates': case '/priere': case '/alphabet': return [];
+    default: return withEdits(`dinislam_module_card_${mod.id}`);
+  }
 };
 const adminScreenUrl = (target: string) => (target.startsWith('/') ? target : `/admin?section=${target}`);
 
@@ -258,27 +274,18 @@ const Index = () => {
     return true;
   });
 
-  // Arrow-based reorder (admin only)
-  const moveModule = useCallback(async (index: number, direction: 'up' | 'down') => {
-    if (!modules) return;
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= modules.length) return;
-
-    const reordered = [...modules];
-    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
-    const updated = reordered.map((m, i) => ({ ...m, display_order: i }));
+  // Réordonner les cartes par appui long + glisser (admin, 2026-10-27 : remplace les flèches ▲▼)
+  const reorderModules = useCallback(async (newOrder: NonNullable<typeof modules>) => {
+    const updated = newOrder.map((m, i) => ({ ...m, display_order: i }));
     queryClient.setQueryData(['learning-modules', isAdmin], updated);
-
-    const { error: e1 } = await supabase.from('learning_modules').update({ display_order: targetIndex }).eq('id', updated[targetIndex].id);
-    const { error: e2 } = await supabase.from('learning_modules').update({ display_order: index }).eq('id', updated[index].id);
-
-    if (e1 || e2) {
+    const results = await Promise.all(updated.map((m) => supabase.from('learning_modules').update({ display_order: m.display_order }).eq('id', m.id)));
+    if (results.some((r) => r.error)) {
       queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
       toast.error('Erreur lors de la mise à jour');
     } else {
       toast.success('Ordre mis à jour');
     }
-  }, [modules, isAdmin, queryClient]);
+  }, [isAdmin, queryClient]);
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active, title }: {id: string;is_active: boolean;title?: string;}) => {
@@ -559,14 +566,19 @@ const handleModuleClick = (mod) => {
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {visibleModules.map((mod, index) => {
+            {(() => {
+              const renderModule = (mod: (typeof visibleModules)[number], index: number, dragProps?: DragItemProps) => {
+              const { ref: dragRef, style: dragStyle, isDragging, ...dragAttrs } = dragProps ?? { ref: undefined, style: undefined, isDragging: false };
               const Icon = ICON_MAP[mod.icon] || null;
               const slug = getModuleSlug(mod);
               const fallback = MODULE_EMOJI_FALLBACK[slug];
               return (
                 <div
                   key={mod.id}
-                  className="flex flex-col items-center relative"
+                  ref={dragRef}
+                  style={dragStyle}
+                  {...dragAttrs}
+                  className={cn('flex flex-col items-center relative', isDragging && 'opacity-60')}
                 >
                   <button
                     onClick={() => handleModuleClick(mod)}
@@ -617,21 +629,6 @@ const handleModuleClick = (mod) => {
                   </button>
 
 
-                  {/* Admin arrow reorder buttons */}
-                  {isAdmin && modules &&
-                  <div className="absolute top-1 left-1 z-20 flex flex-col gap-0.5">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveModule(index, 'up'); }}
-                        disabled={index === 0}
-                        className="w-5 h-5 rounded bg-muted hover:bg-muted-foreground/20 disabled:opacity-30 flex items-center justify-center text-[10px] text-foreground"
-                      >▲</button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveModule(index, 'down'); }}
-                        disabled={index === (modules?.length ?? 0) - 1}
-                        className="w-5 h-5 rounded bg-muted hover:bg-muted-foreground/20 disabled:opacity-30 flex items-center justify-center text-[10px] text-foreground"
-                      >▼</button>
-                    </div>
-                  }
                   {/* Admin 3-dot menu */}
                   {isAdmin &&
                   <div className="absolute top-2 right-2 z-20">
@@ -639,9 +636,11 @@ const handleModuleClick = (mod) => {
                         <DropdownMenuTrigger asChild>
                           <button
                           onClick={(e) => e.stopPropagation()}
-                          className="w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-sm">
+                          onPointerDown={(e) => e.stopPropagation()}
+                          className="relative w-7 h-7 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-muted transition-colors shadow-sm">
                           
                             <MoreVertical className="h-3.5 w-3.5 text-foreground" />
+                            <DraftDot draftKey={manageDraftKeys(mod)} className="absolute -top-1 -right-1" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-52">
@@ -652,7 +651,7 @@ const handleModuleClick = (mod) => {
                               <>
                                 {manage && (
                                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(manage); }}>
-                                    <span className="mr-2">⚙️</span><span className="font-semibold">Gérer le contenu</span>
+                                    <span className="mr-2">⚙️</span><span className="font-semibold">Gérer le contenu</span><DraftDot draftKey={manageDraftKeys(mod)} className="ml-1.5" />
                                   </DropdownMenuItem>
                                 )}
                                 {screens?.progress && (
@@ -660,6 +659,11 @@ const handleModuleClick = (mod) => {
                                     <span className="mr-2">📖</span><span className="font-semibold">Voir la progression</span>
                                   </DropdownMenuItem>
                                 )}
+                                {screens?.extra?.map((x) => (
+                                  <DropdownMenuItem key={x.target} onClick={(e) => { e.stopPropagation(); navigate(adminScreenUrl(x.target)); }}>
+                                    <span className="mr-2">{x.emoji}</span><span className="font-semibold">{x.label}</span>
+                                  </DropdownMenuItem>
+                                ))}
                               </>
                             );
                           })()}
@@ -683,8 +687,12 @@ const handleModuleClick = (mod) => {
                     </div>
                   }
                 </div>);
-
-            })}
+              };
+              // Admin : appui long sur une carte puis glisser pour la déplacer ; élèves : simple grille
+              return isAdmin
+                ? <SortableCardList items={visibleModules} strategy={rectSortingStrategy} onReorder={reorderModules} renderItem={(mod, dp) => renderModule(mod, visibleModules.indexOf(mod), dp)} />
+                : visibleModules.map((mod, index) => renderModule(mod, index));
+            })()}
           </div>
 
         </div>
