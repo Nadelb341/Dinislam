@@ -24,12 +24,12 @@ const PROGRESS_VIEWS = ['weekly-program', 'weekly-program-admin', 'student-engag
 
 export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   coran_progress: ['coran-progress', 'coran-admin-progress'],
-  devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs'],
+  devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs', 'cahier-classe'],
   devoir_steps: ['weekly-program', 'weekly-program-admin', 'admin-devoirs'],
   sourate_stories: ['sourate-stories'],
   admin_card_order: ['admin-card-ordering'],
   admin_task_templates: ['admin-task-templates'],
-  admin_tasks: ['admin-tasks'],
+  admin_tasks: ['admin-tasks', 'cahier-classe'],
   alphabet_admin_unlocks: ['admin-alphabet-grid', 'alphabet-admin-unlocks', 'alphabet-student-summary', 'alphabet-unlock-student', 'fully-unlocked-students'],
   alphabet_content: ['admin-alphabet-contents', 'alphabet-contents-page'],
   alphabet_game_scores: ['alphabet-game-scores', 'alphabet-student-summary'],
@@ -41,13 +41,16 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
   dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
   // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
-  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours'],
+  devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours', 'cahier-classe'],
   // Audio envoyé ou corrigé : le diamant suit
-  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours'],
-  // 🎒 Prêt pour le cours et 🎯 objectif du jour de l'élève (2026-10-26)
-  course_ready: ['course-ready'],
+  devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours', 'cahier-classe'],
+  // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)
+  course_ready: ['course-ready', 'cahier-classe'],
   daily_goals: ['daily-goals'],
-  group_schedules: ['course-ready-info'],
+  group_schedules: ['course-ready-info', 'group-course'],
+  // 📝 « Ce qu'on a vu » et 🎚️ niveaux d'un groupe (2026-10-26)
+  group_sessions: ['cahier-classe'],
+  group_levels: ['cahier-classe'],
   homework_submissions: ['my-homework-submissions'],
   invocation_content: ['admin-invocation-contents', 'admin-invocation-contents-full', 'invocation-contents-all'],
   invocations: ['admin-dashboard-stats', 'admin-invocation-validations', 'admin-invocations-full', 'admin-invocations-list', 'admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'invocations-list', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
@@ -72,7 +75,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   ramadan_quizzes: ['admin-global-stats', 'admin-quiz-student-detail', 'admin-ramadan-quizzes', 'admin-ramadan-student-detail', 'ramadan-quizzes'],
   ramadan_settings: ['ramadan-settings'],
   scheduled_notifications: ['scheduled-notifications'],
-  school_holidays: ['school-holidays', 'bilans', 'course-ready-info'],
+  school_holidays: ['school-holidays', 'bilans', 'course-ready-info', 'group-course'],
   // 📈 Bilans des élèves (note, appréciation, texto aux parents)
   student_reports: ['bilans'],
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
@@ -92,7 +95,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   user_ramadan_video_watched: ['ramadan-video-watched'],
   user_sourate_verse_progress: [],
   weekly_program_settings: ['weekly-program', 'weekly-program-admin'],
-  weekly_programs: ['weekly-program', 'weekly-program-admin', 'student-engagement'],
+  weekly_programs: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'cahier-classe'],
 };
 
 export const REALTIME_TABLES = Object.keys(REALTIME_TABLE_QUERY_KEYS);
