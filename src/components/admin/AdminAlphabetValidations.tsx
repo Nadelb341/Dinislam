@@ -16,6 +16,7 @@ import { errorMessage } from '@/lib/utils';
 import { LINE_TITLES, LINE_TONES, type LineKey } from '@/lib/alphabetLines';
 import { SignedAudio, type AlphabetSubmission } from '@/components/alphabet/AlphabetLineRow';
 import { AlphabetProgressGrid } from '@/components/admin/AlphabetProgressGrid';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 /** Réponses rapides (idée bonus 4) : un clic les ajoute au commentaire */
 const QUICK_REPLIES = [
@@ -122,7 +123,7 @@ function SubmissionItem({ sub, name, letter, onDone }: { sub: AlphabetSubmission
                     : <Button size="sm" className="w-full gap-1" onClick={rec.start}><Mic className="h-4 w-4" /> Enregistrer ma réponse</Button>
                 ) : (
                   <>
-                    {rec.previewUrl && <audio src={rec.previewUrl} controls className="w-full h-9" />}
+                    <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
                     <Button size="sm" variant="outline" className="gap-1" onClick={rec.reset}><RotateCcw className="h-4 w-4" /> Recommencer</Button>
                   </>
                 )}

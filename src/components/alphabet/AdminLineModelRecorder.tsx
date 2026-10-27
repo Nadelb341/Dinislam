@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAudioRecorder, audioExt } from '@/hooks/useAudioRecorder';
 import { moveToTrash } from '@/lib/trash';
 import { errorMessage } from '@/lib/utils';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 interface Props {
   letterId: number;
@@ -78,7 +79,7 @@ export function AdminLineModelRecorder({ letterId, letterName, lineKey, lineTitl
         </div>
       ) : (
         <>
-          {rec.previewUrl && <audio src={rec.previewUrl} controls className="w-full h-9" />}
+          <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={saving} onClick={() => setConfirm(true)}>{currentUrl ? 'Remplacer' : 'Enregistrer ce modèle'}</Button>
             <Button size="sm" variant="outline" disabled={saving} onClick={rec.reset} className="gap-1"><RotateCcw className="h-4 w-4" /> Recommencer</Button>

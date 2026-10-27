@@ -5,6 +5,7 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { playableUrl } from '@/lib/alphabetAudio';
 import { LINE_TONES, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
 import type { Tables } from '@/integrations/supabase/types';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 export type AlphabetSubmission = Tables<'alphabet_submissions'>;
 
@@ -113,7 +114,7 @@ export function AlphabetLineRow({ line, index, modelUrl, latest, canRecord, send
             )
           ) : (
             <>
-              {rec.previewUrl && <audio src={rec.previewUrl} controls className="w-full h-9" />}
+              <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" className="gap-1" onClick={rec.reset} disabled={sending}>
                   <RotateCcw className="h-4 w-4" /> Recommencer

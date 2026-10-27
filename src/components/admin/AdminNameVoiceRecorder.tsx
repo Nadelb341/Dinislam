@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Mic, Square, RotateCcw, Loader2 } from 'lucide-react';
 import { useAudioRecorder, audioExt } from '@/hooks/useAudioRecorder';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 interface Props {
   nameLabel: string;
@@ -66,7 +67,7 @@ export function AdminNameVoiceRecorder({ nameLabel, hasAudio, onSave }: Props) {
         </div>
       ) : (
         <>
-          {rec.previewUrl && <audio src={rec.previewUrl} controls className="w-full h-9" />}
+          <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" disabled={saving} onClick={() => setConfirm(true)} className="gap-1 text-white" style={{ background: GOLD }}>
               {saving && <Loader2 className="h-4 w-4 animate-spin" />} ✨ {hasAudio ? 'Remplacer l\'audio' : 'Garder cet audio'}

@@ -11,6 +11,7 @@ import { envoyerDevoir, lienTravail } from '@/lib/devoirTravail';
 import { withName } from '@/lib/encouragements';
 import { errorMessage, cn } from '@/lib/utils';
 import { AudioProf } from './AudioProf';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 export interface DevoirAValider {
   id: string; titre: string; type: string;
@@ -93,7 +94,7 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
                 : <button type="button" onClick={() => void rec.start()} className="w-full rounded-xl bg-orange-500 text-white px-4 py-2 text-sm font-bold flex items-center justify-center gap-2"><Mic className="h-4 w-4" /> Enregistrer</button>
             ) : (
               <>
-                {rec.previewUrl && <audio src={rec.previewUrl} controls className="w-full h-9" />}
+                <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={rec.reset} disabled={sending} className="rounded-xl border px-3 py-2 text-sm font-bold flex items-center justify-center gap-1"><RotateCcw className="h-4 w-4" /> Recommencer</button>
                   <button type="button" disabled={sending} onClick={() => askValidation('Envoyer ton devoir ?', `« ${devoir.titre} » et ton audio partent chez ton professeur.`, () => void envoyer(rec.blob))}

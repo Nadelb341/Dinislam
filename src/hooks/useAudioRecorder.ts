@@ -43,7 +43,8 @@ export function useAudioRecorder() {
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
-        keep(new Blob(chunksRef.current, { type: mimeRef.current }));
+        // Type sans « ;codecs=… » : certains Safari refusent de relire un aperçu qui le porte
+        keep(new Blob(chunksRef.current, { type: mimeRef.current.split(';')[0] }));
       };
       recorderRef.current = mr;
       mr.start();
