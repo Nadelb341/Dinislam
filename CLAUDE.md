@@ -73,9 +73,16 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - **Devoirs préparés à l'avance** : la notification est programmée dans `scheduled_notifications`, module `devoirs`.
   - `homework-reminders` ignore les devoirs pas encore visibles.
   - **Par défaut**, un devoir obligatoire pas fait (donné depuis le 26/10) est « à rattraper » tant que Nadia ne le range pas.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : choisir la présentation du « Bilan de l'élève » (réunion parents, avant chaque vacances zone C).
-  - 10 présentations + 14 idées (A à N) : https://claude.ai/artifact/A6Leeh1y3dKR15tXNsshiT
-  - Rien n'est codé avant son choix. À rappeler à chaque réponse.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : « Bilan de l'élève ». Choix du 2026-10-27 :
+  - Présentation 3 (tableau de bord), puis l'appréciation (1) et le guide de la réunion (10).
+  - 3 boutons : « Plus de détails » (frise, 4), « Voir la progression » (chemin, 5), « Voir les trimestres précédents » (comparaison, 8).
+  - Idées A, B, C, F, I, J, K, M (arabe en option, le français est toujours envoyé).
+  - Maquette à valider : https://claude.ai/artifact/56C5xpBCkgzNECvXJ3xXEH
+  - 3 questions posées :
+    - traduction arabe de l'appréciation (proposée par l'appli ou écrite par elle) ;
+    - accès des parents (lien sécurisé sans compte ?) ;
+    - qui déclare une absence justifiée.
+  - Rien n'est codé avant sa validation. À rappeler à chaque réponse.
 - **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
 
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
