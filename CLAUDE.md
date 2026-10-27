@@ -83,6 +83,20 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
     - accès des parents (lien sécurisé sans compte ?) ;
     - qui déclare une absence justifiée.
   - Rien n'est codé avant sa validation. À rappeler à chaque réponse.
+  - 2026-10-28 : maquette du bilan validée (« parfait »). Nadia ajoute ces demandes :
+    - traduction automatique, si possible en darija ;
+    - un « Espace parents » dans les Paramètres des moins de 18 ans, avec un code créé par les parents, où les bilans sont rangés ;
+    - le même Espace parents chez les élèves adultes parents, avec leurs enfants triés par prénom ;
+    - l'envoi du bilan par message (image ou PDF), structuré comme la maquette ;
+    - un bouton rouge « Signaler une absence » à droite du texte d'accueil ;
+    - une carte « Bilan trimestriel » dans le bouclier, sous « Brouillons ».
+  - Propositions et 5 questions : https://claude.ai/artifact/5pxCw16hEG4Hxt1eVN8Cn4
+    - a. traduction (titres faits par moi + texte traduit puis relu, choix arabe classique ou darija par famille) ;
+    - b. réunir l'ancien Espace parents (verrou des moins de 12 ans, mot de passe de l'enfant) avec le nouveau ;
+    - c. Nadia relie elle-même un parent adulte à ses enfants ;
+    - d. envoi A (image + PDF), B ou C ;
+    - e. garder ou enlever la note sur 20 et le message de motivation de l'ancien « 📈 Bilans ».
+  - À savoir : 20 élèves sur 29 n'ont ni date de naissance ni âge. Proposition : un interrupteur « Espace parents » par élève.
 - **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
 
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
