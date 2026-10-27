@@ -52,7 +52,30 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 - **Brouillons** : textes « Accueil › … › ⋮ › Gérer le contenu » ; `DraftDef.routeOf` permet d'ouvrir le bon module pour une carte de module.
 - ✅ Idées A, B, C (2026-10-27) : (A) cartes de l'accueil réordonnées par appui long + glisser (`SortableCardList`, admin seulement ; flèches ▲▼ retirées ; `reorderModules` enregistre `display_order`) ; (B) pastille 📝 sur le ⋮ et sur « Gérer le contenu » quand un brouillon attend à l'intérieur (`manageDraftKeys`) ; (C) « 📝 Suivi des quiz » dans le ⋮ de Ramadan (`ramadan-quiz-tracking`) — les statistiques globales étaient déjà dans le bouclier (« 📈 Stats »).
 - ✅ Idées A, B, C (2026-10-27, suite) : (A) petite vibration quand une carte se détache (`SortableCardList` prop `onDragStart`, pas sur iPhone : Apple ne le permet pas) ; (B) « 👁️ Vu par N élèves cette semaine » en tête du menu ⋮ (table `module_visits` : 1 ligne par élève / carte / jour, écrite quand un élève ouvre la carte depuis l'accueil, comptage sur 7 jours ; migration `20261027100000_module_visits.sql`, testée en ROLLBACK, en direct) — compte à partir du 27/10, pas d'historique avant ; (C) toast « ↩️ Remettre l'ordre d'avant » 8 s après un déplacement.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : rotation des devoirs à l'heure du cours (grisé puis historique). 5 propositions : https://claude.ai/artifact/8LcruV239V5hqcW34QPjtj (A semaine + semaine passée dessous, B 3 onglets, C bande de semaines, D le cahier tourne sa page, E frise + « À rattraper ») + 10 idées + 2 points à trancher (devoirs obligatoires pas faits : « À rattraper » ou historique ? ; heure par défaut si groupe sans heure : mercredi 14 h ?). À rappeler à chaque réponse.
+- ✅ **Rotation des devoirs à l'heure du cours** (2026-10-27, commit 7800739). Nadia a choisi :
+  - B (3 onglets, « Cette semaine » ouvert par défaut) ;
+  - la bande de semaines C pour l'historique (à l'infini) ;
+  - l'écriture à la main D (seulement l'écriture) ;
+  - la boîte « 🔁 À rattraper » E ;
+  - les idées 1 à 9 ; la notification « 📓 Tes nouveaux devoirs sont prêts ! ».
+  Côté élève ET professeur.
+  - **Moteur** : `src/lib/rotationDevoirs.ts`, avec 6 tests.
+    - L'heure de rendu est le 1er cours du groupe après le moment où le devoir a été donné (ou le cours du jour de la date à rendre).
+    - Les vacances de la zone C sont sautées. Sans heure de groupe : mercredi 14 h.
+  - **Élève** : `CahierRotation.tsx`, branché dans `BlocDevoirsEleve`.
+  - **Professeur** : `RotationProf.tsx` (bilan, Redonner, Ranger) et `DecisionsDialog.tsx`.
+    - `DecisionsDialog` s'ouvre à « Distribuer les devoirs » et avant « Nouveau devoir ».
+    - Il liste les devoirs pas faits (case cochée = à rattraper, décochée = historique).
+  - **Base** : migration `20261027120000_rotation_devoirs.sql`.
+    - Ajoute `devoirs.visible_a` (devoirs préparés à l'avance, cachés aux élèves par la RLS).
+    - Crée la table `devoir_decisions` (temps réel).
+    - Met à jour `program_items` : un devoir « historique » quitte le chemin de diamants.
+  - **Devoirs préparés à l'avance** : la notification est programmée dans `scheduled_notifications`, module `devoirs`.
+  - `homework-reminders` ignore les devoirs pas encore visibles.
+  - **Par défaut**, un devoir obligatoire pas fait (donné depuis le 26/10) est « à rattraper » tant que Nadia ne le range pas.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : choisir la présentation du « Bilan de l'élève » (réunion parents, avant chaque vacances zone C).
+  - 10 présentations + 14 idées (A à N) : https://claude.ai/artifact/A6Leeh1y3dKR15tXNsshiT
+  - Rien n'est codé avant son choix. À rappeler à chaque réponse.
 - **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
 
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
@@ -78,7 +101,7 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 - Migration `20261026230000_cahier_professeur.sql` : tables avec RLS, toutes en direct, clés dans `realtimeSync.ts`.
 - ✅ 2026-10-26 : « 📚 Distribuer les devoirs » ouvert depuis un groupe affiche seulement les élèves de ce groupe : devoirs assignés, rendus à corriger et choix des élèves dans le formulaire (un élève d'un autre groupe déjà choisi dans un brouillon reste affiché). « Général » = tout le monde.
 - ✅ 2026-10-26 Groupes (bouclier › Élèves, `AdminStudentGroups`) : dans le formulaire d'un groupe, un élève déjà dans un AUTRE groupe est grisé avec « 👥 Déjà dans : … » (il reste sélectionnable) ; les élèves sans aucun groupe sont en haut de la liste ; sous les groupes, un bandeau ambre « ⚠️ N élèves n'ont aucun groupe » avec leurs noms.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : régler l'heure de cours de CHAQUE groupe dans le cockpit. Sans cela, il n'y a ni rappel 2 h avant ni date automatique. Vérifier en base (`select * from group_schedules`) en début de séance, et le rappeler tant que des groupes n'ont pas d'heure.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : régler l'heure de cours de CHAQUE groupe dans le cockpit. Sans cela, il n'y a ni rappel 2 h avant ni date automatique. Vérifier en base (`select * from group_schedules`) en début de séance, et le rappeler tant que des groupes n'ont pas d'heure. Au 2026-10-27, il manque « Groupe 3 - Avancées » et « Groupe 4 - Paulhan » (rotation des devoirs : mercredi 14 h par défaut en attendant).
 
 ## 💎 Diamants = devoirs donnés à chaque élève (2026-10-26, demande de Nadia)
 - Cahier de texte de l'élève **ouvert par défaut** (`BlocDevoirsEleve`, flèche pour fermer/rouvrir).
