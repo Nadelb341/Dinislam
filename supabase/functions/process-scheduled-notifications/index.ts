@@ -6,6 +6,8 @@ import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
 const MODULE_TITLES: Record<string, string> = {
   general: '📅 Rappel', cours: "🎒 Cours d'arabe", ramadan: '🌙 Ramadan', sourates: '📖 Sourates', nourania: '✨ Nourania',
   invocations: '🤲 Invocations', priere: '🕌 Prière', allah_names: "🌟 99 Noms d'Allah", alphabet: '🔤 Alphabet',
+  // Devoirs préparés à l'avance : envoyés à l'heure du cours (rotation des devoirs, 2026-10-27)
+  devoirs: '📓 Tes nouveaux devoirs sont prêts !',
 };
 // Relance automatique douce (idée 1, 2026-10-08) : mêmes messages que le bouton « ✉️ Encourager » (src/lib/engagement.ts)
 const NUDGES = [

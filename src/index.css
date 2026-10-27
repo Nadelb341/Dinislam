@@ -415,6 +415,10 @@
 .cahier-papier { background: hsl(var(--card)); border-left: 3px solid hsl(0 80% 78%); }
 .dark .cahier-papier { border-left-color: hsl(0 45% 40%); }
 .cahier-main { font-family: 'Patrick Hand', 'Comic Sans MS', cursive; }
+/* 📖 À l'heure du cours, la page du cahier se tourne une seule fois (rotation des devoirs, idée 9, 2026-10-27) */
+@keyframes page-tourne { 0% { transform: perspective(900px) rotateY(-75deg); opacity: .2; } 100% { transform: perspective(900px) rotateY(0); opacity: 1; } }
+.page-tourne { animation: page-tourne .8s cubic-bezier(.2,.7,.3,1) both; transform-origin: left center; }
+@media (prefers-reduced-motion: reduce) { .page-tourne { animation: none; } }
 
 /* 🎁 Trésor ouvert : l'or scintille (2026-10-26) */
 @keyframes tresor-scintille { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(45deg); } }

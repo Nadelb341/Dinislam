@@ -21,7 +21,11 @@ import { MATIERES } from '@/lib/devoirMatieres';
 import { CibleSelect } from './CibleSelect';
 import { useGroupCourse } from '@/hooks/useGroupCourse';
 import { useNiveaux } from '@/hooks/useNiveaux';
-import { toLocalInput } from '@/lib/groupCourse';
+import { courseAfter, courseLabel, toLocalInput, type GroupSchedule } from '@/lib/groupCourse';
+import { useHolidays } from '@/hooks/useGroupCourse';
+import { RotationProf, type LigneProf } from '@/components/cahier/RotationProf';
+import { DecisionsDialog } from '@/components/cahier/DecisionsDialog';
+import { aRattraper, coursApres, coursPasses, COURS_PAR_DEFAUT, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from '@/lib/rotationDevoirs';
 import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
 import { deposerAudioProf } from '@/lib/audioProf';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
@@ -32,7 +36,7 @@ import {
 import type { TablesInsert } from '@/integrations/supabase/types';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean; programme?: boolean };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -57,7 +61,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [elevesOuverts, setElevesOuverts] = useState<Record<string, boolean>>({});
   const [elevesRendusOuverts, setElevesRendusOuverts] = useState<Record<string, boolean>>({});
   const [modalARefaire, setModalARefaire] = useState<{
     renduId: string; studentId: string; devoirTitre: string;
@@ -78,12 +81,14 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     audio_requis: false,
     // Ligne « 📚 Devoirs à préparer » d'où vient ce devoir : cochée toute seule une fois le devoir envoyé (2026-10-08)
     source_task_id: '' as string,
+    // 🕑 Idée 2 (rotation, 2026-10-27) : préparé à l'avance, visible par les élèves au début du prochain cours
+    programme: false,
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
   const { askValidation, validationDialog } = useConfirmValidation();
   // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2) et ses niveaux (idée 1)
-  const { next: prochainCours } = useGroupCourse(groupeId);
+  const { next: prochainCours, schedule: horaireGroupe } = useGroupCourse(groupeId);
   const { data: niveaux = [] } = useNiveaux(groupeId);
   // Idée 3 : consigne audio ; idée 4 : correction audio
   const [consigneAudio, setConsigneAudio] = useState<Blob | null>(null);
@@ -101,7 +106,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     if (!draft || !remplie(draft)) return;
     if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
       // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false }));
+      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false, programme: draft.programme ?? false }));
       setShowForm(true);
     } else {
       setHomeworkDraft(draft);
@@ -203,13 +208,32 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     },
   });
 
+  // 🔄 Rotation à l'heure du cours (2026-10-27) : heures de cours de tous les groupes, vacances, choix « à rattraper / historique »
+  const { data: horaires = [] } = useQuery({
+    queryKey: ['group-course', 'all-schedules'],
+    queryFn: async () => {
+      const { data } = await supabase.from('group_schedules').select('group_id, weekday, start_time');
+      return (data || []) as GroupSchedule[];
+    },
+  });
+  const { data: holidays = [] } = useHolidays();
+  const { data: decisions = [], isSuccess: decisionsChargees } = useQuery({
+    queryKey: ['admin-devoirs', 'decisions'],
+    queryFn: async () => {
+      const { data } = await supabase.from('devoir_decisions').select('devoir_id, student_id, decision');
+      return data || [];
+    },
+  });
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
+
   // Fetch approved students
   const { data: eleves = [] } = useQuery({
     queryKey: ['admin-eleves-list'],
     queryFn: async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('user_id, full_name, created_at')
         .eq('is_approved', true)
         .order('full_name');
       return data || [];
@@ -226,9 +250,24 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       if (!form.date_limite) throw new Error('Choisis la date à rendre 📅');
       consigneUrl.current = consigneAudio && user ? await deposerAudioProf(user.id, consigneAudio, 'consignes') : null;
       if (!items.length || items.some((it) => !it.titre)) throw new Error(parMatiere ? 'Écris au moins une consigne sur une ligne' : 'Le titre est obligatoire');
-      let total = 0;
-      for (const it of items) total = await creerUn(it.titre, it.type, it.cible, it.audio);
-      return total;
+      const destinataires = new Set<string>();
+      for (const it of items) (await creerUn(it.titre, it.type, it.cible, it.audio)).forEach((id) => destinataires.add(id));
+      // 📓 Une seule notification par distribution (idée 4, texte choisi par Nadia)
+      const ids = [...destinataires];
+      const liste = items.map((it) => it.titre).join(' · ');
+      if (ids.length && form.programme && heureVisible) {
+        // Préparé à l'avance : la notification part à l'heure du cours (process-scheduled-notifications, toutes les 5 min)
+        const p = (n: number) => String(n).padStart(2, '0');
+        const jour = `${heureVisible.getFullYear()}-${p(heureVisible.getMonth() + 1)}-${p(heureVisible.getDate())}`;
+        const { error } = await supabase.from('scheduled_notifications').insert({
+          module: 'devoirs', message: liste, start_date: jour, end_date: jour,
+          send_time: `${p(heureVisible.getHours())}:${p(heureVisible.getMinutes())}`, recipients: ids, is_active: true, created_by: user?.id,
+        });
+        if (error) toast.error("La notification de l'heure du cours n'a pas pu être programmée");
+      } else if (ids.length) {
+        sendPushNotification({ userIds: ids, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: liste, data: { url: '/?open=devoirs' } });
+      }
+      return ids.length;
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
@@ -236,7 +275,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       toast.success(parMatiere && lignesRemplies.length > 1 ? `✅ ${lignesRemplies.length} devoirs assignés à ${count} élève(s) !` : `✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false });
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false, programme: false });
       setConsigneAudio(null); setEnregistreurKey((k) => k + 1);
     },
     onError: (err) => toast.error(err.message),
@@ -244,7 +283,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const consigneUrl = useRef<string | null>(null);
 
   /** Crée un devoir (titre + matière) pour les destinataires choisis ; renvoie le nombre d'élèves */
-  const creerUn = async (titre: string, type: string, cible: string, audio: boolean): Promise<number> => {
+  const creerUn = async (titre: string, type: string, cible: string, audio: boolean): Promise<string[]> => {
     {
       const payload: TablesInsert<'devoirs'> = {
         titre, type,
@@ -254,6 +293,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         lien_lecon: form.lien_lecon || null,
         date_limite: form.date_limite || null,
         etapes: form.etapes.split('\n').map((l) => l.trim()).filter(Boolean),
+        visible_a: form.programme && heureVisible ? heureVisible.toISOString() : null,
         assigned_to: form.assigned_to,
         created_by: user?.id,
       };
@@ -313,22 +353,13 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         }
       }
 
-      if (destinataires.length > 0) {
-        sendPushNotification({
-          userIds: destinataires,
-          title: '📚 {prenom}, nouveau devoir !', category: 'hw_new',
-          body: `Nouveau devoir : "${titre}" — à rendre bientôt`,
-          data: { url: '/?open=devoirs' },
-        });
-      }
-
       // La ligne « 📚 Devoirs à préparer » d'origine est faite
       if (form.source_task_id) {
         const now = new Date().toISOString();
         await supabase.from('admin_tasks').update({ done: true, done_at: now, updated_at: now }).eq('id', form.source_task_id).eq('done', false);
       }
 
-      return destinataires.length;
+      return destinataires;
     }
   };
 
@@ -339,15 +370,17 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       // Corbeille d'abord : si elle échoue, rien n'est supprimé
       if (devoir && user?.id) {
         // Les audios rendus et les cases « J'ai travaillé » partent avec le devoir (suppression en cascade) : gardés avec lui dans la corbeille
-        const [{ data: checksRows }, { data: rendusRows }, { data: stepsRows }] = await Promise.all([
+        const [{ data: checksRows }, { data: rendusRows }, { data: stepsRows }, { data: decisionsRows }] = await Promise.all([
           supabase.from('devoir_checks').select('*').eq('devoir_id', id),
           supabase.from('devoirs_rendus').select('*').eq('devoir_id', id),
           supabase.from('devoir_steps').select('*').eq('devoir_id', id),
+          supabase.from('devoir_decisions').select('*').eq('devoir_id', id),
         ]);
         const children = [
           ...(rendusRows?.length ? [{ table: 'devoirs_rendus', rows: rendusRows }] : []),
           ...(checksRows?.length ? [{ table: 'devoir_checks', rows: checksRows }] : []),
           ...(stepsRows?.length ? [{ table: 'devoir_steps', rows: stepsRows }] : []),
+          ...(decisionsRows?.length ? [{ table: 'devoir_decisions', rows: decisionsRows }] : []),
         ];
         // Copie = la vraie ligne de la table (sans les noms ajoutés pour l'affichage, sinon la restauration échoue)
         const { student_name, group_name, ...row } = devoir;
@@ -430,24 +463,82 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       d.student_id === eleve.user_id ||
       (d.assigned_to === 'group' && !!d.group_id && memberships.some((m) => m.user_id === eleve.user_id && m.group_id === d.group_id))
     );
-    const rendusEleve = rendus.filter(r => r.student_id === eleve.user_id);
-    const aRefaire = rendusEleve.some(r => r.statut === 'a_refaire');
-    const enAttente = rendusEleve.some(r => r.statut === 'rendu');
-    const aJour = devoirsEleve.length > 0 &&
-      rendusEleve.filter(r => r.statut === 'corrige').length >= devoirsEleve.length;
-
-    return { eleve, devoirsEleve, rendusEleve, aRefaire, enAttente, aJour };
+    return { eleve, devoirsEleve };
   });
 
-  const couleurCarte = (item: { aRefaire: boolean; enAttente: boolean; aJour: boolean }) => {
-    if (item.aRefaire) return 'border-destructive bg-destructive/5';
-    if (item.enAttente) return 'border-orange-400 bg-orange-50 dark:bg-orange-950/20';
-    if (item.aJour) return 'border-green-400 bg-green-50 dark:bg-green-950/20';
-    return 'border-border bg-muted/30';
+  // 🔄 Chaque devoir de chaque élève, rangé : Cette semaine / Semaine passée / Historique / À rattraper
+  const groupesDe = (id: string) => memberships.filter((m) => m.user_id === id).map((m) => m.group_id);
+  const lignesProf: LigneProf[] = devoirsParEleve.flatMap(({ eleve, devoirsEleve }) => devoirsEleve.map((d) => {
+    const horaire = horairePour(d.group_id ?? groupeId, groupesDe(eleve.user_id), horaires, holidays);
+    const r = rendus.find((x) => x.devoir_id === d.id && x.student_id === eleve.user_id);
+    const ligneR = { id: d.id, created_at: d.created_at, visible_a: d.visible_a, date_limite: d.date_limite };
+    const heureRendu = heureDeRendu(ligneR, horaire, holidays);
+    const rang = rangement(ligneR, horaire, holidays, now);
+    const fait = !!r && r.statut !== 'a_refaire';
+    const decision = decisions.find((x) => x.devoir_id === d.id && x.student_id === eleve.user_id)?.decision as Decision | undefined;
+    const arrivee = (eleve as { created_at?: string | null }).created_at ?? null;
+    return {
+      eleveId: eleve.user_id, devoirId: d.id, titre: d.titre, type: d.type, statut: r?.statut ?? null, renduAt: r?.rendu_at ?? null,
+      visibleLe: d.visible_a && new Date(d.visible_a) > now ? new Date(d.visible_a) : null,
+      fait, rang, heureRendu, decision, rattraper: aRattraper(ligneR, fait, rang, decision, arrivee), retard: renduEnRetard(r?.rendu_at, heureRendu),
+    };
+  }));
+  // Prochain cours du groupe ouvert (sinon mercredi 14 h) et cours passés pour la bande de semaines
+  const horaireVu = horaireGroupe ?? COURS_PAR_DEFAUT;
+  const prochainCoursVu = coursApres(horaireVu, holidays, now);
+  const premierDevoir = devoirs.length ? new Date(Math.min(...devoirs.map((d) => donneLe(d).getTime()))) : now;
+  const coursHisto = coursPasses(horaireVu, holidays, premierDevoir, now).slice(0, -1);
+  // 🕑 Idée 2 : heure où les devoirs préparés à l'avance apparaissent (début du prochain cours) et leur date à rendre
+  const heureVisible = prochainCoursVu;
+
+  // 📋 Devoirs précédents pas faits sur lesquels Nadia n'a pas encore choisi (rattraper ou historique)
+  const nonDecides = lignesProf.filter((l) => l.rattraper && !l.decision);
+  const [decisionsOuvert, setDecisionsOuvert] = useState(false);
+  const [formApresDecisions, setFormApresDecisions] = useState(false);
+  const decisionsDemandees = useRef(false);
+  useEffect(() => {
+    // Ouvert depuis « Distribuer les devoirs » d'un groupe : la liste s'affiche d'abord, une fois par ouverture
+    if (!groupeId || decisionsDemandees.current || !decisionsChargees || !nonDecides.length) return;
+    decisionsDemandees.current = true;
+    setDecisionsOuvert(true);
+  }, [groupeId, decisionsChargees, nonDecides.length]);
+
+  const enregistrerDecisions = useMutation({
+    mutationFn: async (choix: { devoirId: string; studentId: string; decision: Decision }[]) => {
+      if (!choix.length) return;
+      const { error } = await supabase.from('devoir_decisions').upsert(
+        choix.map((c) => ({ devoir_id: c.devoirId, student_id: c.studentId, decision: c.decision, decided_at: new Date().toISOString(), decided_by: user?.id ?? null })),
+        { onConflict: 'devoir_id,student_id' });
+      if (error) throw error;
+    },
+    onSuccess: (_d, choix) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-devoirs', 'decisions'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-program'] });
+      const r = choix.filter((c) => c.decision === 'rattraper').length;
+      toast.success(choix.length === 1 ? (r ? '🔁 Devoir redonné : il est en haut du cahier de l\'élève' : '📚 Rangé dans l\'historique') : `✅ Choix enregistrés : ${r} à rattraper, ${choix.length - r} dans l'historique`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const ouvrirFormulaire = () => {
+    if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' });
+    if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId }));
+    if (!showForm && !form.date_limite) {
+      if (prochainCours) setForm((f) => ({ ...f, date_limite: toLocalInput(prochainCours) }));
+      else { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); }
+    }
+    setShowForm(!showForm);
+  };
+  const nouveauDevoir = () => {
+    // Avant de donner de nouveaux devoirs : décider pour les anciens pas faits (demande de Nadia, 2026-10-27)
+    if (!showForm && nonDecides.length) { setFormApresDecisions(true); setDecisionsOuvert(true); return; }
+    ouvrirFormulaire();
+  };
+  const fermerDecisions = () => {
+    setDecisionsOuvert(false);
+    if (formApresDecisions) { setFormApresDecisions(false); if (!showForm) ouvrirFormulaire(); }
   };
 
-  const toggleEleve = (id: string) =>
-    setElevesOuverts(prev => ({ ...prev, [id]: !prev[id] }));
   const toggleEleveRendu = (id: string) =>
     setElevesRendusOuverts(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -459,7 +550,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
-        <Button onClick={() => { if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' }); if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId })); if (!showForm && !form.date_limite) { if (prochainCours) setForm((f) => ({ ...f, date_limite: toLocalInput(prochainCours) })); else { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); } } setShowForm(!showForm); }} size="sm">
+        <Button onClick={nouveauDevoir} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
       </div>
@@ -539,6 +630,19 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>
               )}
             </div>
+            {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
+            <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${form.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
+              <input type="checkbox" checked={form.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  // Visibles au début du cours → à rendre pour le cours d'après
+                  setForm((f) => ({ ...f, programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : f.date_limite) }));
+                }} />
+              <span className="text-xs">
+                <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
+                {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
+              </span>
+            </label>
             <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
               className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
               <option value="all">👥 Tous les élèves</option>
@@ -654,53 +758,21 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
           Devoirs assignés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
         </h3>
         {nomGroupe && <p className="text-xs text-muted-foreground mb-2">👥 Seulement les élèves du groupe « {nomGroupe} »</p>}
-        {/* Depuis un groupe : TOUS les élèves du groupe, même sans devoir (2026-10-27, demande de Nadia) */}
-        {devoirsParEleve.filter(({ devoirsEleve }) => membresGroupe || devoirsEleve.length > 0).map(({ eleve, devoirsEleve, aRefaire, enAttente, aJour }) => {
-          const ouvert = elevesOuverts[eleve.user_id];
-          return (
-            <Card key={eleve.user_id} className={`mb-2 overflow-hidden border-2 ${couleurCarte({ aRefaire, enAttente, aJour })}`}>
-              <button
-                onClick={() => toggleEleve(eleve.user_id)}
-                className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
-              >
-                <span className="font-semibold text-foreground text-sm">
-                  👤 {eleve.full_name} ({devoirsEleve.length} devoir{devoirsEleve.length > 1 ? 's' : ''})
-                </span>
-                {ouvert ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              </button>
-              {ouvert && (
-                <div className="px-3 pb-3 space-y-2">
-                  {devoirsEleve.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Aucun devoir pour l'instant</p>}
-                  {devoirsEleve.map((d) => (
-                    <div key={d.id} className="bg-background rounded-xl p-3 flex items-center justify-between shadow-sm">
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{d.titre}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {d.date_limite ? `📅 ${new Date(d.date_limite).toLocaleDateString('fr-FR')}` : 'Sans date limite'}
-                        </p>
-                        {(() => {
-                          // État du devoir pour cet élève (2026-10-26) : envoyé par « Je valide mon devoir », puis validé par toi
-                          const r = rendus.find((x) => x.devoir_id === d.id && x.student_id === eleve.user_id);
-                          return r?.statut === 'corrige'
-                            ? <p className="mt-1 inline-block rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 px-2 py-0.5 text-[11px] font-bold">✅ Validé · diamant doré</p>
-                            : r?.statut === 'rendu'
-                              ? <p className="mt-1 inline-block rounded-full bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200 px-2 py-0.5 text-[11px] font-bold">🟠 Envoyé le {new Date(r.rendu_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · à valider</p>
-                              : r?.statut === 'a_refaire'
-                                ? <p className="mt-1 inline-block rounded-full bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200 px-2 py-0.5 text-[11px] font-bold">🔄 À refaire</p>
-                                : <p className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">⏳ Pas encore envoyé</p>;
-                        })()}
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                        onClick={() => setDevoirToDelete({ id: d.id, titre: d.titre })} aria-label="Supprimer ce devoir">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          );
-        })}
+        {/* 🔄 Rotation à l'heure du cours (2026-10-27) : onglets, « À rattraper », bilan, historique. Depuis un groupe : TOUS ses élèves */}
+        <RotationProf
+          eleves={devoirsParEleve.filter(({ devoirsEleve }) => membresGroupe || devoirsEleve.length > 0).map(({ eleve }) => eleve)}
+          lignes={lignesProf} prochainCours={prochainCoursVu} coursHistorique={coursHisto}
+          onDecision={(items, decision) => {
+            enregistrerDecisions.mutate(items.map((it) => ({ ...it, decision })));
+            // Idée 3 : l'élève est prévenu qu'un devoir lui est redonné
+            if (decision === 'rattraper') {
+              const titre = lignesProf.find((l) => l.devoirId === items[0]?.devoirId)?.titre || '';
+              sendPushNotification({ userIds: [...new Set(items.map((it) => it.studentId))], title: '🔁 {prenom}, un devoir à rattraper', category: 'hw_new', body: `« ${titre} » est en haut de ton cahier de texte`, data: { url: '/?open=devoirs' } });
+            }
+          }}
+          onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
+          onDonner={nouveauDevoir} />
+        {!groupeId && <p className="text-[11px] text-muted-foreground mt-1">🕑 Chaque devoir tourne à l'heure du cours de son groupe (mercredi 14 h si le groupe n'a pas d'heure réglée).</p>}
       </div>
 
       {/* Rendus grouped by student */}
@@ -836,6 +908,12 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         </DialogContent>
       </Dialog>
 
+      {/* 📋 Devoirs précédents pas faits : à rattraper ou historique (demande de Nadia, 2026-10-27) */}
+      <DecisionsDialog open={decisionsOuvert} items={nonDecides}
+        nom={(id) => eleves.find((e) => e.user_id === id)?.full_name || 'Élève'}
+        onClose={fermerDecisions}
+        onSave={(choix) => { enregistrerDecisions.mutate(choix); fermerDecisions(); }} />
+
       {/* Dialog récupération brouillon devoir */}
       {validationDialog}
       {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
@@ -874,7 +952,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false, programme: homeworkDraft.programme ?? false });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

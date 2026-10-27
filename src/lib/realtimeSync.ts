@@ -44,6 +44,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours', 'cahier-classe'],
   // Audio envoyé ou corrigé : le diamant suit
   devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours', 'cahier-classe'],
+  // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)
+  devoir_decisions: ['admin-devoirs', 'weekly-program', 'weekly-program-admin', 'bilans', 'cahier-classe'],
   // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)
   course_ready: ['course-ready', 'cahier-classe'],
   daily_goals: ['daily-goals'],

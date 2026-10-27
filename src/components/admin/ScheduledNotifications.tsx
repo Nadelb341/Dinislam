@@ -43,6 +43,7 @@ const MODULES = [
   { value: 'priere', label: '🕌 Prière' },
   { value: 'allah_names', label: '🌟 99 Noms d\'Allah' },
   { value: 'alphabet', label: '🔤 Alphabet' },
+  { value: 'devoirs', label: '📓 Devoirs préparés à l\'avance' },
 ];
 
 interface ScheduledNotification {

@@ -36,7 +36,9 @@ serve(async (req) => {
       .from('devoirs')
       .select('id, titre, assigned_to, group_id, student_id, date_limite')
       .not('date_limite', 'is', null)
-      .gt('date_limite', new Date().toISOString());
+      .gt('date_limite', new Date().toISOString())
+      // Devoirs préparés à l'avance : pas de rappel avant qu'ils soient visibles (rotation des devoirs, 2026-10-27)
+      .or(`visible_a.is.null,visible_a.lte.${new Date().toISOString()}`);
     if (devoirsError) throw devoirsError;
     if (!devoirs?.length) return new Response(JSON.stringify({ success: true, totalSent: 0 }), { headers: { 'Content-Type': 'application/json' } });
 

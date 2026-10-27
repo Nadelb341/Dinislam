@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
-import { praiseFor, courseDeadline, type WeeklyProgram } from "@/lib/weeklyProgram";
+import { praiseFor, type WeeklyProgram } from "@/lib/weeklyProgram";
 import { matiereOf } from "@/lib/devoirMatieres";
 import { DevoirValider } from "./DevoirValider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,9 +16,10 @@ import { useConfirmValidation } from "@/hooks/useConfirmValidation";
 import { useConfetti } from "@/hooks/useConfetti";
 import { AudioProf } from "./AudioProf";
 import { PretPourLeCours, ObjectifDuJour } from "./CahierDuJour";
-
-/** Mercredi prochain (jour du cours), aujourd'hui compris */
-const prochainMercredi = () => { const d = new Date(); d.setHours(12, 0, 0, 0); while (d.getDay() !== 3) d.setDate(d.getDate() + 1); return d; };
+import { CahierRotation, type DevoirRange } from "./CahierRotation";
+import { useHolidays } from "@/hooks/useGroupCourse";
+import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
+import type { GroupSchedule } from "@/lib/groupCourse";
 
 type Devoir = {
   id: string;
@@ -43,98 +44,15 @@ type Devoir = {
   /** 🎧 Consigne audio du professeur et correction audio (2026-10-26) */
   consigne_audio_url: string | null;
   correction_audio_url: string | null;
+  /** Rotation à l'heure du cours (2026-10-27) */
+  group_id: string | null;
+  visible_a: string | null;
+  rendu_at: string | null;
+  decision?: Decision;
 };
 
 /** Un devoir est fait (pour l'élève) dès qu'il l'a envoyé : en attente de validation ou validé ; « à refaire » = à faire */
 const estFait = (d: Devoir) => d.rendu && d.statut_rendu !== 'a_refaire';
-const jourLong = (d: Date) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-/**
- * 📓 Le cahier de l'élève (proposition A choisie par Nadia, 2026-10-26) : papier ligné, « Pour mercredi … : »,
- * une ligne par devoir reliée à son diamant ; toucher une ligne l'ouvre (« Commencer mon travail », étapes, « Je valide mon devoir »).
- * Chaque devoir est obligatoire : il reste dans « à faire » tant qu'il n'est pas fait.
- */
-function CahierPapier({ devoirs, pourLe, renderDetail }: { devoirs: Devoir[]; pourLe: Date; renderDetail: (d: Devoir) => React.ReactNode }) {
-  const [ouvertId, setOuvertId] = useState<string | null>(null);
-  const aFaire = devoirs.filter((d) => !estFait(d)).sort((a, b) => (a.date_limite || '9999').localeCompare(b.date_limite || '9999'));
-  const faits = devoirs.filter(estFait).sort((a, b) => b.cree_le.localeCompare(a.cree_le));
-  const ilYa7Jours = new Date(Date.now() - 7 * 86400000).toISOString();
-  const faitsRecents = faits.filter((d) => d.cree_le >= ilYa7Jours);
-  const anciens = faits.filter((d) => d.cree_le < ilYa7Jours);
-  // Anciens devoirs faits, rangés par jour où ils ont été donnés
-  const parJour = new Map<string, Devoir[]>();
-  anciens.forEach((d) => { const k = d.cree_le.slice(0, 10); parJour.set(k, [...(parJour.get(k) || []), d]); });
-  const now = Date.now();
-
-  const ligne = (d: Devoir) => {
-    const m = matiereOf(d.type);
-    const fait = estFait(d);
-    const enRetard = !fait && !!d.date_limite && new Date(d.date_limite).getTime() < now;
-    const sous = d.etapes.length > 0 && !fait
-      ? `💎 ${d.etapesFaites.length}/${d.etapes.length} étape${d.etapes.length > 1 ? 's' : ''}`
-      : d.date_limite ? `📅 pour le ${new Date(d.date_limite).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : m.label;
-    const chip = d.statut_rendu === 'a_refaire' ? { t: '🔄 à refaire', c: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' }
-      : enRetard ? { t: '⚠️ en retard', c: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' }
-      : !fait ? { t: 'à faire', c: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' }
-      : d.statut_rendu === 'corrige' ? { t: '✅ validé', c: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200' }
-      : d.statut_rendu === 'rendu' ? { t: '🟠 en attente', c: 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200' }
-      : { t: '✓ fait', c: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200' };
-    const ouvert = ouvertId === d.id;
-    return (
-      <div key={d.id} id={`devoir-${d.id}`} className="scroll-mt-24">
-        <button type="button" onClick={() => setOuvertId(ouvert ? null : d.id)} aria-expanded={ouvert}
-          className={cn("w-full flex items-center gap-2.5 rounded-xl border bg-card/95 px-3 py-2.5 text-left shadow-sm transition-colors",
-            ouvert ? "border-sky-400" : "border-border hover:border-sky-300")}>
-          <span className="text-xl shrink-0">{m.emoji}</span>
-          <span className="flex-1 min-w-0">
-            <b className={cn("block text-sm [overflow-wrap:anywhere]", fait && "text-muted-foreground")}>{d.titre}</b>
-            <span className="block text-[11px] text-muted-foreground">{sous}</span>
-          </span>
-          <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold", chip.c)}>{chip.t}</span>
-        </button>
-        {ouvert && <div className="mt-1.5">{renderDetail(d)}</div>}
-      </div>
-    );
-  };
-
-  return (
-    <div className="cahier-papier rounded-r-2xl px-3 pt-2 pb-3 space-y-2">
-      {/* À faire, rangé par date à rendre choisie par le professeur (pas de cours pendant les vacances) */}
-      {aFaire.length ? (() => {
-        const groupes = new Map<string, Devoir[]>();
-        aFaire.forEach((d) => { const k = d.date_limite ? d.date_limite.slice(0, 10) : ''; groupes.set(k, [...(groupes.get(k) || []), d]); });
-        return [...groupes.entries()].sort(([x], [y]) => (x || '9999').localeCompare(y || '9999')).map(([k, liste]) => (
-          <div key={k || 'sans'} className="space-y-2">
-            <p className="cahier-main text-lg leading-8">{k ? `Pour ${jourLong(new Date(k + 'T12:00:00'))} :` : `Pour ${jourLong(pourLe)} :`}</p>
-            {liste.map(ligne)}
-          </div>
-        ));
-      })() : <p className="cahier-main text-lg leading-8 text-green-700 dark:text-green-400">Rien à faire, bravo ! ✓</p>}
-      {aFaire.length > 0 && (
-        <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">📌 Chaque devoir compte : fais-les tous pour faire briller tes diamants et ouvrir le trésor 🎁</p>
-      )}
-      {faitsRecents.length > 0 && (
-        <>
-          <p className="cahier-main text-lg leading-8 text-muted-foreground">Déjà envoyé cette semaine ✓</p>
-          {faitsRecents.map(ligne)}
-        </>
-      )}
-      {parJour.size > 0 && (
-        <details className="pt-1">
-          <summary className="cahier-main text-lg leading-8 text-muted-foreground cursor-pointer">📅 Semaines d'avant</summary>
-          <div className="space-y-2 pt-1">
-            {[...parJour.entries()].map(([jour, liste]) => (
-              <div key={jour} className="space-y-1.5">
-                <p className="cahier-main text-base text-muted-foreground">{new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} ✓ tout est fait</p>
-                {liste.map(ligne)}
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-    </div>
-  );
-}
 
 function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id: string, step: number, value: boolean) => void; onSent: () => void }) {
   const { askValidation, validationDialog } = useConfirmValidation();
@@ -207,6 +125,11 @@ export default function BlocDevoirsEleve() {
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [devoirsTermines, setDevoirsTermines] = useState<Devoir[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contexte, setContexte] = useState<{ gIds: string[]; horaires: GroupSchedule[]; arrivee: string | null }>({ gIds: [], horaires: [], arrivee: null });
+  const { data: holidays = [] } = useHolidays();
+  // L'heure avance toute seule : à l'heure du cours, les devoirs changent d'onglet sans recharger
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
   // Ouvert par défaut à l'ouverture de l'appli ; la flèche le referme et le rouvre (demande de Nadia, 2026-10-26)
   const [ouvert, setOuvert] = useState(true);
   const queryClient = useQueryClient();
@@ -250,12 +173,19 @@ export default function BlocDevoirsEleve() {
     // Fetch rendus for this student
     const { data: rendus } = await supabase
       .from('devoirs_rendus')
-      .select('devoir_id, statut, commentaire_admin, correction_audio_url')
+      .select('devoir_id, statut, commentaire_admin, correction_audio_url, rendu_at')
       .eq('student_id', user.id);
     // Cases « J'ai travaillé ce devoir »
     const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', user.id);
     const travailles = new Set((checks || []).map((c) => c.devoir_id));
     const { data: steps } = await supabase.from('devoir_steps').select('devoir_id, step').eq('student_id', user.id);
+    // 🔄 Rotation : heures de cours de ses groupes, choix du professeur (à rattraper / historique), date d'arrivée
+    const [{ data: horaires }, { data: decisions }, { data: profil }] = await Promise.all([
+      gIds.length ? supabase.from('group_schedules').select('group_id, weekday, start_time').in('group_id', gIds) : Promise.resolve({ data: [] as GroupSchedule[] }),
+      supabase.from('devoir_decisions').select('devoir_id, decision').eq('student_id', user.id),
+      supabase.from('profiles').select('created_at').eq('user_id', user.id).maybeSingle(),
+    ]);
+    setContexte({ gIds, horaires: (horaires || []) as GroupSchedule[], arrivee: profil?.created_at ?? null });
 
     const enrichis: Devoir[] = (data || []).map(d => {
       const rendu = rendus?.find(r => r.devoir_id === d.id);
@@ -277,6 +207,10 @@ export default function BlocDevoirsEleve() {
         correction_audio_url: rendu?.correction_audio_url ?? null,
         etapes: Array.isArray(d.etapes) ? (d.etapes as unknown[]).map(String) : [],
         etapesFaites: (steps || []).filter((x) => x.devoir_id === d.id).map((x) => x.step),
+        group_id: d.group_id ?? null,
+        visible_a: d.visible_a ?? null,
+        rendu_at: rendu?.rendu_at ?? null,
+        decision: decisions?.find((x) => x.devoir_id === d.id)?.decision as Decision | undefined,
       };
     });
 
@@ -290,7 +224,7 @@ export default function BlocDevoirsEleve() {
     chargerDevoirs();
   }, [chargerDevoirs]);
   // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
-  useRealtimeRefresh(['devoirs', 'devoirs_rendus', 'student_group_members', 'devoir_checks', 'devoir_steps'], () => { void chargerDevoirs(); }, !!user);
+  useRealtimeRefresh(['devoirs', 'devoirs_rendus', 'student_group_members', 'devoir_checks', 'devoir_steps', 'devoir_decisions', 'group_schedules'], () => { void chargerDevoirs(); }, !!user);
 
   // 💎 Étape d'un devoir : le diamant se remplit ; ensuite l'élève touche « Je valide mon devoir »
   const handleEtape = async (devoirId: string, step: number, value: boolean) => {
@@ -314,13 +248,30 @@ export default function BlocDevoirsEleve() {
 
   if (loading || (devoirs.length === 0 && devoirsTermines.length === 0 && !program)) return null;
 
+  // 🔄 Rotation à l'heure du cours de son groupe (mercredi 14 h si aucune heure n'est réglée)
+  const tous = [...devoirs, ...devoirsTermines];
+  const ranges: (Devoir & DevoirRange)[] = tous.map((d) => {
+    const horaire = horairePour(d.group_id, contexte.gIds, contexte.horaires, holidays);
+    const ligneR = { id: d.id, created_at: d.cree_le, visible_a: d.visible_a, date_limite: d.date_limite };
+    const heureRendu = heureDeRendu(ligneR, horaire, holidays);
+    const rang = rangement(ligneR, horaire, holidays, now);
+    return { ...d, rang, heureRendu, rattraper: aRattraper(ligneR, estFait(d), rang, d.decision, contexte.arrivee), retard: renduEnRetard(d.rendu_at, heureRendu) };
+  });
+  const horairePrincipal = horairePour(null, contexte.gIds, contexte.horaires, holidays);
+  const prochainCours = coursApres(horairePrincipal, holidays, now);
+  const premier = tous.length ? new Date(Math.min(...tous.map((d) => donneLe({ id: d.id, created_at: d.cree_le, visible_a: d.visible_a }).getTime()))) : now;
+  // Bande de semaines : tous les cours passés sauf le dernier (celui de « Semaine passée »)
+  const coursHisto = coursPasses(horairePrincipal, holidays, premier, now).slice(0, -1);
+
   // Devoirs pas encore faits (cochés ou audio envoyé), comme les diamants
-  const totalAFaire = [...devoirs, ...devoirsTermines].filter((d) => !estFait(d)).length;
+  // Seulement ce qui compte encore : la semaine en cours + « À rattraper » (l'historique « pas fait » n'est plus compté)
+  const enCours = ranges.filter((d) => !estFait(d) && (d.rang === 'semaine' || d.rattraper));
+  const totalAFaire = enCours.length;
   const toutAJour = totalAFaire === 0 && diamondsLeft === 0;
 
   // Date butoir la plus proche parmi les devoirs non rendus
-  const prochaineDateButoir = [...devoirs, ...devoirsTermines]
-    .filter(d => d.date_limite && !estFait(d))
+  const prochaineDateButoir = enCours
+    .filter(d => d.date_limite && d.rang === 'semaine')
     .map(d => new Date(d.date_limite!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
 
@@ -383,9 +334,8 @@ export default function BlocDevoirsEleve() {
           )}
 
           {(devoirs.length > 0 || devoirsTermines.length > 0) && (
-            <CahierPapier devoirs={[...devoirs, ...devoirsTermines]}
-              pourLe={program ? courseDeadline(program) : prochainMercredi()}
-              renderDetail={(d) => <CarteDevoir devoir={d} onEtape={(id, n, v) => void handleEtape(id, n, v)} onSent={() => void chargerDevoirs()} />} />
+            <CahierRotation devoirs={ranges} prochainCours={prochainCours} coursHistorique={coursHisto} pageKey={`dinislam_cahier_page_${user?.id}`}
+              renderDetail={(r) => { const d = tous.find((x) => x.id === r.id); return d ? <CarteDevoir devoir={d} onEtape={(id, n, v) => void handleEtape(id, n, v)} onSent={() => void chargerDevoirs()} /> : null; }} />
           )}
         </div>
       )}

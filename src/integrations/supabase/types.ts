@@ -911,6 +911,38 @@ export type Database = {
           },
         ]
       }
+      devoir_decisions: {
+        Row: {
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          devoir_id: string
+          student_id: string
+        }
+        Insert: {
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          devoir_id: string
+          student_id: string
+        }
+        Update: {
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          devoir_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoir_decisions_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devoir_steps: {
         Row: {
           checked_at: string
@@ -959,6 +991,7 @@ export type Database = {
           student_id: string | null
           titre: string
           type: string
+          visible_a: string | null
         }
         Insert: {
           assigned_to: string
@@ -978,6 +1011,7 @@ export type Database = {
           student_id?: string | null
           titre: string
           type: string
+          visible_a?: string | null
         }
         Update: {
           assigned_to?: string
@@ -997,6 +1031,7 @@ export type Database = {
           student_id?: string | null
           titre?: string
           type?: string
+          visible_a?: string | null
         }
         Relationships: [
           {
