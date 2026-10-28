@@ -39,6 +39,8 @@ import {
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
+import { EspaceParentsCarte } from '@/components/parents/EspaceParents';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
   learning_module: 'Module',
@@ -76,12 +78,15 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   admin_task_attachment: 'Fichier d\'une ligne du Cahier de texte',
   coran_note: 'Note d\'un marque-page du Coran',
   group_level: 'Niveau d\'un groupe',
+  parent_code: 'Code parents',
+  parent_link: 'Lien parent ↔ enfant',
+  absence_justification: 'Absence justifiée',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 
 const Settings = () => {
   const { user, isAdmin } = useAuth();
-  const { locked: parentLocked, unlock: unlockParent } = useParentLock();
+  const { locked: parentLocked, unlock: unlockParent, unlockWithCode } = useParentLock();
   const [gateOpen, setGateOpen] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -277,9 +282,9 @@ const Settings = () => {
       <AppLayout title="Paramètres">
         <div className="max-w-sm mx-auto py-10 text-center space-y-4">
           <p className="text-muted-foreground">🔒 Les paramètres sont réservés aux parents.</p>
-          <Button onClick={() => setGateOpen(true)}>Ouvrir avec le mot de passe</Button>
+          <Button onClick={() => setGateOpen(true)}>Ouvrir l'Espace parents</Button>
         </div>
-        <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlockParent} onSuccess={() => {}} />
+        <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlockParent} onUnlockCode={unlockWithCode} onSuccess={() => {}} />
       </AppLayout>
     );
   }
@@ -301,6 +306,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* 👨‍👩‍👧 Espace parents (2026-10-28) */}
+        <SilentBoundary name="Espace parents"><EspaceParentsCarte /></SilentBoundary>
 
         {/* « Panneau d'administration » retiré le 2026-10-27 : le Tableau de bord n'existe plus (menu ⋮ de chaque carte de l'accueil) */}
 

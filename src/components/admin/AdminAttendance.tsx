@@ -77,6 +77,18 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     },
   });
 
+  // 📩 Absences justifiées par les parents (2026-10-28)
+  const { data: justifs = [] } = useQuery({
+    queryKey: ['absences-justifiees', 'admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('absence_justifications').select('student_id, course_date, reason, declared_label').order('course_date');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const justifMap = useMemo(() => new Map(justifs.map((j) => [`${j.student_id}-${j.course_date}`, j])), [justifs]);
+  const aVenir = justifs.filter((j) => j.course_date >= todayIso());
+
   // Séances enregistrées + la date du jour toujours présente (2026-10-07)
   const { data: sessions = [] } = useQuery({ queryKey: ['attendance-sessions'], queryFn: fetchAttendanceSessions });
   const savedDates = useMemo(() => attendanceDates(sessions, records, false), [sessions, records]);
@@ -153,6 +165,18 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
           </span>
         ))}
       </div>
+
+      {/* 📩 Absences à venir signalées par les parents */}
+      {aVenir.length > 0 && (
+        <div className="rounded-2xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-800 p-3 space-y-1.5">
+          <p className="text-sm font-extrabold text-sky-900 dark:text-sky-100">📩 Absences signalées par les parents</p>
+          {aVenir.map((j) => (
+            <p key={`${j.student_id}-${j.course_date}`} className="text-sm [overflow-wrap:anywhere]">
+              <b>{students.find((st) => st.user_id === j.student_id)?.full_name || 'Élève'}</b> · {format(parseISO(j.course_date), 'EEEE d MMMM', { locale: fr })}{j.reason ? ` · ${j.reason}` : ''}{j.declared_label ? ` (${j.declared_label})` : ''}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Message envoyé à l'élève après le cours (présent / en retard / absent) */}
       <div className={cn('rounded-xl border p-2.5 text-sm flex flex-wrap items-center gap-2', msgMode ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border')}>
@@ -249,7 +273,10 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                           {display ? (
                             <div className="relative w-7 h-7 rounded-full" style={{ backgroundColor: display.color }}>
                               {record && !record.sendMessage && <span className="absolute -top-1.5 -right-2 text-xs" title="Message coupé">🔕</span>}
+                              {justifMap.has(`${student.user_id}-${date}`) && <span className="absolute -bottom-1.5 -right-2 text-xs" title="Absence justifiée par les parents">📩</span>}
                             </div>
+                          ) : justifMap.has(`${student.user_id}-${date}`) ? (
+                            <span className="text-lg" title={`Absence justifiée par les parents${justifMap.get(`${student.user_id}-${date}`)?.reason ? ` : ${justifMap.get(`${student.user_id}-${date}`)?.reason}` : ''}`}>📩</span>
                           ) : (
                             <div className="w-7 h-7 rounded-full border-2 border-dashed border-muted-foreground/30" />
                           )}

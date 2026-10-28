@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
-import { Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield } from 'lucide-react';
+import { Users, Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 
 type PrefKey =
   | 'notif_msg' | 'notif_coran' | 'notif_prog_eve' | 'notif_cours_prep' | 'notif_adm_bilan' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
+  | 'notif_par_bilan' | 'notif_par_abs' | 'notif_adm_abs' | 'notif_adm_par'
   | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task' | 'notif_prog_week' | 'notif_adm_recap' | 'notif_adm_crash'
   | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
 
@@ -67,6 +68,14 @@ const FAMILIES: Family[] = [
     ],
   },
   {
+    id: 'par', title: 'Espace parents', icon: Users,
+    soft: 'bg-fuchsia-50', border: 'border-fuchsia-200', ink: 'text-fuchsia-900', chip: 'bg-fuchsia-700',
+    items: [
+      { key: 'notif_par_bilan', label: 'Nouveau bilan du trimestre 📊', hint: 'Avant chaque vacances scolaires' },
+      { key: 'notif_par_abs', label: 'Enfant absent au cours ⚠️', hint: "15 min après le début du cours, si l'absence n'a pas été signalée" },
+    ],
+  },
+  {
     id: 'pri', title: 'Prière et Ramadan', icon: Moon,
     soft: 'bg-teal-50', border: 'border-teal-200', ink: 'text-teal-900', chip: 'bg-teal-700',
     items: [
@@ -87,7 +96,9 @@ const FAMILIES: Family[] = [
       { key: 'notif_adm_valid', label: 'Demande de validation' },
       { key: 'notif_adm_reg', label: 'Nouvelle inscription' },
       { key: 'notif_adm_task', label: 'Rappel d\'une ligne du « Cahier de texte »' },
-      { key: 'notif_adm_bilan', label: 'Bilans à envoyer avant les vacances 📈', hint: '3 jours avant chaque vacances, à 10 h' },
+      { key: 'notif_adm_bilan', label: 'Bilans à envoyer avant les vacances 📊', hint: '7 jours puis 3 jours avant chaque vacances, à 10 h' },
+      { key: 'notif_adm_abs', label: 'Absence signalée par des parents 🙋' },
+      { key: 'notif_adm_par', label: "Un parent s'est relié à ses enfants 👨‍👩‍👧" },
       { key: 'notif_adm_recap', label: 'Récap du lundi 💎', hint: 'Qui a fait briller ses diamants la semaine passée' },
       { key: 'notif_adm_crash', label: 'Plantage chez un élève 😿', hint: 'Revient toutes les heures tant que ce n\'est pas résolu (réglable dans Monitoring)' },
     ],

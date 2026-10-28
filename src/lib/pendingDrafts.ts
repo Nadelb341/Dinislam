@@ -39,7 +39,7 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
   },
   // 📈 Bilan d'un élève pas encore enregistré (clé : préfixe + id de l'élève), 2026-10-26
   dinislam_bilan_: {
-    place: 'Accueil › Cahier de texte › 📈 Bilans', noun: 'bilan pas encore enregistré', route: '/?open=todo', adminOnly: true,
+    place: 'Bouclier › 📊 Bilan trimestriel', noun: 'bilan pas encore enregistré', route: '/admin?section=bilan-trimestriel', adminOnly: true,
     labelOf: (d) => { const v = d as { appreciation?: string; motivation?: string; note?: unknown; period?: string } | null; return text(v?.appreciation) || text(v?.motivation) || (v?.note != null && v?.note !== '' ? `Note ${String(v.note)}/20` : '') || text(v?.period); },
   },
   // 📝 « Ce qu'on a vu » pas encore enregistré (clé : préfixe + groupe), 2026-10-26

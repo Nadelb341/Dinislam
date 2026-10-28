@@ -24,6 +24,8 @@ import ModuleVisibilityDialog from '@/components/admin/ModuleVisibilityDialog';
 import { SortableCardList, rectSortingStrategy, type DragItemProps } from '@/components/shared/SortableCardList';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { editDraftKey } from '@/lib/pendingDrafts';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
+import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -455,6 +457,12 @@ const handleModuleClick = (mod) => {
             <p className="font-arabic text-gold mt-2 text-3xl">
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </p>
+            {/* 🙋 Parents : signaler une absence (compte d'un enfant, ou d'un parent élève adulte) */}
+            {!isAdmin && (
+              <div className="flex justify-end mt-2">
+                <SilentBoundary name="Signaler une absence"><BoutonSignalerAbsence /></SilentBoundary>
+              </div>
+            )}
           </div>
 
           {/* À FAIRE : enseignante seulement */}

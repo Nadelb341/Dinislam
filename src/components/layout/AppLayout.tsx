@@ -10,6 +10,8 @@ import PushAutoSubscribe from '@/components/push/PushAutoSubscribe';
 import PendingDraftsCenter from '@/components/PendingDraftsCenter';
 import TrashPurgeWarning from '@/components/TrashPurgeWarning';
 import AttendanceMessage from '@/components/attendance/AttendanceMessage';
+import MessagesProfil from '@/components/parents/MessagesProfil';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import ComebackCelebration from '@/components/attendance/ComebackCelebration';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
@@ -40,6 +42,8 @@ const AppLayout = ({
           <PendingDraftsCenter />
           <TrashPurgeWarning />
           <AttendanceMessage />
+          {/* 🎂 Date de naissance et 👨‍👩‍👧 enfants élèves (2026-10-28) */}
+          <SilentBoundary name="Messages du profil"><MessagesProfil /></SilentBoundary>
           <ComebackCelebration />
         </div>
         {children}

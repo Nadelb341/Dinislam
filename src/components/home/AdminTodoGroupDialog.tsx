@@ -33,7 +33,6 @@ import type { CahierVue } from '@/lib/groupCourse';
 import NiveauxGroupe from '@/components/cahier/NiveauxGroupe';
 import TableauClasse from '@/components/cahier/TableauClasse';
 import Recapitulatif from '@/components/cahier/Recapitulatif';
-import Bilans from '@/components/cahier/Bilans';
 
 const fmtDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 const toLocalInput = (iso: string | null) => {
@@ -571,7 +570,6 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
               {vue === 'niveaux' && group.id && <NiveauxGroupe groupId={group.id} groupName={group.name} students={groupStudents} onBack={() => setVue(null)} />}
               {vue === 'tableau' && <TableauClasse groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
               {vue === 'recap' && <Recapitulatif groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
-              {vue === 'bilans' && <Bilans groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
             </div>
           )}
 

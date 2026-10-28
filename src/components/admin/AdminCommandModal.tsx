@@ -19,6 +19,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePendingDrafts } from '@/hooks/useDrafts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import { requestDraftResume, type PendingDraft } from '@/lib/pendingDrafts';
+import { useHolidays } from '@/hooks/useGroupCourse';
+import { periodeBilan } from '@/lib/bilanTrimestriel';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -262,6 +264,8 @@ const AdminCommandModal = ({
                   </span>
                 )}
               </button>
+              {/* 📊 Bilan trimestriel (2026-10-28, demande de Nadia : juste sous « Brouillons ») */}
+              <BoutonBilanTrimestriel onOpen={() => { onClose(); navigate('/admin?section=bilan-trimestriel'); }} />
             </div>
 
             {/* Séparateur */}
@@ -413,3 +417,19 @@ function CahierRedirect({ onGo }: { onGo: () => void }) {
   useEffect(() => { if (done.current) return; done.current = true; onGo(); }, [onGo]);
   return <p className="py-8 text-center text-sm text-muted-foreground">📓 Ouverture du cahier de texte…</p>;
 }
+
+/** Bouton « 📊 Bilan trimestriel » : rappelle les vacances qui approchent (7 jours avant) */
+function BoutonBilanTrimestriel({ onOpen }: { onOpen: () => void }) {
+  const { data: holidays = [] } = useHolidays();
+  const { prochaines } = periodeBilan(holidays);
+  const jours = prochaines ? Math.ceil((new Date(`${prochaines.start_date}T00:00:00`).getTime() - Date.now()) / 86400000) : null;
+  const bientot = jours !== null && jours >= 0 && jours <= 7;
+  return (
+    <button onClick={onOpen}
+      className={`col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${bientot ? 'bg-violet-600 text-white ring-4 ring-violet-200 dark:ring-violet-900' : 'bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-100'}`}>
+      <span>📊 Bilan trimestriel</span>
+      {bientot && <span className="bg-white text-violet-800 text-xs font-bold px-2 h-5 rounded-full flex items-center">vacances dans {jours} j</span>}
+    </button>
+  );
+}
+

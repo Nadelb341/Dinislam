@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,12 @@ const CASE: Record<EtatCase, { emoji: string; cls: string; label: string }> = {
   a_refaire: { emoji: '🔄', cls: 'bg-rose-100 text-rose-900 dark:bg-rose-950/50 dark:text-rose-200', label: 'à refaire' },
   rien: { emoji: '⏳', cls: 'bg-red-200 text-red-900 dark:bg-red-950/70 dark:text-red-200', label: 'rien envoyé' },
 };
+
+const COMPORTEMENTS = [
+  { k: 'attentif', e: '🙂', t: 'Attentif', on: 'bg-emerald-200 dark:bg-emerald-900' },
+  { k: 'participe', e: '✋', t: 'Participe', on: 'bg-sky-200 dark:bg-sky-900' },
+  { k: 'bavarde', e: '💬', t: 'Bavarde', on: 'bg-amber-200 dark:bg-amber-900' },
+];
 
 const todayIso = () => {
   const d = new Date();
@@ -62,6 +68,24 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
       return map;
     },
   });
+  // 🙂 Comportement au cours d'aujourd'hui (bilan, idée I)
+  const queryClient = useQueryClient();
+  const { data: comportements = new Set<string>() } = useQuery({
+    queryKey: ['comportement', membersKey, todayIso()],
+    enabled: !!membersKey,
+    queryFn: async () => {
+      const { data, error: e } = await supabase.from('behavior_marks').select('student_id, kind').in('student_id', membersKey.split(',')).eq('course_date', todayIso());
+      if (e) throw e;
+      return new Set((data || []).map((r) => `${r.student_id}|${r.kind}`));
+    },
+  });
+  const basculerComportement = async (sid: string, kind: string, on: boolean) => {
+    const { error: e } = on
+      ? await supabase.from('behavior_marks').delete().eq('student_id', sid).eq('course_date', todayIso()).eq('kind', kind)
+      : await supabase.from('behavior_marks').insert({ student_id: sid, course_date: todayIso(), kind });
+    if (e) { toast.error(errorMessage(e)); return; }
+    void queryClient.invalidateQueries({ queryKey: ['comportement'] });
+  };
   // 🔥 séries
   const { data: series = new Map<string, number>() } = useQuery({
     queryKey: ['cahier-classe', 'series'],
@@ -200,6 +224,7 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
                     <th className="bg-sky-50 dark:bg-sky-950/50 px-1.5 py-2 text-xs font-bold text-sky-900 dark:text-sky-200 border-b-2 border-red-100 dark:border-red-950" title="Diamants de la semaine">💎</th>
                     <th className="bg-sky-50 dark:bg-sky-950/50 px-1.5 py-2 text-xs font-bold text-sky-900 dark:text-sky-200 border-b-2 border-red-100 dark:border-red-950" title="Série de semaines">🔥</th>
                     <th className="bg-sky-50 dark:bg-sky-950/50 px-1.5 py-2 text-xs font-bold text-sky-900 dark:text-sky-200 border-b-2 border-red-100 dark:border-red-950" title="Prêt pour le cours">Prêt</th>
+                    <th className="bg-violet-50 dark:bg-violet-950/50 px-1.5 py-2 text-xs font-bold text-violet-900 dark:text-violet-200 border-b-2 border-red-100 dark:border-red-950" title="Comportement au cours d'aujourd'hui (pour le bilan)">Aujourd'hui</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,6 +263,19 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
                         </td>
                         <td className="px-1.5 border-b border-red-50 dark:border-red-950/60 text-center">
                           {prets.has(e.user_id) ? '✅' : <span className="text-slate-400">—</span>}
+                        </td>
+                        {/* Idée I du bilan (2026-10-28) : comportement noté pendant le cours, un toucher par bouton */}
+                        <td className="px-1 border-b border-red-50 dark:border-red-950/60">
+                          <div className="flex gap-0.5 justify-center">
+                            {COMPORTEMENTS.map((c) => {
+                              const on = comportements.has(`${e.user_id}|${c.k}`);
+                              return (
+                                <button key={c.k} type="button" title={c.t} aria-label={`${c.t} : ${prenomOf(e.full_name)}`} aria-pressed={on}
+                                  onClick={() => void basculerComportement(e.user_id, c.k, on)}
+                                  className={`h-8 w-8 rounded-lg text-base ${on ? c.on : 'bg-slate-100 dark:bg-slate-800 opacity-50 grayscale'}`}>{c.e}</button>
+                              );
+                            })}
+                          </div>
                         </td>
                       </tr>
                     );

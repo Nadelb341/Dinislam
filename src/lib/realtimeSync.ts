@@ -44,6 +44,11 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours', 'cahier-classe'],
   // Audio envoyé ou corrigé : le diamant suit
   devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours', 'cahier-classe'],
+  // 👨‍👩‍👧 Espace parents, absences justifiées, comportement, bilans (2026-10-28)
+  parent_links: ['espace-parents', 'admin-parents'],
+  absence_justifications: ['absences-justifiees', 'bilan-trimestriel', 'admin-attendance'],
+  behavior_marks: ['comportement', 'bilan-trimestriel', 'cahier-classe'],
+  bilan_reads: ['bilan-trimestriel'],
   // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)
   devoir_decisions: ['admin-devoirs', 'weekly-program', 'weekly-program-admin', 'bilans', 'cahier-classe'],
   // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)
@@ -80,8 +85,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   ramadan_settings: ['ramadan-settings'],
   scheduled_notifications: ['scheduled-notifications'],
   school_holidays: ['school-holidays', 'bilans', 'course-ready-info', 'group-course'],
-  // 📈 Bilans des élèves (note, appréciation, texto aux parents)
-  student_reports: ['bilans'],
+  // 📊 Bilan trimestriel des élèves (note, appréciation, guide, envoi aux parents)
+  student_reports: ['bilans', 'bilan-trimestriel'],
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
   sourate_versets_audio: [],
   sourates: ['admin-dashboard-stats', 'admin-module-progress', 'admin-recitations', 'admin-sourate-validations', 'admin-sourates', 'admin-sourates-list', 'admin-stats', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],

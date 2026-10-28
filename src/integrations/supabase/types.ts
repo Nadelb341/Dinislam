@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_justifications: {
+        Row: {
+          course_date: string
+          created_at: string
+          declared_by: string | null
+          declared_label: string | null
+          id: string
+          reason: string | null
+          student_id: string
+        }
+        Insert: {
+          course_date: string
+          created_at?: string
+          declared_by?: string | null
+          declared_label?: string | null
+          id?: string
+          reason?: string | null
+          student_id: string
+        }
+        Update: {
+          course_date?: string
+          created_at?: string
+          declared_by?: string | null
+          declared_label?: string | null
+          id?: string
+          reason?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       admin_card_order: {
         Row: {
           card_key: string | null
@@ -591,6 +621,7 @@ export type Database = {
       }
       attendance_records: {
         Row: {
+          absence_alert_sent_at: string | null
           created_at: string | null
           date: string
           id: string
@@ -602,6 +633,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          absence_alert_sent_at?: string | null
           created_at?: string | null
           date?: string
           id?: string
@@ -613,6 +645,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          absence_alert_sent_at?: string | null
           created_at?: string | null
           date?: string
           id?: string
@@ -660,6 +693,56 @@ export type Database = {
           sent_on?: string
         }
         Relationships: []
+      }
+      behavior_marks: {
+        Row: {
+          course_date: string
+          created_at: string
+          kind: string
+          marked_by: string | null
+          student_id: string
+        }
+        Insert: {
+          course_date: string
+          created_at?: string
+          kind: string
+          marked_by?: string | null
+          student_id: string
+        }
+        Update: {
+          course_date?: string
+          created_at?: string
+          kind?: string
+          marked_by?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
+      bilan_reads: {
+        Row: {
+          label: string
+          read_at: string
+          report_id: string
+        }
+        Insert: {
+          label: string
+          read_at?: string
+          report_id: string
+        }
+        Update: {
+          label?: string
+          read_at?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bilan_reads_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "student_reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       connexion_logs: {
         Row: {
@@ -1045,6 +1128,7 @@ export type Database = {
       }
       devoirs_rendus: {
         Row: {
+          a_ete_refait: boolean
           audio_url: string | null
           commentaire_admin: string | null
           correction_audio_url: string | null
@@ -1055,6 +1139,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          a_ete_refait?: boolean
           audio_url?: string | null
           commentaire_admin?: string | null
           correction_audio_url?: string | null
@@ -1065,6 +1150,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          a_ete_refait?: boolean
           audio_url?: string | null
           commentaire_admin?: string | null
           correction_audio_url?: string | null
@@ -1876,10 +1962,12 @@ export type Database = {
           isha_reminder: boolean | null
           maghrib_reminder: boolean | null
           notif_act: boolean
+          notif_adm_abs: boolean | null
           notif_adm_bilan: boolean | null
           notif_adm_crash: boolean
           notif_adm_hw: boolean
           notif_adm_msg: boolean
+          notif_adm_par: boolean | null
           notif_adm_recap: boolean
           notif_adm_reg: boolean
           notif_adm_task: boolean
@@ -1891,6 +1979,8 @@ export type Database = {
           notif_hw_res: boolean
           notif_lesson: boolean
           notif_msg: boolean
+          notif_par_abs: boolean | null
+          notif_par_bilan: boolean | null
           notif_prog_eve: boolean | null
           notif_prog_week: boolean
           notif_rec: boolean
@@ -1914,10 +2004,12 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_abs?: boolean | null
           notif_adm_bilan?: boolean | null
           notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
+          notif_adm_par?: boolean | null
           notif_adm_recap?: boolean
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
@@ -1929,6 +2021,8 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_par_abs?: boolean | null
+          notif_par_bilan?: boolean | null
           notif_prog_eve?: boolean | null
           notif_prog_week?: boolean
           notif_rec?: boolean
@@ -1952,10 +2046,12 @@ export type Database = {
           isha_reminder?: boolean | null
           maghrib_reminder?: boolean | null
           notif_act?: boolean
+          notif_adm_abs?: boolean | null
           notif_adm_bilan?: boolean | null
           notif_adm_crash?: boolean
           notif_adm_hw?: boolean
           notif_adm_msg?: boolean
+          notif_adm_par?: boolean | null
           notif_adm_recap?: boolean
           notif_adm_reg?: boolean
           notif_adm_task?: boolean
@@ -1967,6 +2063,8 @@ export type Database = {
           notif_hw_res?: boolean
           notif_lesson?: boolean
           notif_msg?: boolean
+          notif_par_abs?: boolean | null
+          notif_par_bilan?: boolean | null
           notif_prog_eve?: boolean | null
           notif_prog_week?: boolean
           notif_rec?: boolean
@@ -2175,6 +2273,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parent_codes: {
+        Row: {
+          child_id: string
+          code_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+        }
+        Insert: {
+          child_id: string
+          code_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+        }
+        Update: {
+          child_id?: string
+          code_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      parent_links: {
+        Row: {
+          child_id: string
+          created_at: string
+          parent_id: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          parent_id: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          parent_id?: string
+        }
+        Relationships: []
       }
       parent_lock_settings: {
         Row: {
@@ -2398,12 +2541,16 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          ask_birth_date: boolean
           avatar_url: string | null
+          bilan_arabe: string | null
+          children_question: string | null
           city: string | null
           created_at: string | null
           date_of_birth: string | null
           dob_set_by_user: boolean | null
           email: string | null
+          espace_parents: string
           full_name: string | null
           gender: string | null
           id: string
@@ -2422,12 +2569,16 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          ask_birth_date?: boolean
           avatar_url?: string | null
+          bilan_arabe?: string | null
+          children_question?: string | null
           city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           dob_set_by_user?: boolean | null
           email?: string | null
+          espace_parents?: string
           full_name?: string | null
           gender?: string | null
           id?: string
@@ -2446,12 +2597,16 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          ask_birth_date?: boolean
           avatar_url?: string | null
+          bilan_arabe?: string | null
+          children_question?: string | null
           city?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           dob_set_by_user?: boolean | null
           email?: string | null
+          espace_parents?: string
           full_name?: string | null
           gender?: string | null
           id?: string
@@ -3329,32 +3484,56 @@ export type Database = {
       student_reports: {
         Row: {
           appreciation: string | null
+          guide: Json | null
           id: string
+          langue_ar: string | null
           motivation: string | null
           note: number | null
+          period_end: string | null
           period_label: string
+          period_start: string | null
           sent_at: string | null
+          share_token: string | null
+          show_note: boolean
+          snapshot: Json | null
           student_id: string
+          traduction: Json | null
           updated_at: string
         }
         Insert: {
           appreciation?: string | null
+          guide?: Json | null
           id?: string
+          langue_ar?: string | null
           motivation?: string | null
           note?: number | null
+          period_end?: string | null
           period_label: string
+          period_start?: string | null
           sent_at?: string | null
+          share_token?: string | null
+          show_note?: boolean
+          snapshot?: Json | null
           student_id: string
+          traduction?: Json | null
           updated_at?: string
         }
         Update: {
           appreciation?: string | null
+          guide?: Json | null
           id?: string
+          langue_ar?: string | null
           motivation?: string | null
           note?: number | null
+          period_end?: string | null
           period_label?: string
+          period_start?: string | null
           sent_at?: string | null
+          share_token?: string | null
+          show_note?: boolean
+          snapshot?: Json | null
           student_id?: string
+          traduction?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -3982,6 +4161,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      absence_alert_targets: {
+        Args: never
+        Returns: {
+          full_name: string
+          gender: string
+          parent_ids: string[]
+          record_id: string
+          student_id: string
+        }[]
+      }
       admin_students_auth_status: {
         Args: never
         Returns: {
@@ -4002,6 +4191,12 @@ export type Database = {
           user_id: string
         }[]
       }
+      bilan_mark_read: {
+        Args: { p_code: string; p_report: string }
+        Returns: undefined
+      }
+      bilan_public: { Args: { p_code: string; p_token: string }; Returns: Json }
+      can_act_for_child: { Args: { p_child: string }; Returns: boolean }
       claim_program_reward: { Args: { p_kind: string }; Returns: boolean }
       class_program_streaks: {
         Args: never
@@ -4024,6 +4219,13 @@ export type Database = {
         Args: { p_joined: string; p_last: string; p_missed: number }
         Returns: string
       }
+      find_students_by_first_name: {
+        Args: { p_first: string }
+        Returns: {
+          display: string
+          user_id: string
+        }[]
+      }
       generate_weekly_programs: { Args: { p_week: string }; Returns: number }
       get_pending_registrations: {
         Args: never
@@ -4045,10 +4247,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_parent_of: {
+        Args: { p_child: string; p_parent: string }
+        Returns: boolean
+      }
       is_user_in_group: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      justify_absence: {
+        Args: {
+          p_child: string
+          p_code: string
+          p_dates: string[]
+          p_reason?: string
+        }
+        Returns: string
+      }
+      link_children: { Args: { p_children: string[] }; Returns: number }
       mark_attendance_message_seen: {
         Args: { p_id: string }
         Returns: undefined
@@ -4064,6 +4280,40 @@ export type Database = {
       }
       my_program_streak: { Args: never; Returns: number }
       next_program_items: { Args: { p_user: string }; Returns: Json }
+      parent_bilans: {
+        Args: { p_child: string; p_code: string }
+        Returns: Json
+      }
+      parent_child_devoirs: {
+        Args: { p_child: string; p_code: string }
+        Returns: Json
+      }
+      parent_children: {
+        Args: never
+        Returns: {
+          child_id: string
+          full_name: string
+        }[]
+      }
+      parent_code_check: {
+        Args: { p_child: string; p_code: string }
+        Returns: string
+      }
+      parent_code_create: {
+        Args: {
+          p_child: string
+          p_code: string
+          p_current?: string
+          p_label: string
+        }
+        Returns: string
+      }
+      parent_code_label: {
+        Args: { p_child: string; p_code: string }
+        Returns: string
+      }
+      parent_space_info: { Args: { p_child: string }; Returns: Json }
+      parent_unread_count: { Args: { p_child: string }; Returns: number }
       program_deadline: {
         Args: { p_items: Json; p_week: string }
         Returns: string

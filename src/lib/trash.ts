@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification";
 
 export interface TrashItem {
   id: string;
@@ -53,6 +53,9 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   coran_progress: "coran_progress",
   sourate_story: "sourate_stories",
   group_level: "group_levels",
+  parent_code: "parent_codes",
+  parent_link: "parent_links",
+  absence_justification: "absence_justifications",
 };
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: unknown) {

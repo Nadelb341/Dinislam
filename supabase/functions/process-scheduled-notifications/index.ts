@@ -298,28 +298,46 @@ serve(async (req) => {
       }
     }
 
-    // 📈 3 jours avant les vacances, 10 h : rappel à l'enseignante d'envoyer les bilans aux parents
+    // 📊 7 jours puis 3 jours avant les vacances, 10 h : les bilans sont prêts à relire et envoyer (idée A, 2026-10-28)
     let bilanRappel = false;
     if (currTotal >= 10 * 60 && currTotal < 10 * 60 + 5) {
-      const dans3 = new Date(`${today}T12:00:00Z`); dans3.setUTCDate(dans3.getUTCDate() + 3);
-      const j3 = dans3.toISOString().slice(0, 10);
-      const { data: vac } = await supabase.from('school_holidays').select('label').eq('start_date', j3).maybeSingle();
-      if (vac) {
-        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: 'bilans_vacances', sent_on: today });
-        if (!logErr) {
-          const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
-          try {
-            await sendPushInternal({
-              userIds: (adminRoles ?? []).map((a: { user_id: string }) => a.user_id),
-              title: `📈 ${vac.label} dans 3 jours`,
-              body: 'Pense à envoyer les bilans de tes élèves à leurs parents 📱 (Cahier de texte › groupe › 📈 Bilans)',
-              tag: `bilans-${today}`, type: 'bilans', category: 'adm_bilan',
-              data: { url: '/?open=todo' },
-            });
-            bilanRappel = true;
-          } catch (e) { console.error('Rappel des bilans non envoyé', e); }
-        }
+      for (const n of [7, 3]) {
+        const dansN = new Date(`${today}T12:00:00Z`); dansN.setUTCDate(dansN.getUTCDate() + n);
+        const { data: vac } = await supabase.from('school_holidays').select('label').eq('start_date', dansN.toISOString().slice(0, 10)).maybeSingle();
+        if (!vac) continue;
+        const { error: logErr } = await supabase.from('auto_reminder_logs').insert({ kind: `bilans_vacances_${n}`, sent_on: today });
+        if (logErr) continue;
+        const { data: adminRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+        try {
+          await sendPushInternal({
+            userIds: (adminRoles ?? []).map((a: { user_id: string }) => a.user_id),
+            title: `📊 ${vac.label} dans ${n} jours`,
+            body: n === 7 ? 'Les bilans de tes élèves sont prêts à relire (bouclier › 📊 Bilan trimestriel)' : 'Pense à envoyer les bilans qui restent aux parents (bouclier › 📊 Bilan trimestriel)',
+            tag: `bilans-${today}`, type: 'bilans', category: 'adm_bilan',
+            data: { url: '/admin?section=bilan-trimestriel' },
+          });
+          bilanRappel = true;
+        } catch (e) { console.error('Rappel des bilans non envoyé', e); }
       }
+    }
+
+    // ⚠️ Idée 3 (2026-10-28) : élève noté absent sans justification, 15 min après le début de son cours → l'enfant et ses parents reliés
+    let alertesAbsence = 0;
+    const { data: absents } = await supabase.rpc('absence_alert_targets');
+    for (const a of (absents ?? []) as { record_id: string; student_id: string; full_name: string | null; gender: string | null; parent_ids: string[] }[]) {
+      const { data: pris } = await supabase.from('attendance_records').update({ absence_alert_sent_at: new Date().toISOString() })
+        .eq('id', a.record_id).is('absence_alert_sent_at', null).select('id');
+      if (!pris?.length) continue;
+      const prenom = (a.full_name || '').trim().split(/\s+/)[0] || 'Votre enfant';
+      try {
+        await sendPushInternal({
+          userIds: [a.student_id, ...(a.parent_ids ?? [])],
+          title: `⚠️ ${prenom} n'est pas au cours aujourd'hui`,
+          body: "Si l'absence est prévue, touchez « 🙋 Signaler une absence » sur l'accueil de l'appli.",
+          tag: `absence-${a.record_id}`, type: 'absence', category: 'par_abs', data: { url: '/' },
+        });
+        alertesAbsence++;
+      } catch (e) { console.error('Alerte absence non envoyée', a.student_id, e); }
     }
 
     // 📊 Lundi 9 h : récap pour l'enseignante (qui a fait briller ses diamants depuis mercredi)
@@ -453,7 +471,7 @@ serve(async (req) => {
       eveReminded,
       coursPrep,
       vuEnvoye,
-      bilanRappel,
+      bilanRappel, alertesAbsence,
       processed: (notifications || []).length,
       totalSent,
       tasksReminded,

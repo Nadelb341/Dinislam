@@ -35,7 +35,7 @@ const UserSettingsDialog = () => {
   const [dobSetByUser, setDobSetByUser] = useState(false);
   const [loadingDob, setLoadingDob] = useState(false);
 
-  const { locked, unlock } = useParentLock();
+  const { locked, unlock, unlockWithCode } = useParentLock();
   const [gateOpen, setGateOpen] = useState(false);
 
   // Moins de 12 ans : mot de passe demandé avant d'ouvrir les paramètres
@@ -179,7 +179,7 @@ const UserSettingsDialog = () => {
         <Settings className="h-5 w-5" />
         {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
       </Button>
-      <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onSuccess={handleOpen} />
+      <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={handleOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm rounded-2xl">

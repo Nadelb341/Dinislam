@@ -11,6 +11,7 @@ import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { errorMessage, cn } from '@/lib/utils';
 import type { AdminTask, TodoGroup } from '@/lib/adminTasks';
 import type { WeeklyProgram } from '@/lib/weeklyProgram';
+import { useNavigate } from 'react-router-dom';
 
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -19,7 +20,7 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
  * 📓 Déroulé du cours (proposition « D » choisie par Nadia, 2026-10-26) en tête de chaque groupe du Cahier de texte :
  * horaire du cours (vacances de la zone C sautées), « Cette semaine » (diamants, devoirs à valider, élèves prêts),
  * ① Avant le cours · ② Pendant (Mode cours, « Ce qu'on a vu », dupliquer la séance) · ③ Après (distribuer les devoirs, niveaux) · 🗂️ Mémo,
- * et les boutons 📊 Tableau de la classe, 📋 Récapitulatif, 📈 Bilans.
+ * et les boutons 📊 Tableau de la classe, 📋 Récapitulatif, 📊 Bilan trimestriel (raccourci vers le bouclier).
  */
 export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoOpen }: {
   group: TodoGroup; tasks: AdminTask[];
@@ -28,6 +29,7 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
   onMemo: () => void; memoOpen: boolean;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { schedule, holidays, next } = useGroupCourse(group.id);
   const { askValidation, validationDialog } = useConfirmValidation();
   const [editHoraire, setEditHoraire] = useState(false);
@@ -186,7 +188,8 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
       <div className="grid grid-cols-3 gap-2">
         <button type="button" onClick={() => onOpen('tableau')} className="rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 py-2.5 text-xs font-extrabold">📊 Tableau de la classe</button>
         <button type="button" onClick={() => onOpen('recap')} className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 py-2.5 text-xs font-extrabold">📋 Récapitulatif</button>
-        <button type="button" onClick={() => onOpen('bilans')} className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900 py-2.5 text-xs font-extrabold">📈 Bilans</button>
+        {/* 📊 Raccourci vers la carte « Bilan trimestriel » du bouclier (2026-10-28 : un seul endroit pour les bilans) */}
+        <button type="button" onClick={() => navigate(`/admin?section=bilan-trimestriel${group.id ? `&groupe=${group.id}` : ''}`)} className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900 py-2.5 text-xs font-extrabold">📊 Bilan trimestriel</button>
       </div>
       {validationDialog}
     </div>

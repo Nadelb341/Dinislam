@@ -108,7 +108,7 @@ const StudentSettingsOverview = ({ userId }: { userId: string }) => {
       </div>
 
       <div className="space-y-1.5">
-        <p className="text-sm font-medium">🔒 Espace parents (mot de passe pour ouvrir les paramètres)</p>
+        <p className="text-sm font-medium">🔒 Verrouiller ses Paramètres (code parents, ou mot de passe de l'enfant tant qu'aucun code n'est créé)</p>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Espace parents">
           {([
             ['auto', `Selon l'âge${age !== null ? ` (${age} ans : ${autoLocked ? 'verrouillé' : 'libre'})` : ''}`],

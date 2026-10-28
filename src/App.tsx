@@ -47,6 +47,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PendingApproval from "./pages/PendingApproval";
 import ApprovalCheckFailed from "./pages/ApprovalCheckFailed";
+const BilanPublic = lazy(() => import('./pages/BilanPublic'));
 
 const Sourates = lazy(() => import("./pages/Sourates"));
 const Invocations = lazy(() => import("./pages/Invocations"));
@@ -106,6 +107,7 @@ const AppRoutes = () => {
     }>
       <Routes>
         <Route path="/auth" element={<Auth />} />
+        <Route path="/bilan/:token" element={<BilanPublic />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/sourates" element={<ProtectedRoute><Sourates /></ProtectedRoute>} />

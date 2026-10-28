@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { memoriserCode } from '@/lib/espaceParents';
 
 /**
  * « Espace parents » (demande de Nadia du 2026-09-30) : pour un élève de MOINS de 12 ans, l'accès aux
@@ -58,5 +59,16 @@ export function useParentLock() {
     return true;
   };
 
-  return { locked: isChild && !unlocked, isChild, unlock };
+  /** Espace parents réuni (2026-10-28) : le code parents (6 chiffres) ouvre aussi les Paramètres */
+  const unlockWithCode = async (code: string): Promise<boolean> => {
+    if (!user) return false;
+    const { data } = await supabase.rpc('parent_code_check', { p_child: user.id, p_code: code });
+    if (!data) return false;
+    memoriserCode(user.id, code, data);
+    try { sessionStorage.setItem(UNLOCK_KEY, String(Date.now() + UNLOCK_MINUTES * 60000)); } catch { /* stockage indisponible */ }
+    setUnlocked(true);
+    return true;
+  };
+
+  return { locked: isChild && !unlocked, isChild, unlock, unlockWithCode };
 }

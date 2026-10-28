@@ -38,7 +38,7 @@ const setSavedAccounts = (accounts: SavedAccount[]) => {
 const AccountSwitcher = () => {
   const { user, signIn, signOut } = useAuth();
   // Moins de 12 ans : changer de compte (= se déconnecter) demande le mot de passe parent
-  const { locked, unlock } = useParentLock();
+  const { locked, unlock, unlockWithCode } = useParentLock();
   const [gateOpen, setGateOpen] = useState(false);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -114,7 +114,7 @@ const AccountSwitcher = () => {
 
   return (
     <>
-    <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onSuccess={() => setOpen(true)} />
+    <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={() => setOpen(true)} />
     <Dialog open={open} onOpenChange={(v) => { if (v && locked) { setGateOpen(true); return; } setOpen(v); if (!v) { setSwitchEmail(null); setPassword(''); setShowAdd(false); } }}>
       <DialogTrigger asChild>
         <Button

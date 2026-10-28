@@ -26,6 +26,7 @@ import AdminContent from '@/components/admin/AdminContent';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
 import AdminCoranManager from '@/components/coran/AdminCoranManager';
 import { Button } from '@/components/ui/button';
+import BilanTrimestriel from '@/components/bilan/BilanTrimestriel';
 
 /**
  * Écrans de gestion (ex-« Tableau de bord »).
@@ -33,7 +34,7 @@ import { Button } from '@/components/ui/button';
  * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
  * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
  */
-type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage';
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel';
 
 const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
@@ -53,14 +54,14 @@ const Admin = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<ViewType | null>(() => searchParams.get('section') as ViewType | null);
-  const [moduleId, setModuleId] = useState<string | null>(() => searchParams.get('module'));
+  const [moduleId, setModuleId] = useState<string | null>(() => searchParams.get('module') ?? searchParams.get('groupe'));
 
   // Un nouvel écran demandé alors que la page est déjà ouverte (notification, bouclier, menu ⋮ de l'accueil)
   useEffect(() => {
     const section = searchParams.get('section');
     if (section) {
       setCurrentView(section as ViewType);
-      setModuleId(searchParams.get('module'));
+      setModuleId(searchParams.get('module') ?? searchParams.get('groupe'));
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -118,6 +119,7 @@ const Admin = () => {
     case 'prayer-manage': return withBack(<AdminContent />);
     case 'allah-names-manage': return page(<AdminAllahNamesManager onBack={handleBack} />);
     case 'coran-manage': return page(<AdminCoranManager onBack={handleBack} />);
+    case 'bilan-trimestriel': return page(<BilanTrimestriel onBack={handleBack} groupeInitial={moduleId} />);
     default: break;
   }
 

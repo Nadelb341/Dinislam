@@ -1,52 +1,71 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
 
-/** Fenêtre « Espace parents » : demande le mot de passe de connexion de l'enfant (élèves de moins de 12 ans) */
-const ParentGateDialog = ({ open, onOpenChange, onUnlock, onSuccess }: {
+/**
+ * Fenêtre « Espace parents » qui protège les Paramètres (élèves de moins de 12 ans).
+ * Réunie avec le nouvel Espace parents (2026-10-28) : si les parents ont créé leur code (6 chiffres), c'est lui qui est demandé ;
+ * sinon, comme avant, le mot de passe de connexion de l'enfant (puis on propose de créer le code dans l'Espace parents).
+ */
+const ParentGateDialog = ({ open, onOpenChange, onUnlock, onUnlockCode, onSuccess }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUnlock: (password: string) => Promise<boolean>;
+  onUnlockCode: (code: string) => Promise<boolean>;
   onSuccess: () => void;
 }) => {
-  const [password, setPassword] = useState('');
+  const { user } = useAuth();
+  const [valeur, setValeur] = useState('');
   const [checking, setChecking] = useState(false);
   const [wrong, setWrong] = useState(false);
+  const [avecCode, setAvecCode] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase.rpc('parent_space_info', { p_child: user.id }).then(({ data }) => setAvecCode(((data as { labels?: string[] } | null)?.labels ?? []).length > 0));
+  }, [open, user]);
 
   const submit = async () => {
-    if (!password) return;
+    if (!valeur) return;
     setChecking(true);
-    const ok = await onUnlock(password);
+    const ok = avecCode ? await onUnlockCode(valeur) : await onUnlock(valeur);
     setChecking(false);
-    if (ok) { setPassword(''); setWrong(false); onOpenChange(false); onSuccess(); }
+    if (ok) { setValeur(''); setWrong(false); onOpenChange(false); onSuccess(); }
     else setWrong(true);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { setPassword(''); setWrong(false); } onOpenChange(o); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setValeur(''); setWrong(false); } onOpenChange(o); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> Espace parents</DialogTitle>
           <DialogDescription>
-            Les paramètres sont réservés aux parents. Entre le mot de passe de l'enfant (le même que pour se connecter à l'appli).
+            {avecCode
+              ? 'Les paramètres sont réservés aux parents. Entrez votre code parents (6 chiffres).'
+              : "Les paramètres sont réservés aux parents. Entrez le mot de passe de l'enfant (le même que pour se connecter à l'appli). Vous pourrez ensuite créer votre code parents dans l'Espace parents."}
           </DialogDescription>
         </DialogHeader>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-          <PasswordInput
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setWrong(false); }}
-            placeholder="Mot de passe"
-            autoFocus
-            aria-label="Mot de passe de connexion"
-          />
-          {wrong && <p className="text-sm text-destructive">Mot de passe incorrect</p>}
-          <Button type="submit" className="w-full" disabled={checking || !password}>
-            {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Ouvrir les paramètres
-          </Button>
-        </form>
+        {avecCode === null ? <p className="py-3 text-center"><Loader2 className="inline h-4 w-4 animate-spin" /></p> : (
+          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+            <PasswordInput
+              value={valeur}
+              onChange={(e) => { setValeur(avecCode ? e.target.value.replace(/\D/g, '').slice(0, 6) : e.target.value); setWrong(false); }}
+              placeholder={avecCode ? 'Code parents' : 'Mot de passe'}
+              inputMode={avecCode ? 'numeric' : undefined}
+              autoFocus
+              aria-label={avecCode ? 'Code parents' : 'Mot de passe de connexion'}
+            />
+            {wrong && <p className="text-sm text-destructive">{avecCode ? 'Code incorrect' : 'Mot de passe incorrect'}</p>}
+            <Button type="submit" className="w-full" disabled={checking || !valeur}>
+              {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Ouvrir les paramètres
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

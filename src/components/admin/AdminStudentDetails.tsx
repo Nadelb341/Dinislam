@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
+import { FicheEspaceParents } from '@/components/admin/FicheEspaceParents';
 import { AlphabetStudentSummary } from '@/components/alphabet/AlphabetStudentSummary';
 import { StudentFollowUp } from './StudentFollowUp';
 import { fetchNoPushStudents } from '@/lib/noPushStudents';
@@ -571,6 +572,8 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
 
               {/* Réglages de notifications + Espace parents (2026-09-30) */}
               {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
+              {/* 👨‍👩‍👧 Espace parents, date de naissance, codes, parents reliés (2026-10-28) */}
+              {selectedStudent?.id && <FicheEspaceParents userId={selectedStudent.id} />}
               {selectedStudent?.id && <StudentFollowUp userId={selectedStudent.id} />}
               {selectedStudent?.id && <AlphabetStudentSummary userId={selectedStudent.id} />}
 
