@@ -73,30 +73,33 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - **Devoirs préparés à l'avance** : la notification est programmée dans `scheduled_notifications`, module `devoirs`.
   - `homework-reminders` ignore les devoirs pas encore visibles.
   - **Par défaut**, un devoir obligatoire pas fait (donné depuis le 26/10) est « à rattraper » tant que Nadia ne le range pas.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : « Bilan de l'élève ». Choix du 2026-10-27 :
-  - Présentation 3 (tableau de bord), puis l'appréciation (1) et le guide de la réunion (10).
-  - 3 boutons : « Plus de détails » (frise, 4), « Voir la progression » (chemin, 5), « Voir les trimestres précédents » (comparaison, 8).
-  - Idées A, B, C, F, I, J, K, M (arabe en option, le français est toujours envoyé).
-  - Maquette à valider : https://claude.ai/artifact/56C5xpBCkgzNECvXJ3xXEH
-  - 3 questions posées :
-    - traduction arabe de l'appréciation (proposée par l'appli ou écrite par elle) ;
-    - accès des parents (lien sécurisé sans compte ?) ;
-    - qui déclare une absence justifiée.
-  - Rien n'est codé avant sa validation. À rappeler à chaque réponse.
-  - 2026-10-28 : maquette du bilan validée (« parfait »). Nadia ajoute ces demandes :
-    - traduction automatique, si possible en darija ;
-    - un « Espace parents » dans les Paramètres des moins de 18 ans, avec un code créé par les parents, où les bilans sont rangés ;
-    - le même Espace parents chez les élèves adultes parents, avec leurs enfants triés par prénom ;
-    - l'envoi du bilan par message (image ou PDF), structuré comme la maquette ;
-    - un bouton rouge « Signaler une absence » à droite du texte d'accueil ;
-    - une carte « Bilan trimestriel » dans le bouclier, sous « Brouillons ».
-  - Propositions et 5 questions : https://claude.ai/artifact/5pxCw16hEG4Hxt1eVN8Cn4
-    - a. traduction (titres faits par moi + texte traduit puis relu, choix arabe classique ou darija par famille) ;
-    - b. réunir l'ancien Espace parents (verrou des moins de 12 ans, mot de passe de l'enfant) avec le nouveau ;
-    - c. Nadia relie elle-même un parent adulte à ses enfants ;
-    - d. envoi A (image + PDF), B ou C ;
-    - e. garder ou enlever la note sur 20 et le message de motivation de l'ancien « 📈 Bilans ».
-  - À savoir : 20 élèves sur 29 n'ont ni date de naissance ni âge. Proposition : un interrupteur « Espace parents » par élève.
+- ✅ **Espace parents + 📊 Bilan trimestriel + 🙋 Signaler une absence** (2026-10-28, commit 672e90e). Choix de Nadia : https://claude.ai/artifact/56C5xpBCkgzNECvXJ3xXEH et https://claude.ai/artifact/5pxCw16hEG4Hxt1eVN8Cn4
+  - **Base** : migrations `20261028100000_espace_parents_bilan.sql` et `20261028110000_espace_parents_notifs.sql`, testées en ROLLBACK.
+    - `profiles` : `ask_birth_date`, `children_question`, `bilan_arabe`, `espace_parents` (auto = moins de 18 ans / on / off).
+    - Tables `parent_codes` (code haché, jusqu'à 2 par enfant, jamais lisible par l'appli), `parent_links`, `absence_justifications`, `behavior_marks`, `bilan_reads`.
+    - `devoirs_rendus.a_ete_refait` (trigger) pour « validé du 1er coup » ; il ne marche qu'à partir du 28/10 : les anciens « à refaire » ne sont pas connus.
+    - `student_reports` gardée (anciens bilans conservés) + `snapshot`, `guide`, `show_note`, `traduction`, `langue_ar`, `share_token`, `period_start/end`.
+    - Fonctions : `parent_space_info`, `parent_code_create`, `parent_code_check`, `parent_children`, `find_students_by_first_name` (prénom en entier seulement), `link_children`, `justify_absence`, `parent_bilans`, `bilan_mark_read`, `bilan_public` (anon), `parent_child_devoirs`, `parent_unread_count`, `absence_alert_targets`.
+  - **Élève / parents** :
+    - messages éphémères `MessagesProfil.tsx` (🎂 date de naissance à chaque connexion tant qu'elle n'est pas remplie ; 👨‍👩‍👧 plus de 20 ans : « vos enfants suivent-ils les cours ? »).
+    - `EspaceParents.tsx` dans Paramètres : bilans, cahier en lecture seule, absences, codes.
+    - Bouton rouge `SignalerAbsence.tsx` sous le Bismillah de l'accueil.
+    - Page publique `/bilan/:token` (`BilanPublic.tsx`).
+    - L'ancien verrou des Paramètres (moins de 12 ans) demande maintenant le code parents s'il existe (`ParentGateDialog`).
+  - **Professeur** :
+    - carte « 📊 Bilan trimestriel » du bouclier sous « Brouillons » (`/admin?section=bilan-trimestriel&groupe=`), `BilanTrimestriel.tsx` + `BilanVue.tsx` ;
+    - le bouton du Cahier de texte est devenu un raccourci ; l'ancien `Bilans.tsx` est supprimé (son brouillon est repris) ;
+    - fiche élève `FicheEspaceParents.tsx` ;
+    - 🙂✋💬 dans le Tableau de la classe ;
+    - 📩 dans l'Appel.
+  - **Envoi** : image + PDF (`bilanExport.ts`, outils chargés seulement à l'envoi) par WhatsApp/SMS + lien de secours.
+  - **Traduction** : fonction `translate-bilan` (Gemini, arabe classique ou darija, relue par Nadia). Titres arabes : dictionnaire `AR` dans `bilanTrimestriel.ts`.
+  - **Notifications** :
+    - `par_bilan`, `par_abs` (15 min après le début du cours si absent non justifié), `adm_abs`, `adm_par` (interrupteurs dans Paramètres › Notifications) ;
+    - rappel des bilans 7 et 3 jours avant les vacances.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
+  - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
+  - Sur un compte enfant, créer le code parents et signaler une absence.
 - **Écrans déjà sans aucun lien avant ce changement** (toujours ouvrables par `/admin?section=…`) : `ramadan-quiz-tracking`, `global-stats`.
 
 ## 🧑‍🏫 Cahier de texte du professeur (✅ 2026-10-26, choix de Nadia : D + C + E + idées 1 à 9)
