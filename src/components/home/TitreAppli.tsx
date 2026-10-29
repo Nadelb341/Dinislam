@@ -2,17 +2,19 @@ import { useMemo } from 'react';
 import { POLICES, TITRE_DEFAUT, estRamadan, useReglagesTitre, type ReglagesTitre } from '@/lib/apparence';
 
 /**
- * 🌠 Pluie d'étoiles PERMANENTE (2026-10-29, demande de Nadia) : légère et douce, des étoiles bien dorées,
- * chacune suivie d'un petit chemin de mini-étoiles, qui tombent jusque sous le Bismillah et disparaissent en bas.
- * Positions, tailles, vitesses et retards fixes (calculés une fois) : même dessin à chaque ouverture.
+ * 🌠 Pluie d'étoiles PERMANENTE (2026-10-30, modèle choisi par Nadia) : de petits points de lumière dorés qui scintillent
+ * en descendant, certains avec un fin trait lumineux au-dessus (comme une étoile filante), d'autres sans ; peu nombreux,
+ * doux, ils disparaissent en arrivant sous le Bismillah. Valeurs fixes : même dessin à chaque ouverture.
  */
-const ETOILES = Array.from({ length: 16 }, (_, i) => ({
-  left: (i * 37 + 5) % 97,
-  size: 8 + ((i * 5) % 8),
-  duree: 6 + ((i * 7) % 5),
-  delay: -((i * 1.3) % 9), // négatif : la pluie est déjà en cours dès l'ouverture
-  char: i % 4 === 0 ? '★' : '✦',
+const ETOILES = Array.from({ length: 14 }, (_, i) => ({
+  left: (i * 41 + 7) % 96 + 2,
+  taille: 3 + ((i * 3) % 4),           // 3 à 6 px
+  trait: i % 3 !== 1 ? 18 + ((i * 13) % 34) : 0, // 2 sur 3 avec un trait (18 à 51 px)
+  duree: 7 + ((i * 5) % 6),            // 7 à 12 s
+  delay: -((i * 1.7) % 11),            // déjà en cours dès l'ouverture
+  scintille: 0.9 + ((i * 7) % 10) / 10, // vitesse du scintillement
 }));
+
 /** Couleur trop sombre pour le thème sombre ? (alors on éclaircit, sinon le nom serait illisible) */
 function tropSombre(hex: string) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -53,10 +55,9 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
       {r.pluie && (
         <div key={rejouer} aria-hidden className="absolute inset-0 pointer-events-none">
           {ETOILES.map((e, i) => (
-            <span key={i} className="titre-etoile-tombe" style={{ left: `${e.left}%`, animationDuration: `${e.duree}s`, animationDelay: `${e.delay}s`, ['--or' as string]: traits }}>
-              {/* Le chemin : mini-étoiles de plus en plus petites et pâles au-dessus de l'étoile */}
-              <span className="titre-chemin">{'✦'.repeat(4).split('').map((c, k) => <i key={k} style={{ fontSize: Math.max(3, e.size - 3 - k * 1.5), opacity: 0.7 - k * 0.15 }}>{c}</i>)}</span>
-              <span className="titre-etoile" style={{ fontSize: e.size }}>{e.char}</span>
+            <span key={i} className="titre-etoile-tombe" style={{ left: `${e.left}%`, animationDuration: `${e.duree}s`, animationDelay: `${e.delay}s` }}>
+              {e.trait > 0 && <span className="titre-trait" style={{ height: e.trait }} />}
+              <span className="titre-point" style={{ width: e.taille, height: e.taille, animationDuration: `${e.scintille}s` }} />
             </span>
           ))}
         </div>

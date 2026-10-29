@@ -11,7 +11,7 @@ const sid = 'eleve-1';
 const iso = (y: number, m: number, d: number, h = 16) => new Date(y, m, d, h).toISOString();
 
 const data: DonneesBilan = {
-  profiles: [{ user_id: sid, full_name: 'Wiam ELB', gender: 'fille', bilan_arabe: null }],
+  profiles: [{ user_id: sid, full_name: 'Wiam ELB', gender: 'fille', bilan_arabe: null, parent_phone: null, parent_phone_nom: null, parent2_phone: null, parent2_phone_nom: null }],
   memberships: [{ user_id: sid, group_id: 'g1' }],
   groups: [{ id: 'g1', name: 'Groupe 3' }],
   horaires: [{ group_id: 'g1', weekday: 3, start_time: '14:00:00' }],
@@ -34,7 +34,7 @@ const data: DonneesBilan = {
   goals: ['2026-11-05', '2026-11-06', '2026-11-07', '2026-11-20'].map((day) => ({ student_id: sid, day })),
   sourates: [{ user_id: sid, sourate_id: 's105', validated_at: iso(2026, 10, 10), created_at: null }],
   sourateInfo: [{ id: 's105', number: 105, name_french: 'Al-Fil' }, { id: 's104', number: 104, name_french: 'Al-Humaza' }],
-  lessons: [], lessonInfo: [], letters: [], lettersTotal: 28, names: [], reports: [], reads: [],
+  lessons: [], lessonInfo: [], letters: [], lettersTotal: 28, names: [], reports: [], reads: [], envois: [],
 };
 
 describe('bilan trimestriel', () => {

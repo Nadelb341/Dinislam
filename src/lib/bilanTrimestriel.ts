@@ -72,7 +72,8 @@ function plusLongueSerie(jours: string[]): number {
 }
 
 export interface DonneesBilan {
-  profiles: { user_id: string; full_name: string | null; gender: string | null; bilan_arabe: string | null }[];
+  profiles: { user_id: string; full_name: string | null; gender: string | null; bilan_arabe: string | null;
+    parent_phone: string | null; parent_phone_nom: string | null; parent2_phone: string | null; parent2_phone_nom: string | null }[];
   memberships: { user_id: string; group_id: string }[];
   groups: { id: string; name: string }[];
   horaires: GroupSchedule[];
@@ -93,12 +94,14 @@ export interface DonneesBilan {
     sent_at: string | null; snapshot: BilanSnapshot | null; guide: BilanGuide | null; show_note: boolean; traduction: BilanTraduction | null;
     langue_ar: string | null; share_token: string | null; updated_at: string | null }[];
   reads: { report_id: string; label: string; read_at: string }[];
+  /** 📜 Envois déjà faits (idées 2 et 3 : reste à envoyer, pas lu depuis 3 jours) */
+  envois: { report_id: string; destinataire: string; canal: string; sent_at: string }[];
 }
 
 /** Tout ce qu'il faut pour les bilans d'une liste d'élèves (une requête par table) */
 export async function chargerDonneesBilan(ids: string[], debut: string): Promise<DonneesBilan> {
   const q = await Promise.all([
-    supabase.from('profiles').select('user_id, full_name, gender, bilan_arabe').in('user_id', ids),
+    supabase.from('profiles').select('user_id, full_name, gender, bilan_arabe, parent_phone, parent_phone_nom, parent2_phone, parent2_phone_nom').in('user_id', ids),
     supabase.from('student_group_members').select('user_id, group_id').in('user_id', ids),
     supabase.from('student_groups').select('id, name'),
     supabase.from('group_schedules').select('group_id, weekday, start_time'),
@@ -120,7 +123,10 @@ export async function chargerDonneesBilan(ids: string[], debut: string): Promise
   const err = q.find((r) => r.error)?.error;
   if (err) throw err;
   const reportIds = (q[17].data ?? []).map((r) => r.id);
-  const { data: reads } = reportIds.length ? await supabase.from('bilan_reads').select('report_id, label, read_at').in('report_id', reportIds) : { data: [] };
+  const [{ data: reads }, { data: envois }] = reportIds.length ? await Promise.all([
+    supabase.from('bilan_reads').select('report_id, label, read_at').in('report_id', reportIds),
+    supabase.from('bilan_envois').select('report_id, destinataire, canal, sent_at').in('report_id', reportIds),
+  ]) : [{ data: [] }, { data: [] }];
   return {
     profiles: (q[0].data ?? []) as DonneesBilan['profiles'],
     memberships: q[1].data ?? [],
@@ -141,6 +147,7 @@ export async function chargerDonneesBilan(ids: string[], debut: string): Promise
     names: q[16].data ?? [],
     reports: (q[17].data ?? []) as unknown as DonneesBilan['reports'],
     reads: reads ?? [],
+    envois: envois ?? [],
   };
 }
 
@@ -334,3 +341,18 @@ export function tendance(s: BilanSnapshot): 'decroche' | 'progresse' | null {
   if (a && b && b !== a && ((b.devoirsPct ?? 0) - (a.devoirsPct ?? 0) >= 10 || (b.presencePct ?? 0) - (a.presencePct ?? 0) >= 10)) return 'progresse';
   return null;
 }
+
+/** Numéro français → format international pour WhatsApp (06… → 336…) */
+export function numeroWhatsApp(tel: string): string {
+  const d = tel.replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) return d.slice(1);
+  if (d.startsWith('00')) return d.slice(2);
+  if (d.startsWith('0')) return `33${d.slice(1)}`;
+  return d;
+}
+
+
+/** Ce que l'appli SAIT de l'envoi (elle ne voit pas si le message est vraiment parti) */
+export const libelleEnvoi = (canal: string, qui: string) =>
+  canal === 'whatsapp' ? `💬 WhatsApp ouvert vers ${qui}` : canal === 'sms' ? `📱 SMS ouvert vers ${qui}` : canal === 'partage' ? `📤 Image + PDF : partage ouvert pour ${qui}`
+  : canal === 'copie' ? `📋 Message copié (pour ${qui})` : canal === 'relance' ? '🔔 Parents relancés (notification)' : `📥 Image et PDF téléchargés (pour ${qui})`;

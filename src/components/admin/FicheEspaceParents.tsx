@@ -7,6 +7,7 @@ import { trashThenDelete } from '@/lib/trash';
 import { childAge } from '@/hooks/useParentLock';
 import { espaceParentsActif, type ModeEspace } from '@/lib/espaceParents';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { Input } from '@/components/ui/input';
 import { errorMessage } from '@/lib/utils';
 
 /**
@@ -24,7 +25,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
     queryKey: cle,
     queryFn: async () => {
       const [{ data: profil }, { data: codes }, { data: parents }, { data: enfants }] = await Promise.all([
-        supabase.from('profiles').select('date_of_birth, age, espace_parents, ask_birth_date, children_question').eq('user_id', userId).maybeSingle(),
+        supabase.from('profiles').select('date_of_birth, age, espace_parents, ask_birth_date, children_question, parent_phone, parent_phone_nom, parent2_phone, parent2_phone_nom').eq('user_id', userId).maybeSingle(),
         supabase.from('parent_codes').select('*').eq('child_id', userId).order('created_at'),
         supabase.from('parent_links').select('*').eq('child_id', userId),
         supabase.from('parent_links').select('*').eq('parent_id', userId),
@@ -37,7 +38,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
   });
   const rafraichir = () => queryClient.invalidateQueries({ queryKey: cle });
 
-  const majProfil = async (champs: { espace_parents?: ModeEspace; ask_birth_date?: boolean }) => {
+  const majProfil = async (champs: { espace_parents?: ModeEspace; ask_birth_date?: boolean; parent_phone?: string | null; parent_phone_nom?: string | null; parent2_phone?: string | null; parent2_phone_nom?: string | null }) => {
     const { error } = await supabase.from('profiles').update(champs).eq('user_id', userId);
     if (error) toast.error('Réglage non enregistré'); else { toast.success('Réglage enregistré'); void rafraichir(); }
   };
@@ -84,6 +85,21 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
         <span>🎂 Lui demander sa date de naissance à chaque connexion
           <span className="block text-xs text-muted-foreground">{p?.date_of_birth ? `Déjà enregistrée : ${new Date(`${p.date_of_birth}T12:00:00`).toLocaleDateString('fr-FR')}` : 'Pas encore enregistrée'}</span></span>
       </label>
+
+      {/* 📱 Idée 5 (2026-10-30) : le bilan s'envoie directement au bon numéro (WhatsApp ou SMS) */}
+      <div className="space-y-1.5 text-sm">
+        <p className="font-medium">📱 Téléphones des parents (pour envoyer le bilan)</p>
+        {([['parent_phone_nom', 'parent_phone', 'Maman'], ['parent2_phone_nom', 'parent2_phone', 'Papa']] as const).map(([kNom, kNum, defaut]) => (
+          <div key={kNum} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
+            <Input defaultValue={(p?.[kNom] as string | null) ?? defaut} aria-label="Qui" placeholder={defaut}
+              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNom] ?? null)) void majProfil({ [kNom]: v }); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+            <Input defaultValue={(p?.[kNum] as string | null) ?? ''} inputMode="tel" aria-label={`Téléphone ${defaut}`} placeholder="06 12 34 56 78"
+              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNum] ?? null)) void majProfil({ [kNum]: v, ...(v && !p?.[kNom] ? { [kNom]: defaut } : {}) }); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+          </div>
+        ))}
+      </div>
 
       <div className="space-y-1.5 text-sm">
         <p className="font-medium">🔐 Codes parents</p>

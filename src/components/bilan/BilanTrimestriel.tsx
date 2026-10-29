@@ -9,6 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { useHolidays } from '@/hooks/useGroupCourse';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
@@ -16,7 +20,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { cn, errorMessage } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
 import {
-  calculerSnapshot, chargerDonneesBilan, guideAuto, messagesEnfant, periodeBilan, phrasesProposees, prochaineSourate, tendance, titrePeriode,
+  calculerSnapshot, chargerDonneesBilan, guideAuto, messagesEnfant, libelleEnvoi, numeroWhatsApp, periodeBilan, phrasesProposees, prochaineSourate, tendance, titrePeriode,
   type BilanGuide, type BilanSnapshot, type BilanTraduction, type DonneesBilan,
 } from '@/lib/bilanTrimestriel';
 import { capturerImage, fabriquerPdf, nomFichier, partagerBilan } from '@/lib/bilanExport';
@@ -26,6 +30,13 @@ import { clearDraft, loadDraft } from '@/hooks/useDraftRecovery';
 const GUIDE_TITRES: { k: keyof BilanGuide; t: string }[] = [
   { k: 'forts', t: '🌟 Points forts' }, { k: 'travailler', t: '🎯 À travailler' }, { k: 'maison', t: '🏠 À la maison' }, { k: 'objectif', t: '🚀 Objectif du prochain trimestre' },
 ];
+const ETATS = {
+  ecrire: { t: '✏️ à écrire', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200' },
+  pret: { t: '📝 prêt', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' },
+  envoye: { t: '📤 envoyé', cls: 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200' },
+  relancer: { t: '⏰ pas lu (3 j)', cls: 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200' },
+  lu: { t: '✅ lu', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200' },
+} as const;
 const frJour = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : null);
 
@@ -65,7 +76,12 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
       const snap = calculerSnapshot(id, data, holidays, periode);
       const report = data.reports.find((r) => r.student_id === id && r.period_label === periode.label) ?? null;
       const lus = report ? data.reads.filter((r) => r.report_id === report.id) : [];
-      return { id, nom: data.profiles.find((p) => p.user_id === id)?.full_name || 'Élève', snap, report, lus };
+      const envois = report ? data.envois.filter((e) => e.report_id === report.id) : [];
+      // État de l'envoi : à écrire → prêt → envoyé → lu (ou pas lu depuis 3 jours)
+      const etat: 'ecrire' | 'pret' | 'envoye' | 'lu' | 'relancer' = lus.length ? 'lu'
+        : envois.length || report?.sent_at ? (report?.sent_at && Date.now() - new Date(report.sent_at).getTime() > 3 * 86400000 ? 'relancer' : 'envoye')
+        : report?.appreciation?.trim() ? 'pret' : 'ecrire';
+      return { id, nom: data.profiles.find((p) => p.user_id === id)?.full_name || 'Élève', snap, report, lus, envois, etat };
     }).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
   }, [data, membres, holidays, periode]);
 
@@ -86,6 +102,20 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
   // Idée A : à 7 jours des vacances, les bilans sont prêts à relire
   const joursAvant = periode.prochaines ? Math.ceil((new Date(`${periode.prochaines.start_date}T00:00:00`).getTime() - Date.now()) / 86400000) : null;
   const ouvert = lignes.find((l) => l.id === eleveOuvert) ?? null;
+
+  // 📮 Idée 2 : reste à envoyer ; 📨 idée 1 : envoi à la suite des bilans prêts du groupe
+  const resteAEnvoyer = lignes.filter((l) => l.etat === 'pret' || l.etat === 'ecrire');
+  const prets = lignes.filter((l) => l.etat === 'pret');
+  const [suite, setSuite] = useState<string[] | null>(null);
+  const [confirmeSuite, setConfirmeSuite] = useState(false);
+  const indexSuite = suite && eleveOuvert ? suite.indexOf(eleveOuvert) : -1;
+  const suivant = () => {
+    if (!suite) return;
+    const n = suite[indexSuite + 1];
+    if (n) setEleveOuvert(n); else { setSuite(null); setEleveOuvert(null); toast.success('🎉 Tous les bilans prêts du groupe sont passés'); }
+  };
+  // Idée 6 : la carte du bouclier montre ✅ quand un parent vient de lire ; ouvrir cet écran les marque comme vus
+  useEffect(() => { try { localStorage.setItem('dinislam_bilans_lus_vus', new Date().toISOString()); } catch { /* stockage indisponible */ } }, []);
 
   return (
     <div className="space-y-4">
@@ -130,6 +160,16 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
             </div>
           </section>
 
+          {resteAEnvoyer.length > 0 && (
+            <section className="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 space-y-2">
+              <p className="text-sm font-extrabold text-amber-900 dark:text-amber-100">📮 Reste à envoyer ({resteAEnvoyer.length}) : {resteAEnvoyer.map((l) => l.snap.prenom).join(', ')}</p>
+              {resteAEnvoyer.some((l) => l.etat === 'ecrire') && <p className="text-xs text-amber-800 dark:text-amber-200">✏️ Pas encore écrit : {resteAEnvoyer.filter((l) => l.etat === 'ecrire').map((l) => l.snap.prenom).join(', ')}. Écris l'appréciation, puis il passera « prêt ».</p>}
+              {prets.length > 0 && (
+                <Button className="w-full bg-[#2457a5] hover:bg-[#1d4685]" onClick={() => setConfirmeSuite(true)}>📨 Envoyer à la suite les {prets.length} bilan{prets.length > 1 ? 's' : ''} prêt{prets.length > 1 ? 's' : ''}</Button>
+              )}
+            </section>
+          )}
+
           <section className="grid gap-2 md:grid-cols-2">
             {lignes.map((l) => {
               const t = tendance(l.snap);
@@ -142,9 +182,7 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
                   </span>
                   {t === 'decroche' && <span className="shrink-0 rounded-full bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200 px-2 py-0.5 text-[11px] font-extrabold">📉 décroche</span>}
                   {t === 'progresse' && <span className="shrink-0 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200 px-2 py-0.5 text-[11px] font-extrabold">📈 progresse</span>}
-                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[11px] font-extrabold', l.report?.sent_at ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200')}>
-                    {l.report?.sent_at ? '✅ envoyé' : '✏️ à relire'}
-                  </span>
+                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[11px] font-extrabold', ETATS[l.etat].cls)}>{ETATS[l.etat].t}</span>
                 </button>
               );
             })}
@@ -154,8 +192,24 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
 
       {ouvert && data && (
         <EditeurBilan key={ouvert.id} studentId={ouvert.id} nom={ouvert.nom} snap={ouvert.snap} data={data} periode={periode}
-          report={ouvert.report} lus={ouvert.lus} onClose={() => setEleveOuvert(null)} />
+          report={ouvert.report} lus={ouvert.lus} onClose={() => { setEleveOuvert(null); setSuite(null); }}
+          suite={suite && indexSuite >= 0 ? { position: indexSuite + 1, total: suite.length, onSuivant: suivant } : undefined} />
       )}
+
+      <AlertDialog open={confirmeSuite} onOpenChange={setConfirmeSuite}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Envoyer à la suite les {prets.length} bilans prêts ?</AlertDialogTitle>
+            <AlertDialogDescription className="[overflow-wrap:anywhere]">
+              {prets.map((l) => l.snap.prenom).join(', ')} : chaque bilan est rangé dans son Espace parents (avec une notification), puis tu l'envoies (WhatsApp, SMS, image + PDF) et tu passes au suivant avec « Suivant ➜ ».
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { const ids = prets.map((l) => l.id); setSuite(ids); setEleveOuvert(ids[0]); }}>Commencer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -171,9 +225,11 @@ function Tuile({ v, l, cls, petit }: { v: string; l: string; cls: string; petit?
 
 type Report = DonneesBilan['reports'][number];
 
-function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClose }: {
+function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClose, suite }: {
   studentId: string; nom: string; snap: BilanSnapshot; data: DonneesBilan; periode: { debut: string; fin: string; label: string };
   report: Report | null; lus: { label: string; read_at: string }[]; onClose: () => void;
+  /** 📨 Envoi à la suite (idée 1) : position dans la file, et passage au suivant */
+  suite?: { position: number; total: number; onSuivant: () => void };
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -259,8 +315,10 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
     setPret({ fichiers, texte, poids: octets > 1e6 ? `${(octets / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.round(octets / 1e3)} Ko` });
   };
 
-  // Bilan déjà envoyé : les fichiers se préparent tout seuls à l'ouverture → renvoyer = un seul toucher
+  // Bilan déjà envoyé : les fichiers se préparent tout seuls à l'ouverture → renvoyer = un seul toucher.
+  // Envoi à la suite : un bilan prêt pas encore rangé l'est tout de suite (la confirmation a été donnée pour tout le groupe)
   useEffect(() => {
+    if (suite && !report?.sent_at) { const t = setTimeout(() => { void envoyer(); }, 900); return () => clearTimeout(t); }
     if (!report?.sent_at || !report.share_token) return;
     const t = setTimeout(() => { void preparer(report.share_token!).catch(() => { /* bouton « Renvoyer » en secours */ }); }, 900);
     return () => clearTimeout(t);
@@ -307,23 +365,50 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
   const [autreDest, setAutreDest] = useState('');
   const dest = destinataire === 'Autre' ? autreDest.trim() : destinataire;
 
-  const noterEnvoi = async (canal: 'partage' | 'telechargement' | 'copie') => {
+  type Canal = 'partage' | 'telechargement' | 'copie' | 'whatsapp' | 'sms' | 'relance';
+  const noterEnvoi = async (canal: Canal, qui?: string) => {
     if (!histo?.reportId) return;
-    await supabase.from('bilan_envois').insert({ report_id: histo.reportId, student_id: studentId, destinataire: dest || 'Parents', canal, sent_by: user?.id ?? null });
-    queryClient.invalidateQueries({ queryKey: ['bilan-trimestriel', 'envois', studentId] });
+    await supabase.from('bilan_envois').insert({ report_id: histo.reportId, student_id: studentId, destinataire: qui || dest || 'Parents', canal, sent_by: user?.id ?? null });
+    queryClient.invalidateQueries({ queryKey: ['bilan-trimestriel'] });
   };
 
+  // 📱 Idée 5 : numéros des parents (fiche élève) → WhatsApp ou SMS ouvert directement vers le bon numéro
+  const numeros = [
+    { nom: profil?.parent_phone_nom || 'Parent 1', tel: profil?.parent_phone },
+    { nom: profil?.parent2_phone_nom || 'Parent 2', tel: profil?.parent2_phone },
+  ].filter((n): n is { nom: string; tel: string } => !!n.tel?.trim());
+  const ouvrirWhatsApp = (n: { nom: string; tel: string }) => {
+    if (!pret) return;
+    window.open(`https://wa.me/${numeroWhatsApp(n.tel)}?text=${encodeURIComponent(pret.texte)}`, '_blank', 'noopener');
+    void noterEnvoi('whatsapp', n.nom);
+  };
+  const ouvrirSms = (n: { nom: string; tel: string }) => {
+    if (!pret) return;
+    window.location.href = `sms:${n.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(pret.texte)}`;
+    void noterEnvoi('sms', n.nom);
+  };
+
+  // Partage de l'image et du PDF : l'appli ne peut pas savoir si le message est vraiment parti (on n'écrit que « partage ouvert »)
   const partager = async () => {
     if (!pret) return;
     try {
       const mode = await partagerBilan(pret.fichiers, pret.texte);
       await noterEnvoi(mode === 'partage' ? 'partage' : 'telechargement');
-      toast.success(mode === 'partage' ? `📨 Bilan envoyé${dest ? ` à ${dest}` : ''}` : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
+      toast.success(mode === 'partage' ? '📤 Partage ouvert : vérifie dans Messages ou WhatsApp que le message est bien parti 🙂' : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
     } catch (e) { if ((e as Error).name !== 'AbortError') toast.error(errorMessage(e)); }
   };
   const copierTexte = async () => {
     if (!pret) return;
     try { await navigator.clipboard.writeText(pret.texte); await noterEnvoi('copie'); toast.success('📋 Message copié'); } catch { toast.error('Copie impossible : sélectionne le texte à la main'); }
+  };
+  // ⏰ Idée 3 : pas lu au bout de 3 jours → relancer les parents (notification dans l'appli)
+  const pasLuDepuis3j = !!report?.sent_at && !lus.length && Date.now() - new Date(report.sent_at).getTime() > 3 * 86400000;
+  const relancer = async () => {
+    const { data: liens } = await supabase.from('parent_links').select('parent_id').eq('child_id', studentId);
+    sendPushNotification({ userIds: [studentId, ...(liens || []).map((l) => l.parent_id)], category: 'par_bilan',
+      title: `📊 Le bilan de ${snap.prenom} vous attend`, body: 'Ouvrez l\'Espace parents (Paramètres) avec votre code parents pour le lire.', data: { url: '/settings?espace=parents' } });
+    await noterEnvoi('relance', 'Notification aux parents');
+    toast.success('🔔 Parents relancés');
   };
 
   const contenu = { snapshot: snap, appreciation: appreciation.trim() || null, motivation: motivation.trim() || null, note: avecNote ? noteNombre : null, guide, traduction: arabe ? traduction : null, langueAr: arabe || null };
@@ -335,6 +420,12 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
       <DialogContent className="p-0 overflow-hidden max-w-5xl">
         <div ref={scrollRef} onScroll={handleScroll} className="max-h-[88vh] overflow-y-auto p-4 sm:p-5">
           <DialogHeader className="mb-3">
+            {suite && (
+              <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl bg-[#2457a5] px-3 py-2 text-white">
+                <span className="flex-1 min-w-0 text-sm font-extrabold">📨 Envoi à la suite : {suite.position} / {suite.total}</span>
+                <Button size="sm" variant="secondary" onClick={() => { sauver.mutate({}); suite.onSuivant(); }}>{suite.position < suite.total ? 'Suivant ➜' : 'Terminer ✓'}</Button>
+              </div>
+            )}
             <DialogTitle className="[overflow-wrap:anywhere]">✏️ Bilan de {nom}</DialogTitle>
             <DialogDescription>
               {report?.sent_at ? `✅ Envoyé le ${new Date(report.sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}${lus.length ? ` · 👀 lu par ${lus.map((x) => `${x.label} le ${new Date(x.read_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`).join(', ')}` : ' · pas encore lu'}` : 'Tout est enregistré automatiquement pendant que tu écris.'}
@@ -426,31 +517,49 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
             {arabe !== '' && !traduction && <p className="sm:col-span-2 text-xs text-amber-700 dark:text-amber-300">Traduis d'abord en arabe (ou choisis « Non »).</p>}
             {report?.sent_at && !pret && !envoi && <p className="sm:col-span-2 text-xs text-muted-foreground"><Loader2 className="inline h-3 w-3 animate-spin" /> Préparation de l'image et du PDF pour le renvoyer…</p>}
             {pret && (
-              <div className="sm:col-span-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2">
-                <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">✅ Prêt à envoyer, autant de fois que tu veux (image + PDF : {pret.poids})</p>
-                <div className="space-y-1.5">
-                  <p className="text-xs font-bold">À qui l'envoies-tu ? (pour l'historique)</p>
+              <div className="sm:col-span-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2.5">
+                <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">✅ Prêt à envoyer, autant de fois que tu veux</p>
+                {numeros.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-bold">Directement au bon numéro (le message avec le lien du bilan) :</p>
+                    {numeros.map((n) => (
+                      <div key={n.tel} className="grid grid-cols-2 gap-2">
+                        <Button className="bg-[#25D366] hover:bg-[#1eb457] text-white" onClick={() => ouvrirWhatsApp(n)}>💬 WhatsApp {n.nom}</Button>
+                        <Button variant="outline" onClick={() => ouvrirSms(n)}>📱 SMS {n.nom}</Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-lg bg-card px-2.5 py-1.5 text-xs">📱 Ajoute le numéro des parents dans sa fiche (bouclier › Élèves › {snap.prenom}) : le bilan partira alors directement au bon numéro, par WhatsApp ou SMS.</p>
+                )}
+                <div className="space-y-1.5 border-t border-emerald-200 dark:border-emerald-900 pt-2">
+                  <p className="text-xs font-bold">Ou avec l'image et le PDF ({pret.poids}) : à qui ? (pour l'historique)</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {[...(histo?.choix ?? ['Maman', 'Papa']), 'Autre'].map((c) => (
+                    {[...new Set([...numeros.map((n) => n.nom), ...(histo?.choix ?? ['Maman', 'Papa'])]), 'Autre'].map((c) => (
                       <button key={c} type="button" aria-pressed={destinataire === c} onClick={() => setDestinataire(c)}
                         className={cn('rounded-full border px-3 py-1 text-xs font-bold [overflow-wrap:anywhere]', destinataire === c ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-card')}>{c}</button>
                     ))}
                   </div>
                   {destinataire === 'Autre' && <Input value={autreDest} onChange={(e) => setAutreDest(e.target.value)} placeholder="Qui ? (ex. Tata Samira)" aria-label="Destinataire"
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button className="bg-emerald-600 hover:bg-emerald-700" disabled={!dest} onClick={() => void partager()}>📤 Image + PDF : choisir l'appli</Button>
+                    <Button variant="outline" onClick={() => void copierTexte()}>📋 Copier le message avec le lien</Button>
+                  </div>
+                  {!dest && <p className="text-[11px] text-muted-foreground">Choisis d'abord à qui tu l'envoies. Dans la liste qui s'ouvre, touche le contact (ou Messages, puis tape son nom).</p>}
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => void partager()}>📤 Choisir le contact (WhatsApp, Messages…)</Button>
-                  <Button variant="outline" onClick={() => void copierTexte()}>📋 Copier le message avec le lien</Button>
-                </div>
+                {pasLuDepuis3j && (
+                  <Button variant="outline" className="w-full border-amber-400" onClick={() => void relancer()}>🔔 Pas lu depuis 3 jours : relancer les parents</Button>
+                )}
                 <p className="text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{pret.texte}</p>
               </div>
             )}
             {((histo?.envois.length ?? 0) > 0 || lus.length > 0) && (
               <div className="sm:col-span-2 rounded-2xl border-2 border-border bg-card p-3 space-y-1">
                 <p className="text-sm font-extrabold">📜 Historique des envois</p>
+                <p className="text-[11px] text-muted-foreground">L'appli note ce qu'elle a ouvert ; elle ne peut pas voir si le message est vraiment parti. « 👀 Lu » est sûr : les parents l'ont ouvert avec leur code.</p>
                 {[
-                  ...(histo?.envois ?? []).map((e) => ({ t: e.sent_at, txt: `📨 Envoyé à ${e.destinataire} · ${e.canal === 'partage' ? 'WhatsApp / Messages' : e.canal === 'copie' ? 'message copié' : 'fichiers téléchargés'}` })),
+                  ...(histo?.envois ?? []).map((e) => ({ t: e.sent_at, txt: libelleEnvoi(e.canal, e.destinataire) })),
                   ...lus.map((l) => ({ t: l.read_at, txt: `👀 Lu par ${l.label}` })),
                   ...(report?.sent_at ? [{ t: report.sent_at, txt: '📥 Rangé dans l\'Espace parents' }] : []),
                 ].sort((a, b) => b.t.localeCompare(a.t)).map((x, k) => (

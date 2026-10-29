@@ -431,14 +431,17 @@
 /* ✨ Titre de l'accueil (2026-10-29, bouclier › Apparence appli) : croissant qui brille, pluie d'étoiles, scintillement, reflet */
 @keyframes titre-croissant-brille { 0%, 100% { filter: drop-shadow(0 0 6px rgba(240, 190, 60, .6)) brightness(1.05); } 50% { filter: drop-shadow(0 0 22px rgba(255, 205, 70, 1)) drop-shadow(0 0 8px rgba(255, 230, 140, .9)) brightness(1.25); } }
 .titre-croissant-brille { animation: titre-croissant-brille 2.8s ease-in-out infinite; }
-@keyframes titre-etoile-tombe { 0% { top: -12%; opacity: 0; } 10% { opacity: .95; } 85% { opacity: .85; } 100% { top: 100%; opacity: 0; } }
-.titre-etoile-tombe { position: absolute; top: -12%; display: flex; flex-direction: column; align-items: center; line-height: .8; pointer-events: none; animation: titre-etoile-tombe linear infinite; }
-.titre-etoile-tombe .titre-etoile { color: var(--or); background: linear-gradient(180deg, #fff3b0, var(--or) 55%, #b8860b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 3px rgba(255, 200, 60, .85)); }
-.titre-etoile-tombe .titre-chemin { display: flex; flex-direction: column-reverse; align-items: center; color: var(--or); }
-.titre-etoile-tombe .titre-chemin i { font-style: normal; line-height: .7; }
+@keyframes titre-etoile-tombe { 0% { top: -14%; opacity: 0; } 12% { opacity: 1; } 82% { opacity: .9; } 100% { top: 100%; opacity: 0; } }
+.titre-etoile-tombe { position: absolute; top: -14%; display: flex; flex-direction: column; align-items: center; pointer-events: none; animation: titre-etoile-tombe linear infinite; }
+/* Fin trait lumineux (étoile filante) au-dessus du point */
+.titre-etoile-tombe .titre-trait { width: 1.5px; border-radius: 2px; background: linear-gradient(180deg, rgba(214, 150, 30, 0), rgba(214, 155, 40, .55) 55%, rgba(240, 190, 70, .95)); box-shadow: 0 0 3px rgba(240, 190, 70, .5); }
+/* Point de lumière doré qui scintille */
+@keyframes titre-point-scintille { 0%, 100% { opacity: .55; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.25); } }
+.titre-etoile-tombe .titre-point { border-radius: 9999px; background: radial-gradient(circle, #fffbe8 0%, #ffd56a 45%, #e0a526 100%);
+  box-shadow: 0 0 4px 1px rgba(255, 205, 90, .9), 0 0 10px 3px rgba(230, 165, 40, .45); animation: titre-point-scintille ease-in-out infinite; }
 @keyframes titre-scintille { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
 .titre-scintille { position: absolute; pointer-events: none; animation: titre-scintille 2.2s ease-in-out infinite; }
 @keyframes titre-reflet { 0% { background-position: 200% 0; } 100% { background-position: -100% 0; } }
 .titre-reflet { background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: titre-reflet 4s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .titre-croissant-brille, .titre-etoile-tombe, .titre-scintille, .titre-reflet { animation: none; } .titre-etoile-tombe { display: none; } }
+@media (prefers-reduced-motion: reduce) { .titre-croissant-brille, .titre-etoile-tombe, .titre-scintille, .titre-reflet, .titre-point { animation: none; } .titre-etoile-tombe { display: none; } }
 

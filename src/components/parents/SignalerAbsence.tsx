@@ -180,14 +180,16 @@ export function SignalerAbsenceDialog({ enfants, onClose }: { enfants: EnfantEsp
             </div>
           )}
           {validationDialog}
+          {/* Le code est demandé DANS la fenêtre (avant : à côté → la fenêtre « Signaler une absence » reprenait le clavier
+              et les chiffres ne s'écrivaient pas, 2026-10-30) */}
+          {codeDemande && (
+            <CodeParentsDialog childId={codeDemande.child_id} childName={prenomDe(codeDemande.full_name)} open
+              raison={`Pour signaler l'absence de ${prenomDe(codeDemande.full_name)}.`}
+              onOpenChange={(o) => { if (!o) { setCodeDemande(null); if (enfants.length === 1) onClose(); } }}
+              onOk={async (code) => { const e = codeDemande; setCodeDemande(null); await chargerCours(e, code); void suite(); }} />
+          )}
         </DialogContent>
       </Dialog>
-      {codeDemande && (
-        <CodeParentsDialog childId={codeDemande.child_id} childName={prenomDe(codeDemande.full_name)} open
-          raison={`Pour signaler l'absence de ${prenomDe(codeDemande.full_name)}.`}
-          onOpenChange={(o) => { if (!o) { setCodeDemande(null); if (enfants.length === 1) onClose(); } }}
-          onOk={async (code) => { const e = codeDemande; setCodeDemande(null); await chargerCours(e, code); void suite(); }} />
-      )}
     </>
   );
 }

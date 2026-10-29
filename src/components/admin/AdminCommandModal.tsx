@@ -20,6 +20,8 @@ import { usePendingDrafts } from '@/hooks/useDrafts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import { requestDraftResume, type PendingDraft } from '@/lib/pendingDrafts';
 import { useHolidays } from '@/hooks/useGroupCourse';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { periodeBilan } from '@/lib/bilanTrimestriel';
 
 interface AdminCommandModalProps {
@@ -423,18 +425,35 @@ function CahierRedirect({ onGo }: { onGo: () => void }) {
   return <p className="py-8 text-center text-sm text-muted-foreground">📓 Ouverture du cahier de texte…</p>;
 }
 
-/** Bouton « 📊 Bilan trimestriel » : rappelle les vacances qui approchent (7 jours avant) */
+/** Bouton « 📊 Bilan trimestriel » : rappelle les vacances qui approchent (7 jours avant),
+ *  ✅ quand des parents viennent de lire un bilan (idée 6) et ⏰ les bilans pas lus depuis 3 jours (idée 3) */
 function BoutonBilanTrimestriel({ onOpen }: { onOpen: () => void }) {
   const { data: holidays = [] } = useHolidays();
   const { prochaines } = periodeBilan(holidays);
   const jours = prochaines ? Math.ceil((new Date(`${prochaines.start_date}T00:00:00`).getTime() - Date.now()) / 86400000) : null;
   const bientot = jours !== null && jours >= 0 && jours <= 7;
+  const { data: suivi } = useQuery({
+    queryKey: ['bilan-trimestriel', 'bouclier'],
+    queryFn: async () => {
+      let vu = '1970-01-01';
+      try { vu = localStorage.getItem('dinislam_bilans_lus_vus') || vu; } catch { /* stockage indisponible */ }
+      const il3j = new Date(Date.now() - 3 * 86400000).toISOString();
+      const [{ count: nouveauxLus }, { data: envoyes }, { data: lus }] = await Promise.all([
+        supabase.from('bilan_reads').select('report_id', { count: 'exact', head: true }).gt('read_at', vu),
+        supabase.from('student_reports').select('id').not('sent_at', 'is', null).not('snapshot', 'is', null).lt('sent_at', il3j),
+        supabase.from('bilan_reads').select('report_id'),
+      ]);
+      const luIds = new Set((lus || []).map((r) => r.report_id));
+      return { nouveauxLus: nouveauxLus ?? 0, pasLus: (envoyes || []).filter((r) => !luIds.has(r.id)).length };
+    },
+  });
   return (
     <button onClick={onOpen}
-      className={`col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${bientot ? 'bg-violet-600 text-white ring-4 ring-violet-200 dark:ring-violet-900' : 'bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-100'}`}>
+      className={`col-span-3 flex flex-wrap items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 ${bientot ? 'bg-violet-600 text-white ring-4 ring-violet-200 dark:ring-violet-900' : 'bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-100'}`}>
       <span>📊 Bilan trimestriel</span>
       {bientot && <span className="bg-white text-violet-800 text-xs font-bold px-2 h-5 rounded-full flex items-center">vacances dans {jours} j</span>}
+      {!!suivi?.nouveauxLus && <span className="bg-emerald-500 text-white text-xs font-bold px-2 h-5 rounded-full flex items-center" title="Bilans lus par les parents depuis ta dernière visite">✅ {suivi.nouveauxLus} lu{suivi.nouveauxLus > 1 ? 's' : ''}</span>}
+      {!!suivi?.pasLus && <span className="bg-orange-500 text-white text-xs font-bold px-2 h-5 rounded-full flex items-center" title="Envoyés il y a plus de 3 jours, pas encore lus">⏰ {suivi.pasLus} pas lu{suivi.pasLus > 1 ? 's' : ''}</span>}
     </button>
   );
 }
-

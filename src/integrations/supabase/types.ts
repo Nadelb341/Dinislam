@@ -2620,6 +2620,9 @@ export type Database = {
           notification_prompt_later_at: string | null
           notification_prompt_later_count: number | null
           parent_phone: string | null
+          parent_phone_nom: string | null
+          parent2_phone: string | null
+          parent2_phone_nom: string | null
           phone: string | null
           points: number | null
           prayer_group: string | null
@@ -2648,6 +2651,9 @@ export type Database = {
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           parent_phone?: string | null
+          parent_phone_nom?: string | null
+          parent2_phone?: string | null
+          parent2_phone_nom?: string | null
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
@@ -2676,6 +2682,9 @@ export type Database = {
           notification_prompt_later_at?: string | null
           notification_prompt_later_count?: number | null
           parent_phone?: string | null
+          parent_phone_nom?: string | null
+          parent2_phone?: string | null
+          parent2_phone_nom?: string | null
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
