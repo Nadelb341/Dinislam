@@ -97,6 +97,11 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - **Notifications** :
     - `par_bilan`, `par_abs` (15 min après le début du cours si absent non justifié), `adm_abs`, `adm_par` (interrupteurs dans Paramètres › Notifications) ;
     - rappel des bilans 7 et 3 jours avant les vacances.
+- ✅ 2026-10-29 (commit b78c9c9) :
+  - « Dini Bismillah » remplacé par « Dinislam » partout : accueil, connexion, en-tête, manifest, notifications, assistant Lune. Seule une ancienne migration le garde.
+  - Audio de correction des sourates (`AdminRecitationReview`) et ancienne carte `HomeworkCard` : ils écrivaient « audio/webm » en dur alors que Safari enregistre en mp4, d'où « Erreur ». Ils passent maintenant par `useAudioRecorder` + `AudioApercu`.
+  - Envoi du bilan : images en JPEG (avant : PNG de 17 Mo) et partage en 2 temps (« Préparer » puis « 📤 Choisir le contact »), car le navigateur exige un toucher juste avant le partage.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : choisir la présentation du nom de l'appli (10 propositions + idées A à D) : https://claude.ai/artifact/NZTgRfXcV9MYSjYiEh4F9r. À rappeler à chaque réponse.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
@@ -125,7 +130,7 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 - Migration `20261026230000_cahier_professeur.sql` : tables avec RLS, toutes en direct, clés dans `realtimeSync.ts`.
 - ✅ 2026-10-26 : « 📚 Distribuer les devoirs » ouvert depuis un groupe affiche seulement les élèves de ce groupe : devoirs assignés, rendus à corriger et choix des élèves dans le formulaire (un élève d'un autre groupe déjà choisi dans un brouillon reste affiché). « Général » = tout le monde.
 - ✅ 2026-10-26 Groupes (bouclier › Élèves, `AdminStudentGroups`) : dans le formulaire d'un groupe, un élève déjà dans un AUTRE groupe est grisé avec « 👥 Déjà dans : … » (il reste sélectionnable) ; les élèves sans aucun groupe sont en haut de la liste ; sous les groupes, un bandeau ambre « ⚠️ N élèves n'ont aucun groupe » avec leurs noms.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : régler l'heure de cours de CHAQUE groupe dans le cockpit. Sans cela, il n'y a ni rappel 2 h avant ni date automatique. Vérifier en base (`select * from group_schedules`) en début de séance, et le rappeler tant que des groupes n'ont pas d'heure. Au 2026-10-27, il manque « Groupe 3 - Avancées » et « Groupe 4 - Paulhan » (rotation des devoirs : mercredi 14 h par défaut en attendant).
+- ⏳ **ACTION EN ATTENTE (Nadia)** : régler l'heure de cours de CHAQUE groupe dans le cockpit. Sans cela, il n'y a ni rappel 2 h avant ni date automatique. Vérifier en base (`select * from group_schedules`) en début de séance, et le rappeler tant que des groupes n'ont pas d'heure. ✅ 2026-10-29 : les 8 groupes ont leur heure (Groupe 3 - Avancées et Groupe 4 - Paulhan : dimanche 17 h).
 
 ## 💎 Diamants = devoirs donnés à chaque élève (2026-10-26, demande de Nadia)
 - Cahier de texte de l'élève **ouvert par défaut** (`BlocDevoirsEleve`, flèche pour fermer/rouvrir).
