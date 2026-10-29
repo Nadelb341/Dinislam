@@ -118,7 +118,21 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - **Code parents** : `CodeInput.tsx`, un champ texte masqué qui n'est pas un champ « mot de passe », pour que Safari n'ouvre plus son trousseau.
   - **Bilan** : renvoi illimité. Les fichiers se préparent tout seuls à l'ouverture d'un bilan déjà envoyé, et « 🔄 Mettre à jour avec mes changements » remplace la version envoyée.
   - **Historique des envois** : table `bilan_envois` (destinataire choisi par Nadia, canal, date et heure), affichée avec les lectures.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : idées proposées pour gérer les envois de bilans (envoi groupé, relance si pas lu, modèle de message, liste « reste à envoyer », numéros des parents). À rappeler à chaque réponse.
+- ✅ 2026-10-30 (commit 60fbd02) :
+  - **Pluie** refaite d'après le modèle de Nadia : 14 points de lumière dorés qui scintillent, 2 sur 3 avec un fin trait doré au-dessus (étoile filante). Toujours dorée, quelle que soit la couleur des traits.
+  - **Code parents depuis « Signaler une absence »** : le `CodeParentsDialog` était rendu À CÔTÉ de la fenêtre d'absence, dont le piège à clavier volait la saisie. Il est maintenant rendu à l'intérieur.
+  - **Bilan** :
+    - numéros des parents dans la fiche (`profiles.parent_phone(_nom)`, `parent2_phone(_nom)`) ;
+    - boutons « 💬 WhatsApp » (wa.me + texte et lien) et « 📱 SMS » vers le bon numéro ;
+    - image + PDF par la feuille de partage, avec destinataire obligatoire ;
+    - historique honnête (« partage ouvert », « WhatsApp ouvert vers… » : l'appli ne sait pas si le message est parti ; seul « 👀 Lu » est sûr).
+  - **Idées acceptées** :
+    - 1 : envoi à la suite des bilans « prêts », avec « Suivant ➜ » ;
+    - 2 : « 📮 Reste à envoyer » ;
+    - 3 : « ⏰ pas lu (3 j) » + « 🔔 relancer les parents » ;
+    - 5 : numéros ;
+    - 6 : « ✅ N lus » et « ⏰ N pas lus » sur la carte du bouclier.
+  - **Audio** des corrections de sourates et des devoirs : confirmé OK par Nadia.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
