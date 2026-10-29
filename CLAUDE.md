@@ -111,6 +111,14 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - `src/lib/apparence.ts`, `TitreAppli.tsx` (accueil, via `TitreAccueil`).
   - Bouclier › « 🔧 Apparence appli » (sous Bilan trimestriel) › « ✨ Le titre » (`ApparenceAppli.tsx`) règle : texte, majuscules, police, espacement, couleurs, traits, icône, effets (pluie, brillant, scintillant, reflet, ombre), salutation, bienvenue {nom}, Bismillah, Ramadan. Aperçu en direct.
   - En thème sombre, un nom trop foncé s'éclaircit tout seul.
+- ✅ 2026-10-29 (commit e23fadb) :
+  - **Pluie d'étoiles** désormais permanente : 16 étoiles dorées en dégradé, chacune suivie d'un « chemin » de 4 mini-étoiles. Elles tombent jusque sous le Bismillah puis disparaissent.
+  - **Logo** plus brillant, toujours doucement et en continu.
+  - **« Bienvenue »** en bleu du logo (`couleurBienvenue`, #1f3fbf, réglable).
+  - **Code parents** : `CodeInput.tsx`, un champ texte masqué qui n'est pas un champ « mot de passe », pour que Safari n'ouvre plus son trousseau.
+  - **Bilan** : renvoi illimité. Les fichiers se préparent tout seuls à l'ouverture d'un bilan déjà envoyé, et « 🔄 Mettre à jour avec mes changements » remplace la version envoyée.
+  - **Historique des envois** : table `bilan_envois` (destinataire choisi par Nadia, canal, date et heure), affichée avec les lectures.
+- ⏳ **ACTION EN ATTENTE (Nadia)** : idées proposées pour gérer les envois de bilans (envoi groupé, relance si pas lu, modèle de message, liste « reste à envoyer », numéros des parents). À rappeler à chaque réponse.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
