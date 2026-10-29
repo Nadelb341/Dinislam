@@ -49,6 +49,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   absence_justifications: ['absences-justifiees', 'bilan-trimestriel', 'admin-attendance'],
   behavior_marks: ['comportement', 'bilan-trimestriel', 'cahier-classe'],
   bilan_reads: ['bilan-trimestriel'],
+  // 🔧 Apparence de l'appli (titre de l'accueil), 2026-10-29
+  app_appearance: ['app-appearance'],
   // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)
   devoir_decisions: ['admin-devoirs', 'weekly-program', 'weekly-program-admin', 'bilans', 'cahier-classe'],
   // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)

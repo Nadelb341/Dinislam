@@ -26,6 +26,7 @@ import { DraftDot } from '@/components/shared/DraftDot';
 import { editDraftKey } from '@/lib/pendingDrafts';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
+import { TitreAccueil } from '@/components/home/TitreAppli';
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -443,27 +444,17 @@ const handleModuleClick = (mod) => {
               </div>
             </div>
           }
-          <div className="text-center py-6 animate-fade-in">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
-                <span className="font-arabic text-base text-primary">﷽</span>
-              </div>
-              <h1 className="text-2xl font-bold text-foreground">Dinislam</h1>
-            </div>
-            <p className="text-muted-foreground mb-1">Assalamou Alaykoum</p>
-            <h2 className="text-2xl font-bold text-foreground">
-              Bienvenue{profile?.full_name ? `, ${profile.full_name}` : ''} !
-            </h2>
-            <p className="font-arabic text-gold mt-2 text-3xl">
-              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-            </p>
-            {/* 🙋 Parents : signaler une absence (compte d'un enfant, ou d'un parent élève adulte) */}
-            {!isAdmin && (
-              <div className="flex justify-end mt-2">
-                <SilentBoundary name="Signaler une absence"><BoutonSignalerAbsence /></SilentBoundary>
-              </div>
-            )}
-          </div>
+          {/* ✨ Titre de l'accueil, réglable dans le bouclier › 🔧 Apparence appli › Le titre (2026-10-29) */}
+          <SilentBoundary name="Titre de l'accueil">
+            <TitreAccueil nom={profile?.full_name ?? null}>
+              {/* 🙋 Parents : signaler une absence (compte d'un enfant, ou d'un parent élève adulte) */}
+              {!isAdmin && (
+                <div className="flex justify-end -mt-4 mb-2">
+                  <SilentBoundary name="Signaler une absence"><BoutonSignalerAbsence /></SilentBoundary>
+                </div>
+              )}
+            </TitreAccueil>
+          </SilentBoundary>
 
           {/* À FAIRE : enseignante seulement */}
           {isAdmin && <AdminTodoCard />}

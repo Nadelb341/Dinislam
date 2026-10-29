@@ -11,6 +11,7 @@
 /* Noto Naskh Arabic, réduite aux seuls signes de la hamza sous le alif (إ ِ ٍ ي) : avec Amiri la kasra et le tanouine collaient à la hamza */
 /* Écriture « cahier » du cahier de texte de l'élève (2026-10-26) */
 @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@700&text=%D8%A5%D9%90%D9%8A%D9%8D%D8%A7%D9%95&display=swap');
 
 @layer base {
@@ -426,3 +427,15 @@
 @keyframes tresor-lueur { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 .tresor-lueur { animation: tresor-lueur 2.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tresor-etincelle, .tresor-lueur { animation: none; } }
+
+/* ✨ Titre de l'accueil (2026-10-29, bouclier › Apparence appli) : croissant qui brille, pluie d'étoiles, scintillement, reflet */
+@keyframes titre-croissant-brille { 0%, 100% { filter: drop-shadow(0 0 2px rgba(233, 185, 73, .35)); } 50% { filter: drop-shadow(0 0 14px rgba(233, 185, 73, .95)); } }
+.titre-croissant-brille { animation: titre-croissant-brille 2.8s ease-in-out infinite; }
+@keyframes titre-etoile-tombe { 0% { transform: translateY(-14px) rotate(0deg) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(150px) rotate(200deg) scale(1); opacity: 0; } }
+.titre-etoile-tombe { position: absolute; top: 0; pointer-events: none; animation: titre-etoile-tombe 2.6s ease-in both; }
+@keyframes titre-scintille { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.titre-scintille { position: absolute; pointer-events: none; animation: titre-scintille 2.2s ease-in-out infinite; }
+@keyframes titre-reflet { 0% { background-position: 200% 0; } 100% { background-position: -100% 0; } }
+.titre-reflet { background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: titre-reflet 4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .titre-croissant-brille, .titre-etoile-tombe, .titre-scintille, .titre-reflet { animation: none; } .titre-etoile-tombe { display: none; } }
+
