@@ -101,7 +101,16 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - « Dini Bismillah » remplacé par « Dinislam » partout : accueil, connexion, en-tête, manifest, notifications, assistant Lune. Seule une ancienne migration le garde.
   - Audio de correction des sourates (`AdminRecitationReview`) et ancienne carte `HomeworkCard` : ils écrivaient « audio/webm » en dur alors que Safari enregistre en mp4, d'où « Erreur ». Ils passent maintenant par `useAudioRecorder` + `AudioApercu`.
   - Envoi du bilan : images en JPEG (avant : PNG de 17 Mo) et partage en 2 temps (« Préparer » puis « 📤 Choisir le contact »), car le navigateur exige un toucher juste avant le partage.
-- ⏳ **ACTION EN ATTENTE (Nadia)** : choisir la présentation du nom de l'appli (10 propositions + idées A à D) : https://claude.ai/artifact/NZTgRfXcV9MYSjYiEh4F9r. À rappeler à chaque réponse.
+- ✅ **Titre de l'accueil réglable** (2026-10-29, commit 9669811). Choix de Nadia :
+  - proposition 8 (lettres espacées entre deux traits dorés) ;
+  - idée A : le croissant de l'icône au-dessus ;
+  - idée B : le croissant brille, et une pluie d'étoiles tombe une fois à chaque ouverture ;
+  - idée C : couleurs du Ramadan, automatiques d'après le calendrier de l'Hégire.
+  Fichiers et réglages :
+  - Table `app_appearance` : clé `titre` + `titre_avant`, la version précédente étant toujours gardée. Lecture pour tous, écriture admin, en direct.
+  - `src/lib/apparence.ts`, `TitreAppli.tsx` (accueil, via `TitreAccueil`).
+  - Bouclier › « 🔧 Apparence appli » (sous Bilan trimestriel) › « ✨ Le titre » (`ApparenceAppli.tsx`) règle : texte, majuscules, police, espacement, couleurs, traits, icône, effets (pluie, brillant, scintillant, reflet, ombre), salutation, bienvenue {nom}, Bismillah, Ramadan. Aperçu en direct.
+  - En thème sombre, un nom trop foncé s'éclaircit tout seul.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
