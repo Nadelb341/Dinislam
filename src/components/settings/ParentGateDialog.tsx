@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
+import { CodeInput } from '@/components/parents/CodeInput';
 
 /**
  * Fenêtre « Espace parents » qui protège les Paramètres (élèves de moins de 12 ans).
@@ -51,14 +52,11 @@ const ParentGateDialog = ({ open, onOpenChange, onUnlock, onUnlockCode, onSucces
         </DialogHeader>
         {avecCode === null ? <p className="py-3 text-center"><Loader2 className="inline h-4 w-4 animate-spin" /></p> : (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-            <PasswordInput
-              value={valeur}
-              onChange={(e) => { setValeur(avecCode ? e.target.value.replace(/\D/g, '').slice(0, 6) : e.target.value); setWrong(false); }}
-              placeholder={avecCode ? 'Code parents' : 'Mot de passe'}
-              inputMode={avecCode ? 'numeric' : undefined}
-              autoFocus
-              aria-label={avecCode ? 'Code parents' : 'Mot de passe de connexion'}
-            />
+            {avecCode ? (
+              <CodeInput value={valeur} onChange={(v) => { setValeur(v); setWrong(false); }} placeholder="Code parents" aria-label="Code parents" autoFocus />
+            ) : (
+              <PasswordInput value={valeur} onChange={(e) => { setValeur(e.target.value); setWrong(false); }} placeholder="Mot de passe" autoFocus aria-label="Mot de passe de connexion" />
+            )}
             {wrong && <p className="text-sm text-destructive">{avecCode ? 'Code incorrect' : 'Mot de passe incorrect'}</p>}
             <Button type="submit" className="w-full" disabled={checking || !valeur}>
               {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

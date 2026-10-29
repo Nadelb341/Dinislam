@@ -243,6 +243,31 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
     } catch (e) { toast.error(`Traduction impossible : ${errorMessage(e)}`); } finally { setTraduisant(false); }
   };
 
+  // Fichiers (image(s) + PDF) fabriqués à partir de l'aperçu ; le partage s'ouvre au toucher suivant
+  const preparer = async (token: string) => {
+    const images: Blob[] = [];
+    if (exportFr.current) images.push(await capturerImage(exportFr.current));
+    if (arabe && traduction && exportAr.current) images.push(await capturerImage(exportAr.current));
+    const base = nomFichier(snap.prenom, titrePeriode(periode.label, periode.fin));
+    const fichiers = [
+      ...images.map((b, i) => new File([b], `${base}${i ? '_arabe' : ''}.jpg`, { type: 'image/jpeg' })),
+      new File([await fabriquerPdf(images)], `${base}.pdf`, { type: 'application/pdf' }),
+    ];
+    const lien = `${window.location.origin}/bilan/${token}`;
+    const texte = `Assalamou alaykoum, voici le bilan de ${snap.prenom} (${titrePeriode(periode.label, periode.fin)}). Il est aussi dans l'Espace parents de l'appli. Si l'image ou le PDF ne s'ouvre pas : ${lien} (votre code parents vous sera demandé).`;
+    const octets = fichiers.reduce((n, f) => n + f.size, 0);
+    setPret({ fichiers, texte, poids: octets > 1e6 ? `${(octets / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.round(octets / 1e3)} Ko` });
+  };
+
+  // Bilan déjà envoyé : les fichiers se préparent tout seuls à l'ouverture → renvoyer = un seul toucher
+  useEffect(() => {
+    if (!report?.sent_at || !report.share_token) return;
+    const t = setTimeout(() => { void preparer(report.share_token!).catch(() => { /* bouton « Renvoyer » en secours */ }); }, 900);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Range le bilan (avec ses chiffres figés) dans l'Espace parents, puis prépare les fichiers */
   const envoyer = async () => {
     setEnvoi(true);
     try {
@@ -256,34 +281,49 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
         sendPushNotification({ userIds: [studentId, ...(liens || []).map((l) => l.parent_id)], category: 'par_bilan',
           title: `📊 Nouveau bilan de ${snap.prenom}`, body: 'Il vous attend dans l\'Espace parents (Paramètres), avec votre code parents.', data: { url: '/settings?espace=parents' } });
       }
-      // Image(s) + PDF + lien de secours, préparés maintenant ; le partage s'ouvre au toucher suivant
-      const images: Blob[] = [];
-      if (exportFr.current) images.push(await capturerImage(exportFr.current));
-      if (arabe && traduction && exportAr.current) images.push(await capturerImage(exportAr.current));
-      const base = nomFichier(snap.prenom, titrePeriode(periode.label, periode.fin));
-      const fichiers = [
-        ...images.map((b, i) => new File([b], `${base}${i ? '_arabe' : ''}.jpg`, { type: 'image/jpeg' })),
-        new File([await fabriquerPdf(images)], `${base}.pdf`, { type: 'application/pdf' }),
-      ];
-      const lien = `${window.location.origin}/bilan/${token}`;
-      const texte = `Assalamou alaykoum, voici le bilan de ${snap.prenom} (${titrePeriode(periode.label, periode.fin)}). Il est aussi dans l'Espace parents de l'appli. Si l'image ou le PDF ne s'ouvre pas : ${lien} (votre code parents vous sera demandé).`;
-      const octets = fichiers.reduce((n, f) => n + f.size, 0);
-      setPret({ fichiers, texte, poids: octets > 1e6 ? `${(octets / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.round(octets / 1e3)} Ko` });
+      await preparer(token);
     } catch (e) {
       if ((e as Error).name !== 'AbortError') toast.error(errorMessage(e));
     } finally { setEnvoi(false); }
+  };
+
+  // 📜 Historique des envois (à qui, quand, comment) + à qui l'envoyer
+  const { data: histo } = useQuery({
+    queryKey: ['bilan-trimestriel', 'envois', studentId, periode.label],
+    queryFn: async () => {
+      const { data: rep } = await supabase.from('student_reports').select('id').eq('student_id', studentId).eq('period_label', periode.label).maybeSingle();
+      const [{ data: envois }, { data: codes }, { data: liens }] = await Promise.all([
+        rep ? supabase.from('bilan_envois').select('id, destinataire, canal, sent_at').eq('report_id', rep.id).order('sent_at', { ascending: false }) : Promise.resolve({ data: [] as { id: string; destinataire: string; canal: string; sent_at: string }[] }),
+        supabase.from('parent_codes').select('label').eq('child_id', studentId),
+        supabase.from('parent_links').select('parent_id').eq('child_id', studentId),
+      ]);
+      const ids = (liens || []).map((l) => l.parent_id);
+      const { data: noms } = ids.length ? await supabase.from('profiles').select('full_name').in('user_id', ids) : { data: [] };
+      const choix = [...new Set([...(codes || []).map((c) => c.label), ...(noms || []).map((n) => (n.full_name || '').trim()).filter(Boolean), 'Maman', 'Papa'])];
+      return { reportId: rep?.id ?? null, envois: envois || [], choix };
+    },
+  });
+  const [destinataire, setDestinataire] = useState('');
+  const [autreDest, setAutreDest] = useState('');
+  const dest = destinataire === 'Autre' ? autreDest.trim() : destinataire;
+
+  const noterEnvoi = async (canal: 'partage' | 'telechargement' | 'copie') => {
+    if (!histo?.reportId) return;
+    await supabase.from('bilan_envois').insert({ report_id: histo.reportId, student_id: studentId, destinataire: dest || 'Parents', canal, sent_by: user?.id ?? null });
+    queryClient.invalidateQueries({ queryKey: ['bilan-trimestriel', 'envois', studentId] });
   };
 
   const partager = async () => {
     if (!pret) return;
     try {
       const mode = await partagerBilan(pret.fichiers, pret.texte);
-      toast.success(mode === 'partage' ? '📨 Bilan envoyé' : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
+      await noterEnvoi(mode === 'partage' ? 'partage' : 'telechargement');
+      toast.success(mode === 'partage' ? `📨 Bilan envoyé${dest ? ` à ${dest}` : ''}` : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
     } catch (e) { if ((e as Error).name !== 'AbortError') toast.error(errorMessage(e)); }
   };
   const copierTexte = async () => {
     if (!pret) return;
-    try { await navigator.clipboard.writeText(pret.texte); toast.success('📋 Message copié'); } catch { toast.error('Copie impossible : sélectionne le texte à la main'); }
+    try { await navigator.clipboard.writeText(pret.texte); await noterEnvoi('copie'); toast.success('📋 Message copié'); } catch { toast.error('Copie impossible : sélectionne le texte à la main'); }
   };
 
   const contenu = { snapshot: snap, appreciation: appreciation.trim() || null, motivation: motivation.trim() || null, note: avecNote ? noteNombre : null, guide, traduction: arabe ? traduction : null, langueAr: arabe || null };
@@ -378,19 +418,44 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
           <div className="sticky bottom-0 mt-4 grid gap-2 bg-background/95 pt-2 sm:grid-cols-2">
             <Button variant="outline" onClick={() => { sauver.mutate({}); onClose(); }}>💾 Enregistrer et fermer</Button>
             <Button className="bg-[#2457a5] hover:bg-[#1d4685]" disabled={envoi || (arabe !== '' && !traduction)}
-              onClick={() => askValidation(report?.sent_at ? 'Renvoyer le bilan ?' : 'Envoyer le bilan aux parents ?',
-                `Le bilan de ${snap.prenom} sera rangé dans son Espace parents${report?.sent_at ? '' : ' (avec une notification)'}. Ensuite, touche « 📤 Choisir le contact » pour l'envoyer par WhatsApp ou Messages.`, () => void envoyer())}>
-              {envoi && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}📨 {report?.sent_at ? 'Préparer à nouveau' : 'Envoyer aux parents'}
+              onClick={() => askValidation(report?.sent_at ? 'Mettre à jour le bilan envoyé ?' : 'Envoyer le bilan aux parents ?',
+                report?.sent_at ? `Le bilan de ${snap.prenom} rangé dans l'Espace parents sera remplacé par cette version (avec tes changements), et l'image et le PDF seront refaits.`
+                  : `Le bilan de ${snap.prenom} sera rangé dans son Espace parents (avec une notification). Ensuite, touche « 📤 Choisir le contact ».`, () => void envoyer())}>
+              {envoi && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{report?.sent_at ? '🔄 Mettre à jour avec mes changements' : '📨 Envoyer aux parents'}
             </Button>
             {arabe !== '' && !traduction && <p className="sm:col-span-2 text-xs text-amber-700 dark:text-amber-300">Traduis d'abord en arabe (ou choisis « Non »).</p>}
+            {report?.sent_at && !pret && !envoi && <p className="sm:col-span-2 text-xs text-muted-foreground"><Loader2 className="inline h-3 w-3 animate-spin" /> Préparation de l'image et du PDF pour le renvoyer…</p>}
             {pret && (
               <div className="sm:col-span-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2">
-                <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">✅ Bilan rangé dans l'Espace parents. Image et PDF prêts ({pret.poids}).</p>
+                <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">✅ Prêt à envoyer, autant de fois que tu veux (image + PDF : {pret.poids})</p>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-bold">À qui l'envoies-tu ? (pour l'historique)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[...(histo?.choix ?? ['Maman', 'Papa']), 'Autre'].map((c) => (
+                      <button key={c} type="button" aria-pressed={destinataire === c} onClick={() => setDestinataire(c)}
+                        className={cn('rounded-full border px-3 py-1 text-xs font-bold [overflow-wrap:anywhere]', destinataire === c ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-card')}>{c}</button>
+                    ))}
+                  </div>
+                  {destinataire === 'Autre' && <Input value={autreDest} onChange={(e) => setAutreDest(e.target.value)} placeholder="Qui ? (ex. Tata Samira)" aria-label="Destinataire"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />}
+                </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => void partager()}>📤 Choisir le contact (WhatsApp, Messages…)</Button>
                   <Button variant="outline" onClick={() => void copierTexte()}>📋 Copier le message avec le lien</Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{pret.texte}</p>
+              </div>
+            )}
+            {((histo?.envois.length ?? 0) > 0 || lus.length > 0) && (
+              <div className="sm:col-span-2 rounded-2xl border-2 border-border bg-card p-3 space-y-1">
+                <p className="text-sm font-extrabold">📜 Historique des envois</p>
+                {[
+                  ...(histo?.envois ?? []).map((e) => ({ t: e.sent_at, txt: `📨 Envoyé à ${e.destinataire} · ${e.canal === 'partage' ? 'WhatsApp / Messages' : e.canal === 'copie' ? 'message copié' : 'fichiers téléchargés'}` })),
+                  ...lus.map((l) => ({ t: l.read_at, txt: `👀 Lu par ${l.label}` })),
+                  ...(report?.sent_at ? [{ t: report.sent_at, txt: '📥 Rangé dans l\'Espace parents' }] : []),
+                ].sort((a, b) => b.t.localeCompare(a.t)).map((x, k) => (
+                  <p key={k} className="text-xs [overflow-wrap:anywhere]"><span className="font-bold tabular-nums">{new Date(x.t).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span> · {x.txt}</p>
+                ))}
               </div>
             )}
           </div>

@@ -6,11 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { CodeInput } from './CodeInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { errorMessage } from '@/lib/utils';
 import { LABELS_CODE, memoriserCode } from '@/lib/espaceParents';
 
-const six = (v: string) => v.replace(/\D/g, '').slice(0, 6);
 
 /**
  * 🔐 Code parents d'un enfant : le saisir, ou le créer la 1re fois (6 chiffres, différent du mot de passe de l'appli).
@@ -95,8 +95,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
           <p className="py-4 text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>
         ) : mode === 'saisir' ? (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void verifier(); }}>
-            <PasswordInput value={code} onChange={(e) => { setCode(six(e.target.value)); setErreur(''); }} inputMode="numeric" autoComplete="off"
-              placeholder="Code parents (6 chiffres)" aria-label="Code parents" autoFocus className="text-center text-lg tracking-[0.4em]" />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents (6 chiffres)" aria-label="Code parents" autoFocus className="text-center text-lg tracking-[0.3em]" />
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
             <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ouvrir</Button>
             <p className="text-xs text-muted-foreground">Codes créés : {labels.join(' et ')}. Code oublié : la professeure peut le remettre à zéro.</p>
@@ -117,9 +116,9 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
             </div>
             {label === 'Autre' && <Input value={autre} onChange={(e) => setAutre(e.target.value)} placeholder="Qui ? (ex. Tata)" aria-label="Qui crée le code"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />}
-            {labels.length > 0 && <PasswordInput value={actuel} onChange={(e) => setActuel(six(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="Code déjà créé" aria-label="Code déjà créé" />}
-            <PasswordInput value={code} onChange={(e) => { setCode(six(e.target.value)); setErreur(''); }} inputMode="numeric" autoComplete="off" placeholder="Nouveau code (6 chiffres)" aria-label="Nouveau code" />
-            <PasswordInput value={code2} onChange={(e) => { setCode2(six(e.target.value)); setErreur(''); }} inputMode="numeric" autoComplete="off" placeholder="Le même code, encore une fois" aria-label="Confirmer le code" />
+            {labels.length > 0 && <CodeInput value={actuel} onChange={setActuel} placeholder="Code déjà créé" aria-label="Code déjà créé" />}
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Nouveau code (6 chiffres de votre choix)" aria-label="Nouveau code" />
+            <CodeInput value={code2} onChange={(v) => { setCode2(v); setErreur(''); }} placeholder="Le même code, encore une fois" aria-label="Confirmer le code" />
             {compteEnfant && !labels.length && (
               <PasswordInput value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} placeholder={`Mot de passe du compte de ${childName}`} aria-label="Mot de passe du compte" autoComplete="current-password" />
             )}

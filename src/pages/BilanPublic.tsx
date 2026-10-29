@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { PasswordInput } from '@/components/ui/password-input';
+import { CodeInput } from '@/components/parents/CodeInput';
 import { BilanVue, type BilanContenu } from '@/components/bilan/BilanVue';
 import type { BilanSnapshot } from '@/lib/bilanTrimestriel';
 
@@ -39,8 +39,7 @@ export default function BilanPublic() {
           <form className="rounded-2xl bg-card p-4 shadow space-y-3" onSubmit={(e) => { e.preventDefault(); void ouvrir(); }}>
             <p className="font-bold">🔐 Entrez votre code parents</p>
             <p className="text-sm text-muted-foreground">Le code à 6 chiffres créé dans l'Espace parents de l'appli (pas le mot de passe de l'appli).</p>
-            <PasswordInput value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setErreur(''); }} inputMode="numeric" autoComplete="off"
-              placeholder="Code parents" aria-label="Code parents" autoFocus className="text-center text-lg tracking-[0.4em]" />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents" aria-label="Code parents" autoFocus className="text-center text-lg tracking-[0.3em]" />
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
             <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Voir le bilan</Button>
             <p className="text-xs text-muted-foreground">Pas encore de code ? Ouvrez l'appli sur le compte de votre enfant : Paramètres › 👨‍👩‍👧 Espace parents.</p>

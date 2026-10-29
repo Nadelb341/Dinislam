@@ -739,6 +739,44 @@ export type Database = {
         }
         Relationships: []
       }
+      bilan_envois: {
+        Row: {
+          canal: string
+          destinataire: string
+          id: string
+          report_id: string
+          sent_at: string
+          sent_by: string | null
+          student_id: string
+        }
+        Insert: {
+          canal: string
+          destinataire: string
+          id?: string
+          report_id: string
+          sent_at?: string
+          sent_by?: string | null
+          student_id: string
+        }
+        Update: {
+          canal?: string
+          destinataire?: string
+          id?: string
+          report_id?: string
+          sent_at?: string
+          sent_by?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bilan_envois_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "student_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bilan_reads: {
         Row: {
           label: string

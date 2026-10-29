@@ -429,10 +429,13 @@
 @media (prefers-reduced-motion: reduce) { .tresor-etincelle, .tresor-lueur { animation: none; } }
 
 /* ✨ Titre de l'accueil (2026-10-29, bouclier › Apparence appli) : croissant qui brille, pluie d'étoiles, scintillement, reflet */
-@keyframes titre-croissant-brille { 0%, 100% { filter: drop-shadow(0 0 2px rgba(233, 185, 73, .35)); } 50% { filter: drop-shadow(0 0 14px rgba(233, 185, 73, .95)); } }
+@keyframes titre-croissant-brille { 0%, 100% { filter: drop-shadow(0 0 6px rgba(240, 190, 60, .6)) brightness(1.05); } 50% { filter: drop-shadow(0 0 22px rgba(255, 205, 70, 1)) drop-shadow(0 0 8px rgba(255, 230, 140, .9)) brightness(1.25); } }
 .titre-croissant-brille { animation: titre-croissant-brille 2.8s ease-in-out infinite; }
-@keyframes titre-etoile-tombe { 0% { transform: translateY(-14px) rotate(0deg) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(150px) rotate(200deg) scale(1); opacity: 0; } }
-.titre-etoile-tombe { position: absolute; top: 0; pointer-events: none; animation: titre-etoile-tombe 2.6s ease-in both; }
+@keyframes titre-etoile-tombe { 0% { top: -12%; opacity: 0; } 10% { opacity: .95; } 85% { opacity: .85; } 100% { top: 100%; opacity: 0; } }
+.titre-etoile-tombe { position: absolute; top: -12%; display: flex; flex-direction: column; align-items: center; line-height: .8; pointer-events: none; animation: titre-etoile-tombe linear infinite; }
+.titre-etoile-tombe .titre-etoile { color: var(--or); background: linear-gradient(180deg, #fff3b0, var(--or) 55%, #b8860b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 3px rgba(255, 200, 60, .85)); }
+.titre-etoile-tombe .titre-chemin { display: flex; flex-direction: column-reverse; align-items: center; color: var(--or); }
+.titre-etoile-tombe .titre-chemin i { font-style: normal; line-height: .7; }
 @keyframes titre-scintille { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
 .titre-scintille { position: absolute; pointer-events: none; animation: titre-scintille 2.2s ease-in-out infinite; }
 @keyframes titre-reflet { 0% { background-position: 200% 0; } 100% { background-position: -100% 0; } }

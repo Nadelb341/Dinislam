@@ -78,7 +78,7 @@ function ReglageTitre() {
 
   if (isLoading) return <p className="text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>;
 
-  const couleur = ({ k, label }: { k: 'couleurTexte' | 'couleurTraits' | 'ramadanTexte' | 'ramadanTraits' | 'couleurBismillah'; label: string }) => (
+  const couleur = ({ k, label }: { k: 'couleurTexte' | 'couleurTraits' | 'ramadanTexte' | 'ramadanTraits' | 'couleurBismillah' | 'couleurBienvenue'; label: string }) => (
     <label className="flex items-center gap-2 text-sm">
       <input type="color" value={r[k] || '#b7791f'} onChange={(e) => maj(k, e.target.value)} className="h-9 w-12 rounded-lg border cursor-pointer" aria-label={label} />
       <span className="font-semibold">{label}</span>
@@ -99,7 +99,7 @@ function ReglageTitre() {
           <TitreAppli r={r} nom="Wiam ELB" apercu rejouer={rejouer} forcerRamadan={voirRamadan} />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRejouer((n) => n + 1)}>🌠 Rejouer la pluie d'étoiles</Button>
+          <Button variant="outline" size="sm" onClick={() => setRejouer((n) => n + 1)}>🌠 Relancer la pluie d'étoiles</Button>
           <Button variant="outline" size="sm" aria-pressed={voirRamadan} onClick={() => setVoirRamadan((v) => !v)}>{voirRamadan ? '☀️ Voir comme d\'habitude' : '🌙 Voir pendant le Ramadan'}</Button>
         </div>
       </div>
@@ -128,7 +128,7 @@ function ReglageTitre() {
 
         <section className="space-y-2">
           <p className="text-sm font-extrabold">✨ Les effets</p>
-          {effet({ k: "pluie", label: "🌠 Pluie d'étoiles", aide: "Des étoiles tombent doucement sur le titre, une fois à chaque ouverture de l'appli" })}
+          {effet({ k: "pluie", label: "🌠 Pluie d'étoiles", aide: "Des étoiles dorées tombent doucement, en continu, jusque sous le Bismillah" })}
           {effet({ k: "brillant", label: "🌙 Croissant brillant", aide: "Le croissant brille doucement, sans s'arrêter" })}
           {effet({ k: "scintillant", label: "✦ Scintillant", aide: "Petites étoiles qui scintillent autour du nom" })}
           {effet({ k: "reflet", label: "💫 Reflet doré", aide: "Un reflet passe sur les lettres du nom" })}
@@ -140,6 +140,7 @@ function ReglageTitre() {
           <Input value={r.salutation} onChange={(e) => maj('salutation', e.target.value)} onKeyDown={entree} aria-label="Salutation" placeholder="Assalamou Alaykoum" />
           <Input value={r.bienvenue} onChange={(e) => maj('bienvenue', e.target.value)} onKeyDown={entree} aria-label="Phrase de bienvenue" placeholder="Bienvenue, {nom} !" />
           <p className="text-xs text-muted-foreground">{'{nom}'} est remplacé par le nom de l'élève.</p>
+          {couleur({ k: "couleurBienvenue", label: "Couleur de « Bienvenue »" })}
           {effet({ k: "bismillah", label: "Bismillah en arabe" })}
           {r.bismillah && (
             <div className="flex flex-wrap items-center gap-3">

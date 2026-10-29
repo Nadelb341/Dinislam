@@ -28,6 +28,8 @@ export interface ReglagesTitre {
   /** Textes en dessous */
   salutation: string;
   bienvenue: string;    // {nom} = nom de l'élève
+  /** Couleur de « Bienvenue, … ! » (bleu du logo par défaut, 2026-10-29) */
+  couleurBienvenue: string;
   bismillah: boolean;
   /** vide = l'or habituel de l'appli */
   couleurBismillah: string;
@@ -41,7 +43,7 @@ export const TITRE_DEFAUT: ReglagesTitre = {
   texte: 'Dinislam', majuscules: true, police: 'cinzel', espacement: 2,
   couleurTexte: '#14213d', couleurTraits: '#c9932a', traits: true, icone: true,
   pluie: true, brillant: true, scintillant: false, ombre: false, reflet: false,
-  salutation: 'Assalamou Alaykoum', bienvenue: 'Bienvenue, {nom} !', bismillah: true, couleurBismillah: '',
+  salutation: 'Assalamou Alaykoum', bienvenue: 'Bienvenue, {nom} !', couleurBienvenue: '#1f3fbf', bismillah: true, couleurBismillah: '',
   ramadan: true, ramadanTexte: '#0f5132', ramadanTraits: '#d4a017',
 };
 

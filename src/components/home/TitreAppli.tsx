@@ -1,11 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { POLICES, TITRE_DEFAUT, estRamadan, useReglagesTitre, type ReglagesTitre } from '@/lib/apparence';
 
-const PLUIE_VUE = 'dinislam_pluie_vue';
-
-/** Étoiles de la pluie : positions et retards fixes (même dessin à chaque fois) */
-const ETOILES = [6, 14, 22, 31, 39, 47, 55, 63, 71, 79, 87, 94].map((left, i) => ({
-  left, delay: (i * 0.17) % 1.3, size: 9 + ((i * 7) % 9), char: i % 3 === 0 ? '★' : '✦',
+/**
+ * 🌠 Pluie d'étoiles PERMANENTE (2026-10-29, demande de Nadia) : légère et douce, des étoiles bien dorées,
+ * chacune suivie d'un petit chemin de mini-étoiles, qui tombent jusque sous le Bismillah et disparaissent en bas.
+ * Positions, tailles, vitesses et retards fixes (calculés une fois) : même dessin à chaque ouverture.
+ */
+const ETOILES = Array.from({ length: 16 }, (_, i) => ({
+  left: (i * 37 + 5) % 97,
+  size: 8 + ((i * 5) % 8),
+  duree: 6 + ((i * 7) % 5),
+  delay: -((i * 1.3) % 9), // négatif : la pluie est déjà en cours dès l'ouverture
+  char: i % 4 === 0 ? '★' : '✦',
 }));
 /** Couleur trop sombre pour le thème sombre ? (alors on éclaircit, sinon le nom serait illisible) */
 function tropSombre(hex: string) {
@@ -20,11 +26,10 @@ const SCINTILLES = [{ l: 4, t: 18 }, { l: 92, t: 22 }, { l: 18, t: 70 }, { l: 80
 
 /**
  * ✨ Le haut de l'accueil (2026-10-29, choix de Nadia) : le croissant de l'icône, le nom entre deux traits dorés
- * (proposition 8), la pluie d'étoiles à l'ouverture (une fois par ouverture de l'appli), puis « Assalamou Alaykoum »,
- * « Bienvenue » et le Bismillah. Tout vient des réglages du bouclier › 🔧 Apparence appli › Le titre.
- * `apercu` : dans le bouclier, la pluie se rejoue à chaque changement (`rejouer`).
+ * (proposition 8), la pluie d'étoiles permanente, puis « Assalamou Alaykoum », « Bienvenue » (en bleu du logo) et le Bismillah.
+ * Tout vient des réglages du bouclier › 🔧 Apparence appli › Le titre. `rejouer` relance la pluie dans l'aperçu.
  */
-export function TitreAppli({ r, nom, apercu = false, rejouer = 0, forcerRamadan }: {
+export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
   r: ReglagesTitre; nom: string | null; apercu?: boolean; rejouer?: number; forcerRamadan?: boolean;
 }) {
   const ramadan = r.ramadan && (forcerRamadan ?? estRamadan());
@@ -33,12 +38,6 @@ export function TitreAppli({ r, nom, apercu = false, rejouer = 0, forcerRamadan 
   const couleur = sombre && tropSombre(choisie) ? '#f3ead2' : choisie;
   const traits = ramadan ? r.ramadanTraits : r.couleurTraits;
   const police = POLICES.find((p) => p.v === r.police)?.css ?? POLICES[0].css;
-  // Pluie d'étoiles : une seule fois par ouverture de l'appli (toujours dans l'aperçu du bouclier)
-  const [pluie] = useState(() => {
-    if (apercu) return true;
-    try { if (sessionStorage.getItem(PLUIE_VUE)) return false; sessionStorage.setItem(PLUIE_VUE, '1'); } catch { /* stockage indisponible */ }
-    return true;
-  });
   const texte = r.majuscules ? r.texte.toUpperCase() : r.texte;
   const bienvenue = r.bienvenue.replace('{nom}', nom || '').replace(/,\s*!/, ' !').replace(/\s+!/, ' !');
   const styleNom = useMemo(() => ({
@@ -51,10 +50,14 @@ export function TitreAppli({ r, nom, apercu = false, rejouer = 0, forcerRamadan 
 
   return (
     <div className="relative text-center py-6 animate-fade-in overflow-hidden">
-      {r.pluie && pluie && (
-        <div key={rejouer} aria-hidden className="absolute inset-x-0 top-0 h-40 pointer-events-none">
+      {r.pluie && (
+        <div key={rejouer} aria-hidden className="absolute inset-0 pointer-events-none">
           {ETOILES.map((e, i) => (
-            <span key={i} className="titre-etoile-tombe" style={{ left: `${e.left}%`, animationDelay: `${e.delay}s`, fontSize: e.size, color: traits }}>{e.char}</span>
+            <span key={i} className="titre-etoile-tombe" style={{ left: `${e.left}%`, animationDuration: `${e.duree}s`, animationDelay: `${e.delay}s`, ['--or' as string]: traits }}>
+              {/* Le chemin : mini-étoiles de plus en plus petites et pâles au-dessus de l'étoile */}
+              <span className="titre-chemin">{'✦'.repeat(4).split('').map((c, k) => <i key={k} style={{ fontSize: Math.max(3, e.size - 3 - k * 1.5), opacity: 0.7 - k * 0.15 }}>{c}</i>)}</span>
+              <span className="titre-etoile" style={{ fontSize: e.size }}>{e.char}</span>
+            </span>
           ))}
         </div>
       )}
@@ -76,7 +79,7 @@ export function TitreAppli({ r, nom, apercu = false, rejouer = 0, forcerRamadan 
 
       {ramadan && <p className="mt-1 text-xs font-bold" style={{ color: traits }}>🌙 Ramadan Moubarak</p>}
       {r.salutation && <p className="text-muted-foreground mt-3 mb-1">{r.salutation}</p>}
-      {r.bienvenue && <h2 className="text-2xl font-bold text-foreground [overflow-wrap:anywhere]">{bienvenue}</h2>}
+      {r.bienvenue && <h2 className="text-2xl font-bold [overflow-wrap:anywhere]" style={{ color: sombre && tropSombre(r.couleurBienvenue) ? '#9db4ff' : r.couleurBienvenue }}>{bienvenue}</h2>}
       {r.bismillah && <p className={`font-arabic mt-2 text-3xl ${r.couleurBismillah ? '' : 'text-gold'}`} style={r.couleurBismillah ? { color: r.couleurBismillah } : undefined}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>}
     </div>
   );
