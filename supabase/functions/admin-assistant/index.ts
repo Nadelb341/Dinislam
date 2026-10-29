@@ -88,7 +88,7 @@ serve(async (req) => {
     // Gather app context
     const context = await gatherAppContext(supabase);
 
-    const systemPrompt = `Tu es l'Assistant Lune 🌙, un assistant IA professionnel et expert dédié exclusivement à l'administrateur de l'application "Dini Bismillah" — une plateforme éducative d'apprentissage de l'arabe et de l'éducation islamique.
+    const systemPrompt = `Tu es l'Assistant Lune 🌙, un assistant IA professionnel et expert dédié exclusivement à l'administrateur de l'application "Dinislam" — une plateforme éducative d'apprentissage de l'arabe et de l'éducation islamique.
 
 ## TON RÔLE
 - Tu assistes l'admin dans TOUTES les tâches de gestion de l'application

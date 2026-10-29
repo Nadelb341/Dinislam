@@ -83,10 +83,10 @@ self.addEventListener('push', function(event) {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: 'Dini Bismillah', body: event.data.text() };
+    payload = { title: 'Dinislam', body: event.data.text() };
   }
 
-  const title = payload.title || 'Dini Bismillah';
+  const title = payload.title || 'Dinislam';
   const options = {
     body: payload.body || '',
     icon: payload.icon || '/icon-192.png',

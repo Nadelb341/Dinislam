@@ -286,7 +286,7 @@ const Auth = () => {
           <span className="font-arabic text-4xl text-primary-foreground">﷽</span>
         </div>
         <h1 className="text-4xl font-bold text-primary-foreground mb-2">
-          <span className="text-gradient-gold">Dini</span> Bismillah
+          <span className="text-gradient-gold">Din</span>islam
         </h1>
         <p className="text-primary-foreground/70 text-lg">
           Votre compagnon d'apprentissage de l'arabe

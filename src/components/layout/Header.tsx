@@ -33,7 +33,7 @@ interface HeaderProps {
 }
 
 const Header = ({
-  title = 'Dini Bismillah',
+  title = 'Dinislam',
   showBack = false
 }: HeaderProps) => {
   const navigate = useNavigate();

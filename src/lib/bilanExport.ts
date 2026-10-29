@@ -4,17 +4,17 @@
  * ⚡ Les deux outils (html-to-image, jsPDF) ne se chargent qu'au moment de l'envoi.
  */
 
-/** Capture d'un bloc de l'écran en image PNG (toujours en thème clair, comme une feuille) */
-export async function capturerPng(node: HTMLElement): Promise<Blob> {
-  const { toBlob } = await import('html-to-image');
+/** Capture d'un bloc de l'écran en image JPEG légère (toujours en thème clair, comme une feuille).
+ *  2026-10-29 : avant en PNG très haute qualité → 17 Mo, trop lourd pour Messages ; maintenant quelques centaines de Ko */
+export async function capturerImage(node: HTMLElement): Promise<Blob> {
+  const { toJpeg } = await import('html-to-image');
   const html = document.documentElement;
   const sombre = html.classList.contains('dark');
   if (sombre) html.classList.remove('dark');
   try {
     await new Promise((r) => requestAnimationFrame(() => r(null)));
-    const blob = await toBlob(node, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
-    if (!blob) throw new Error("L'image n'a pas pu être fabriquée");
-    return blob;
+    const dataUrl = await toJpeg(node, { pixelRatio: 1.6, quality: 0.85, backgroundColor: '#ffffff', cacheBust: true });
+    return await (await fetch(dataUrl)).blob();
   } finally {
     if (sombre) html.classList.add('dark');
   }
@@ -43,7 +43,7 @@ export async function fabriquerPdf(images: Blob[]): Promise<Blob> {
     for (let y = 0; y < hauteurTotale; y += hauteurUtile) {
       if (!premiere) pdf.addPage();
       premiere = false;
-      pdf.addImage(data, 'PNG', marge, marge - y, largeur, hauteurTotale);
+      pdf.addImage(data, 'JPEG', marge, marge - y, largeur, hauteurTotale, undefined, 'FAST');
     }
     URL.revokeObjectURL(url);
   }

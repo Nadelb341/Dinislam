@@ -327,7 +327,7 @@ const Index = () => {
       if (result.is_active && result.title) {
         sendPushNotification({
           title: '🌟 {prenom}, une nouvelle activité est disponible !', category: 'act',
-          body: `Salam ! Le module ${result.title} est maintenant disponible sur Dini Bismillah !`,
+          body: `Salam ! Le module ${result.title} est maintenant disponible sur Dinislam !`,
           type: 'broadcast'
         });
       }
@@ -448,7 +448,7 @@ const handleModuleClick = (mod) => {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
                 <span className="font-arabic text-base text-primary">﷽</span>
               </div>
-              <h1 className="text-2xl font-bold text-foreground">Dini Bismillah</h1>
+              <h1 className="text-2xl font-bold text-foreground">Dinislam</h1>
             </div>
             <p className="text-muted-foreground mb-1">Assalamou Alaykoum</p>
             <h2 className="text-2xl font-bold text-foreground">

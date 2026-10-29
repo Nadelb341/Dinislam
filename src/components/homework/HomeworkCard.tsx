@@ -10,6 +10,8 @@ import { CheckCircle2, Clock, BookOpen, Sparkles, Hand, BookMarked, Moon, Extern
 import { toast } from 'sonner';
 import { cn, errorMessage } from '@/lib/utils';
 import { compressDocument } from '@/lib/compressImage';
+import { audioExt } from '@/hooks/useAudioRecorder';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 const SUBJECTS: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string; path: string }> = {
   nourania: { label: 'Nourania', icon: Sparkles, color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/30', path: '/nourania' },
@@ -169,7 +171,10 @@ const HomeworkCard = () => {
   const startRecording = async (assignmentId: string) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Vrai format de l'appareil (mp4 sur iPhone et Mac) : avant « webm » était écrit en dur → audio illisible sur Safari
+      const prefere = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t));
+      let mediaRecorder: MediaRecorder;
+      try { mediaRecorder = prefere ? new MediaRecorder(stream, { mimeType: prefere }) : new MediaRecorder(stream); } catch { mediaRecorder = new MediaRecorder(stream); }
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       setRecordingTime(0);
@@ -183,7 +188,7 @@ const HomeworkCard = () => {
         stream.getTracks().forEach(t => t.stop());
         if (timerRef.current) clearInterval(timerRef.current);
 
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: (mediaRecorder.mimeType || prefere || 'audio/mp4').split(';')[0] });
         const url = URL.createObjectURL(audioBlob);
         setPendingAudioBlob(audioBlob);
         setPendingAudioUrl(url);
@@ -212,7 +217,7 @@ const HomeworkCard = () => {
     if (!pendingAudioBlob || !pendingAudioAssignmentId) return;
     setIsSendingAudio(true);
     try {
-      const audioFile = new File([pendingAudioBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
+      const audioFile = new File([pendingAudioBlob], `audio_${Date.now()}.${audioExt(pendingAudioBlob)}`, { type: pendingAudioBlob.type || 'audio/mp4' });
       await uploadFile(pendingAudioAssignmentId, audioFile);
       clearPendingAudio();
     } catch (err) {
@@ -443,7 +448,7 @@ const HomeworkCard = () => {
             {pendingAudioUrl ? (
               <div className="space-y-2 p-3 bg-muted/50 rounded-xl">
                 <p className="text-xs font-semibold text-foreground text-center">🎙️ Aperçu de l'enregistrement</p>
-                <audio src={pendingAudioUrl} controls className="w-full h-10" />
+                <AudioApercu blob={pendingAudioBlob} dataUrl={null} className="w-full h-10" />
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

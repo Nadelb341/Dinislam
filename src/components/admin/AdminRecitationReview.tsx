@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { errorMessage } from '@/lib/utils';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { useAudioRecorder, audioExt } from '@/hooks/useAudioRecorder';
+import { AudioApercu } from '@/components/shared/AudioApercu';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
@@ -22,12 +24,12 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
   const [filter, setFilter] = useState<'pending' | 'corrected' | 'validated'>('pending');
   const [responding, setResponding] = useState<string | null>(null);
   const [adminComment, setAdminComment] = useState('');
-  const [recording, setRecording] = useState(false);
-  const [adminAudio, setAdminAudio] = useState<Blob | null>(null);
-  const [adminAudioUrl, setAdminAudioUrl] = useState<string | null>(null);
+  // 🎙️ Même enregistreur que le reste de l'appli (2026-10-29) : le vrai format (mp4 sur Mac/iPhone) est gardé,
+  // avant « audio/webm » était écrit en dur → « Erreur » à la réécoute sur Safari et chez les élèves sur iPhone
+  const enreg = useAudioRecorder();
+  const recording = enreg.recording;
+  const adminAudio = enreg.blob;
   const [saving, setSaving] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
 
   // Extrait le path Supabase Storage depuis une URL publique ou signée
   const extractStoragePath = (url: string): string | null => {
@@ -94,30 +96,8 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      chunksRef.current = [];
-      const mr = new MediaRecorder(stream);
-      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAdminAudio(blob);
-        setAdminAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach(t => t.stop());
-      };
-      mediaRecorderRef.current = mr;
-      mr.start();
-      setRecording(true);
-    } catch {
-      toast.error('Impossible d\'accéder au microphone');
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-  };
+  const startRecording = () => { void enreg.start(); };
+  const stopRecording = () => enreg.stop();
 
   type Rec = NonNullable<typeof recitations>[number];
   const sendResponse = async (rec: Rec, newStatus: 'validated' | 'corrected') => {
@@ -133,8 +113,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
     const savedAudio = adminAudio;
     setResponding(null);
     setAdminComment('');
-    setAdminAudio(null);
-    setAdminAudioUrl(null);
+    enreg.reset();
     queryClient.setQueryData<NonNullable<typeof recitations>>(['admin-recitations', filter, kind], (old) =>
       (old || []).filter((r) => r.id !== recitationId)
     );
@@ -144,10 +123,10 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
       let audioPublicUrl: string | null = null;
 
       if (savedAudio) {
-        const filename = `admin/${studentId}/${recitationId}-response.webm`;
+        const filename = `admin/${studentId}/${recitationId}-response.${audioExt(savedAudio)}`;
         const { error: uploadError } = await supabase.storage
           .from('recitations')
-          .upload(filename, savedAudio, { contentType: 'audio/webm', upsert: true });
+          .upload(filename, savedAudio, { contentType: savedAudio.type || 'audio/mp4', upsert: true });
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
         audioPublicUrl = publicUrl;
@@ -198,7 +177,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
       queryClient.setQueryData(['admin-recitations', filter, kind], previousData);
       setResponding(recitationId);
       setAdminComment(savedComment);
-      setAdminAudio(savedAudio);
+      if (savedAudio) enreg.keep(savedAudio);
       toast.error(errorMessage(e) || 'Erreur');
     } finally {
       setSaving(false);
@@ -208,8 +187,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
   const openResponse = (id: string) => {
     setResponding(id);
     setAdminComment('');
-    setAdminAudio(null);
-    setAdminAudioUrl(null);
+    enreg.reset();
   };
 
   return (
@@ -327,8 +305,8 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
                     ) : (
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Votre réponse audio :</p>
-                        <audio src={adminAudioUrl!} controls className="w-full" style={{ height: '32px' }} />
-                        <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => { setAdminAudio(null); setAdminAudioUrl(null); }}>
+                        <AudioApercu blob={enreg.blob} dataUrl={enreg.previewUrl} className="w-full h-9" />
+                        <Button size="sm" variant="ghost" className="text-xs h-6" onClick={enreg.reset}>
                           Supprimer
                         </Button>
                       </div>

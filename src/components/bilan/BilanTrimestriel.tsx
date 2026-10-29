@@ -19,7 +19,7 @@ import {
   calculerSnapshot, chargerDonneesBilan, guideAuto, messagesEnfant, periodeBilan, phrasesProposees, prochaineSourate, tendance, titrePeriode,
   type BilanGuide, type BilanSnapshot, type BilanTraduction, type DonneesBilan,
 } from '@/lib/bilanTrimestriel';
-import { capturerPng, fabriquerPdf, nomFichier, partagerBilan } from '@/lib/bilanExport';
+import { capturerImage, fabriquerPdf, nomFichier, partagerBilan } from '@/lib/bilanExport';
 import { BilanVue } from './BilanVue';
 import { clearDraft, loadDraft } from '@/hooks/useDraftRecovery';
 
@@ -198,6 +198,8 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
   const [traduction, setTraduction] = useState<BilanTraduction | null>(report?.traduction ?? null);
   const [traduisant, setTraduisant] = useState(false);
   const [envoi, setEnvoi] = useState(false);
+  // Fichiers prêts : le partage s'ouvre au toucher suivant (le navigateur l'exige juste après un toucher)
+  const [pret, setPret] = useState<{ fichiers: File[]; texte: string; poids: string } | null>(null);
   const exportFr = useRef<HTMLDivElement>(null);
   const exportAr = useRef<HTMLDivElement>(null);
   const noteNombre = (() => { const n = Number(note.replace(',', '.')); return note.trim() && Number.isFinite(n) && n >= 0 && n <= 20 ? Math.round(n * 10) / 10 : null; })();
@@ -254,22 +256,34 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
         sendPushNotification({ userIds: [studentId, ...(liens || []).map((l) => l.parent_id)], category: 'par_bilan',
           title: `📊 Nouveau bilan de ${snap.prenom}`, body: 'Il vous attend dans l\'Espace parents (Paramètres), avec votre code parents.', data: { url: '/settings?espace=parents' } });
       }
-      // Image(s) + PDF + lien de secours
+      // Image(s) + PDF + lien de secours, préparés maintenant ; le partage s'ouvre au toucher suivant
       const images: Blob[] = [];
-      if (exportFr.current) images.push(await capturerPng(exportFr.current));
-      if (arabe && traduction && exportAr.current) images.push(await capturerPng(exportAr.current));
+      if (exportFr.current) images.push(await capturerImage(exportFr.current));
+      if (arabe && traduction && exportAr.current) images.push(await capturerImage(exportAr.current));
       const base = nomFichier(snap.prenom, titrePeriode(periode.label, periode.fin));
       const fichiers = [
-        ...images.map((b, i) => new File([b], `${base}${i ? '_arabe' : ''}.png`, { type: 'image/png' })),
+        ...images.map((b, i) => new File([b], `${base}${i ? '_arabe' : ''}.jpg`, { type: 'image/jpeg' })),
         new File([await fabriquerPdf(images)], `${base}.pdf`, { type: 'application/pdf' }),
       ];
       const lien = `${window.location.origin}/bilan/${token}`;
       const texte = `Assalamou alaykoum, voici le bilan de ${snap.prenom} (${titrePeriode(periode.label, periode.fin)}). Il est aussi dans l'Espace parents de l'appli. Si l'image ou le PDF ne s'ouvre pas : ${lien} (votre code parents vous sera demandé).`;
-      const mode = await partagerBilan(fichiers, texte);
-      toast.success(mode === 'partage' ? '📨 Bilan envoyé' : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
+      const octets = fichiers.reduce((n, f) => n + f.size, 0);
+      setPret({ fichiers, texte, poids: octets > 1e6 ? `${(octets / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.round(octets / 1e3)} Ko` });
     } catch (e) {
       if ((e as Error).name !== 'AbortError') toast.error(errorMessage(e));
     } finally { setEnvoi(false); }
+  };
+
+  const partager = async () => {
+    if (!pret) return;
+    try {
+      const mode = await partagerBilan(pret.fichiers, pret.texte);
+      toast.success(mode === 'partage' ? '📨 Bilan envoyé' : '📥 Image et PDF téléchargés, message copié : colle-le dans WhatsApp ou Messages');
+    } catch (e) { if ((e as Error).name !== 'AbortError') toast.error(errorMessage(e)); }
+  };
+  const copierTexte = async () => {
+    if (!pret) return;
+    try { await navigator.clipboard.writeText(pret.texte); toast.success('📋 Message copié'); } catch { toast.error('Copie impossible : sélectionne le texte à la main'); }
   };
 
   const contenu = { snapshot: snap, appreciation: appreciation.trim() || null, motivation: motivation.trim() || null, note: avecNote ? noteNombre : null, guide, traduction: arabe ? traduction : null, langueAr: arabe || null };
@@ -365,10 +379,20 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
             <Button variant="outline" onClick={() => { sauver.mutate({}); onClose(); }}>💾 Enregistrer et fermer</Button>
             <Button className="bg-[#2457a5] hover:bg-[#1d4685]" disabled={envoi || (arabe !== '' && !traduction)}
               onClick={() => askValidation(report?.sent_at ? 'Renvoyer le bilan ?' : 'Envoyer le bilan aux parents ?',
-                `Le bilan de ${snap.prenom} sera rangé dans son Espace parents${report?.sent_at ? '' : ' (avec une notification)'}, puis WhatsApp ou Messages s'ouvrira avec l'image, le PDF et le lien.`, () => void envoyer())}>
-              {envoi && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}📨 {report?.sent_at ? 'Renvoyer le message' : 'Envoyer aux parents'}
+                `Le bilan de ${snap.prenom} sera rangé dans son Espace parents${report?.sent_at ? '' : ' (avec une notification)'}. Ensuite, touche « 📤 Choisir le contact » pour l'envoyer par WhatsApp ou Messages.`, () => void envoyer())}>
+              {envoi && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}📨 {report?.sent_at ? 'Préparer à nouveau' : 'Envoyer aux parents'}
             </Button>
             {arabe !== '' && !traduction && <p className="sm:col-span-2 text-xs text-amber-700 dark:text-amber-300">Traduis d'abord en arabe (ou choisis « Non »).</p>}
+            {pret && (
+              <div className="sm:col-span-2 rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2">
+                <p className="text-sm font-extrabold text-emerald-900 dark:text-emerald-100">✅ Bilan rangé dans l'Espace parents. Image et PDF prêts ({pret.poids}).</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => void partager()}>📤 Choisir le contact (WhatsApp, Messages…)</Button>
+                  <Button variant="outline" onClick={() => void copierTexte()}>📋 Copier le message avec le lien</Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{pret.texte}</p>
+              </div>
+            )}
           </div>
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
