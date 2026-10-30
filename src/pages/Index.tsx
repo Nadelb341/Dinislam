@@ -209,12 +209,12 @@ const Index = () => {
       tries++;
       if (el && el.offsetHeight > 0) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.history.replaceState({}, '', location.pathname);
+        navigate(location.pathname, { replace: true }); // par le routeur : le lien suivant marchera aussi
         clearInterval(t);
       } else if (tries > 20) clearInterval(t);
     }, 250);
     return () => clearInterval(t);
-  }, [location.search, location.pathname]);
+  }, [location.search, location.pathname, navigate]);
   const queryClient = useQueryClient();
 
   const [showNotifBanner, setShowNotifBanner] = useState(false);

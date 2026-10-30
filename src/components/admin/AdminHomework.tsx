@@ -771,7 +771,12 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             }
           }}
           onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
-          onDonner={nouveauDevoir} />
+          onDonner={nouveauDevoir}
+          onValider={(id) => {
+            // Ouvre ses rendus (écoute, ✅ Valider, 🔄 À refaire) et descend jusqu'à eux
+            setElevesRendusOuverts((prev) => ({ ...prev, [id]: true }));
+            setTimeout(() => document.getElementById(`rendu-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+          }} />
         {!groupeId && <p className="text-[11px] text-muted-foreground mt-1">🕑 Chaque devoir tourne à l'heure du cours de son groupe (mercredi 14 h si le groupe n'a pas d'heure réglée).</p>}
       </div>
 
@@ -795,7 +800,10 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             return <p className="text-muted-foreground text-sm text-center py-4">Aucun rendu</p>;
           }
 
-          return Object.entries(rendusParEleve).map(([studentId, { name, items }]) => {
+          // Ceux qui ont un devoir à valider d'abord (2026-10-30), puis par prénom
+          return Object.entries(rendusParEleve)
+            .sort(([, a], [, b]) => b.items.filter((r) => r.statut === 'rendu').length - a.items.filter((r) => r.statut === 'rendu').length || a.name.localeCompare(b.name, 'fr'))
+            .map(([studentId, { name, items }]) => {
             const ouvert = elevesRendusOuverts[studentId];
             const pendingCount = items.filter(r => r.statut === 'rendu').length;
             const hasARefaire = items.some(r => r.statut === 'a_refaire');
@@ -807,7 +815,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
               : 'border-green-400 bg-green-50 dark:bg-green-950/20';
 
             return (
-              <Card key={studentId} className={`mb-2 overflow-hidden border-2 ${colorClass}`}>
+              <Card key={studentId} id={`rendu-${studentId}`} className={`mb-2 overflow-hidden border-2 scroll-mt-24 ${colorClass}`}>
                 <button
                   onClick={() => toggleEleveRendu(studentId)}
                   className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"

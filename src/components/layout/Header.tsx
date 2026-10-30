@@ -74,18 +74,17 @@ const Header = ({
     if (params.get('open') === 'messages') {
       clearNewMessageFlag();
       setShowMessaging(true);
-      // Clean URL
-      const newUrl = location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      // Adresse nettoyée par le routeur (sinon un 2e lien identique n'ouvrirait plus rien, 2026-10-30)
+      navigate(location.pathname, { replace: true });
     }
     // Notification touchée (enseignante) : ouvrir directement le bon écran du bouclier, ex. ?admin=sourates-validations
     const adminSection = params.get('admin');
     if (adminSection && isAdmin) {
       setAdminInitial({ section: adminSection });
       setShowAdminModal(true);
-      window.history.replaceState({}, '', location.pathname);
+      navigate(location.pathname, { replace: true });
     }
-  }, [location.search, location.pathname, clearNewMessageFlag, isAdmin]);
+  }, [location.search, location.pathname, clearNewMessageFlag, isAdmin, navigate]);
 
   const handleOpenMessaging = () => {
     clearNewMessageFlag();

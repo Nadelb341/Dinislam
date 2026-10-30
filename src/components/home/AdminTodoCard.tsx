@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
 import { DRAFT_RESUME_EVENT, takeDraftResume } from '@/lib/pendingDrafts';
@@ -25,6 +25,7 @@ export function AdminTodoCard() {
   const [openId, setOpenId] = useState<string | null | undefined>(undefined); // undefined = aucun, null = Général
   const resumeChecked = useRef(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const sectionRef = useRef<HTMLElement>(null);
 
   // Notification « 📝 À FAIRE » touchée (?open=todo) : la carte s'ouvre et on la montre ;
@@ -36,8 +37,10 @@ export function AdminTodoCard() {
     setCollapsed(false);
     if (q.get('cahier') === '1') { setOpenCahier(true); setOpenId(null); }
     setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-    window.history.replaceState({}, '', location.pathname);
-  }, [location.search, location.pathname]);
+    // Adresse nettoyée PAR LE ROUTEUR (2026-10-30) : avant, window.history.replaceState laissait le routeur croire que
+    // « ?open=todo&cahier=1 » était toujours là → au 2e clic du bouclier, rien ne s'ouvrait
+    navigate(location.pathname, { replace: true });
+  }, [location.search, location.pathname, navigate]);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {

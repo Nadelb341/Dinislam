@@ -38,7 +38,7 @@ function pastille(l: LigneProf, passe: boolean) {
  * bandeau à l'heure du cours, boîte « 🔁 À rattraper dans le groupe », onglets Cette semaine · Semaine passée (bilan, idée 1)
  * · Historique (bande de semaines + par matière), « 🔁 Redonner » un devoir pas fait (idée 3).
  */
-export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onDonner }: {
+export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onDonner, onValider }: {
   eleves: { user_id: string; full_name: string | null }[];
   lignes: LigneProf[];
   prochainCours: Date | null;
@@ -46,6 +46,8 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   onDecision: (items: { devoirId: string; studentId: string }[], decision: Decision) => void;
   onDelete: (devoirId: string, titre: string) => void;
   onDonner: () => void;
+  /** 🟠 Ouvre ses rendus à valider (écoute, ✅ Valider, 🔄 À refaire) */
+  onValider?: (studentId: string) => void;
 }) {
   const [onglet, setOnglet] = useState<Onglet>('semaine');
   const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
@@ -98,25 +100,34 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
     );
   };
 
-  /** Une carte par élève (tous les élèves, même sans devoir dans l'onglet) */
+  /** Une carte par élève (tous les élèves, même sans devoir dans l'onglet).
+   *  Tri (2026-10-30, demande de Nadia) : d'abord ceux qui ont un devoir à valider (carte déjà ouverte),
+   *  puis ceux qui ont des devoirs pas faits, puis ceux qui ont des devoirs, puis les autres ; par prénom ensuite. */
   const parEleve = (liste: LigneProf[], passe: boolean) => eleves.map((e) => {
     const siens = liste.filter((l) => l.eleveId === e.user_id);
-    const pasFaits = siens.filter((l) => !l.fait).length;
-    const aValider = siens.filter((l) => l.statut === 'rendu').length;
+    return { e, siens, pasFaits: siens.filter((l) => !l.fait).length, aValider: siens.filter((l) => l.statut === 'rendu').length };
+  }).sort((a, b) => b.aValider - a.aValider || (passe ? b.pasFaits - a.pasFaits : 0) || Number(b.siens.length > 0) - Number(a.siens.length > 0)
+    || (a.e.full_name || '').localeCompare(b.e.full_name || '', 'fr'))
+    .map(({ e, siens, pasFaits, aValider }) => {
     const couleur = aValider ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20'
       : siens.length && !pasFaits ? 'border-green-400 bg-green-50 dark:bg-green-950/20'
       : passe && pasFaits ? 'border-red-300 bg-red-50/60 dark:bg-red-950/20' : 'border-border bg-muted/30';
     const cle = `${onglet}-${e.user_id}`;
+    const ouvert = ouverts[cle] ?? aValider > 0; // un devoir à valider : la carte est déjà ouverte
     return (
       <div key={e.user_id} className={cn('mb-2 rounded-xl overflow-hidden border-2', couleur)}>
-        <button type="button" onClick={() => setOuverts((o) => ({ ...o, [cle]: !o[cle] }))} className="w-full flex items-center gap-2 p-3 text-left">
+        <button type="button" onClick={() => setOuverts((o) => ({ ...o, [cle]: !ouvert }))} className="w-full flex items-center gap-2 p-3 text-left">
           <span className="flex-1 min-w-0 font-semibold text-sm [overflow-wrap:anywhere]">👤 {e.full_name} ({siens.length} devoir{siens.length > 1 ? 's' : ''})</span>
+          {aValider > 0 && <span className="shrink-0 rounded-full bg-orange-500 px-2 h-5 grid place-items-center text-[11px] font-bold text-white">🟠 {aValider} à valider</span>}
           {passe && pasFaits > 0 && <span className="shrink-0 rounded-full bg-destructive px-1.5 min-w-[20px] h-5 grid place-items-center text-[11px] font-bold text-destructive-foreground">{pasFaits}</span>}
-          {ouverts[cle] ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+          {ouvert ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
         </button>
-        {ouverts[cle] && (
+        {ouvert && (
           <div className="px-3 pb-3 space-y-2">
             {siens.length ? siens.map((l) => ligne(l, passe)) : <p className="text-xs text-muted-foreground text-center py-2">Aucun devoir ici</p>}
+            {aValider > 0 && onValider && (
+              <button type="button" onClick={() => onValider(e.user_id)} className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white py-2 text-sm font-extrabold">🟠 Écouter et valider</button>
+            )}
           </div>
         )}
       </div>
@@ -150,6 +161,26 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
           <button type="button" onClick={onDonner} className="w-full rounded-xl bg-[#2457a5] text-white py-2 text-sm font-extrabold">📚 Donner les devoirs</button>
         </div>
       )}
+
+      {/* 🟠 À valider, tous onglets confondus : visible d'un coup d'œil, sans chercher (2026-10-30) */}
+      {(() => {
+        const aVal = lignes.filter((l) => l.statut === 'rendu');
+        if (!aVal.length) return null;
+        const parEl = [...new Set(aVal.map((l) => l.eleveId))];
+        return (
+          <div className="rounded-2xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/30 p-3 space-y-2">
+            <p className="text-sm font-extrabold text-orange-900 dark:text-orange-100">🟠 À valider ({aVal.length})</p>
+            <div className="flex flex-wrap gap-1.5">
+              {parEl.map((id) => (
+                <button key={id} type="button" onClick={() => onValider?.(id)}
+                  className="rounded-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 text-sm font-bold [overflow-wrap:anywhere]">
+                  {nom(id)} ({aVal.filter((l) => l.eleveId === id).length}) ›
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {rattraper.length > 0 && (
         <div className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/20 dark:border-red-800 p-3 space-y-1.5">
