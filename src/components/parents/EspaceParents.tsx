@@ -64,7 +64,7 @@ export function EspaceParentsCarte() {
       <CardContent className="p-4 space-y-3">
         <div>
           <p className="font-extrabold text-violet-900 dark:text-violet-100">👨‍👩‍👧 Espace parents</p>
-          <p className="text-xs text-muted-foreground">Bilans de chaque trimestre, cahier de texte et absences. Protégé par le code parents (6 chiffres).</p>
+          <p className="text-xs text-muted-foreground">Bilans de chaque trimestre, cahier de texte et absences. Protégé par le code parents.</p>
         </div>
         {enfants.map((e) => (
           <button key={e.child_id} type="button" onClick={() => ouvrir(e)}

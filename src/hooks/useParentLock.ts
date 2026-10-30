@@ -59,7 +59,7 @@ export function useParentLock() {
     return true;
   };
 
-  /** Espace parents réuni (2026-10-28) : le code parents (6 chiffres) ouvre aussi les Paramètres */
+  /** Espace parents réuni (2026-10-28) : le code parents ouvre aussi les Paramètres */
   const unlockWithCode = async (code: string): Promise<boolean> => {
     if (!user) return false;
     const { data } = await supabase.rpc('parent_code_check', { p_child: user.id, p_code: code });

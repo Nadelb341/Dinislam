@@ -13,7 +13,7 @@ import { LABELS_CODE, memoriserCode } from '@/lib/espaceParents';
 
 
 /**
- * 🔐 Code parents d'un enfant : le saisir, ou le créer la 1re fois (6 chiffres, différent du mot de passe de l'appli).
+ * 🔐 Code parents d'un enfant : le saisir, ou le créer la 1re fois (code libre : lettres et/ou chiffres, différent du mot de passe de l'appli).
  * Sur le compte de l'enfant, créer le 1er code demande aussi le mot de passe du compte (comme l'ancien verrou des Paramètres).
  * Idée 6 : un 2e code (ex. Papa) peut être créé par quelqu'un qui connaît déjà le 1er.
  */
@@ -52,7 +52,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
   }, [open, childId]);
 
   const verifier = async () => {
-    if (code.length !== 6) return;
+    if (!code) return;
     setBusy(true); setErreur('');
     const { data, error } = await supabase.rpc('parent_code_check', { p_child: childId, p_code: code });
     setBusy(false);
@@ -64,7 +64,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
   const creer = async () => {
     const nom = label === 'Autre' ? autre.trim() : label;
     if (!nom) { setErreur('Indiquez qui crée ce code (ex. Maman, Papa, Tata…)'); return; }
-    if (code.length !== 6) { setErreur('Le code doit avoir 6 chiffres'); return; }
+    if (!code) { setErreur('Écrivez votre code'); return; }
     if (code !== code2) { setErreur('Les deux codes ne sont pas pareils'); return; }
     setBusy(true); setErreur('');
     try {
@@ -95,9 +95,9 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
           <p className="py-4 text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>
         ) : mode === 'saisir' ? (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void verifier(); }}>
-            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents (6 chiffres)" aria-label="Code parents" autoFocus />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Votre code" aria-label="Code parents" autoFocus />
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
-            <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ouvrir</Button>
+            <Button type="submit" className="w-full" disabled={busy || !code}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ouvrir</Button>
             <p className="text-xs text-muted-foreground">Codes créés : {labels.join(' et ')}. Code oublié : la professeure peut le remettre à zéro.</p>
             {labels.length < 2 && (
               <button type="button" onClick={() => { setMode('creer'); setCode(''); setErreur(''); }} className="w-full text-xs font-bold text-primary">
@@ -108,6 +108,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
         ) : (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void creer(); }}>
             <p className="text-sm">{labels.length ? 'Créez votre propre code. Il faut le code déjà créé pour en ajouter un.' : 'Première fois : créez le code des parents. Il est différent du mot de passe de l\'appli.'}</p>
+            <p className="text-xs text-muted-foreground">Lettres et/ou chiffres, comme vous voulez. Attention aux majuscules : « Soleil » et « soleil » ne sont pas le même code.</p>
             <div className="flex flex-wrap gap-2">
               {[...reste, 'Autre'].map((x) => (
                 <button key={x} type="button" aria-pressed={label === x} onClick={() => setLabel(x)}
@@ -117,7 +118,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
             {label === 'Autre' && <Input value={autre} onChange={(e) => setAutre(e.target.value)} placeholder="Qui ? (ex. Tata)" aria-label="Qui crée le code"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />}
             {labels.length > 0 && <CodeInput value={actuel} onChange={setActuel} placeholder="Code déjà créé" aria-label="Code déjà créé" />}
-            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Nouveau code (6 chiffres de votre choix)" aria-label="Nouveau code" />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Votre code (lettres et/ou chiffres, au choix)" aria-label="Nouveau code" />
             <CodeInput value={code2} onChange={(v) => { setCode2(v); setErreur(''); }} placeholder="Le même code, encore une fois" aria-label="Confirmer le code" />
             {compteEnfant && !labels.length && (
               <PasswordInput value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} placeholder={`Mot de passe du compte de ${childName}`} aria-label="Mot de passe du compte" autoComplete="current-password" />

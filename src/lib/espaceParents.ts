@@ -1,6 +1,6 @@
 /**
  * 👨‍👩‍👧 Espace parents (2026-10-28, choix de Nadia) :
- *  - sur le compte d'un enfant (moins de 18 ans, ou allumé par Nadia) : ses parents l'ouvrent avec LEUR code à 6 chiffres
+ *  - sur le compte d'un enfant (moins de 18 ans, ou allumé par Nadia) : ses parents l'ouvrent avec LEUR code (libre : lettres et/ou chiffres)
  *    (jusqu'à 2 codes, ex. Maman et Papa), indépendant du mot de passe de l'appli ;
  *  - sur le compte d'un élève adulte relié à ses enfants : ses enfants, triés par prénom, avec le même code que chez l'enfant.
  * Le code n'est jamais lu par l'appli : il est vérifié par la base (fonctions parent_*). Une fois entré, il reste ouvert

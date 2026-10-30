@@ -9,7 +9,7 @@ import { CodeInput } from '@/components/parents/CodeInput';
 
 /**
  * Fenêtre « Espace parents » qui protège les Paramètres (élèves de moins de 12 ans).
- * Réunie avec le nouvel Espace parents (2026-10-28) : si les parents ont créé leur code (6 chiffres), c'est lui qui est demandé ;
+ * Réunie avec le nouvel Espace parents (2026-10-28) : si les parents ont créé leur code (libre), c'est lui qui est demandé ;
  * sinon, comme avant, le mot de passe de connexion de l'enfant (puis on propose de créer le code dans l'Espace parents).
  */
 const ParentGateDialog = ({ open, onOpenChange, onUnlock, onUnlockCode, onSuccess }: {
@@ -46,7 +46,7 @@ const ParentGateDialog = ({ open, onOpenChange, onUnlock, onUnlockCode, onSucces
           <DialogTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> Espace parents</DialogTitle>
           <DialogDescription>
             {avecCode
-              ? 'Les paramètres sont réservés aux parents. Entrez votre code parents (6 chiffres).'
+              ? 'Les paramètres sont réservés aux parents. Entrez votre code parents.'
               : "Les paramètres sont réservés aux parents. Entrez le mot de passe de l'enfant (le même que pour se connecter à l'appli). Vous pourrez ensuite créer votre code parents dans l'Espace parents."}
           </DialogDescription>
         </DialogHeader>
