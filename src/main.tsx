@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { installMoodToasts } from "./lib/moodToasts";
+import { rechargerUneFois } from "./lib/miseAJour";
+
+// 🔄 Un morceau de l'appli introuvable après une mise en ligne : on recharge sur la nouvelle version (2026-10-30)
+window.addEventListener("vite:preloadError", (event) => { event.preventDefault(); rechargerUneFois(); });
 
 // Émojis selon le ton, le sujet et la saison sur tous les petits messages (2026-10-19)
 installMoodToasts();

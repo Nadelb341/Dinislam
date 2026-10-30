@@ -125,7 +125,7 @@ export function SignalerAbsenceDialog({ enfants, onClose }: { enfants: EnfantEsp
 
   return (
     <>
-      <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <Dialog open={!codeDemande} onOpenChange={(o) => { if (!o && !codeDemande) onClose(); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>🙋 Signaler une absence</DialogTitle>
@@ -180,16 +180,15 @@ export function SignalerAbsenceDialog({ enfants, onClose }: { enfants: EnfantEsp
             </div>
           )}
           {validationDialog}
-          {/* Le code est demandé DANS la fenêtre (avant : à côté → la fenêtre « Signaler une absence » reprenait le clavier
-              et les chiffres ne s'écrivaient pas, 2026-10-30) */}
-          {codeDemande && (
-            <CodeParentsDialog childId={codeDemande.child_id} childName={prenomDe(codeDemande.full_name)} open
-              raison={`Pour signaler l'absence de ${prenomDe(codeDemande.full_name)}.`}
-              onOpenChange={(o) => { if (!o) { setCodeDemande(null); if (enfants.length === 1) onClose(); } }}
-              onOk={async (code) => { const e = codeDemande; setCodeDemande(null); await chargerCours(e, code); void suite(); }} />
-          )}
         </DialogContent>
       </Dialog>
+      {/* Pendant la saisie du code, la fenêtre « Signaler une absence » est fermée : rien ne peut voler la saisie (2026-10-30) */}
+      {codeDemande && (
+        <CodeParentsDialog childId={codeDemande.child_id} childName={prenomDe(codeDemande.full_name)} open
+          raison={`Pour signaler l'absence de ${prenomDe(codeDemande.full_name)}.`}
+          onOpenChange={(o) => { if (!o) { setCodeDemande(null); if (enfants.length === 1) onClose(); } }}
+          onOk={async (code) => { const e = codeDemande; setCodeDemande(null); await chargerCours(e, code); void suite(); }} />
+      )}
     </>
   );
 }

@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
+import { Users,
   ArrowLeft, User, Search,
   Moon, Sparkles, BookOpen, Hand, BookMarked,
   MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff,
@@ -62,6 +62,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   } | null>(null);
 
   // DOB dialog state
+  const [parentsEleve, setParentsEleve] = useState<{ id: string; full_name: string | null } | null>(null);
   const [dobDialogStudent, setDobDialogStudent] = useState<{ id: string; full_name: string | null; prayer_group: string | null } | null>(null);
   const [dobValue, setDobValue] = useState('');
   const [savingDob, setSavingDob] = useState(false);
@@ -508,6 +509,10 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                   <DropdownMenuItem onClick={() => openDobDialog(student)}>
                     <CalendarIcon className="h-4 w-4 mr-2" /> 📅 Changer Date Naissance
                   </DropdownMenuItem>
+                  {/* 👨‍👩‍👧 Téléphones des parents, Espace parents, codes, parents reliés (2026-10-30 : avant, caché dans « Voir la progression ») */}
+                  <DropdownMenuItem onClick={() => setParentsEleve({ id: student.user_id, full_name: student.full_name })}>
+                    <Users className="h-4 w-4 mr-2" /> 👨‍👩‍👧 Parents et téléphones
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openPasswordDialog(student)}>
                     <KeyRound className="h-4 w-4 mr-2" /> 🔑 Modifier le mot de passe
                   </DropdownMenuItem>
@@ -583,8 +588,6 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
 
               {/* Réglages de notifications + Espace parents (2026-09-30) */}
               {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
-              {/* 👨‍👩‍👧 Espace parents, date de naissance, codes, parents reliés (2026-10-28) */}
-              {selectedStudent?.id && <FicheEspaceParents userId={selectedStudent.id} />}
               {selectedStudent?.id && <StudentFollowUp userId={selectedStudent.id} />}
               {selectedStudent?.id && <AlphabetStudentSummary userId={selectedStudent.id} />}
 
@@ -671,6 +674,16 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 👨‍👩‍👧 Parents et téléphones */}
+      <Dialog open={!!parentsEleve} onOpenChange={(o) => { if (!o) setParentsEleve(null); }}>
+        <DialogContent className="max-w-md rounded-2xl max-h-[88vh] overflow-y-auto" level="nested">
+          <DialogHeader>
+            <DialogTitle className="[overflow-wrap:anywhere]">👨‍👩‍👧 Parents de {parentsEleve?.full_name || 'l\'élève'}</DialogTitle>
+          </DialogHeader>
+          {parentsEleve && <FicheEspaceParents userId={parentsEleve.id} />}
+        </DialogContent>
+      </Dialog>
 
       {/* DOB dialog */}
       <Dialog open={!!dobDialogStudent} onOpenChange={() => setDobDialogStudent(null)}>

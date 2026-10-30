@@ -67,8 +67,22 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
   const actif = espaceParentsActif(p);
 
   return (
-    <div className="border-t pt-4 space-y-3">
-      <h4 className="font-semibold">👨‍👩‍👧 Espace parents</h4>
+    <div className="space-y-3">
+      {/* 📱 Idée 5 (2026-10-30) : le bilan s'envoie directement au bon numéro (WhatsApp ou SMS) */}
+      <div className="space-y-1.5 text-sm">
+        <p className="font-medium">📱 Téléphones des parents (pour envoyer le bilan)</p>
+        {([['parent_phone_nom', 'parent_phone', 'Maman'], ['parent2_phone_nom', 'parent2_phone', 'Papa']] as const).map(([kNom, kNum, defaut]) => (
+          <div key={kNum} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
+            <Input defaultValue={(p?.[kNom] as string | null) ?? defaut} aria-label="Qui" placeholder={defaut}
+              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNom] ?? null)) void majProfil({ [kNom]: v }); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+            <Input defaultValue={(p?.[kNum] as string | null) ?? ''} inputMode="tel" aria-label={`Téléphone ${defaut}`} placeholder="06 12 34 56 78"
+              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNum] ?? null)) void majProfil({ [kNum]: v, ...(v && !p?.[kNom] ? { [kNom]: defaut } : {}) }); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+          </div>
+        ))}
+      </div>
+
 
       <div className="space-y-1.5">
         <p className="text-sm font-medium">Espace parents dans ses Paramètres (bilans, absences) : <b>{actif ? 'oui' : 'non'}</b></p>
@@ -85,21 +99,6 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
         <span>🎂 Lui demander sa date de naissance à chaque connexion
           <span className="block text-xs text-muted-foreground">{p?.date_of_birth ? `Déjà enregistrée : ${new Date(`${p.date_of_birth}T12:00:00`).toLocaleDateString('fr-FR')}` : 'Pas encore enregistrée'}</span></span>
       </label>
-
-      {/* 📱 Idée 5 (2026-10-30) : le bilan s'envoie directement au bon numéro (WhatsApp ou SMS) */}
-      <div className="space-y-1.5 text-sm">
-        <p className="font-medium">📱 Téléphones des parents (pour envoyer le bilan)</p>
-        {([['parent_phone_nom', 'parent_phone', 'Maman'], ['parent2_phone_nom', 'parent2_phone', 'Papa']] as const).map(([kNom, kNum, defaut]) => (
-          <div key={kNum} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
-            <Input defaultValue={(p?.[kNom] as string | null) ?? defaut} aria-label="Qui" placeholder={defaut}
-              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNom] ?? null)) void majProfil({ [kNom]: v }); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-            <Input defaultValue={(p?.[kNum] as string | null) ?? ''} inputMode="tel" aria-label={`Téléphone ${defaut}`} placeholder="06 12 34 56 78"
-              onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.[kNum] ?? null)) void majProfil({ [kNum]: v, ...(v && !p?.[kNom] ? { [kNom]: defaut } : {}) }); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
-          </div>
-        ))}
-      </div>
 
       <div className="space-y-1.5 text-sm">
         <p className="font-medium">🔐 Codes parents</p>

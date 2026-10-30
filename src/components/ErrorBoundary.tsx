@@ -1,5 +1,6 @@
 import React from 'react';
 import { logCrash } from '@/lib/crashLog';
+import { estErreurMiseAJour, rechargerUneFois } from '@/lib/miseAJour';
 
 interface Props {
   children: React.ReactNode;
@@ -22,10 +23,23 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
+    // Nouvelle version en ligne : on recharge sur la nouvelle version au lieu d'afficher le chat qui pleure
+    if (estErreurMiseAJour(error) && rechargerUneFois()) return;
     void logCrash(error, errorInfo?.componentStack);
   }
 
   render() {
+    if (this.state.hasError && estErreurMiseAJour(this.state.error)) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6 text-center">
+          <div className="space-y-3">
+            <div className="text-5xl">✨</div>
+            <p className="text-lg font-bold text-foreground">Nouvelle version de l'appli…</p>
+            <button type="button" onClick={() => window.location.reload()} className="rounded-xl bg-primary text-primary-foreground px-4 py-2 font-bold">Recharger</button>
+          </div>
+        </div>
+      );
+    }
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
