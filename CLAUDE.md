@@ -159,6 +159,9 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - Migration `20261030130000_code_parents_libre.sql`.
   - `CodeInput.tsx` redevient un champ texte masqué par des points (œil), avec un nom et des réglages choisis pour éviter le trousseau et le code de validation de Safari. Le pavé de chiffres est retiré.
   - Testé en vrai : « Soleil2025 » se tape et le bouton s'active.
+- ✅ 2026-10-30 (commit 5c2abfd) :
+  - **« Devoirs à corriger »** : dans `RotationProf`, les élèves qui ont un devoir 🟠 à valider passent en tête, avec leur carte déjà ouverte et un bouton « Écouter et valider ». En haut, un encadré « 🟠 À valider (N) » liste les prénoms, tous onglets confondus. Les « Rendus à corriger » sont aussi triés (à valider d'abord) ; le bouton y descend et ouvre l'élève.
+  - **Bug « la carte ne s'ouvre pas » (2e clic)** : `window.history.replaceState` nettoyait l'adresse sans prévenir React Router, donc un 2e lien identique (`/?open=todo&cahier=1`) ne changeait rien. Corrigé partout avec `navigate(pathname, { replace: true })` : `AdminTodoCard`, `Header` (`?open=messages`, `?admin=`), `Index` (`?open=devoirs`).
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
