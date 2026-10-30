@@ -162,6 +162,10 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
 - ✅ 2026-10-30 (commit 5c2abfd) :
   - **« Devoirs à corriger »** : dans `RotationProf`, les élèves qui ont un devoir 🟠 à valider passent en tête, avec leur carte déjà ouverte et un bouton « Écouter et valider ». En haut, un encadré « 🟠 À valider (N) » liste les prénoms, tous onglets confondus. Les « Rendus à corriger » sont aussi triés (à valider d'abord) ; le bouton y descend et ouvre l'élève.
   - **Bug « la carte ne s'ouvre pas » (2e clic)** : `window.history.replaceState` nettoyait l'adresse sans prévenir React Router, donc un 2e lien identique (`/?open=todo&cahier=1`) ne changeait rien. Corrigé partout avec `navigate(pathname, { replace: true })` : `AdminTodoCard`, `Header` (`?open=messages`, `?admin=`), `Index` (`?open=devoirs`).
+- ✅ 2026-10-30 (commit f085827) : carte **« 📩 Absences signalées par les parents »** (`AbsencesSignalees.tsx`, aujourd'hui et à venir).
+  - Rangée par groupe (`trierGroupesParNumero` : Groupe 0, 1, 2…, puis les groupes sans numéro, par chiffres et lettres, puis « Sans groupe »). Élèves numérotés, « aujourd'hui » mis en avant.
+  - Même carte dans le Registre et sur l'accueil (admin), juste au-dessus du Cahier de texte. Sur l'accueil, elle n'apparaît que s'il y a une absence. En direct.
+  - ⚠️ Le Registre lui-même garde son ordre de groupes habituel (`sortGroups` : position puis nom).
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
