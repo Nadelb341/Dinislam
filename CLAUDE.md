@@ -154,6 +154,11 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - Pris en compte dans : Registre du bouclier (rond bleu, 📩 + motif si signalé par les parents, résumé « Absences justifiées »), Ma présence (tuile bleue), bilan trimestriel (présence et frise), message après le cours, série de présence (ne la casse pas), suivi des élèves (ne compte pas comme absence d'affilée), « Ce qu'on a vu » (envoyé aussi), alerte « absent sans justification » (exclu).
   - Les points ne comptent que présent et en retard, comme avant.
   - Registre et Ma présence désormais en direct (`attendance_records`, `attendance_sessions` dans `realtimeSync`).
+- ✅ 2026-10-30 (commit d52e89c) : **code parents LIBRE** (demande de Nadia).
+  - Lettres et/ou chiffres, minuscules et/ou majuscules, 1 à 60 caractères. Les majuscules comptent (« Soleil » ≠ « soleil »).
+  - Migration `20261030130000_code_parents_libre.sql`.
+  - `CodeInput.tsx` redevient un champ texte masqué par des points (œil), avec un nom et des réglages choisis pour éviter le trousseau et le code de validation de Safari. Le pavé de chiffres est retiré.
+  - Testé en vrai : « Soleil2025 » se tape et le bouton s'active.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
