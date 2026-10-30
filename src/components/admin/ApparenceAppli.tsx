@@ -129,7 +129,7 @@ function ReglageTitre() {
         <section className="space-y-2">
           <p className="text-sm font-extrabold">✨ Les effets</p>
           {effet({ k: "pluie", label: "🌠 Pluie d'étoiles", aide: "Des étoiles dorées tombent doucement, en continu, jusque sous le Bismillah" })}
-          {effet({ k: "brillant", label: "🌙 Croissant brillant", aide: "Le croissant brille doucement, sans s'arrêter" })}
+          {effet({ k: "brillant", label: "🌙 Croissant brillant", aide: "Un halo doré fixe autour du croissant" })}
           {effet({ k: "scintillant", label: "✦ Scintillant", aide: "Petites étoiles qui scintillent autour du nom" })}
           {effet({ k: "reflet", label: "💫 Reflet doré", aide: "Un reflet passe sur les lettres du nom" })}
           {effet({ k: "ombre", label: "🌫️ Ombre", aide: "Une ombre douce sous le nom" })}

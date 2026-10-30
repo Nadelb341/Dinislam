@@ -429,8 +429,8 @@
 @media (prefers-reduced-motion: reduce) { .tresor-etincelle, .tresor-lueur { animation: none; } }
 
 /* ✨ Titre de l'accueil (2026-10-29, bouclier › Apparence appli) : croissant qui brille, pluie d'étoiles, scintillement, reflet */
-@keyframes titre-croissant-brille { 0%, 100% { filter: drop-shadow(0 0 6px rgba(240, 190, 60, .6)) brightness(1.05); } 50% { filter: drop-shadow(0 0 22px rgba(255, 205, 70, 1)) drop-shadow(0 0 8px rgba(255, 230, 140, .9)) brightness(1.25); } }
-.titre-croissant-brille { animation: titre-croissant-brille 2.8s ease-in-out infinite; }
+/* Halo doré FIXE autour du logo (2026-10-30 : Nadia ne veut plus qu'il clignote) */
+.titre-croissant-brille { filter: drop-shadow(0 0 10px rgba(255, 200, 60, .85)) drop-shadow(0 0 4px rgba(255, 225, 130, .9)); }
 @keyframes titre-etoile-tombe { 0% { top: -14%; opacity: 0; } 12% { opacity: 1; } 82% { opacity: .9; } 100% { top: 100%; opacity: 0; } }
 .titre-etoile-tombe { position: absolute; top: -14%; display: flex; flex-direction: column; align-items: center; pointer-events: none; animation: titre-etoile-tombe linear infinite; }
 /* Fin trait lumineux (étoile filante) au-dessus du point */
@@ -443,5 +443,5 @@
 .titre-scintille { position: absolute; pointer-events: none; animation: titre-scintille 2.2s ease-in-out infinite; }
 @keyframes titre-reflet { 0% { background-position: 200% 0; } 100% { background-position: -100% 0; } }
 .titre-reflet { background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: titre-reflet 4s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .titre-croissant-brille, .titre-etoile-tombe, .titre-scintille, .titre-reflet, .titre-point { animation: none; } .titre-etoile-tombe { display: none; } }
+@media (prefers-reduced-motion: reduce) { .titre-etoile-tombe, .titre-scintille, .titre-reflet, .titre-point { animation: none; } .titre-etoile-tombe { display: none; } }
 

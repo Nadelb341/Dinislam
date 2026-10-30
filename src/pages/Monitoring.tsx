@@ -11,17 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import AppLayout from '@/components/layout/AppLayout';
 import {
-  Activity, Bell, Database, AlertTriangle, Trash2, Send,
-  RefreshCw, CheckCircle, XCircle, Users, MessageSquare,
-  BarChart3, Clock, Loader2, UserCheck, ClipboardCheck, Sparkles, Hand
+  Activity, Bell, AlertTriangle, Trash2, Send, RefreshCw, CheckCircle, XCircle, Users, MessageSquare, BarChart3, Clock, Loader2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AdminOnlineUsers from '@/components/admin/AdminOnlineUsers';
 import ScheduledNotifications from '@/components/admin/ScheduledNotifications';
-import AdminPrayerGroupManager from '@/components/admin/AdminPrayerGroupManager';
+import SanteAppli from '@/components/admin/SanteAppli';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VersionTab from '@/components/admin/VersionTab';
-import { format, subDays, startOfWeek, startOfMonth } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -70,19 +68,11 @@ const Monitoring = () => {
   const [activityChart, setActivityChart] = useState<{ day: string; connexions: number }[]>([]);
   const [showOnlineModal, setShowOnlineModal] = useState(false);
 
-  // Section 4: DB Health
-  const [dbStats, setDbStats] = useState({
-    totalUsers: 0, activeWeek: 0, validationsMonth: 0, messagesMonth: 0,
-    tableCounts: [] as { name: string; count: number }[]
-  });
-
   // Section 5: Logs
   const [logs, setLogs] = useState<Tables<'app_logs'>[]>([]);
   const [errorCount, setErrorCount] = useState(0);
   const [clearingLogs, setClearingLogs] = useState(false);
 
-  // Validation counts
-  const [validationCounts, setValidationCounts] = useState({ registrations: 0, sourates: 0, nourania: 0, invocations: 0 });
 
   const checkStatus = useCallback(async () => {
     // Supabase ping
@@ -142,34 +132,6 @@ const Monitoring = () => {
     setActivityChart(days);
   }, []);
 
-  const loadDbStats = useCallback(async () => {
-    const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    const weekAgo = startOfWeek(new Date()).toISOString();
-    const { count: activeWeek } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen', weekAgo);
-    const monthStart = startOfMonth(new Date()).toISOString();
-
-    const { count: sv } = await supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).gte('created_at', monthStart);
-    const { count: nv } = await supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).gte('created_at', monthStart);
-    const { count: iv } = await supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).gte('created_at', monthStart);
-
-    const { count: msgs } = await supabase.from('user_messages').select('*', { count: 'exact', head: true }).gte('created_at', monthStart);
-
-    const tables = ['profiles', 'sourates', 'invocations', 'nourania_lessons', 'user_messages', 'attendance_records', 'homework_assignments'] as const;
-    const counts: { name: string; count: number }[] = [];
-    for (const t of tables) {
-      const { count: c } = await supabase.from(t).select('*', { count: 'exact', head: true });
-      counts.push({ name: t, count: c || 0 });
-    }
-
-    setDbStats({
-      totalUsers: totalUsers || 0,
-      activeWeek: activeWeek || 0,
-      validationsMonth: (sv || 0) + (nv || 0) + (iv || 0),
-      messagesMonth: msgs || 0,
-      tableCounts: counts
-    });
-  }, []);
-
   const loadLogs = useCallback(async () => {
     const { data } = await supabase.from('app_logs').select('*').in('level', ['error', 'warn']).order('created_at', { ascending: false }).limit(20);
     setLogs(data || []);
@@ -177,20 +139,10 @@ const Monitoring = () => {
     setErrorCount(count || 0);
   }, []);
 
-  const loadValidationCounts = useCallback(async () => {
-    const [reg, sou, nou, inv] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
-      // Sourates : chemin unique par la récitation (2026-10-19)
-      supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    ]);
-    setValidationCounts({ registrations: reg.count || 0, sourates: sou.count || 0, nourania: nou.count || 0, invocations: inv.count || 0 });
-  }, []);
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([checkStatus(), loadPushData(), loadActivity(), loadDbStats(), loadLogs(), loadValidationCounts()]);
-  }, [checkStatus, loadPushData, loadActivity, loadDbStats, loadLogs, loadValidationCounts]);
+    await Promise.all([checkStatus(), loadPushData(), loadActivity(), loadLogs()]);
+  }, [checkStatus, loadPushData, loadActivity, loadLogs]);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -345,6 +297,9 @@ const Monitoring = () => {
           </CardContent>
         </Card>
 
+        {/* 💚 Santé de l'appli : juste sous l'activité, avec l'historique sur 12 mois (2026-10-30) */}
+        <SanteAppli />
+
         {/* Online Users Modal */}
         <Dialog open={showOnlineModal} onOpenChange={setShowOnlineModal}>
           <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
@@ -362,8 +317,7 @@ const Monitoring = () => {
         {/* SECTION 2.5: Scheduled Notifications */}
         <ScheduledNotifications />
 
-        {/* SECTION: Age/Class Management */}
-        <AdminPrayerGroupManager />
+        {/* « Gestion Age/Classe » déplacée dans la fiche de chaque élève (bouclier › Élèves › ⋮ › Date de naissance), 2026-10-30 */}
 
         {/* SECTION 2: Push Notifications (VAPID) */}
         <Card>
@@ -440,79 +394,7 @@ const Monitoring = () => {
           </CardContent>
         </Card>
 
-        {/* SECTION 3: Validations en attente */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              ✅ Validations en attente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Inscriptions', count: validationCounts.registrations, icon: UserCheck, section: 'registration-validations' },
-                { label: 'Récitations', count: validationCounts.sourates, icon: ClipboardCheck, section: 'recitations' },
-                { label: 'Nourania', count: validationCounts.nourania, icon: Sparkles, section: 'nourania-validations' },
-                { label: 'Invocations', count: validationCounts.invocations, icon: Hand, section: 'invocations-validations' },
-              ].map((item) => {
-                const Icon = item.icon;
-                const hasPending = item.count > 0;
-                return (
-                  <button
-                    key={item.section}
-                    onClick={() => navigate(`/admin?section=${item.section}`)}
-                    className={`rounded-xl p-3 border transition-all text-center ${
-                      hasPending
-                        ? 'bg-destructive/10 border-destructive/30 hover:bg-destructive/20'
-                        : 'bg-emerald-500/10 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500/20'
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 mx-auto mb-1 ${hasPending ? 'text-destructive' : 'text-emerald-500'}`} />
-                    <p className={`text-xs font-medium ${hasPending ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-300'}`}>{item.label}</p>
-                    <p className={`text-xl font-bold ${hasPending ? 'text-destructive' : 'text-emerald-600'}`}>{item.count}</p>
-                    {hasPending && <Badge className="bg-destructive text-destructive-foreground text-[10px] px-1.5 mt-1 animate-pulse">{item.count}</Badge>}
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SECTION 4: Database Health */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" /> Santé de la base de données
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Utilisateurs inscrits', value: dbStats.totalUsers },
-                { label: 'Actifs cette semaine', value: dbStats.activeWeek },
-                { label: 'Validations ce mois', value: dbStats.validationsMonth },
-                { label: 'Messages ce mois', value: dbStats.messagesMonth },
-              ].map(s => (
-                <div key={s.label} className="bg-muted/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">{s.value}</p>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4">
-              <p className="text-sm font-medium mb-2">Lignes par table</p>
-              <div className="space-y-1">
-                {dbStats.tableCounts.map(t => (
-                  <div key={t.name} className="flex justify-between text-xs py-1 border-b last:border-0">
-                    <span className="text-muted-foreground">{t.name}</span>
-                    <span className="font-mono">{t.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* « Validations en attente » retirée (doublon avec le bouclier) et « Santé de la base » remontée sous l'activité, 2026-10-30 */}
 
         {/* SECTION 5: Application Status */}
         <Card>

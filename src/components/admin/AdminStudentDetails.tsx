@@ -37,6 +37,7 @@ import { StudentFollowUp } from './StudentFollowUp';
 import { fetchNoPushStudents } from '@/lib/noPushStudents';
 import { untypedDb } from '@/lib/untypedDb';
 import { errorMessage, byName } from '@/lib/utils';
+import { GROUPES_PRIERE, ageDepuis, groupeAuto } from '@/lib/groupesPriere';
 
 interface StudentProgress {
   sourates: { validated: number; total: number };
@@ -61,7 +62,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   } | null>(null);
 
   // DOB dialog state
-  const [dobDialogStudent, setDobDialogStudent] = useState<{ id: string; full_name: string | null } | null>(null);
+  const [dobDialogStudent, setDobDialogStudent] = useState<{ id: string; full_name: string | null; prayer_group: string | null } | null>(null);
   const [dobValue, setDobValue] = useState('');
   const [savingDob, setSavingDob] = useState(false);
 
@@ -91,7 +92,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at, date_of_birth, gender')
+          .select('user_id, email, full_name, created_at, date_of_birth, gender, prayer_group')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -269,13 +270,23 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   };
 
   const openDobDialog = (student) => {
-    setDobDialogStudent({ id: student.user_id, full_name: student.full_name });
+    setDobDialogStudent({ id: student.user_id, full_name: student.full_name, prayer_group: student.prayer_group ?? null });
     if (student.date_of_birth) {
       const [y, m, d] = student.date_of_birth.split('-');
       setDobValue(`${d}/${m}/${y}`);
     } else {
       setDobValue('');
     }
+  };
+
+  // 👶 Statut Petits / Jeunes / Adultes (déplacé du Monitoring, 2026-10-30) : enregistré tout de suite
+  const changerStatut = async (groupe: string) => {
+    if (!dobDialogStudent) return;
+    const { error } = await supabase.from('profiles').update({ prayer_group: groupe }).eq('user_id', dobDialogStudent.id);
+    if (error) { toast.error(errorMessage(error) || 'Erreur'); return; }
+    setDobDialogStudent((d) => (d ? { ...d, prayer_group: groupe } : d));
+    queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+    toast.success(`Statut : ${GROUPES_PRIERE.find((g) => g.key === groupe)?.label ?? groupe}`);
   };
 
   const handleSaveDob = async () => {
@@ -686,6 +697,24 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
               {savingDob && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>
+            {(() => {
+              const age = ageDepuis(parseDobToISO(dobValue));
+              const actuel = dobDialogStudent?.prayer_group || groupeAuto(age);
+              return (
+                <div className="space-y-1.5 border-t pt-3">
+                  <Label>Statut {age !== null ? `(${age} ans)` : '(âge non renseigné)'}</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {GROUPES_PRIERE.map((g) => (
+                      <button key={g.key} type="button" aria-pressed={actuel === g.key} onClick={() => void changerStatut(g.key)}
+                        className={`rounded-lg border px-1.5 py-2 text-xs font-bold ${actuel === g.key ? g.actif : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'}`}>
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!dobDialogStudent?.prayer_group && actuel && <p className="text-[11px] text-muted-foreground">Choisi tout seul d'après l'âge : touche un bouton pour le fixer.</p>}
+                </div>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>

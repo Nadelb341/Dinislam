@@ -4342,6 +4342,17 @@ export type Database = {
         Args: { p_path: string; p_user: string }
         Returns: boolean
       }
+      monitoring_annee: {
+        Args: never
+        Returns: {
+          actifs: number
+          connexions: number
+          inscriptions: number
+          messages: number
+          mois: string
+          validations: number
+        }[]
+      }
       move_attendance_session: {
         Args: { p_from: string; p_to: string }
         Returns: undefined
