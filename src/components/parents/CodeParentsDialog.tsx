@@ -95,7 +95,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
           <p className="py-4 text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>
         ) : mode === 'saisir' ? (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void verifier(); }}>
-            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents (6 chiffres)" aria-label="Code parents" autoFocus className="text-center text-lg tracking-[0.3em]" />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents (6 chiffres)" aria-label="Code parents" autoFocus />
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
             <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ouvrir</Button>
             <p className="text-xs text-muted-foreground">Codes créés : {labels.join(' et ')}. Code oublié : la professeure peut le remettre à zéro.</p>

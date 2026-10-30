@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Delete, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,8 +27,12 @@ export function CodeInput({ value, onChange, placeholder, autoFocus, className, 
   const ouvrir = () => { setActif(true); window.dispatchEvent(new CustomEvent(EVT, { detail: id })); };
   useEffect(() => { if (autoFocus) window.dispatchEvent(new CustomEvent(EVT, { detail: id })); }, [autoFocus, id]);
 
-  const taper = (c: string) => onChange((value + c).slice(0, 6));
-  const effacer = () => onChange(value.slice(0, -1));
+  // Valeur la plus récente, même si on tape très vite (plusieurs touchers avant que l'écran se redessine)
+  const courant = useRef(value);
+  courant.current = value;
+  const poser = (v: string) => { courant.current = v; onChange(v); };
+  const taper = (c: string) => poser((courant.current + c).slice(0, 6));
+  const effacer = () => poser(courant.current.slice(0, -1));
 
   // Clavier de l'ordinateur
   useEffect(() => {
@@ -36,12 +40,13 @@ export function CodeInput({ value, onChange, placeholder, autoFocus, className, 
     const f = (e: KeyboardEvent) => {
       const cible = e.target as HTMLElement | null;
       if (cible && (cible.tagName === 'INPUT' || cible.tagName === 'TEXTAREA')) return; // ne pas voler la saisie d'un autre champ
-      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); onChange((value + e.key).slice(0, 6)); }
-      else if (e.key === 'Backspace') { e.preventDefault(); onChange(value.slice(0, -1)); }
+      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); taper(e.key); }
+      else if (e.key === 'Backspace') { e.preventDefault(); effacer(); }
     };
     window.addEventListener('keydown', f);
     return () => window.removeEventListener('keydown', f);
-  }, [actif, value, onChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actif]);
 
   return (
     <div className={cn('space-y-2', className)}>
