@@ -140,6 +140,13 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
     - « ✅ Validations en attente » retirée (doublon avec le bouclier) ;
     - « Santé de la base de données » remplacée par « 💚 Santé de l'appli » (`SanteAppli.tsx`), juste sous « Activité en temps réel » : tuiles avec l'évolution par rapport au mois dernier, courbes sur 12 mois avec séries à afficher ou masquer, mois record, détails techniques repliés.
     - Les chiffres viennent de la fonction SQL `monitoring_annee()` (admin).
+- ✅ 2026-10-30 (commits 08250c7, 53cc5e8) :
+  - **Code parents** : `CodeInput.tsx` est maintenant un PAVÉ DE CHIFFRES dans l'appli (6 cases + touches 0-9, ⌫, OK, clavier de l'ordinateur accepté). Ce n'est plus un champ de saisie, car Safari imposait son « code de validation » (empreinte + code au hasard 113112). Testé en vrai (Chrome sans écran, 6 touchers).
+  - Pendant la saisie du code, la fenêtre « Signaler une absence » est fermée, pour qu'aucune fenêtre ne vole la saisie.
+  - **Téléphones des parents** : nouvelle entrée « 👨‍👩‍👧 Parents et téléphones » dans le menu ⋮ de chaque élève (bouclier › Élèves), qui ouvre `FicheEspaceParents`, téléphones en premier. Avant, elle était cachée dans « Voir la progression ».
+  - **Plantage du 29/10 à 23 h** (Monitoring) : « 'text/html' is not a valid JavaScript MIME type ». Une page ouverte pendant une mise en ligne cherchait un ancien morceau de l'appli.
+    - Correction : `src/lib/miseAJour.ts` + `vite:preloadError` (main.tsx) + `ErrorBoundary`. L'appli se recharge une fois toute seule, au lieu du chat qui pleure.
+    - La carte « 😿 Plantages à régler » fonctionne : notification envoyée 11 s après le plantage.
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
