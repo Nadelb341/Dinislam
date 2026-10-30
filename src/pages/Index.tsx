@@ -27,6 +27,7 @@ import { editDraftKey } from '@/lib/pendingDrafts';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 import { TitreAccueil } from '@/components/home/TitreAppli';
+import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -457,6 +458,8 @@ const handleModuleClick = (mod) => {
           </SilentBoundary>
 
           {/* À FAIRE : enseignante seulement */}
+          {/* 📩 Absences signalées par les parents (aujourd'hui et à venir), juste au-dessus du Cahier de texte (2026-10-30) */}
+          {isAdmin && <SilentBoundary name="Absences signalées"><AbsencesSignalees compacte /></SilentBoundary>}
           {isAdmin && <AdminTodoCard />}
 
           {/* Prochaine Prière */}

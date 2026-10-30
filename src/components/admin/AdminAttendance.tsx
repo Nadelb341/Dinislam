@@ -14,6 +14,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso, type AttendanceStatus } from '@/lib/attendanceSessions';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
+import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 
 interface AdminAttendanceProps {
   onBack: () => void;
@@ -88,7 +89,6 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     },
   });
   const justifMap = useMemo(() => new Map(justifs.map((j) => [`${j.student_id}-${j.course_date}`, j])), [justifs]);
-  const aVenir = justifs.filter((j) => j.course_date >= todayIso());
 
   // Séances enregistrées + la date du jour toujours présente (2026-10-07)
   const { data: sessions = [] } = useQuery({ queryKey: ['attendance-sessions'], queryFn: fetchAttendanceSessions });
@@ -167,17 +167,8 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
         ))}
       </div>
 
-      {/* 📩 Absences à venir signalées par les parents */}
-      {aVenir.length > 0 && (
-        <div className="rounded-2xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-800 p-3 space-y-1.5">
-          <p className="text-sm font-extrabold text-sky-900 dark:text-sky-100">📩 Absences signalées par les parents</p>
-          {aVenir.map((j) => (
-            <p key={`${j.student_id}-${j.course_date}`} className="text-sm [overflow-wrap:anywhere]">
-              <b>{students.find((st) => st.user_id === j.student_id)?.full_name || 'Élève'}</b> · {format(parseISO(j.course_date), 'EEEE d MMMM', { locale: fr })}{j.reason ? ` · ${j.reason}` : ''}{j.declared_label ? ` (${j.declared_label})` : ''}
-            </p>
-          ))}
-        </div>
-      )}
+      {/* 📩 Absences signalées par les parents, rangées par groupe (même carte que sur l'accueil) */}
+      <AbsencesSignalees />
 
       {/* Message envoyé à l'élève après le cours (présent / en retard / absent) */}
       <div className={cn('rounded-xl border p-2.5 text-sm flex flex-wrap items-center gap-2', msgMode ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border')}>

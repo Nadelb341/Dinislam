@@ -38,3 +38,21 @@ export function groupColorProps(color: string | null): { className: string; styl
   if (color && color.startsWith('bg-')) return { className: color };
   return { className: '', style: { backgroundColor: color || '#6b7280' } };
 }
+
+/**
+ * Groupes par numéro (demande de Nadia, 2026-10-30) : « Groupe 0 », « Groupe 1 », « Groupe 2 »…,
+ * puis ceux sans numéro à la fin, par chiffres puis lettres (« Filles ELB », « Garçons ELB », « TEST »).
+ */
+export function numeroGroupe(nom: string): number | null {
+  const m = /groupe\s*(\d+)/i.exec(nom);
+  return m ? Number(m[1]) : null;
+}
+export function trierGroupesParNumero<G extends { name: string }>(groups: G[]): G[] {
+  return [...groups].sort((a, b) => {
+    const na = numeroGroupe(a.name), nb = numeroGroupe(b.name);
+    if (na !== null && nb !== null) return na - nb || a.name.localeCompare(b.name, 'fr', { numeric: true });
+    if (na !== null) return -1;
+    if (nb !== null) return 1;
+    return a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' });
+  });
+}
