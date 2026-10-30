@@ -183,8 +183,9 @@ export function calculerSnapshot(sid: string, d: DonneesBilan, holidays: Holiday
   const just = new Set(d.justifs.filter((j) => j.student_id === sid && dansPeriode(j.course_date)).map((j) => j.course_date));
   const presents = att.filter((a) => a.status === 'present').length;
   const retards = att.filter((a) => a.status === 'late').length;
-  const absents = att.filter((a) => a.status === 'absent').length;
-  const justifiees = att.filter((a) => a.status === 'absent' && just.has(a.date)).length;
+  // Absence justifiée : statut bleu du registre (posé par les parents ou par Nadia), ou absence avec justification
+  const absents = att.filter((a) => a.status === 'absent' || a.status === 'justified').length;
+  const justifiees = att.filter((a) => a.status === 'justified' || (a.status === 'absent' && just.has(a.date))).length;
   const cours = presents + retards + absents;
   const presence = { cours, presents, retards, absents, justifiees, pct: pct(presents + retards, cours) };
 
@@ -228,7 +229,7 @@ export function calculerSnapshot(sid: string, d: DonneesBilan, holidays: Holiday
   const triees = [...datesCours].sort();
   const frise = triees.map((date, i) => {
     const a = att.find((x) => x.date === date);
-    const statut: BilanSnapshot['frise'][number]['statut'] = a ? (a.status === 'present' ? 'present' : a.status === 'late' ? 'retard' : just.has(date) ? 'justifie' : 'absent') : just.has(date) ? 'justifie' : 'inconnu';
+    const statut: BilanSnapshot['frise'][number]['statut'] = a ? (a.status === 'present' ? 'present' : a.status === 'late' ? 'retard' : a.status === 'justified' || just.has(date) ? 'justifie' : 'absent') : just.has(date) ? 'justifie' : 'inconnu';
     const ceCours = lignes.filter((l) => ymd(l.rendu) === date);
     const avant = i > 0 ? triees[i - 1] : periode.debut;
     const acquis = sourMine.filter((s) => { const v = (s.validated_at ?? s.created_at ?? '').slice(0, 10); return v > avant && v <= date; }).map((s) => nomSourate(s.sourate_id)).filter(Boolean);

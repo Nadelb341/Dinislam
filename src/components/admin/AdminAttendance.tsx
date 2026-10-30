@@ -11,7 +11,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn, errorMessage } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso } from '@/lib/attendanceSessions';
+import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso, type AttendanceStatus } from '@/lib/attendanceSessions';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
@@ -19,12 +19,13 @@ interface AdminAttendanceProps {
   onBack: () => void;
 }
 
-type AttendanceStatus = 'present' | 'absent' | 'late';
 
 const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }> = {
   present: { color: '#22c55e', label: 'Présent' },
   absent: { color: '#ef4444', label: 'Absent' },
   late: { color: '#f59e0b', label: 'En retard' },
+  // 🔵 Absence justifiée : posée toute seule quand un parent signale l'absence (2026-10-30)
+  justified: { color: '#3b82f6', label: 'Absence justifiée' },
 };
 
 const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
@@ -157,7 +158,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
       </div>
 
       {/* Légende */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         {Object.entries(STATUS_DISPLAY).map(([key, val]) => (
           <span key={key} className="flex items-center gap-1">
             <span className="w-4 h-4 rounded-full inline-block" style={{ backgroundColor: val.color }} />
@@ -273,7 +274,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                           {display ? (
                             <div className="relative w-7 h-7 rounded-full" style={{ backgroundColor: display.color }}>
                               {record && !record.sendMessage && <span className="absolute -top-1.5 -right-2 text-xs" title="Message coupé">🔕</span>}
-                              {justifMap.has(`${student.user_id}-${date}`) && <span className="absolute -bottom-1.5 -right-2 text-xs" title="Absence justifiée par les parents">📩</span>}
+                              {status === 'justified' && justifMap.has(`${student.user_id}-${date}`) && <span className="absolute -bottom-1.5 -right-2 text-xs" title={`Signalée par les parents${justifMap.get(`${student.user_id}-${date}`)?.reason ? ` : ${justifMap.get(`${student.user_id}-${date}`)?.reason}` : ''}`}>📩</span>}
                             </div>
                           ) : justifMap.has(`${student.user_id}-${date}`) ? (
                             <span className="text-lg" title={`Absence justifiée par les parents${justifMap.get(`${student.user_id}-${date}`)?.reason ? ` : ${justifMap.get(`${student.user_id}-${date}`)?.reason}` : ''}`}>📩</span>
@@ -303,7 +304,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
       {dates.length > 0 && (
         <div className="bg-card rounded-2xl border border-border shadow-card p-4">
           <h3 className="font-semibold text-foreground mb-3">📊 Résumé</h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             <div>
               <div className="text-2xl font-bold" style={{ color: '#22c55e' }}>
                 {records.filter(r => r.status === 'present').length}
@@ -321,6 +322,12 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
                 {records.filter(r => r.status === 'late').length}
               </div>
               <p className="text-xs text-muted-foreground">Retards</p>
+            </div>
+            <div>
+              <div className="text-2xl font-bold" style={{ color: '#3b82f6' }}>
+                {records.filter(r => r.status === 'justified').length}
+              </div>
+              <p className="text-xs text-muted-foreground">Absences justifiées</p>
             </div>
           </div>
         </div>

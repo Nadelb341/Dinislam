@@ -283,7 +283,7 @@ serve(async (req) => {
         const { data: membres } = await supabase.from('student_group_members').select('user_id').eq('group_id', se.group_id);
         const ids = (membres ?? []).map((x: { user_id: string }) => x.user_id);
         const { data: absents } = ids.length
-          ? await supabase.from('attendance_records').select('user_id').eq('date', today).eq('status', 'absent').in('user_id', ids)
+          ? await supabase.from('attendance_records').select('user_id').eq('date', today).in('status', ['absent', 'justified']).in('user_id', ids)
           : { data: [] };
         for (const a of (absents ?? []) as { user_id: string }[]) {
           const texte = `📖 Tu n'étais pas là aujourd'hui, voici ce qu'on a vu en cours :\n${se.seen.trim()}\nN'hésite pas à poser tes questions à ton professeur 😊`;

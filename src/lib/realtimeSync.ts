@@ -37,7 +37,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   alphabet_line_models: ['alphabet-line-models'],
   alphabet_trace_stars: ['alphabet-student-summary', 'alphabet-trace-stars'],
   app_versions: ['app-versions'],
-  attendance_sessions: ['attendance-sessions'],
+  attendance_sessions: ['attendance-sessions', 'all-attendance'],
   dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
   dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
   // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
@@ -50,6 +50,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   behavior_marks: ['comportement', 'bilan-trimestriel', 'cahier-classe'],
   bilan_reads: ['bilan-trimestriel'],
   bilan_envois: ['bilan-trimestriel'],
+  // 📋 Registre de présence en direct (2026-10-30 : l'absence justifiée par un parent apparaît tout de suite)
+  attendance_records: ['attendance-records', 'all-attendance', 'my-attendance', 'attendance-message', 'bilan-trimestriel', 'student-engagement'],
   // 🔧 Apparence de l'appli (titre de l'accueil), 2026-10-29
   app_appearance: ['app-appearance'],
   // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)

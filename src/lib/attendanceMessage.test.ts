@@ -13,4 +13,8 @@ describe('Message après le dernier cours', () => {
     expect(attendanceStreak(['present', 'late', 'present', 'absent', 'present'])).toBe(3);
     expect(attendanceStreak(['absent', 'present'])).toBe(0);
   });
+  it('absence justifiée : message doux et série gardée', () => {
+    expect(buildAttendanceMessage('justified', true, 'Wiam')).toContain('justifiée');
+    expect(attendanceStreak(['present', 'justified', 'present', 'absent'])).toBe(2);
+  });
 });

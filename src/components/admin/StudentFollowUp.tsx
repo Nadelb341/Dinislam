@@ -32,7 +32,7 @@ export function StudentFollowUp({ userId }: { userId: string }) {
   const att = data?.att ?? [];
   const present = att.filter((a) => a.status === 'present' || a.status === 'late').length;
   let absentRow = 0;
-  for (const a of att) { if (a.status === 'absent') absentRow += 1; else break; }
+  for (const a of att) { if (a.status === 'absent') absentRow += 1; else if (a.status === 'justified') continue; else break; }
   const short = (d: string) => new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
 
   return (

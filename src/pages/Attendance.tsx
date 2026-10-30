@@ -14,12 +14,13 @@ import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPrese
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
 
-type AttendanceStatus = 'present' | 'absent' | 'late';
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'justified';
 
 const STATUS_DISPLAY: Record<AttendanceStatus, { color: string; label: string }> = {
   present: { color: 'bg-green-500', label: 'Présent' },
   absent: { color: 'bg-red-500', label: 'Absent' },
   late: { color: 'bg-yellow-400', label: 'En retard' },
+  justified: { color: 'bg-blue-500', label: 'Absence justifiée' },
 };
 
 const Attendance = () => {
@@ -96,7 +97,8 @@ const Attendance = () => {
     const present = myRecords.filter(r => r.status === 'present').length;
     const absent = myRecords.filter(r => r.status === 'absent').length;
     const late = myRecords.filter(r => r.status === 'late').length;
-    return { present, absent, late, total: myRecords.length };
+    const justified = myRecords.filter(r => r.status === 'justified').length;
+    return { present, absent, late, justified, total: myRecords.length };
   }, [myRecords]);
 
   // Séances enregistrées (une date peut exister sans présence notée)
@@ -171,7 +173,7 @@ const Attendance = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="border-green-200 dark:border-green-800">
             <CardContent className="p-4 text-center">
               <div className="w-8 h-8 rounded-full bg-green-500 mx-auto mb-2" />
@@ -191,6 +193,13 @@ const Attendance = () => {
               <div className="w-8 h-8 rounded-full bg-yellow-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-yellow-600">{myStats.late}</p>
               <p className="text-xs text-muted-foreground">En retard</p>
+            </CardContent>
+          </Card>
+          <Card className="border-blue-200 dark:border-blue-800">
+            <CardContent className="p-4 text-center">
+              <div className="w-8 h-8 rounded-full bg-blue-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-blue-600">{myStats.justified}</p>
+              <p className="text-xs text-muted-foreground">Absence justifiée</p>
             </CardContent>
           </Card>
         </div>
@@ -235,9 +244,9 @@ const Attendance = () => {
             <CardContent className="p-4">
               <h3 className="font-semibold text-foreground mb-3">👥 Vue de la classe</h3>
 
-              {isAdmin && <p className="text-xs text-muted-foreground mb-2">Touche un rond pour noter : vide → 🟢 présent → 🔴 absent → 🟡 en retard → vide.</p>}
+              {isAdmin && <p className="text-xs text-muted-foreground mb-2">Touche un rond pour noter : vide → 🟢 présent → 🔴 absent → 🔵 absence justifiée → 🟡 en retard → vide.</p>}
               {/* Legend */}
-              <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
                 {Object.entries(STATUS_DISPLAY).map(([key, val]) => (
                   <span key={key} className="flex items-center gap-1">
                     <span className={cn('w-3 h-3 rounded-full inline-block', val.color)} />
