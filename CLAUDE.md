@@ -133,6 +133,13 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
     - 5 : numéros ;
     - 6 : « ✅ N lus » et « ⏰ N pas lus » sur la carte du bouclier.
   - **Audio** des corrections de sourates et des devoirs : confirmé OK par Nadia.
+- ✅ 2026-10-30 (commit 3f69eea) :
+  - **Logo** : le halo doré est fixe, il ne clignote plus.
+  - **« 👶 Gestion Age/Classe »** est déplacée du Monitoring vers bouclier › Élèves › ⋮ › Changer Date Naissance. Les 3 boutons Petits / Jeunes / Adultes (`profiles.prayer_group`) sont sous la date, déduits de l'âge sinon (`src/lib/groupesPriere.ts`). `AdminPrayerGroupManager.tsx` est supprimé.
+  - **Monitoring** :
+    - « ✅ Validations en attente » retirée (doublon avec le bouclier) ;
+    - « Santé de la base de données » remplacée par « 💚 Santé de l'appli » (`SanteAppli.tsx`), juste sous « Activité en temps réel » : tuiles avec l'évolution par rapport au mois dernier, courbes sur 12 mois avec séries à afficher ou masquer, mois record, détails techniques repliés.
+    - Les chiffres viennent de la fonction SQL `monitoring_annee()` (admin).
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
