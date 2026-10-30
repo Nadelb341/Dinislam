@@ -147,6 +147,13 @@ Nadia : *« lorsque je fais un changement dans l'application, les autres utilisa
   - **Plantage du 29/10 à 23 h** (Monitoring) : « 'text/html' is not a valid JavaScript MIME type ». Une page ouverte pendant une mise en ligne cherchait un ancien morceau de l'appli.
     - Correction : `src/lib/miseAJour.ts` + `vite:preloadError` (main.tsx) + `ErrorBoundary`. L'appli se recharge une fois toute seule, au lieu du chat qui pleure.
     - La carte « 😿 Plantages à régler » fonctionne : notification envoyée 11 s après le plantage.
+- ✅ 2026-10-30 (commit 0494ba9) : **🔵 « Absence justifiée » dans le Registre de présence**. Oubli du lien relevé par Nadia.
+  - Nouveau statut `attendance_records.status = 'justified'`, en bleu, avec sa légende.
+  - `justify_absence` l'écrit tout seul, sans écraser un « présent » ou un « en retard ». Rattrapage des justifications déjà faites.
+  - Cycle d'un toucher : vide → présent → absent → justifiée → en retard → vide.
+  - Pris en compte dans : Registre du bouclier (rond bleu, 📩 + motif si signalé par les parents, résumé « Absences justifiées »), Ma présence (tuile bleue), bilan trimestriel (présence et frise), message après le cours, série de présence (ne la casse pas), suivi des élèves (ne compte pas comme absence d'affilée), « Ce qu'on a vu » (envoyé aussi), alerte « absent sans justification » (exclu).
+  - Les points ne comptent que présent et en retard, comme avant.
+  - Registre et Ma présence désormais en direct (`attendance_records`, `attendance_sessions` dans `realtimeSync`).
 - ⏳ **ACTION EN ATTENTE (Nadia)** : essayer le tout et relire une fois les titres arabes (aperçu du bilan › bouton العربية). À rappeler à chaque réponse.
   - Ouvrir 📊 Bilan trimestriel, envoyer un bilan de test.
   - Sur un compte enfant, créer le code parents et signaler une absence.
