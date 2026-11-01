@@ -81,6 +81,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   parent_code: 'Code parents',
   parent_link: 'Lien parent ↔ enfant',
   absence_justification: 'Absence justifiée',
+  app_logs: 'Journaux techniques (Monitoring)',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 

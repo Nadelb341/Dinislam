@@ -27,6 +27,7 @@ import {
 } from 'recharts';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { errorMessage } from '@/lib/utils';
+import { trashThenDelete } from '@/lib/trash';
 import type { Tables } from '@/integrations/supabase/types';
 
 
@@ -207,12 +208,49 @@ const Monitoring = () => {
 
   const [confirmClearLogs, setConfirmClearLogs] = useState(false);
 
+  /**
+   * 🗑️ Vider les journaux (2026-11-02) : avant, le bouton ne faisait rien (la base refusait d'effacer) et il aurait
+   * effacé sans corbeille. Désormais : tous les journaux sont copiés dans la corbeille (Paramètres), puis effacés ;
+   * « Restaurer » les remet tels quels. Copie impossible → rien n'est effacé.
+   */
   const handleClearLogs = async () => {
+    if (!user) return;
     setClearingLogs(true);
-    await supabase.from('app_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    toast({ title: '🗑️ Logs vidés' });
-    loadLogs();
-    setClearingLogs(false);
+    try {
+      const rows: Tables<'app_logs'>[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from('app_logs').select('*').order('created_at').range(from, from + 999);
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (!rows.length) {
+        toast({ title: 'Aucun journal à vider' });
+        return;
+      }
+      const ids = rows.map((r) => r.id);
+      await trashThenDelete({
+        userId: user.id,
+        type: 'app_logs',
+        id: `journaux-${new Date().toISOString()}`,
+        label: `Journaux techniques du Monitoring (${rows.length})`,
+        data: rows,
+        remove: async () => {
+          for (let i = 0; i < ids.length; i += 200) {
+            const { error } = await supabase.from('app_logs').delete().in('id', ids.slice(i, i + 200));
+            if (error) return { error };
+          }
+          const { count } = await supabase.from('app_logs').select('id', { count: 'exact', head: true }).in('id', ids.slice(0, 200));
+          return { error: count ? new Error('La base a refusé d\'effacer les journaux') : null };
+        },
+      });
+      toast({ title: `🗑️ ${rows.length} journaux mis dans la corbeille`, description: 'Tu peux les remettre depuis Paramètres › Corbeille.' });
+    } catch (e) {
+      toast({ title: '❌ Journaux non vidés', description: errorMessage(e), variant: 'destructive' });
+    } finally {
+      loadLogs();
+      setClearingLogs(false);
+    }
   };
 
   const handleMarkLogsRead = async () => {
@@ -471,7 +509,7 @@ const Monitoring = () => {
         onOpenChange={setConfirmClearLogs}
         onConfirm={() => { setConfirmClearLogs(false); handleClearLogs(); }}
         title="Vider les journaux ?"
-        description="Tous les journaux techniques (erreurs, événements) seront effacés. Ce sont des traces techniques, pas des données des élèves."
+        description="Tous les journaux techniques (erreurs, événements) partiront dans la corbeille de Paramètres, d'où tu pourras les remettre. Ce sont des traces techniques, pas des données des élèves."
       />
     </AppLayout>
   );

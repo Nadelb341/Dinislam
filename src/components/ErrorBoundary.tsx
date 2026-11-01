@@ -4,6 +4,8 @@ import { estErreurMiseAJour, rechargerUneFois } from '@/lib/miseAJour';
 
 interface Props {
   children: React.ReactNode;
+  /** « page » : message compact sous l'en-tête (le menu reste utilisable) ; par défaut, plein écran */
+  scope?: 'app' | 'page';
 }
 
 interface State {
@@ -36,6 +38,21 @@ class ErrorBoundary extends React.Component<Props, State> {
             <div className="text-5xl">✨</div>
             <p className="text-lg font-bold text-foreground">Nouvelle version de l'appli…</p>
             <button type="button" onClick={() => window.location.reload()} className="rounded-xl bg-primary text-primary-foreground px-4 py-2 font-bold">Recharger</button>
+          </div>
+        </div>
+      );
+    }
+    if (this.state.hasError && this.props.scope === 'page') {
+      return (
+        <div className="flex items-center justify-center p-6 text-center">
+          <div className="space-y-3 max-w-md">
+            <div className="text-5xl">😿</div>
+            <p className="text-lg font-bold text-foreground">Cette page n'a pas pu s'afficher.</p>
+            <p className="text-sm text-muted-foreground">Le reste de l'appli marche toujours : utilise le menu, ou réessaie.</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => this.setState({ hasError: false, error: null })} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Réessayer</button>
+              <button type="button" onClick={() => { window.location.href = '/'; }} className="rounded-xl border border-primary px-4 py-2 text-sm font-bold text-primary">Accueil</button>
+            </div>
           </div>
         </div>
       );

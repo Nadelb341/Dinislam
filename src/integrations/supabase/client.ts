@@ -8,7 +8,52 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * 📡 RÈGLE ABSOLUE « l'appli s'ouvre toujours, même sans réseau » (2026-11-02, copie de l'Agenda).
+ * Sans réseau, le renouvellement du jeton de connexion échoue et Supabase réessaie pendant ~25 s en bloquant
+ * toute l'appli, puis renvoie vers la connexion. Ici, le renouvellement est limité à 8 s ; s'il échoue faute de
+ * réseau (mode avion, wifi sans Internet), on répond avec la session déjà enregistrée sur l'appareil, valable
+ * 1 minute : l'appli s'ouvre tout de suite avec les dernières données en mémoire, et le vrai renouvellement est
+ * retenté jusqu'au retour du réseau. Une vraie réponse du serveur (jeton refusé…) passe toujours telle quelle.
+ */
+export const AUTH_STORAGE_KEY = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+const REFRESH_TIMEOUT_MS = 8000;
+
+function offlineRefreshResponse(): Response | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    const stored = raw ? JSON.parse(raw) : null;
+    const s = stored?.currentSession ?? stored;
+    if (!s?.access_token || !s?.refresh_token || !s?.user) return null;
+    const body = { access_token: s.access_token, refresh_token: s.refresh_token, token_type: 'bearer', expires_in: 60, expires_at: Math.floor(Date.now() / 1000) + 60, user: s.user };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch {
+    return null;
+  }
+}
+
+const resilientFetch: typeof fetch = async (input, init) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  if (!url.includes('/auth/v1/token') || !url.includes('grant_type=refresh_token')) return fetch(input, init);
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    const offline = offlineRefreshResponse();
+    if (offline) return offline;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    const offline = offlineRefreshResponse();
+    if (offline) return offline;
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  global: { fetch: resilientFetch },
   auth: {
     storage: localStorage,
     persistSession: true,

@@ -3,6 +3,41 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { rememberPassword } from '@/lib/rememberPassword';
 import type { TablesUpdate } from '@/integrations/supabase/types';
+import { AUTH_STORAGE_KEY } from '@/integrations/supabase/client';
+
+/**
+ * 📡 RÈGLE ABSOLUE « l'appli s'ouvre toujours, même sans réseau » (2026-11-02).
+ * Le rôle (admin ?) et le statut (compte validé ?) de la dernière vérification réussie sont gardés sur l'appareil :
+ * sans réseau, l'appli s'ouvre tout de suite avec eux (jamais de faux « Inscription en attente », jamais de vue admin perdue).
+ */
+type AuthCache = { isAdmin?: boolean; isApproved?: boolean };
+const authCacheKey = (userId: string) => `dinislam_auth_cache_${userId}`;
+function readAuthCache(userId: string): AuthCache | null {
+  try { return JSON.parse(localStorage.getItem(authCacheKey(userId)) || 'null'); } catch { return null; }
+}
+function writeAuthCache(userId: string, patch: AuthCache) {
+  try { localStorage.setItem(authCacheKey(userId), JSON.stringify({ ...(readAuthCache(userId) || {}), ...patch })); } catch { /* stockage plein ou bloqué */ }
+}
+
+/** Session encore enregistrée sur l'appareil (Supabase ne l'efface que sur une vraie déconnexion ou un jeton refusé). */
+function readStoredSession(): Session | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const s = parsed?.currentSession ?? parsed;
+    return s?.user?.id ? (s as Session) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Dit au service worker qui est connecté (secours des données hors ligne si le jeton a expiré). */
+function tellServiceWorker(userId: string) {
+  try {
+    navigator.serviceWorker?.ready.then((reg) => reg.active?.postMessage({ type: 'CURRENT_USER', id: userId })).catch(() => {});
+  } catch { /* navigateur sans service worker */ }
+}
 
 
 interface AuthContextType {
@@ -32,16 +67,26 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  // 📡 Ouverture immédiate (comme l'Agenda, 2026-11-02) : compte déjà vérifié sur cet appareil → l'appli s'affiche
+  // tout de suite avec la session et le rôle mémorisés ; la vraie vérification suit (session refusée → connexion).
+  const [boot] = useState(() => {
+    const known = readStoredSession();
+    const cache = known ? readAuthCache(known.user.id) : null;
+    return known && cache ? { session: known, cache } : null;
+  });
+  const [user, setUser] = useState<User | null>(boot?.session.user ?? null);
+  const [session, setSession] = useState<Session | null>(boot?.session ?? null);
+  const [loading, setLoading] = useState(!boot);
+  const [isAdmin, setIsAdmin] = useState(boot?.cache.isAdmin === true);
+  const [isApproved, setIsApproved] = useState<boolean | null>(
+    boot ? (boot.cache.isAdmin ? true : typeof boot.cache.isApproved === 'boolean' ? boot.cache.isApproved : null) : null
+  );
   const [approvalCheckFailed, setApprovalCheckFailed] = useState(false);
   // Seule la dernière vérification lancée a le droit de modifier l'état (une réponse lente et ratée ne doit pas écraser une bonne)
   const approvalRun = useRef(0);
 
-  const checkAdminRole = useCallback(async (userId: string) => {
+  /** true / false quand la base a répondu, null quand elle n'a pas pu répondre (réseau) */
+  const checkAdminRole = useCallback(async (userId: string): Promise<boolean | null> => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -49,9 +94,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
-      if (error) { console.error('Error checking admin role:', error); return false; }
+      if (error) { console.error('Error checking admin role:', error); return null; }
       return !!data;
-    } catch (err) { console.error('Error in checkAdminRole:', err); return false; }
+    } catch (err) { console.error('Error in checkAdminRole:', err); return null; }
   }, []);
 
   /**
@@ -88,8 +133,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /** Applique le résultat ; un raté laisse « validé » tel quel et affiche l'écran « Réessayer » si on ne sait rien */
   const applyApproval = useCallback(async (userId: string) => {
     const run = ++approvalRun.current;
-    const [approved, admin] = await Promise.all([checkApprovalStatus(userId), checkAdminRole(userId)]);
+    const [approvedRaw, adminRaw] = await Promise.all([checkApprovalStatus(userId), checkAdminRole(userId)]);
     if (run !== approvalRun.current) return;
+    // Réponse impossible (hors ligne) : on reprend la dernière réponse connue sur cet appareil
+    const cache = readAuthCache(userId);
+    const admin = adminRaw ?? cache?.isAdmin ?? false;
+    const approved = approvedRaw ?? (typeof cache?.isApproved === 'boolean' ? cache.isApproved : null);
+    if (adminRaw !== null) writeAuthCache(userId, { isAdmin: adminRaw });
+    if (approvedRaw !== null) writeAuthCache(userId, { isApproved: approvedRaw });
     setIsAdmin(admin);
     if (admin) { setIsApproved(true); setApprovalCheckFailed(false); return; }
     if (approved === null) { setApprovalCheckFailed(true); return; }
@@ -104,23 +155,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await applyApproval(currentUser.id);
   }, [applyApproval]);
 
+  useEffect(() => { if (user?.id) tellServiceWorker(user.id); }, [user?.id]);
+
   useEffect(() => {
     let mounted = true;
 
-    // SAFETY TIMEOUT: loading passes to false after 2s max no matter what
+    /** Ouverture immédiate avec le rôle et le statut mémorisés sur l'appareil (la vraie vérification suit) */
+    const applyCachedRole = (userId: string) => {
+      const cache = readAuthCache(userId);
+      if (!cache) return;
+      if (typeof cache.isAdmin === 'boolean') setIsAdmin(cache.isAdmin);
+      if (cache.isAdmin) setIsApproved(true);
+      else if (typeof cache.isApproved === 'boolean') setIsApproved(cache.isApproved);
+    };
+
+    // SAFETY TIMEOUT: loading passes to false after 2s max no matter what.
+    // 📡 Sans réseau (wifi sans Internet), la session peut tarder : on ouvre avec celle enregistrée sur l'appareil
+    // au lieu de renvoyer l'élève vers l'écran de connexion.
+    let sessionKnown = false;
     const safetyTimer = setTimeout(() => {
-      if (mounted) setLoading(false);
+      if (!mounted) return;
+      if (!sessionKnown) {
+        const stored = readStoredSession();
+        if (stored) {
+          setSession(stored);
+          setUser(stored.user);
+          applyCachedRole(stored.user.id);
+        }
+      }
+      setLoading(false);
     }, 2000);
 
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        sessionKnown = true;
 
         if (!mounted) return;
 
         if (session?.user) {
           setSession(session);
           setUser(session.user);
+          applyCachedRole(session.user.id);
           setLoading(false);
           clearTimeout(safetyTimer);
 

@@ -7,12 +7,18 @@
    Style: Elegant, Islamic, Modern
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Tajawal:wght@300;400;500;700;800&display=swap');
-/* Noto Naskh Arabic, réduite aux seuls signes de la hamza sous le alif (إ ِ ٍ ي) : avec Amiri la kasra et le tanouine collaient à la hamza */
-/* Écriture « cahier » du cahier de texte de l'élève (2026-10-26) */
-@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@700&text=%D8%A5%D9%90%D9%8A%D9%8D%D8%A7%D9%95&display=swap');
+/* 📡 Polices incluses DANS l'appli (2026-11-02, règle « l'appli s'ouvre toujours, même sans réseau ») :
+   Amiri, Tajawal, Patrick Hand (écriture « cahier ») et Cinzel sont importées dans src/main.tsx (@fontsource).
+   Avant, elles venaient de Google Fonts : sans réseau ou avec un wifi sans Internet, l'affichage restait bloqué (écran vide). */
+/* Noto Naskh Arabic, réduite aux seuls signes de la hamza sous le alif (إ ا ِ ٍ ي ٕ) : avec Amiri la kasra et le tanouine collaient à la hamza */
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../node_modules/@fontsource/noto-naskh-arabic/files/noto-naskh-arabic-arabic-700-normal.woff2') format('woff2');
+  unicode-range: U+0625, U+0627, U+064A, U+064D, U+0650, U+0655;
+}
 
 @layer base {
   :root {

@@ -15,6 +15,8 @@ import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import ComebackCelebration from '@/components/attendance/ComebackCelebration';
 import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import OfflineBanner from '@/components/shared/OfflineBanner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -35,6 +37,8 @@ const AppLayout = ({
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header title={title} showBack={showBack} />
+      {/* 📡 Hors connexion : l'appli reste ouverte avec les dernières données (2026-11-02) */}
+      <SilentBoundary name="Bandeau hors connexion"><OfflineBanner /></SilentBoundary>
       <EmailVerificationBanner />
       <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
         <div className="p-4">
@@ -46,7 +50,8 @@ const AppLayout = ({
           <SilentBoundary name="Messages du profil"><MessagesProfil /></SilentBoundary>
           <ComebackCelebration />
         </div>
-        {children}
+        {/* Filet par page : si une page plante, l'en-tête et le menu du bas restent utilisables */}
+        <ErrorBoundary scope="page">{children}</ErrorBoundary>
       </main>
       {showBottomNav && <BottomNav />}
       <VersionChangelogModal />

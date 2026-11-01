@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { authErrorFr } from '@/lib/rememberPassword';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +41,7 @@ function removeAccount(email: string) {
 
 const Auth = () => {
   const { user, loading: authLoading, signIn, signUp, signOut, resetPassword } = useAuth();
+  const { isOnline } = useOnlineStatus();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(() => new URLSearchParams(window.location.search).get('forgot') === '1');
@@ -271,6 +273,14 @@ const Auth = () => {
       <div className="absolute top-1/4 right-1/4 text-gold/10">
         <Star className="h-8 w-8" />
       </div>
+
+      {/* 📡 Hors connexion (2026-11-02) */}
+      {!isOnline && (
+        <div className="relative z-10 mb-3 w-full max-w-md rounded-xl border-2 border-amber-400 bg-amber-100 px-3 py-2 text-sm text-amber-900">
+          📡 <b>Hors connexion.</b> Pour te connecter la première fois sur cet appareil, il faut Internet.
+          Une fois connecté(e), l'appli s'ouvrira ensuite toujours, même sans réseau.
+        </div>
+      )}
 
       {/* Bannière confirmation email */}
       {emailConfirmedParam && (
