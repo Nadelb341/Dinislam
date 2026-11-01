@@ -17,7 +17,6 @@ Règle complète dans le CLAUDE.md global. À chaque réponse, terminer par **«
 
 ### ⚠️ ACTION EN ATTENTE — liste à jour (à rappeler en bas de chaque réponse)
 - 📜 Valider les 114 fiches des sourates (Accueil › Coran › ⋮ › Gérer le contenu › 📜 Fiches ; 0 validée au 2026-11-01). Nadia : « plus tard », mais à rappeler à chaque réponse.
-- 🔐 (2026-11-02) Accord de Nadia pour : (1) appliquer en base la migration `20261102100000_app_logs_vider_corbeille.sql` ; (2) mettre en ligne (`git push origin main`) le mode hors ligne + « Vider les logs ». Code fini, testé et enregistré en local ; l'outil a bloqué ces 2 actions en attendant son accord. Après : vérifier en base les règles `app_logs`, déploiement Vercel « Ready », puis rejouer le test hors ligne sur https://dinislam-app.vercel.app.
 
 ## 🔄 RÈGLE ABSOLUE — Tout changement visible EN DIRECT chez les utilisateurs concernés (2026-10-23, élargie le 2026-10-25)
 Nadia : *« lorsque je fais un changement dans l'application, les autres utilisateurs concernés doivent pouvoir le voir instantanément, les modifications, ajouts ou suppressions, doivent se mettre à jour en direct sans que les utilisateurs aient à recharger l'appli. »* Règle complète : CLAUDE.md global (« 🔄 Tout ce qui est partagé… »).
@@ -44,9 +43,10 @@ Avant : sans réseau = écran blanc (le service worker ne gardait AUCUN script e
 - **Filet d'erreur par page** : `ErrorBoundary scope="page"` autour du contenu de chaque page (l'en-tête et le menu restent utilisables).
 - `vercel.json` : `sw.js` jamais en cache, `index.html` no-cache, `/assets/` immuables ; `register(..., { updateViaCache: 'none' })`.
 - **Testé en vrai** (Chrome + puppeteer sur la version construite, script `offline-test.cjs` du scratchpad de la séance, faux élève au jeton expiré) : mode avion accueil 0,1 s ✅, page jamais ouverte (Coran) ✅, wifi sans Internet (proxy muet) accueil et Sourates ✅ (bandeau au bout de ~5 s, le temps de la sonde), après une mise à jour ✅ (ancienne version effacée, pages du Coran gardées).
+- ✅ En ligne (commit 074100f) et **retesté sur https://dinislam-app.vercel.app** le 2026-11-02 : mode avion 0,1 s, page jamais ouverte, wifi sans Internet → tout s'ouvre.
 - Au passage, tests : `src/test/setup.ts` fournit une mémoire `localStorage` complète (Node récent en fournit une sans `getItem` → 2 erreurs « storage.getItem is not a function » à chaque `vitest`, présentes avant).
 
-## 🗑️ « Vider les logs » du Monitoring réparé (✅ code 2026-11-02)
+## 🗑️ « Vider les logs » du Monitoring réparé (✅ 2026-11-02, en ligne commit 074100f, migration appliquée et vérifiée en base)
 Avant : le bouton ne faisait rien (aucune règle DELETE sur `app_logs`) et, s'il avait marché, il aurait effacé sans corbeille. Maintenant : `Monitoring.tsx` lit tous les journaux (par 1000), les copie dans la corbeille (type `app_logs`, une seule entrée « Journaux techniques du Monitoring (N) ») puis les efface (`trashThenDelete` : copie impossible → rien n'est effacé ; base qui refuse → la copie est retirée et un message le dit). Restaurer = toutes les lignes remises telles quelles. Migration `20261102100000_app_logs_vider_corbeille.sql` (règles DELETE + INSERT admin), testée en ROLLBACK : un élève efface 0 ligne, l'admin 3.
 
 ## 📓 Carte « À FAIRE » → « Cahier de texte » (2026-10-26)
