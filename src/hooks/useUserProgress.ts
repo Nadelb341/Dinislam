@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { JUZ } from '@/data/coranMeta';
 
 interface ModuleProgress {
   validated: number;
@@ -14,6 +15,12 @@ interface UserProgress {
   alphabet: ModuleProgress;
   invocations: { memorized: number; total: number };
   prayer: { validated: number };
+  /** 99 Noms d'Allah validés */
+  allahNames: ModuleProgress;
+  /** Coran : Juz' terminés (toutes leurs sourates cochées dans l'onglet Juz') sur 30 */
+  coran: ModuleProgress;
+  /** Grammaire : leçons ouvertes sur ce téléphone (suivi gardé dans le téléphone, comme la page Grammaire) */
+  grammaire: ModuleProgress;
 }
 
 export const useUserProgress = () => {
@@ -36,6 +43,10 @@ export const useUserProgress = () => {
         { count: totalRamadan },
         { count: totalAlphabet },
         { count: totalInvocations },
+        { data: allahProgress },
+        { count: totalAllah },
+        { data: coranJuz },
+        { data: grammaireCards },
       ] = await Promise.all([
         supabase.from('user_sourate_progress').select('is_validated').eq('user_id', user.id),
         supabase.from('user_nourania_progress').select('is_validated').eq('user_id', user.id),
@@ -48,7 +59,20 @@ export const useUserProgress = () => {
         supabase.from('ramadan_days').select('*', { count: 'exact', head: true }),
         supabase.from('alphabet_letters').select('*', { count: 'exact', head: true }),
         supabase.from('invocations').select('*', { count: 'exact', head: true }),
+        supabase.from('user_allah_name_progress').select('is_validated').eq('user_id', user.id),
+        supabase.from('allah_names').select('*', { count: 'exact', head: true }),
+        supabase.from('coran_progress').select('key, data').eq('user_id', user.id).eq('kind', 'juz'),
+        supabase.from('module_cards').select('id, learning_modules!inner(builtin_path)').eq('learning_modules.builtin_path', '/grammaire'),
       ]);
+
+      // Coran : un Juz' est terminé quand toutes ses sourates sont cochées (même règle que les confettis de la page Coran)
+      const juzTermines = (coranJuz || []).filter((r) => {
+        const j = JUZ[Number(r.key) - 1];
+        const done = ((r.data as { done?: number[] } | null)?.done) || [];
+        return !!j && j.sourates.every((s) => done.includes(s.n));
+      }).length;
+      // Grammaire : même clé que la page Grammaire (leçon ouverte = « true » dans le téléphone)
+      const lu = (id: string) => { try { return localStorage.getItem(`grammaire_lecon_${user.id}_${id}`) === 'true'; } catch { return false; } };
 
       return {
         sourates: {
@@ -73,6 +97,15 @@ export const useUserProgress = () => {
         },
         prayer: {
           validated: dailyPrayers?.length || 0,
+        },
+        allahNames: {
+          validated: allahProgress?.filter(p => p.is_validated).length || 0,
+          total: totalAllah || 0,
+        },
+        coran: { validated: juzTermines, total: JUZ.length },
+        grammaire: {
+          validated: (grammaireCards || []).filter((c) => lu(c.id)).length,
+          total: grammaireCards?.length || 0,
         },
       };
     },

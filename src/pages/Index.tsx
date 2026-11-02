@@ -566,7 +566,8 @@ const handleModuleClick = (mod) => {
             <BlocDevoirsEleve />
           </div>
 
-          {/* 📈 Progrès (2026-11-02, proposition C de Nadia) : une ligne qui se déplie, sous le cahier de texte (idée 10) */}
+          {/* 📈 Progrès (2026-11-02) : un anneau par carte QUE L'ÉLÈVE VOIT sur son accueil (mêmes règles que la grille :
+              cartes ouvertes à tous + cartes ouvertes à lui ou à son groupe), sous le cahier de texte. Admin : cartes actives ou ciblées. */}
           {progress && modules && (() => {
             const PROGRESS_MAP: Record<string, { label: string; valeur: number; total: number | null }> = {
               '/sourates': { label: 'Sourates', valeur: progress.sourates.validated, total: progress.sourates.total },
@@ -575,11 +576,19 @@ const handleModuleClick = (mod) => {
               '/alphabet': { label: 'Alphabet', valeur: progress.alphabet.validated, total: progress.alphabet.total },
               '/invocations': { label: 'Invocations', valeur: progress.invocations.memorized, total: progress.invocations.total },
               '/priere': { label: 'Prière', valeur: progress.prayer.validated, total: null },
+              '/coran': { label: "Coran (Juz' terminés)", valeur: progress.coran.validated, total: progress.coran.total },
+              '/grammaire': { label: 'Grammaire (leçons ouvertes)', valeur: progress.grammaire.validated, total: progress.grammaire.total },
+              '/allah-names': { label: "99 Noms d'Allah", valeur: progress.allahNames.validated, total: progress.allahNames.total },
             };
-            const elements = (modules || [])
-              .filter((m) => m.is_active && m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path])
+            const source = isAdmin ? modules.filter((m) => m.is_active || visibilityMap[m.id]) : visibleModules;
+            const elements = source
+              .filter((m) => m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path] && PROGRESS_MAP[m.builtin_path].total !== 0)
               .sort((a, b) => a.display_order - b.display_order)
-              .map((m) => ({ path: m.builtin_path!, ...PROGRESS_MAP[m.builtin_path!] }));
+              .map((m) => {
+                const fb = MODULE_EMOJI_FALLBACK[getModuleSlug(m)];
+                // Même visuel que la carte de l'accueil (image, ou emoji + fond pastel)
+                return { path: m.builtin_path!, ...PROGRESS_MAP[m.builtin_path!], emoji: fb?.emoji ?? '📚', fond: fb?.bgColor ?? '#f3f4f6', image: m.image_url ?? undefined };
+              });
             return <ProgressionCompacte elements={elements} />;
           })()}
 
