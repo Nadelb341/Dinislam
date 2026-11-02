@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { PASSWORD_HINT, PASSWORD_MAX, passwordError } from '@/lib/passwordRules';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -117,7 +118,8 @@ const AdminStudents = () => {
 
   const handleSavePassword = async () => {
     if (!passwordStudent || !newPassword) return;
-    if (newPassword.length < 6) { toast.error('Le mot de passe doit contenir au moins 6 caractères'); return; }
+    const erreur = passwordError(newPassword);
+    if (erreur) { toast.error(erreur); return; }
     setSavingPassword(true);
     try {
       const response = await supabase.functions.invoke('update-user-password', {
@@ -251,7 +253,7 @@ const AdminStudents = () => {
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Nouveau mot de passe</p>
               <div className="relative">
-                <Input type={showNew ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pr-10" placeholder="Minimum 6 caractères" />
+                <Input type={showNew ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pr-10" placeholder={PASSWORD_HINT} maxLength={PASSWORD_MAX} />
                 <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowNew(v => !v)}>
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>

@@ -42,3 +42,9 @@ export const prenomDe = (full: string | null | undefined) => (full || '').trim()
 
 /** Libellés proposés pour un code */
 export const LABELS_CODE = ['Maman', 'Papa'];
+
+/** Ouvre la fenêtre ⚙️ sur la carte « Espace parents » (message de l'accueil, notification d'un nouveau bilan) */
+export const EVENT_ESPACE_PARENTS = 'dinislam:espace-parents';
+export function ouvrirEspaceParents() {
+  window.dispatchEvent(new Event(EVENT_ESPACE_PARENTS));
+}

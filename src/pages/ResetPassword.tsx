@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, Lock, Mail, KeyRound, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { PASSWORD_HINT, PASSWORD_MAX, passwordError, passwordOk } from '@/lib/passwordRules';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,7 +63,8 @@ const ResetPassword = () => {
   };
 
   const save = async () => {
-    if (password.length < 6) { toast.error('Le mot de passe doit contenir au moins 6 caractères'); return; }
+    const erreur = passwordError(password);
+    if (erreur) { toast.error(erreur); return; }
     if (password !== confirm) { toast.error('Les deux mots de passe ne sont pas identiques'); return; }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
@@ -126,7 +128,7 @@ const ResetPassword = () => {
                 <Label htmlFor="new-password" className="flex items-center gap-2"><Lock className="h-4 w-4" /> Nouveau mot de passe</Label>
                 <PasswordInput
                   id="new-password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Au moins 6 caractères" autoFocus autoComplete="new-password"
+                  placeholder={PASSWORD_HINT} maxLength={PASSWORD_MAX} autoFocus autoComplete="new-password"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmRef.current?.focus(); } }}
                 />
               </div>
@@ -134,7 +136,7 @@ const ResetPassword = () => {
                 <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
                 <PasswordInput
                   id="confirm-password" ref={confirmRef} value={confirm} onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="Retape le même mot de passe" autoComplete="new-password"
+                  placeholder="Retape le même mot de passe" maxLength={PASSWORD_MAX} autoComplete="new-password"
                 />
                 {confirm.length > 0 && (
                   <p className={`flex items-center gap-1 text-sm ${same ? 'text-emerald-600' : 'text-destructive'}`}>
@@ -142,7 +144,7 @@ const ResetPassword = () => {
                   </p>
                 )}
               </div>
-              <Button type="submit" className="w-full" disabled={busy || password.length < 6 || !same}>
+              <Button type="submit" className="w-full" disabled={busy || !passwordOk(password) || !same}>
                 {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Enregistrer mon nouveau mot de passe
               </Button>

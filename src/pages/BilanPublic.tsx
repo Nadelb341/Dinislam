@@ -42,7 +42,7 @@ export default function BilanPublic() {
             <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Code parents" aria-label="Code parents" autoFocus />
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
             <Button type="submit" className="w-full" disabled={busy || !code}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Voir le bilan</Button>
-            <p className="text-xs text-muted-foreground">Pas encore de code ? Ouvrez l'appli sur le compte de votre enfant : Paramètres › 👨‍👩‍👧 Espace parents.</p>
+            <p className="text-xs text-muted-foreground">Pas encore de code ? Ouvrez l'appli sur le compte de votre enfant : roue dentée ⚙️ en haut › 👨‍👩‍👧 Espace parents.</p>
           </form>
         )}
       </div>

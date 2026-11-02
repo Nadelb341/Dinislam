@@ -49,7 +49,7 @@ export function EspaceParentsCarte() {
     },
   });
 
-  // Lien d'une notification « 📊 Nouveau bilan » : /settings?espace=parents → la carte est visible tout de suite
+  // Lien d'une notification « 📊 Nouveau bilan » (/?espace=parents) : la fenêtre ⚙️ s'ouvre et descend jusqu'à cette carte
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('espace') === 'parents') document.getElementById('espace-parents')?.scrollIntoView({ block: 'start' });
   }, [isLoading]);

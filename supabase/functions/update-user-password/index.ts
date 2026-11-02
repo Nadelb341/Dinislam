@@ -29,6 +29,8 @@ Deno.serve(async (req) => {
     const { user_id, new_password } = await req.json();
     if (!user_id || !new_password) throw new Error("Missing user_id or new_password");
     if (new_password.length < 6) throw new Error("Le mot de passe doit contenir au moins 6 caractères");
+    // Règle de Nadia (2026-11-02) : 6 à 12 caractères pour tout nouveau mot de passe
+    if (new_password.length > 12) throw new Error("Le mot de passe doit contenir au maximum 12 caractères");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, { password: new_password });
     if (error) throw error;
     // Gardé pour que l'enseignante puisse le redonner à l'élève (table lisible par l'admin seulement)

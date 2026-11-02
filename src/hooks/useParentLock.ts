@@ -31,21 +31,22 @@ function unlockedNow(): boolean {
 export function useParentLock() {
   const { user, isAdmin } = useAuth();
   const [isChild, setIsChild] = useState(false);
+  // Vrai quand on sait si le verrou s'applique (avant : la fenêtre ⚙️ pouvait s'ouvrir sans code juste au démarrage)
+  const [checkedFor, setCheckedFor] = useState<string | null>(null);
   const [unlocked, setUnlocked] = useState(unlockedNow);
   // 🔄 En direct : l'enseignante change le verrou de l'Espace parents
   const lockVersion = useRealtimeVersion(['parent_lock_settings'], !!user && !isAdmin);
 
   useEffect(() => {
-    if (!user || isAdmin) { setIsChild(false); return; }
+    if (!user || isAdmin) { setIsChild(false); setCheckedFor(user?.id ?? 'aucun'); return; }
     Promise.all([
       supabase.from('profiles').select('date_of_birth, age').eq('user_id', user.id).maybeSingle(),
       supabase.from('parent_lock_settings').select('mode').eq('user_id', user.id).maybeSingle(),
     ]).then(([{ data: profile }, { data: setting }]) => {
       const mode = setting?.mode ?? 'auto';
-      if (mode === 'on') { setIsChild(true); return; }
-      if (mode === 'off') { setIsChild(false); return; }
       const a = childAge(profile);
-      setIsChild(a !== null && a < 12);
+      setIsChild(mode === 'on' ? true : mode === 'off' ? false : a !== null && a < 12);
+      setCheckedFor(user.id);
     });
   }, [user, isAdmin, lockVersion]);
 
@@ -70,5 +71,6 @@ export function useParentLock() {
     return true;
   };
 
-  return { locked: isChild && !unlocked, isChild, unlock, unlockWithCode };
+  const ready = checkedFor === (user?.id ?? 'aucun');
+  return { locked: isChild && !unlocked, isChild, ready, unlock, unlockWithCode };
 }

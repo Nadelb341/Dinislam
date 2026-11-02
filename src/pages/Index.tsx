@@ -27,6 +27,7 @@ import { editDraftKey } from '@/lib/pendingDrafts';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 import { TitreAccueil } from '@/components/home/TitreAppli';
+import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 
 /**
@@ -456,6 +457,9 @@ const handleModuleClick = (mod) => {
               )}
             </TitreAccueil>
           </SilentBoundary>
+
+          {/* 📊 Nouveau bilan trimestriel pas encore ouvert par un parent : jaune bordé de rouge (2026-11-02) */}
+          <SilentBoundary name="Annonce bilan"><AnnonceBilan /></SilentBoundary>
 
           {/* À FAIRE : enseignante seulement */}
           {/* 📩 Absences signalées par les parents (aujourd'hui et à venir), juste au-dessus du Cahier de texte (2026-10-30) */}

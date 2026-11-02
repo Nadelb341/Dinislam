@@ -39,8 +39,6 @@ import {
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
-import { EspaceParentsCarte } from '@/components/parents/EspaceParents';
-import { SilentBoundary } from '@/components/shared/SilentBoundary';
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
   learning_module: 'Module',
@@ -91,6 +89,10 @@ const Settings = () => {
   const [gateOpen, setGateOpen] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  // 👨‍👩‍👧 Anciens liens « Nouveau bilan » (/settings?espace=parents) : l'Espace parents est maintenant dans la fenêtre ⚙️
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('espace') === 'parents') navigate('/?espace=parents', { replace: true });
+  }, [navigate]);
   
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [prayerReminders, setPrayerReminders] = useState(true);
@@ -308,8 +310,7 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* 👨‍👩‍👧 Espace parents (2026-10-28) */}
-        <SilentBoundary name="Espace parents"><EspaceParentsCarte /></SilentBoundary>
+        {/* 👨‍👩‍👧 Espace parents : déplacé dans la fenêtre ⚙️, sous « Changer le mot de passe » (demande de Nadia, 2026-11-02) */}
 
         {/* « Panneau d'administration » retiré le 2026-10-27 : le Tableau de bord n'existe plus (menu ⋮ de chaque carte de l'accueil) */}
 

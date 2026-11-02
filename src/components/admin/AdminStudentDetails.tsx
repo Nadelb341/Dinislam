@@ -4,6 +4,7 @@ import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge'
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { PASSWORD_HINT, PASSWORD_MAX, passwordOk } from '@/lib/passwordRules';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -323,7 +324,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   };
 
   const handleSavePassword = async () => {
-    if (!pwdDialogStudent || newPassword.length < 6) return;
+    if (!pwdDialogStudent || !passwordOk(newPassword)) return;
     setSavingPwd(true);
     try {
       const res = await supabase.functions.invoke('update-user-password', {
@@ -760,7 +761,8 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSavePassword(); } }}
-                  placeholder="Min. 6 caractères"
+                  placeholder={PASSWORD_HINT}
+                  maxLength={PASSWORD_MAX}
                   className="pr-10"
                 />
                 <Button
@@ -774,7 +776,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                 </Button>
               </div>
             </div>
-            <Button onClick={handleSavePassword} disabled={savingPwd || newPassword.length < 6} className="w-full">
+            <Button onClick={handleSavePassword} disabled={savingPwd || !passwordOk(newPassword)} className="w-full">
               {savingPwd && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Enregistrer
             </Button>

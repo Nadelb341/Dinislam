@@ -85,7 +85,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
 
 
       <div className="space-y-1.5">
-        <p className="text-sm font-medium">Espace parents dans ses Paramètres (bilans, absences) : <b>{actif ? 'oui' : 'non'}</b></p>
+        <p className="text-sm font-medium">Espace parents dans sa roue dentée ⚙️ (bilans, absences) : <b>{actif ? 'oui' : 'non'}</b></p>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Espace parents">
           {([['auto', `Selon l'âge${age !== null ? ` (${age} ans)` : ' (âge inconnu)'}`], ['on', 'Toujours'], ['off', 'Jamais']] as [ModeEspace, string][]).map(([m, label]) => (
             <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => void majProfil({ espace_parents: m })}

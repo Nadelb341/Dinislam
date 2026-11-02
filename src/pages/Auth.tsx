@@ -3,6 +3,7 @@ import { authErrorFr } from '@/lib/rememberPassword';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { PASSWORD_HINT, PASSWORD_MAX, passwordError as erreurMotDePasse } from '@/lib/passwordRules';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -175,8 +176,9 @@ const Auth = () => {
       return;
     }
 
-    if (signupPassword.length < 6) {
-      setPasswordError('Le mot de passe doit contenir au moins 6 caractères');
+    const erreurMdp = erreurMotDePasse(signupPassword);
+    if (erreurMdp) {
+      setPasswordError(erreurMdp);
       setLoading(false);
       return;
     }
@@ -578,6 +580,7 @@ const Auth = () => {
                         className="pl-10 pr-10"
                         required
                         minLength={6}
+                        maxLength={PASSWORD_MAX}
                       />
                       <button
                         type="button"
@@ -587,7 +590,7 @@ const Auth = () => {
                         {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+                    <p className="text-xs text-muted-foreground">{PASSWORD_HINT}</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password-confirm">Confirmer le mot de passe</Label>
@@ -602,6 +605,7 @@ const Auth = () => {
                         className={`pl-10 pr-10 ${passwordError ? 'border-destructive' : ''}`}
                         required
                         minLength={6}
+                        maxLength={PASSWORD_MAX}
                       />
                       <button
                         type="button"

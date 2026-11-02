@@ -16,6 +16,13 @@ import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
 import type { TablesUpdate } from '@/integrations/supabase/types';
+import { EspaceParentsCarte } from '@/components/parents/EspaceParents';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
+import { useBilansNonLus } from '@/hooks/useBilansNonLus';
+import { EVENT_ESPACE_PARENTS } from '@/lib/espaceParents';
+import { PASSWORD_HINT, PASSWORD_MAX, passwordError } from '@/lib/passwordRules';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
 
 const UserSettingsDialog = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -35,11 +42,53 @@ const UserSettingsDialog = () => {
   const [dobSetByUser, setDobSetByUser] = useState(false);
   const [loadingDob, setLoadingDob] = useState(false);
 
-  const { locked, unlock, unlockWithCode } = useParentLock();
+  const { locked, ready: lockReady, unlock, unlockWithCode } = useParentLock();
   const [gateOpen, setGateOpen] = useState(false);
 
   // Moins de 12 ans : mot de passe demandé avant d'ouvrir les paramètres
   const requestOpen = () => { if (locked) setGateOpen(true); else handleOpen(); };
+
+  // 📊 Bilans pas encore ouverts par un parent → pastille rouge sur la roue dentée (2026-11-02)
+  const { total: bilansNonLus } = useBilansNonLus();
+  const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
+  // 👨‍👩‍👧 Ouvrir directement sur l'Espace parents : message jaune de l'accueil, ou lien d'une notification (/?espace=parents)
+  const [allerEspaceParents, setAllerEspaceParents] = useState(false);
+  const [ouvertureDemandee, setOuvertureDemandee] = useState(false);
+  const requestOpenRef = useRef(requestOpen);
+  useEffect(() => { requestOpenRef.current = requestOpen; });
+  // On attend de savoir si le code parents est exigé (moins de 12 ans) avant d'ouvrir
+  useEffect(() => {
+    if (!ouvertureDemandee || !lockReady) return;
+    setOuvertureDemandee(false);
+    requestOpenRef.current();
+  }, [ouvertureDemandee, lockReady, locked]);
+  useEffect(() => {
+    const ouvrir = () => { setAllerEspaceParents(true); setOuvertureDemandee(true); };
+    window.addEventListener(EVENT_ESPACE_PARENTS, ouvrir);
+    const params = new URLSearchParams(window.location.search);
+    // Sur /settings, c'est la page qui renvoie d'abord vers l'accueil (une seule demande de code à la fois)
+    if (params.get('espace') === 'parents' && window.location.pathname !== '/settings') {
+      params.delete('espace');
+      const reste = params.toString();
+      navigate(`${window.location.pathname}${reste ? `?${reste}` : ''}`, { replace: true });
+      ouvrir();
+    }
+    return () => window.removeEventListener(EVENT_ESPACE_PARENTS, ouvrir);
+  }, [navigate]);
+  useEffect(() => {
+    if (!open || !allerEspaceParents) return;
+    // La carte se charge après l'ouverture de la fenêtre : on attend qu'elle apparaisse
+    let essais = 0;
+    const iv = setInterval(() => {
+      const carte = document.getElementById('espace-parents');
+      if (carte || ++essais > 20) {
+        clearInterval(iv);
+        carte?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        setAllerEspaceParents(false);
+      }
+    }, 150);
+    return () => clearInterval(iv);
+  }, [open, allerEspaceParents]);
 
   const handleOpen = async () => {
     const currentName = user?.user_metadata?.full_name || '';
@@ -135,8 +184,9 @@ const UserSettingsDialog = () => {
   };
 
   const handleSavePassword = async () => {
-    if (newPassword.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+    const erreur = passwordError(newPassword);
+    if (erreur) {
+      toast.error(erreur);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -178,11 +228,17 @@ const UserSettingsDialog = () => {
       >
         <Settings className="h-5 w-5" />
         {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
+        {bilansNonLus > 0 && !isAdmin && (
+          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1" aria-label={`${bilansNonLus} nouveau bilan`}>
+            {bilansNonLus > 99 ? '99+' : bilansNonLus}
+          </span>
+        )}
       </Button>
       <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={handleOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden">
+          <div ref={scrollRef} onScroll={handleScroll} className="max-h-[85vh] overflow-y-auto p-6 space-y-4">
           <DialogHeader>
             <DialogTitle>Paramètres du profil</DialogTitle>
             <DialogDescription>Modifier votre nom ou votre mot de passe</DialogDescription>
@@ -242,16 +298,19 @@ const UserSettingsDialog = () => {
                 id="settings-pw"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="Nouveau mot de passe (min. 8 car.)"
+                placeholder="Nouveau mot de passe"
+                maxLength={PASSWORD_MAX}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); confirmPwRef.current?.focus(); } }}
               />
               <PasswordInput
                 value={confirmPassword}
                 ref={confirmPwRef}
+                maxLength={PASSWORD_MAX}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Confirmer le mot de passe"
                 onKeyDown={e => { if (e.key === 'Enter' && newPassword && confirmPassword && !savingPassword) { e.preventDefault(); handleSavePassword(); } }}
               />
+              <p className="text-xs text-muted-foreground">{PASSWORD_HINT}</p>
               <Button
                 onClick={handleSavePassword}
                 disabled={savingPassword || !newPassword || !confirmPassword}
@@ -262,6 +321,9 @@ const UserSettingsDialog = () => {
                 Enregistrer le mot de passe
               </Button>
             </div>
+
+            {/* 👨‍👩‍👧 Espace parents, déplacé ici depuis la page Paramètres (demande de Nadia, 2026-11-02), contenu inchangé */}
+            <SilentBoundary name="Espace parents"><EspaceParentsCarte /></SilentBoundary>
 
             {/* Accès à la page Paramètres (notifications, corbeille) — avant le 2026-09-30, aucun bouton n'y menait */}
             <Separator />
@@ -299,6 +361,8 @@ const UserSettingsDialog = () => {
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          </div>
+          <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
         </DialogContent>
       </Dialog>
     </>

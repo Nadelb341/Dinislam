@@ -407,7 +407,7 @@ serve(async (req) => {
       lesson: '/nourania', adm_hw: '/?admin=cahier-texte', adm_reg: '/?admin=users', adm_task: '/?open=todo',
       prog_week: '/?open=devoirs', adm_recap: '/?admin=cahier-texte', adm_crash: '/monitoring',
       coran: '/coran?tab=programme', prog_eve: '/?open=devoirs', cours_prep: '/?open=devoirs', adm_bilan: '/admin?section=bilan-trimestriel',
-      par_bilan: '/settings?espace=parents', par_abs: '/', adm_abs: '/admin?section=attendance', adm_par: '/admin?section=students',
+      par_bilan: '/?espace=parents', par_abs: '/', adm_abs: '/admin?section=attendance', adm_par: '/admin?section=students',
     };
     const givenData = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
     const url = typeof givenData.url === 'string' ? givenData.url

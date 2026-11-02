@@ -310,7 +310,7 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
       new File([await fabriquerPdf(images)], `${base}.pdf`, { type: 'application/pdf' }),
     ];
     const lien = `${window.location.origin}/bilan/${token}`;
-    const texte = `Assalamou alaykoum, voici le bilan de ${snap.prenom} (${titrePeriode(periode.label, periode.fin)}). Il est aussi dans l'Espace parents de l'appli. Si l'image ou le PDF ne s'ouvre pas : ${lien} (votre code parents vous sera demandé).`;
+    const texte = `Assalamou alaykoum, voici le bilan de ${snap.prenom} (${titrePeriode(periode.label, periode.fin)}). Retrouvez tous les bilans dans l'appli Dinislam : roue dentée ⚙️ en haut › Espace parents. Si l'image ou le PDF ne s'ouvre pas : ${lien} (votre code parents vous sera demandé).`;
     const octets = fichiers.reduce((n, f) => n + f.size, 0);
     setPret({ fichiers, texte, poids: octets > 1e6 ? `${(octets / 1e6).toFixed(1).replace('.', ',')} Mo` : `${Math.round(octets / 1e3)} Ko` });
   };
@@ -337,7 +337,7 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
       if (premiereFois) {
         const { data: liens } = await supabase.from('parent_links').select('parent_id').eq('child_id', studentId);
         sendPushNotification({ userIds: [studentId, ...(liens || []).map((l) => l.parent_id)], category: 'par_bilan',
-          title: `📊 Nouveau bilan de ${snap.prenom}`, body: 'Il vous attend dans l\'Espace parents (Paramètres), avec votre code parents.', data: { url: '/settings?espace=parents' } });
+          title: `📊 Nouveau bilan de ${snap.prenom}`, body: 'Il vous attend dans l\'Espace parents (roue dentée ⚙️ en haut), avec votre code parents.', data: { url: '/?espace=parents' } });
       }
       await preparer(token);
     } catch (e) {
@@ -406,7 +406,7 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
   const relancer = async () => {
     const { data: liens } = await supabase.from('parent_links').select('parent_id').eq('child_id', studentId);
     sendPushNotification({ userIds: [studentId, ...(liens || []).map((l) => l.parent_id)], category: 'par_bilan',
-      title: `📊 Le bilan de ${snap.prenom} vous attend`, body: 'Ouvrez l\'Espace parents (Paramètres) avec votre code parents pour le lire.', data: { url: '/settings?espace=parents' } });
+      title: `📊 Le bilan de ${snap.prenom} vous attend`, body: 'Ouvrez l\'Espace parents (roue dentée ⚙️ en haut) avec votre code parents pour le lire.', data: { url: '/?espace=parents' } });
     await noterEnvoi('relance', 'Notification aux parents');
     toast.success('🔔 Parents relancés');
   };
