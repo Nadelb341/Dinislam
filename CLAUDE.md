@@ -17,6 +17,7 @@ Règle complète dans le CLAUDE.md global. À chaque réponse, terminer par **«
 
 ### ⚠️ ACTION EN ATTENTE — liste à jour (à rappeler en bas de chaque réponse)
 - 📜 Valider les 114 fiches des sourates (Accueil › Coran › ⋮ › Gérer le contenu › 📜 Fiches ; 0 validée au 2026-11-01). Nadia : « plus tard », mais à rappeler à chaque réponse.
+- 🔐 (2026-11-02) Accord de Nadia pour mettre à jour 2 fonctions serveur (bloqué par l'outil en attendant son « oui ») : `supabase functions deploy update-user-password` et `send-push-notification` (`--project-ref zgnxqhfcmdonvdxqpekl --use-api`). Filets de sécurité seulement : l'appli applique déjà la règle 6-12 et envoie déjà le bon lien des bilans.
 
 ## 🔄 RÈGLE ABSOLUE — Tout changement visible EN DIRECT chez les utilisateurs concernés (2026-10-23, élargie le 2026-10-25)
 Nadia : *« lorsque je fais un changement dans l'application, les autres utilisateurs concernés doivent pouvoir le voir instantanément, les modifications, ajouts ou suppressions, doivent se mettre à jour en direct sans que les utilisateurs aient à recharger l'appli. »* Règle complète : CLAUDE.md global (« 🔄 Tout ce qui est partagé… »).
