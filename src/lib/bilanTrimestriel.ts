@@ -48,16 +48,62 @@ export function periodeBilan(holidays: Holiday[], now = new Date()) {
   if (avant) { const d = new Date(`${avant.end_date}T12:00:00`); d.setDate(d.getDate() + 1); debut = ymd(d); }
   let fin = k;
   if (prochaines && prochaines.start_date > k) { const d = new Date(`${prochaines.start_date}T12:00:00`); d.setDate(d.getDate() - 1); fin = ymd(d); }
-  // Même libellé que l'ancien écran « 📈 Bilans » : les anciens bilans restent rattachés à leur période
-  const label = prochaines ? `Avant les ${prochaines.label}` : "Bilan de l'année";
+  // 2026-11-02 : l'année est dans le libellé (« Avant les Vacances de Noël 2026 »), sinon Noël 2027 écraserait Noël 2026
+  const label = prochaines ? labelEtape(prochaines) : "Bilan de l'année";
   return { debut, fin, label, prochaines };
 }
 
-/** « Avant les Vacances de Noël » → « vacances de Noël 2026 » */
+/** « Avant les Vacances de Noël 2026 » (année = début des vacances) */
+export const labelEtape = (h: Holiday) => `Avant les ${h.label} ${h.start_date.slice(0, 4)}`;
+
+/** Année scolaire d'une date : « 2026-2027 » (de septembre à août ; les vacances d'été de juillet comptent dans l'année qui finit) */
+export function anneeScolaire(iso: string) {
+  const y = Number(iso.slice(0, 4)); const m = Number(iso.slice(5, 7));
+  return m >= 8 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+}
+
+/** 📅 Une étape de bilan = la période avant chaque vacances scolaires (choix de Nadia 2026-11-02, menu rangé par année scolaire) */
+export interface EtapeBilan {
+  label: string; debut: string; fin: string; annee: string;
+  vacances: Holiday | null;
+  /** Étape actuelle (ouverte d'office) */
+  enCours: boolean;
+  /** Pas encore commencée : rien à écrire */
+  aVenir: boolean;
+}
+
+/**
+ * Toutes les étapes : une par vacances enregistrées, des plus anciennes aux plus récentes (aucune n'est jamais retirée),
+ * + celles des bilans déjà écrits dont les vacances auraient été effacées (filet : un bilan ne disparaît jamais du menu).
+ */
+export function etapesBilan(holidays: Holiday[], reports: { period_label: string; period_start: string | null; period_end: string | null }[] = [], now = new Date()): EtapeBilan[] {
+  const k = ymd(now);
+  const jour = (iso: string, n: number) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return ymd(d); };
+  const tri = [...holidays].sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const courante = tri.find((h) => h.end_date >= k) ?? null;
+  const etapes: EtapeBilan[] = tri.map((h, i) => {
+    const annee = anneeScolaire(h.start_date);
+    const prev = tri[i - 1];
+    const debut = prev && anneeScolaire(prev.start_date) === annee ? jour(prev.end_date, 1) : `${annee.slice(0, 4)}-09-01`;
+    return { label: labelEtape(h), debut, fin: jour(h.start_date, -1), annee, vacances: h, enCours: h === courante, aVenir: debut > k };
+  });
+  const connus = new Set(etapes.map((e) => e.label));
+  reports.forEach((r) => {
+    if (connus.has(r.period_label) || !r.period_start) return;
+    connus.add(r.period_label);
+    etapes.push({ label: r.period_label, debut: r.period_start, fin: r.period_end ?? r.period_start, annee: anneeScolaire(r.period_start), vacances: null, enCours: false, aVenir: false });
+  });
+  return etapes.sort((a, b) => a.debut.localeCompare(b.debut));
+}
+
+/** « Avant les Vacances de Noël 2026 » → « vacances de Noël 2026 » (anciens libellés sans année : année de fin ajoutée) */
 export function titrePeriode(label: string, fin: string) {
   const t = label.replace(/^Avant les /, '');
-  return `${t.charAt(0).toLowerCase()}${t.slice(1)} ${fin.slice(0, 4)}`;
+  return `${t.charAt(0).toLowerCase()}${t.slice(1)}${/\d{4}$/.test(t) ? '' : ` ${fin.slice(0, 4)}`}`;
 }
+
+/** Titre complet : « Bilan avant les vacances de Noël 2026 » (ou « Bilan de l'année ») */
+export const titreBilan = (label: string, fin: string) => (label.startsWith('Avant les ') ? `Bilan avant les ${titrePeriode(label, fin)}` : label);
 
 /** Plus longue série de jours d'affilée */
 function plusLongueSerie(jours: string[]): number {
@@ -90,7 +136,7 @@ export interface DonneesBilan {
   letters: { user_id: string }[];
   lettersTotal: number;
   names: { user_id: string; validated_at: string | null }[];
-  reports: { id: string; student_id: string; period_label: string; note: number | null; appreciation: string | null; motivation: string | null;
+  reports: { id: string; student_id: string; period_label: string; period_start: string | null; period_end: string | null; note: number | null; appreciation: string | null; motivation: string | null;
     sent_at: string | null; snapshot: BilanSnapshot | null; guide: BilanGuide | null; show_note: boolean; traduction: BilanTraduction | null;
     langue_ar: string | null; share_token: string | null; updated_at: string | null }[];
   reads: { report_id: string; label: string; read_at: string }[];
@@ -118,7 +164,7 @@ export async function chargerDonneesBilan(ids: string[], debut: string): Promise
     supabase.from('user_alphabet_progress').select('user_id').in('user_id', ids).eq('is_validated', true),
     supabase.from('alphabet_letters').select('id', { count: 'exact', head: true }),
     supabase.from('user_allah_name_progress').select('user_id, validated_at').in('user_id', ids).eq('is_validated', true),
-    supabase.from('student_reports').select('id, student_id, period_label, note, appreciation, motivation, sent_at, snapshot, guide, show_note, traduction, langue_ar, share_token, updated_at').in('student_id', ids),
+    supabase.from('student_reports').select('id, student_id, period_label, period_start, period_end, note, appreciation, motivation, sent_at, snapshot, guide, show_note, traduction, langue_ar, share_token, updated_at').in('student_id', ids),
   ]);
   const err = q.find((r) => r.error)?.error;
   if (err) throw err;
@@ -236,8 +282,9 @@ export function calculerSnapshot(sid: string, d: DonneesBilan, holidays: Holiday
     return { date, statut, faits: ceCours.filter((l) => l.fait).length, donnes: ceCours.length, acquis };
   });
 
-  // Trimestres précédents (bilans déjà envoyés) + celui-ci
-  const anciens = d.reports.filter((r) => r.student_id === sid && r.snapshot && r.sent_at && r.period_label !== periode.label)
+  // Trimestres précédents (bilans déjà envoyés AVANT cette étape : en rééditant un ancien bilan, les suivants n'y entrent pas) + celui-ci
+  const anciens = d.reports.filter((r) => r.student_id === sid && r.snapshot && r.sent_at && r.period_label !== periode.label
+    && (r.period_start ?? r.snapshot.periode.debut) < periode.debut)
     .sort((a, b) => (a.sent_at || '').localeCompare(b.sent_at || ''))
     .map((r) => {
       const s = r.snapshot!;

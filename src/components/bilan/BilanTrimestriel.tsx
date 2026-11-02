@@ -20,9 +20,10 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { cn, errorMessage } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
 import {
-  calculerSnapshot, chargerDonneesBilan, guideAuto, messagesEnfant, libelleEnvoi, numeroWhatsApp, periodeBilan, phrasesProposees, prochaineSourate, tendance, titrePeriode,
+  calculerSnapshot, chargerDonneesBilan, etapesBilan, titreBilan, type EtapeBilan, guideAuto, messagesEnfant, libelleEnvoi, numeroWhatsApp, periodeBilan, phrasesProposees, prochaineSourate, tendance, titrePeriode,
   type BilanGuide, type BilanSnapshot, type BilanTraduction, type DonneesBilan,
 } from '@/lib/bilanTrimestriel';
+import { ChoixEtape } from './ChoixEtape';
 import { capturerImage, fabriquerPdf, nomFichier, partagerBilan } from '@/lib/bilanExport';
 import { BilanVue } from './BilanVue';
 import { clearDraft, loadDraft } from '@/hooks/useDraftRecovery';
@@ -47,8 +48,25 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : null);
  */
 export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: () => void; groupeInitial?: string | null }) {
   const { data: holidays = [], isSuccess: vacancesOk } = useHolidays();
-  const periode = useMemo(() => periodeBilan(holidays), [holidays]);
   const [groupe, setGroupe] = useState<string | null>(groupeInitial ?? null);
+  // 📅 Étape choisie dans le menu (2026-11-02) : par défaut l'étape en cours
+  const [etapeChoisie, setEtapeChoisie] = useState<string | null>(null);
+  const { data: tousRapports = [] } = useQuery({
+    queryKey: ['bilan-trimestriel', 'etapes'],
+    queryFn: async () => {
+      const { data: r, error: e } = await supabase.from('student_reports').select('student_id, period_label, period_start, period_end, sent_at');
+      if (e) throw e;
+      return r || [];
+    },
+  });
+  const etapes = useMemo(() => etapesBilan(holidays, tousRapports), [holidays, tousRapports]);
+  const periode: EtapeBilan = useMemo(() => {
+    const choisie = etapes.find((e) => e.label === etapeChoisie) ?? etapes.find((e) => e.enCours);
+    if (choisie) return choisie;
+    // Aucune vacances enregistrée : ancien calcul (« Bilan de l'année »)
+    const p = periodeBilan(holidays);
+    return { label: p.label, debut: p.debut, fin: p.fin, annee: '', vacances: p.prochaines, enCours: true, aVenir: false };
+  }, [etapes, etapeChoisie, holidays]);
   const [eleveOuvert, setEleveOuvert] = useState<string | null>(null);
 
   const { data: groupes = [] } = useQuery({
@@ -63,6 +81,16 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
   });
   useEffect(() => { if (!groupe && groupes.length) setGroupe(groupes[0].id); }, [groupe, groupes]);
   const membres = useMemo(() => groupes.find((g) => g.id === groupe)?.membres ?? [], [groupes, groupe]);
+  // Compteur du menu : bilans envoyés / élèves du groupe, pour chaque étape (idée de Nadia)
+  const compteurs = useMemo(() => {
+    const m = new Set(membres);
+    const out: Record<string, { envoyes: number; total: number }> = {};
+    etapes.forEach((e) => {
+      out[e.label] = { envoyes: new Set(tousRapports.filter((r) => r.period_label === e.label && r.sent_at && m.has(r.student_id)).map((r) => r.student_id)).size, total: membres.length };
+    });
+    return out;
+  }, [etapes, tousRapports, membres]);
+  const choisirEtape = (label: string) => { setEtapeChoisie(label); setSuite(null); };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['bilan-trimestriel', 'donnees', groupe, membres.join(','), periode.debut],
@@ -100,7 +128,8 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
   }, [lignes]);
 
   // Idée A : à 7 jours des vacances, les bilans sont prêts à relire
-  const joursAvant = periode.prochaines ? Math.ceil((new Date(`${periode.prochaines.start_date}T00:00:00`).getTime() - Date.now()) / 86400000) : null;
+  const prochaines = periode.enCours ? periode.vacances : null;
+  const joursAvant = prochaines ? Math.ceil((new Date(`${prochaines.start_date}T00:00:00`).getTime() - Date.now()) / 86400000) : null;
   const ouvert = lignes.find((l) => l.id === eleveOuvert) ?? null;
 
   // 📮 Idée 2 : reste à envoyer ; 📨 idée 1 : envoi à la suite des bilans prêts du groupe
@@ -124,14 +153,22 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
         <div className="min-w-0 flex-1">
           <h2 className="text-lg sm:text-xl font-extrabold [overflow-wrap:anywhere]">📊 Bilan trimestriel</h2>
           <p className="text-sm text-violet-700 dark:text-violet-300 [overflow-wrap:anywhere]">
-            {titrePeriode(periode.label, periode.fin).replace(/^./, (c) => c.toUpperCase())} · du {frJour(periode.debut)} au {frJour(periode.fin)}
+            {titreBilan(periode.label, periode.fin)} · du {frJour(periode.debut)} au {frJour(periode.fin)}
           </p>
         </div>
+        {etapes.length > 0 && <ChoixEtape etapes={etapes} actuelle={periode} compteurs={compteurs} onChoisir={choisirEtape} className="shrink-0 max-w-[45%]" />}
       </div>
 
-      {joursAvant !== null && joursAvant >= 0 && joursAvant <= 7 && periode.prochaines && (
+      {!periode.enCours && (
+        <div className="rounded-2xl border-2 border-violet-300 bg-violet-50 dark:bg-violet-950/40 dark:border-violet-800 px-3 py-2 text-sm font-bold text-violet-900 dark:text-violet-100 flex flex-wrap items-center gap-2">
+          <span className="flex-1 min-w-0">📅 Tu travailles sur un autre bilan que celui en cours.</span>
+          <button type="button" onClick={() => setEtapeChoisie(null)} className="shrink-0 rounded-full bg-violet-600 px-3 py-1 text-xs font-extrabold text-white">↩️ Revenir au bilan en cours</button>
+        </div>
+      )}
+
+      {joursAvant !== null && joursAvant >= 0 && joursAvant <= 7 && prochaines && (
         <div className="rounded-2xl bg-amber-100 dark:bg-amber-950/40 px-3 py-2.5 text-sm font-extrabold text-amber-900 dark:text-amber-100">
-          🔔 Les {periode.prochaines.label.toLowerCase()} commencent le {frJour(periode.prochaines.start_date)} : {lignes.length - groupeStats.envoyes} bilan{lignes.length - groupeStats.envoyes > 1 ? 's' : ''} à relire et envoyer dans ce groupe.
+          🔔 Les {prochaines.label.toLowerCase()} commencent le {frJour(prochaines.start_date)} : {lignes.length - groupeStats.envoyes} bilan{lignes.length - groupeStats.envoyes > 1 ? 's' : ''} à relire et envoyer dans ce groupe.
         </div>
       )}
 
@@ -175,7 +212,7 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
               const t = tendance(l.snap);
               return (
                 <button key={l.id} type="button" onClick={() => setEleveOuvert(l.id)}
-                  className="flex items-center gap-2 rounded-xl border-2 border-border bg-card px-3 py-2.5 text-left hover:border-violet-300">
+                  className={cn('flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-left hover:border-violet-300', l.report?.sent_at ? 'border-border/60 bg-muted/60 opacity-70' : 'border-border bg-card')}>
                   <span className="flex-1 min-w-0">
                     <b className="block text-sm [overflow-wrap:anywhere]">{l.nom}</b>
                     <span className="block text-[11px] text-muted-foreground">🙋 {l.snap.presence.pct ?? '—'}{l.snap.presence.pct !== null ? ' %' : ''} · 📚 {l.snap.devoirs.faits}/{l.snap.devoirs.donnes}{l.lus.length ? ` · 👀 lu par ${l.lus.map((x) => x.label).join(' et ')}` : ''}</span>
@@ -191,7 +228,8 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
       )}
 
       {ouvert && data && (
-        <EditeurBilan key={ouvert.id} studentId={ouvert.id} nom={ouvert.nom} snap={ouvert.snap} data={data} periode={periode}
+        <EditeurBilan key={`${ouvert.id}|${periode.label}`} studentId={ouvert.id} nom={ouvert.nom} snap={ouvert.snap} data={data} periode={periode}
+          choix={etapes.length > 0 ? <ChoixEtape etapes={etapes} actuelle={periode} compteurs={compteurs} onChoisir={choisirEtape} /> : null}
           report={ouvert.report} lus={ouvert.lus} onClose={() => { setEleveOuvert(null); setSuite(null); }}
           suite={suite && indexSuite >= 0 ? { position: indexSuite + 1, total: suite.length, onSuivant: suivant } : undefined} />
       )}
@@ -225,11 +263,13 @@ function Tuile({ v, l, cls, petit }: { v: string; l: string; cls: string; petit?
 
 type Report = DonneesBilan['reports'][number];
 
-function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClose, suite }: {
+function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClose, suite, choix }: {
   studentId: string; nom: string; snap: BilanSnapshot; data: DonneesBilan; periode: { debut: string; fin: string; label: string };
   report: Report | null; lus: { label: string; read_at: string }[]; onClose: () => void;
   /** 📨 Envoi à la suite (idée 1) : position dans la file, et passage au suivant */
   suite?: { position: number; total: number; onSuivant: () => void };
+  /** 📅 Menu des étapes, en haut à gauche de la croix rouge */
+  choix?: React.ReactNode;
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -242,7 +282,8 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
   // Brouillon de l'ancien écran « 📈 Bilans » (même période) : repris ici, rien n'est perdu
   const [ancien] = useState(() => {
     const d = loadDraft<{ period?: string; note?: string; appreciation?: string; motivation?: string }>(`dinislam_bilan_${studentId}`);
-    return d && d.period === periode.label ? d : null;
+    // Anciens brouillons sans année (« Avant les Vacances de Noël ») : repris pour l'étape de la même année
+    return d && (d.period === periode.label || periode.label.startsWith(`${d.period} `)) ? d : null;
   });
   useEffect(() => { if (ancien) { clearDraft(`dinislam_bilan_${studentId}`); toast('📝 Brouillon de l\'ancien écran repris'); } }, [ancien, studentId]);
   const [appreciation, setAppreciation] = useState(report?.appreciation || ancien?.appreciation || '');
@@ -426,7 +467,15 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
                 <Button size="sm" variant="secondary" onClick={() => { sauver.mutate({}); suite.onSuivant(); }}>{suite.position < suite.total ? 'Suivant ➜' : 'Terminer ✓'}</Button>
               </div>
             )}
-            <DialogTitle className="[overflow-wrap:anywhere]">✏️ Bilan de {nom}</DialogTitle>
+            <div className="flex items-start gap-2 pr-10">
+              <DialogTitle className="flex-1 min-w-0 [overflow-wrap:anywhere]">✏️ Bilan de {nom}<span className="block text-sm font-bold text-violet-700 dark:text-violet-300">{titreBilan(periode.label, periode.fin)}</span></DialogTitle>
+              {choix && <div className="shrink-0 max-w-[50%]">{choix}</div>}
+            </div>
+            {report?.sent_at && (
+              <div className="mt-2 rounded-xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 px-3 py-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                📨 Déjà envoyé le {new Date(report.sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} à {new Date(report.sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Tu peux le modifier et le renvoyer aux parents autant de fois que tu veux (« 🔄 Mettre à jour avec mes changements » en bas).
+              </div>
+            )}
             <DialogDescription>
               {report?.sent_at ? `✅ Envoyé le ${new Date(report.sent_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}${lus.length ? ` · 👀 lu par ${lus.map((x) => `${x.label} le ${new Date(x.read_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`).join(', ')}` : ' · pas encore lu'}` : 'Tout est enregistré automatiquement pendant que tu écris.'}
             </DialogDescription>
