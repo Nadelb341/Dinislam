@@ -11,21 +11,17 @@ const elements = [
   { path: '/priere', label: 'Prière', valeur: 3, total: null },
 ];
 
-describe('📈 Progrès (proposition C)', () => {
-  it('fermée : une ligne avec les chiffres, pas le détail', () => {
+describe('📈 Progrès en anneaux', () => {
+  it('un anneau par carte avec son chiffre', () => {
     render(<ProgressionCompacte elements={elements} />);
-    expect(screen.getByText('📈 Progrès')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Nourania : 0 sur 17/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Prière : 3 validées/ })).toBeTruthy();
     expect(screen.getByText('/17')).toBeTruthy();
-    expect(screen.queryByText('Touche une ligne pour ouvrir la carte.')).toBeNull();
   });
-  it('touchée : détail ; une ligne ouvre sa carte ; 100 % = ⭐ terminé', () => {
+  it('100 % = ⭐ terminé ; toucher un anneau ouvre la carte', () => {
     render(<ProgressionCompacte elements={elements} />);
-    fireEvent.click(screen.getByRole('button', { expanded: false }));
-    expect(screen.getByText('0 / 17')).toBeTruthy();
-    expect(screen.getByText('3 validées')).toBeTruthy();
-    expect(screen.getByText('· terminé !')).toBeTruthy();
-    expect(screen.getAllByText('⭐').length).toBe(2);
-    fireEvent.click(screen.getByText('Nourania'));
+    expect(screen.getByRole('button', { name: /Alphabet : 28 sur 28, terminé/ }).textContent).toContain('⭐');
+    fireEvent.click(screen.getByRole('button', { name: /Nourania/ }));
     expect(navigate).toHaveBeenCalledWith('/nourania');
   });
   it('aucune carte active : rien affiché', () => {
