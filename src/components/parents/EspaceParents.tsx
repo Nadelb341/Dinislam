@@ -210,7 +210,7 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
         {absence && <SignalerAbsenceDialog enfants={[enfant]} onClose={() => setAbsence(false)} />}
-        {codes && <CodeParentsDialog childId={enfant.child_id} childName={prenom} open raison="Codes déjà créés, ou en ajouter un 2e (ex. Papa)."
+        {codes && <CodeParentsDialog childId={enfant.child_id} childName={prenom} open gerer raison="Modifier un code, ou en ajouter un 2e (ex. Papa)."
           onOpenChange={(o) => { if (!o) setCodes(false); }} onOk={() => setCodes(false)} />}
       </DialogContent>
     </Dialog>

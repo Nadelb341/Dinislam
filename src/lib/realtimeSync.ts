@@ -46,6 +46,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   devoirs_rendus: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs-rendus', 'bilans', 'devoir-en-cours', 'cahier-classe'],
   // 👨‍👩‍👧 Espace parents, absences justifiées, comportement, bilans (2026-10-28)
   parent_links: ['espace-parents', 'admin-parents'],
+  // ✏️ Code parents créé / modifié / remis à zéro → fiche élève de l'admin (2026-11-02)
+  parent_codes: ['admin-parents'],
   absence_justifications: ['absences-justifiees', 'bilan-trimestriel', 'admin-attendance'],
   behavior_marks: ['comportement', 'bilan-trimestriel', 'cahier-classe'],
   bilan_reads: ['bilan-trimestriel'],

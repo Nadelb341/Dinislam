@@ -2341,6 +2341,7 @@ export type Database = {
           created_by: string | null
           id: string
           label: string
+          updated_at: string | null
         }
         Insert: {
           child_id: string
@@ -2349,6 +2350,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           label: string
+          updated_at?: string | null
         }
         Update: {
           child_id?: string
@@ -2357,6 +2359,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           label?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -4373,6 +4376,10 @@ export type Database = {
           child_id: string
           full_name: string
         }[]
+      }
+      parent_code_change: {
+        Args: { p_child: string; p_label: string; p_new: string; p_old: string }
+        Returns: string
       }
       parent_code_check: {
         Args: { p_child: string; p_code: string }

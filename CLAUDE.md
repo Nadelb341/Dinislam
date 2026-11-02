@@ -14,10 +14,11 @@ Voir la règle complète dans `~/Projets Claude Code/CLAUDE.md` (élargie le 202
 
 ## ⏳ RÈGLE ABSOLUE — « Actions en attentes » en bas de CHAQUE réponse (2026-11-02)
 Règle complète dans le CLAUDE.md global. À chaque réponse, terminer par **« ⏳ Actions en attentes »** : tout ce qui est noté « ⚠️ ACTION EN ATTENTE » ci-dessous + ce qui attend une réponse de Nadia dans la conversation, tant qu'elle n'a pas dit que c'est fait.
+🔢 Chaque action **numérotée** (1., 2., 3.…), comme toute liste d'actions à faire/valider par Nadia (règle 2026-11-02, CLAUDE.md global).
 
 ### ⚠️ ACTION EN ATTENTE — liste à jour (à rappeler en bas de chaque réponse)
 - 📜 Valider les 114 fiches des sourates (Accueil › Coran › ⋮ › Gérer le contenu › 📜 Fiches ; 0 validée au 2026-11-01). Nadia : « plus tard », mais à rappeler à chaque réponse.
-- 🔐 (2026-11-02) Accord de Nadia pour mettre à jour 2 fonctions serveur (bloqué par l'outil en attendant son « oui ») : `supabase functions deploy update-user-password` et `send-push-notification` (`--project-ref zgnxqhfcmdonvdxqpekl --use-api`). Filets de sécurité seulement : l'appli applique déjà la règle 6-12 et envoie déjà le bon lien des bilans.
+- 🔐 (2026-11-02) Nadia a dit « oui » mais l'outil bloque encore le déploiement → elle doit lancer elle-même (préfixe `!`) la mise à jour de 2 fonctions serveur : `supabase functions deploy update-user-password` et `send-push-notification` (`--project-ref zgnxqhfcmdonvdxqpekl --use-api`). Filets de sécurité seulement : l'appli applique déjà la règle 6-12 et envoie déjà le bon lien des bilans.
 
 ## 🔄 RÈGLE ABSOLUE — Tout changement visible EN DIRECT chez les utilisateurs concernés (2026-10-23, élargie le 2026-10-25)
 Nadia : *« lorsque je fais un changement dans l'application, les autres utilisateurs concernés doivent pouvoir le voir instantanément, les modifications, ajouts ou suppressions, doivent se mettre à jour en direct sans que les utilisateurs aient à recharger l'appli. »* Règle complète : CLAUDE.md global (« 🔄 Tout ce qui est partagé… »).
@@ -44,6 +45,7 @@ Constat : Nadia (sur le compte de Wiam) ne trouvait pas le bilan envoyé. La car
 - 🔐 Corrigé au passage : `useParentLock` renvoie `ready` ; une ouverture demandée (message, lien) attend de savoir si le code est exigé. Sinon, juste au démarrage, la fenêtre ⚙️ pouvait s'ouvrir sans code chez un enfant de moins de 12 ans.
 - **Mots de passe** : règle unique `src/lib/passwordRules.ts` (6 à 12 caractères) pour toute CRÉATION ou CHANGEMENT (inscription, fenêtre ⚙️ — avant 8 minimum —, mot de passe oublié, fiche élève ×2, fonction `update-user-password`). **Jamais à la connexion** : 2 élèves ont déjà un mot de passe de plus de 12 caractères (16 connus, 0 de moins de 6) et se connectent normalement.
 - Testé dans Chrome (fausse élève « Wiam » de 8 ans, réponses de la base simulées, aucune écriture) : ordre bienvenue → message → date ✅, pastille ✅, toucher → code parents → fenêtre ouverte sur la carte ✅, carte sous le mot de passe ✅, ancien lien → une seule demande de code ✅ ; tests hors connexion rejoués ✅.
+- ✏️ **Modifier son code parents** (2026-11-02, choix A de Nadia + « modifié le » + Espace gardé ouvert) : Espace parents › « 🔐 Codes parents » ne redemande plus le code (prop `gerer` de `CodeParentsDialog`) ; liste des codes (créé / modifié le) + « ✏️ Modifier » (ancien code de CETTE personne + nouveau 2 fois → RPC `parent_code_change`, ancien faux = « Ancien code incorrect » + pause 0,5 s) ; modifier le code qui a ouvert l'Espace le garde ouvert avec le nouveau ; « ➕ 2e code » sans retaper le 1er. Colonne `parent_codes.updated_at`, `parent_space_info` renvoie `codes[]`, `parent_codes` en direct (clé `admin-parents`, fiche admin affiche « modifié le »). Migration `20261102120000_parent_code_modifier.sql` (testée en ROLLBACK : bon ancien code ✅, faux refusé ✅). Tests `CodeParentsDialog.test.tsx` (6).
 - Il y a bien 2 élèves différentes « Wiam » (Wiam ELB, née le 25/04/2018, et « Wiam » sans date) : ne rien fusionner ni supprimer (Nadia, 2026-11-02).
 
 ## 📡 L'appli s'ouvre toujours, même sans réseau (✅ 2026-11-02, règle globale du 2026-10-27)

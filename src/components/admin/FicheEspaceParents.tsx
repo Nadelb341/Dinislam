@@ -104,7 +104,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
         <p className="font-medium">🔐 Codes parents</p>
         {data.codes.length ? data.codes.map((c) => (
           <div key={c.id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5">
-            <span className="flex-1">{c.label} · créé le {new Date(c.created_at).toLocaleDateString('fr-FR')}</span>
+            <span className="flex-1">{c.label} · créé le {new Date(c.created_at).toLocaleDateString('fr-FR')}{c.updated_at ? ` · modifié le ${new Date(c.updated_at).toLocaleDateString('fr-FR')}` : ''}</span>
             <button type="button" onClick={() => setARetirer({ type: 'code', id: c.id, label: `Code parents « ${c.label} »`, data: c })} className="text-xs font-bold text-destructive">Remettre à zéro</button>
           </div>
         )) : <p className="text-muted-foreground">Aucun code créé pour l'instant.</p>}

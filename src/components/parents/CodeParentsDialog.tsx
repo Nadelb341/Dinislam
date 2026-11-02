@@ -9,15 +9,21 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { CodeInput } from './CodeInput';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { errorMessage } from '@/lib/utils';
-import { LABELS_CODE, memoriserCode } from '@/lib/espaceParents';
+import { LABELS_CODE, codeOuvert, memoriserCode } from '@/lib/espaceParents';
+
+type InfoCode = { label: string; created_at: string; updated_at: string | null };
+const dateFr = (d: string) => new Date(d).toLocaleDateString('fr-FR');
 
 
 /**
  * 🔐 Code parents d'un enfant : le saisir, ou le créer la 1re fois (code libre : lettres et/ou chiffres, différent du mot de passe de l'appli).
  * Sur le compte de l'enfant, créer le 1er code demande aussi le mot de passe du compte (comme l'ancien verrou des Paramètres).
  * Idée 6 : un 2e code (ex. Papa) peut être créé par quelqu'un qui connaît déjà le 1er.
+ * ✏️ `gerer` (2026-11-02, choix A de Nadia) : ouvert depuis l'Espace parents DÉJÀ ouvert → plus de code redemandé ;
+ * liste des codes (créé / modifié le) + « ✏️ Modifier » (ancien code de CETTE personne + nouveau 2 fois) + 2e code.
+ * Modifier le code avec lequel l'Espace est ouvert le garde ouvert avec le nouveau code.
  */
-export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk, raison }: {
+export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk, raison, gerer }: {
   childId: string;
   childName: string;
   open: boolean;
@@ -25,11 +31,17 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
   onOk: (code: string, label: string) => void;
   /** Phrase sous le titre (ex. « pour signaler l'absence ») */
   raison?: string;
+  /** Ouvert depuis l'Espace parents déjà ouvert : gestion des codes (modifier / ajouter) */
+  gerer?: boolean;
 }) {
   const { user } = useAuth();
   const compteEnfant = user?.id === childId;
   const [labels, setLabels] = useState<string[] | null>(null);
-  const [mode, setMode] = useState<'saisir' | 'creer'>('saisir');
+  const [mode, setMode] = useState<'saisir' | 'creer' | 'liste' | 'modifier'>('saisir');
+  const [codes, setCodes] = useState<InfoCode[]>([]);
+  const [cible, setCible] = useState('');
+  const [version, setVersion] = useState(0);
+  const ouvert = gerer ? codeOuvert(childId) : null;
   const [code, setCode] = useState('');
   const [code2, setCode2] = useState('');
   const [actuel, setActuel] = useState('');
@@ -44,12 +56,15 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
     setCode(''); setCode2(''); setActuel(''); setMotDePasse(''); setErreur(''); setLabels(null);
     supabase.rpc('parent_space_info', { p_child: childId }).then(({ data, error }) => {
       if (error) { setErreur(errorMessage(error)); setLabels([]); return; }
-      const l = ((data as { labels?: string[] } | null)?.labels ?? []);
+      const info = data as { labels?: string[]; codes?: InfoCode[] } | null;
+      const l = info?.labels ?? [];
       setLabels(l);
-      setMode(l.length ? 'saisir' : 'creer');
+      setCodes(info?.codes ?? []);
+      setMode(l.length ? (gerer && codeOuvert(childId) ? 'liste' : 'saisir') : 'creer');
       setLabel(LABELS_CODE.find((x) => !l.includes(x)) ?? 'Autre');
     });
-  }, [open, childId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` relit la liste après un changement
+  }, [open, childId, version]);
 
   const verifier = async () => {
     if (!code) return;
@@ -74,13 +89,33 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
         const { error } = await supabase.auth.signInWithPassword({ email: user.email, password: motDePasse });
         if (error) throw new Error('Mot de passe du compte incorrect');
       }
-      const { data, error } = await supabase.rpc('parent_code_create', { p_child: childId, p_label: nom, p_code: code, p_current: labels?.length ? actuel : null });
+      const actuelCode = ouvert?.code ?? actuel;
+      const { data, error } = await supabase.rpc('parent_code_create', { p_child: childId, p_label: nom, p_code: code, p_current: labels?.length ? actuelCode : null });
       if (error) throw error;
       toast.success(`🔐 Code « ${data} » créé. Gardez-le bien, il ouvre l'Espace parents de ${childName}.`);
+      // En gestion : l'Espace reste ouvert avec le code d'origine, on revient à la liste
+      if (ouvert) { setVersion((v) => v + 1); return; }
       memoriserCode(childId, code, data as string);
       onOk(code, data as string);
     } catch (e) { setErreur(errorMessage(e)); } finally { setBusy(false); }
   };
+
+  const modifier = async () => {
+    if (!actuel) { setErreur(`Écrivez l'ancien code « ${cible} »`); return; }
+    if (!code) { setErreur('Écrivez le nouveau code'); return; }
+    if (code !== code2) { setErreur('Les deux nouveaux codes ne sont pas pareils'); return; }
+    setBusy(true); setErreur('');
+    try {
+      const { error } = await supabase.rpc('parent_code_change', { p_child: childId, p_label: cible, p_old: actuel, p_new: code });
+      if (error) throw error;
+      // Idée « garder l'Espace ouvert » : si c'est le code utilisé pour ouvrir, on garde l'Espace ouvert avec le nouveau
+      if (ouvert?.label === cible) memoriserCode(childId, code, cible);
+      toast.success(`✏️ Code « ${cible} » modifié. Le nouveau code ouvre maintenant l'Espace parents de ${childName}.`);
+      setVersion((v) => v + 1);
+    } catch (e) { setErreur(errorMessage(e)); } finally { setBusy(false); }
+  };
+
+  const ouvrirModif = (label: string) => { setCible(label); setActuel(''); setCode(''); setCode2(''); setErreur(''); setMode('modifier'); };
 
   const reste = LABELS_CODE.filter((x) => !(labels ?? []).includes(x));
 
@@ -93,6 +128,36 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
         </DialogHeader>
         {labels === null ? (
           <p className="py-4 text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>
+        ) : mode === 'liste' ? (
+          <div className="space-y-2">
+            {codes.map((c) => (
+              <div key={c.label} className="flex items-center gap-2 rounded-xl border-2 border-violet-200 bg-violet-50 px-3 py-2 dark:border-violet-800 dark:bg-violet-950/40">
+                <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">
+                  <span className="block font-bold">{c.label === 'Papa' ? '👨' : c.label === 'Maman' ? '👩' : '🧑'} {c.label}</span>
+                  <span className="block text-xs text-muted-foreground">créé le {dateFr(c.created_at)}{c.updated_at ? ` · modifié le ${dateFr(c.updated_at)}` : ''}</span>
+                </span>
+                <Button type="button" size="sm" variant="outline" className="shrink-0 border-violet-300" onClick={() => ouvrirModif(c.label)}>✏️ Modifier</Button>
+              </div>
+            ))}
+            {erreur && <p className="text-sm text-destructive">{erreur}</p>}
+            {labels.length < 2 && (
+              <button type="button" onClick={() => { setMode('creer'); setCode(''); setCode2(''); setErreur(''); }} className="w-full pt-1 text-sm font-bold text-primary">
+                ➕ Créer un 2e code (ex. {reste[0] ?? 'Papa'})
+              </button>
+            )}
+            <p className="text-xs text-muted-foreground">Pour modifier un code, il faut connaître l'ancien. Code oublié : la professeure peut le remettre à zéro.</p>
+          </div>
+        ) : mode === 'modifier' ? (
+          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void modifier(); }}>
+            <p className="font-bold">✏️ Modifier le code « {cible} »</p>
+            <p className="text-xs text-muted-foreground">Lettres et/ou chiffres, comme vous voulez. Attention aux majuscules : « Soleil » et « soleil » ne sont pas le même code.</p>
+            <CodeInput value={actuel} onChange={(v) => { setActuel(v); setErreur(''); }} placeholder={`Ancien code « ${cible} »`} aria-label="Ancien code" autoFocus />
+            <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Nouveau code" aria-label="Nouveau code" />
+            <CodeInput value={code2} onChange={(v) => { setCode2(v); setErreur(''); }} placeholder="Le nouveau code, encore une fois" aria-label="Confirmer le nouveau code" />
+            {erreur && <p className="text-sm text-destructive">{erreur}</p>}
+            <Button type="submit" className="w-full" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Enregistrer le nouveau code</Button>
+            <button type="button" onClick={() => { setMode('liste'); setErreur(''); }} className="w-full text-xs font-bold text-primary">← Retour</button>
+          </form>
         ) : mode === 'saisir' ? (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void verifier(); }}>
             <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Votre code" aria-label="Code parents" autoFocus />
@@ -107,7 +172,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
           </form>
         ) : (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void creer(); }}>
-            <p className="text-sm">{labels.length ? 'Créez votre propre code. Il faut le code déjà créé pour en ajouter un.' : 'Première fois : créez le code des parents. Il est différent du mot de passe de l\'appli.'}</p>
+            <p className="text-sm">{labels.length ? (ouvert ? 'Créez votre propre code.' : 'Créez votre propre code. Il faut le code déjà créé pour en ajouter un.') : 'Première fois : créez le code des parents. Il est différent du mot de passe de l\'appli.'}</p>
             <p className="text-xs text-muted-foreground">Lettres et/ou chiffres, comme vous voulez. Attention aux majuscules : « Soleil » et « soleil » ne sont pas le même code.</p>
             <div className="flex flex-wrap gap-2">
               {[...reste, 'Autre'].map((x) => (
@@ -117,7 +182,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
             </div>
             {label === 'Autre' && <Input value={autre} onChange={(e) => setAutre(e.target.value)} placeholder="Qui ? (ex. Tata)" aria-label="Qui crée le code"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />}
-            {labels.length > 0 && <CodeInput value={actuel} onChange={setActuel} placeholder="Code déjà créé" aria-label="Code déjà créé" />}
+            {labels.length > 0 && !ouvert && <CodeInput value={actuel} onChange={setActuel} placeholder="Code déjà créé" aria-label="Code déjà créé" />}
             <CodeInput value={code} onChange={(v) => { setCode(v); setErreur(''); }} placeholder="Votre code (lettres et/ou chiffres, au choix)" aria-label="Nouveau code" />
             <CodeInput value={code2} onChange={(v) => { setCode2(v); setErreur(''); }} placeholder="Le même code, encore une fois" aria-label="Confirmer le code" />
             {compteEnfant && !labels.length && (
@@ -125,7 +190,7 @@ export function CodeParentsDialog({ childId, childName, open, onOpenChange, onOk
             )}
             {erreur && <p className="text-sm text-destructive">{erreur}</p>}
             <Button type="submit" className="w-full" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Créer le code</Button>
-            {labels.length > 0 && <button type="button" onClick={() => { setMode('saisir'); setErreur(''); }} className="w-full text-xs font-bold text-primary">← J'ai déjà un code</button>}
+            {labels.length > 0 && <button type="button" onClick={() => { setMode(ouvert ? 'liste' : 'saisir'); setErreur(''); }} className="w-full text-xs font-bold text-primary">{ouvert ? '← Retour' : '← J\'ai déjà un code'}</button>}
           </form>
         )}
       </DialogContent>
