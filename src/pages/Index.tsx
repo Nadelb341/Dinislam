@@ -10,6 +10,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
+import { ProgressionCompacte } from '@/components/home/ProgressionCompacte';
 import { usePrayerTimesCity, CITIES, CityOption, getSavedMethod } from '@/hooks/usePrayerTimesCity';
 import { cn, errorMessage } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
@@ -559,42 +560,28 @@ const handleModuleClick = (mod) => {
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
           <SourateDuJour />
 
-          {/* Quick Stats - right after welcome message */}
-          {progress && modules && (() => {
-            const PROGRESS_MAP: Record<string, {label: string;value: string;color: string;}> = {
-              '/sourates': { label: 'Sourates', value: `${progress.sourates.validated} sur ${progress.sourates.total}`, color: 'text-gold' },
-              '/nourania': { label: 'Nourania', value: `${progress.nourania.validated} sur ${progress.nourania.total}`, color: 'text-primary' },
-              '/ramadan': { label: 'Ramadan', value: `${progress.ramadan.completed} sur ${progress.ramadan.total}`, color: 'text-gold' },
-              '/alphabet': { label: 'Alphabet', value: `${progress.alphabet.validated} sur ${progress.alphabet.total}`, color: 'text-primary' },
-              '/invocations': { label: 'Invocations', value: `${progress.invocations.memorized} sur ${progress.invocations.total}`, color: 'text-gold' },
-              '/priere': { label: 'Prière', value: `${progress.prayer.validated} validées`, color: 'text-primary' }
-            };
-            const activeItems = (modules || []).
-            filter((m) => m.is_active && m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path]).
-            map((m) => ({ ...PROGRESS_MAP[m.builtin_path!], order: m.display_order })).
-            sort((a, b) => a.order - b.order);
-
-            if (activeItems.length === 0) return null;
-
-            return (
-              <div className="bg-card rounded-2xl p-4 shadow-card border border-border animate-fade-in">
-                <h3 className="font-bold text-foreground mb-3">Votre progression</h3>
-                <div className={cn('grid gap-2', activeItems.length <= 3 ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-6')}>
-                  {activeItems.map((item) =>
-                  <div key={item.label} className="text-center">
-                      <div className={cn('text-lg font-bold', item.color)}>{item.value}</div>
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
-                    </div>
-                  )}
-                </div>
-              </div>);
-          })()}
-
           {/* Homework Card - only for admin ; id « devoirs » : cible des notifications de devoirs (?open=devoirs) */}
           <div id="devoirs" className="scroll-mt-20 space-y-4">
             {isAdmin && <HomeworkCard />}
             <BlocDevoirsEleve />
           </div>
+
+          {/* 📈 Progrès (2026-11-02, proposition C de Nadia) : une ligne qui se déplie, sous le cahier de texte (idée 10) */}
+          {progress && modules && (() => {
+            const PROGRESS_MAP: Record<string, { label: string; valeur: number; total: number | null }> = {
+              '/sourates': { label: 'Sourates', valeur: progress.sourates.validated, total: progress.sourates.total },
+              '/nourania': { label: 'Nourania', valeur: progress.nourania.validated, total: progress.nourania.total },
+              '/ramadan': { label: 'Ramadan', valeur: progress.ramadan.completed, total: progress.ramadan.total },
+              '/alphabet': { label: 'Alphabet', valeur: progress.alphabet.validated, total: progress.alphabet.total },
+              '/invocations': { label: 'Invocations', valeur: progress.invocations.memorized, total: progress.invocations.total },
+              '/priere': { label: 'Prière', valeur: progress.prayer.validated, total: null },
+            };
+            const elements = (modules || [])
+              .filter((m) => m.is_active && m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path])
+              .sort((a, b) => a.display_order - b.display_order)
+              .map((m) => ({ path: m.builtin_path!, ...PROGRESS_MAP[m.builtin_path!] }));
+            return <ProgressionCompacte elements={elements} />;
+          })()}
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
