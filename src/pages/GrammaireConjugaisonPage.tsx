@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import FlashcardPlayer from '@/components/FlashcardPlayer';
@@ -17,6 +17,16 @@ type TabId = 'lecon' | 'exercices' | 'evaluation';
 
 const tabLsKey = (tab: 'lecon' | 'exercices', cardId: string, userId: string) =>
   `grammaire_${tab}_${userId}_${cardId}`;
+const lsGet = (k: string) => { try { return localStorage.getItem(k) === 'true'; } catch { return false; } };
+const lsSet = (k: string) => { try { localStorage.setItem(k, 'true'); } catch { /* stockage indisponible */ } };
+
+/** 📖 Progression gardée dans la base (2026-11-03) ; le téléphone garde aussi une copie (hors connexion) */
+type GrammaireRow = { card_id: string; lecon_at: string | null; exercices_at: string | null };
+async function noteGrammaire(userId: string, cardId: string, tab: 'lecon' | 'exercices') {
+  const champ = tab === 'lecon' ? 'lecon_at' : 'exercices_at';
+  await supabase.from('user_grammaire_progress')
+    .upsert({ user_id: userId, card_id: cardId, [champ]: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,card_id' });
+}
 
 // Palette de couleurs tournante par chapitre
 const COLORS = [
@@ -41,22 +51,51 @@ const GrammaireConjugaisonPage = () => {
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } =
     useScrollToTop();
 
+  const queryClient = useQueryClient();
   const selectedCardId = selectedCard?.id;
   const userId = user?.id;
+
+  // Progression de l'élève dans la base (leçon ouverte / exercices ouverts)
+  const { data: progressRows = [], isFetched: progressFetched } = useQuery({
+    queryKey: ['grammaire-progress', userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_grammaire_progress')
+        .select('card_id, lecon_at, exercices_at').eq('user_id', userId!);
+      if (error) throw error;
+      return (data || []) as GrammaireRow[];
+    },
+  });
+  const rowOf = (cardId: string) => progressRows.find((r) => r.card_id === cardId);
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['grammaire-progress', userId] });
+    queryClient.invalidateQueries({ queryKey: ['user-progress', userId] });
+  };
+
   useEffect(() => {
     if (!selectedCardId || !userId) return;
     const uid = userId;
-    const lesson    = localStorage.getItem(tabLsKey('lecon',     selectedCardId, uid)) === 'true';
-    const exercices = localStorage.getItem(tabLsKey('exercices', selectedCardId, uid)) === 'true';
+    const row = progressRows.find((r) => r.card_id === selectedCardId);
+    const lesson    = lsGet(tabLsKey('lecon', selectedCardId, uid)) || !!row?.lecon_at;
+    const exercices = lsGet(tabLsKey('exercices', selectedCardId, uid)) || !!row?.exercices_at;
     setLessonOpened(lesson);
     setExercicesOpened(exercices);
     setActiveTab('lecon');
     setWarningTab(null);
     if (!lesson) {
-      localStorage.setItem(tabLsKey('lecon', selectedCardId, uid), 'true');
+      lsSet(tabLsKey('lecon', selectedCardId, uid));
       setLessonOpened(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seulement à l'ouverture d'une leçon
   }, [selectedCardId, userId]);
+
+  // Leçon ouverte → notée dans la base (une seule fois)
+  useEffect(() => {
+    if (!selectedCardId || !userId || !progressFetched) return;
+    if (progressRows.find((r) => r.card_id === selectedCardId)?.lecon_at) return;
+    noteGrammaire(userId, selectedCardId, 'lecon').then(refresh).catch(() => { /* réessayé à la prochaine ouverture */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCardId, userId, progressFetched]);
 
   const handleTabClick = (tab: TabId) => {
     const locked =
@@ -65,9 +104,10 @@ const GrammaireConjugaisonPage = () => {
     if (locked) { setWarningTab(tab); return; }
     setWarningTab(null);
     setActiveTab(tab);
-    if (tab === 'exercices' && !exercicesOpened && user) {
-      localStorage.setItem(tabLsKey('exercices', selectedCard.id, user.id), 'true');
+    if (tab === 'exercices' && user && selectedCard && !rowOf(selectedCard.id)?.exercices_at) {
+      lsSet(tabLsKey('exercices', selectedCard.id, user.id));
       setExercicesOpened(true);
+      noteGrammaire(user.id, selectedCard.id, 'exercices').then(refresh).catch(() => { /* copie gardée dans le téléphone */ });
     }
   };
 
@@ -92,6 +132,16 @@ const GrammaireConjugaisonPage = () => {
     },
     enabled: !!module?.id,
   });
+
+  // Reprise : ce qui était noté seulement dans le téléphone (avant le 2026-11-03) est recopié dans la base
+  useEffect(() => {
+    if (!userId || !progressFetched || !cards.length) return;
+    const aFaire = cards.flatMap((c) => (['lecon', 'exercices'] as const)
+      .filter((t) => lsGet(tabLsKey(t, c.id, userId)) && !progressRows.find((r) => r.card_id === c.id)?.[t === 'lecon' ? 'lecon_at' : 'exercices_at'])
+      .map((t) => noteGrammaire(userId, c.id, t)));
+    if (aFaire.length) Promise.all(aFaire).then(refresh).catch(() => { /* réessayé à la prochaine visite */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, progressFetched, cards.length]);
 
   const { data: cardContents = [] } = useQuery({
     queryKey: ['grammaire-card-contents', module?.id],

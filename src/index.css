@@ -461,8 +461,8 @@
 .prog-neon { animation: prog-neon 3.2s ease-in-out infinite; }
 @keyframes prog-scint { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0); } 50% { opacity: 1; transform: scale(1.15) rotate(90deg); } }
 .prog-fini::before, .prog-fini::after { content: "✦"; position: absolute; color: #f59e0b; font-size: 10px; line-height: 1; pointer-events: none; z-index: 1; animation: prog-scint 2.6s ease-in-out infinite; }
-.prog-fini::before { top: -5px; right: -4px; }
-.prog-fini::after { bottom: -4px; left: -4px; font-size: 8px; animation-delay: 1.3s; }
+.prog-fini::before { top: -5px; left: -5px; }
+.prog-fini::after { bottom: -4px; right: -4px; font-size: 8px; animation-delay: 1.3s; }
 @keyframes prog-etoile { 0%, 80% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
 .prog-etoile { display: inline-block; animation: prog-etoile 7s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .prog-hop, .prog-point, .prog-neon, .prog-etoile, .prog-fini::before, .prog-fini::after { animation: none; } .prog-fini::before, .prog-fini::after { display: none; } }

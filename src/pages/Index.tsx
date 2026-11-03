@@ -179,6 +179,8 @@ const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; bgColor: string }> 
   "priere": { emoji: "🕌", bgColor: "#ecfeff" },
   "grammaire": { emoji: "📖", bgColor: "#f0fdf4" },
   "99-noms": { emoji: "✨", bgColor: "#fffbeb" },
+  // 2026-11-03 : la carte s'appelle /allah-names (slug « allah-names ») → elle affichait 📚 (emoji de secours)
+  "allah-names": { emoji: "✨", bgColor: "#fffbeb" },
   "sourates": { emoji: "📿", bgColor: "#eef2ff" },
   "nourania": { emoji: "🌟", bgColor: "#fefce8" },
   "vocabulaire": { emoji: "💬", bgColor: "#fdf2f8" },
@@ -569,16 +571,16 @@ const handleModuleClick = (mod) => {
           {/* 📈 Progrès (2026-11-02) : un anneau par carte QUE L'ÉLÈVE VOIT sur son accueil (mêmes règles que la grille :
               cartes ouvertes à tous + cartes ouvertes à lui ou à son groupe), sous le cahier de texte. Admin : cartes actives ou ciblées. */}
           {progress && modules && (() => {
-            const PROGRESS_MAP: Record<string, { label: string; valeur: number; total: number | null }> = {
-              '/sourates': { label: 'Sourates', valeur: progress.sourates.validated, total: progress.sourates.total },
-              '/nourania': { label: 'Nourania', valeur: progress.nourania.validated, total: progress.nourania.total },
-              '/ramadan': { label: 'Ramadan', valeur: progress.ramadan.completed, total: progress.ramadan.total },
-              '/alphabet': { label: 'Alphabet', valeur: progress.alphabet.validated, total: progress.alphabet.total },
-              '/invocations': { label: 'Invocations', valeur: progress.invocations.memorized, total: progress.invocations.total },
-              '/priere': { label: 'Prière', valeur: progress.prayer.validated, total: null },
-              '/coran': { label: "Coran (Juz' terminés)", valeur: progress.coran.validated, total: progress.coran.total },
-              '/grammaire': { label: 'Grammaire (leçons ouvertes)', valeur: progress.grammaire.validated, total: progress.grammaire.total },
-              '/allah-names': { label: "99 Noms d'Allah", valeur: progress.allahNames.validated, total: progress.allahNames.total },
+            const PROGRESS_MAP: Record<string, { label: string; court: string; valeur: number; total: number | null }> = {
+              '/sourates': { label: 'Sourates', court: 'Sourates', valeur: progress.sourates.validated, total: progress.sourates.total },
+              '/nourania': { label: 'Nourania', court: 'Nourania', valeur: progress.nourania.validated, total: progress.nourania.total },
+              '/ramadan': { label: 'Ramadan', court: 'Ramadan', valeur: progress.ramadan.completed, total: progress.ramadan.total },
+              '/alphabet': { label: 'Alphabet', court: 'Alphabet', valeur: progress.alphabet.validated, total: progress.alphabet.total },
+              '/invocations': { label: 'Invocations', court: 'Invocations', valeur: progress.invocations.memorized, total: progress.invocations.total },
+              '/priere': { label: 'Prière', court: 'Prière', valeur: progress.prayer.validated, total: null },
+              '/coran': { label: "Coran (Juz' terminés)", court: 'Coran', valeur: progress.coran.validated, total: progress.coran.total },
+              '/grammaire': { label: 'Grammaire (leçons faites)', court: 'Grammaire', valeur: progress.grammaire.validated, total: progress.grammaire.total },
+              '/allah-names': { label: "99 Noms d'Allah", court: '99 Noms', valeur: progress.allahNames.validated, total: progress.allahNames.total },
             };
             const source = isAdmin ? modules.filter((m) => m.is_active || visibilityMap[m.id]) : visibleModules;
             const elements = source

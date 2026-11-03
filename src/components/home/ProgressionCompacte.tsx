@@ -12,9 +12,13 @@ import { cn } from '@/lib/utils';
  * « Réduire les animations » du téléphone = tout immobile.
  * 🎨 2026-11-02 (« un peu fade ») : fond pastel léger en dégradé + chaque anneau dans une pastille teintée de la couleur de SA carte.
  * Les anneaux affichés = les cartes que l'élève voit sur son accueil (Index.tsx s'en charge).
+ * 2026-11-03 (choix de Nadia) : carte terminée = on GARDE son emoji/image (anneau doré + étincelles + petite ⭐ dans le coin
+ * qui fait un tour) pour la reconnaître ; nom court de la carte écrit sous l'anneau.
  */
 export interface ElementProgression {
   path: string; label: string; valeur: number; total: number | null;
+  /** Nom court écrit sous l'anneau (sinon `label`) */
+  court?: string;
   /** Visuel de la carte de l'accueil (sinon celui de STYLE) */
   emoji?: string; fond?: string; image?: string;
 }
@@ -54,8 +58,9 @@ export function ProgressionCompacte({ elements }: { elements: ElementProgression
             <button key={e.path} type="button" onClick={() => navigate(e.path)}
               aria-label={`${e.label} : ${e.total !== null ? `${e.valeur} sur ${e.total}` : `${e.valeur} validées`}${fini ? ', terminé' : ''}. Ouvrir la carte`}
               title={e.label}
-              className="flex items-center gap-1 rounded-full border py-0.5 pl-0.5 pr-2 transition-transform active:scale-95"
+              className="flex flex-col items-center rounded-2xl border px-1.5 pb-1 pt-0.5 transition-transform active:scale-95"
               style={{ backgroundColor: `${couleur}14`, borderColor: `${couleur}33` }}>
+              <span className="flex items-center gap-1">
               <span className={cn('relative h-8 w-8 shrink-0', fini && 'prog-fini')}>
                 <svg viewBox="0 0 32 32" className="h-8 w-8 -rotate-90 overflow-visible" aria-hidden="true">
                   <circle cx="16" cy="16" r={R} fill={fini ? '#fef3c7' : fond} stroke={`${couleur}26`} strokeWidth="3.5" />
@@ -65,17 +70,21 @@ export function ProgressionCompacte({ elements }: { elements: ElementProgression
                   {/* Point lumineux qui fait le tour, chacun à son rythme */}
                   <circle cx="29" cy="16" r="2" fill="#fff" className="prog-point" style={{ filter: `drop-shadow(0 0 2px ${couleur})`, animationDuration: `${4.5 + i * 0.6}s` }} />
                 </svg>
-                <span className={cn('absolute inset-0 flex items-center justify-center text-sm leading-none', emoji === 'أ' && !fini && 'font-arabic')}>
-                  <span className={fini ? 'prog-etoile' : 'prog-hop'} style={fini ? undefined : { animationDelay: `${i * 0.8}s` }}>
-                    {fini ? '⭐' : e.image
+                <span className={cn('absolute inset-0 flex items-center justify-center text-sm leading-none', emoji === 'أ' && 'font-arabic')}>
+                  <span className={fini ? undefined : 'prog-hop'} style={fini ? undefined : { animationDelay: `${i * 0.8}s` }}>
+                    {e.image
                       ? <img src={e.image} alt="" className="h-4 w-4 rounded object-cover" loading="lazy" width={16} height={16} />
                       : emoji}
                   </span>
                 </span>
+                {/* Terminée : petite ⭐ dans le coin, qui fait un tour de temps en temps */}
+                {fini && <span className="prog-etoile absolute -right-1.5 -top-1.5 z-[2] text-[11px] leading-none" aria-hidden="true">⭐</span>}
               </span>
               <span className="text-xs font-extrabold tabular-nums" style={{ color: fini ? '#a16207' : couleur }}>
                 {e.valeur}{e.total !== null && <span className="font-medium text-muted-foreground">/{e.total}</span>}
               </span>
+              </span>
+              <span className="whitespace-nowrap text-[9px] font-semibold leading-tight text-muted-foreground">{e.court ?? e.label}</span>
             </button>
           );
         })}

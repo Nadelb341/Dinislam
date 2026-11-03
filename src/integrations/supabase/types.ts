@@ -3777,6 +3777,30 @@ export type Database = {
           },
         ]
       }
+      user_grammaire_progress: {
+        Row: {
+          card_id: string
+          exercices_at: string | null
+          lecon_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          exercices_at?: string | null
+          lecon_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          exercices_at?: string | null
+          lecon_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_invocation_progress: {
         Row: {
           completed_at: string | null

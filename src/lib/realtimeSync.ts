@@ -23,7 +23,7 @@ export interface RealtimeEventDetail {
 const PROGRESS_VIEWS = ['weekly-program', 'weekly-program-admin', 'student-engagement'];
 
 export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
-  coran_progress: ['coran-progress', 'coran-admin-progress'],
+  coran_progress: ['coran-progress', 'coran-admin-progress', 'user-progress'],
   devoir_checks: ['weekly-program', 'weekly-program-admin', 'student-engagement', 'admin-devoirs', 'cahier-classe'],
   devoir_steps: ['weekly-program', 'weekly-program-admin', 'admin-devoirs'],
   sourate_stories: ['sourate-stories'],
@@ -71,7 +71,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_card_content: ['admin-module-card-contents', 'coran-extra-contents', 'coran-pdf-content', 'generic-module-contents', 'grammaire-card-contents', 'module-card-contents'],
   module_cards: ['admin-module-cards', 'coran-extra-card', 'coran-pdf-card', 'generic-module-cards', 'grammaire-cards', 'module-cards'],
   module_content: ['module-content'],
-  module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts'],
+  module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts', 'user-progress'],
   // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
   module_visits: ['module-visits'],
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin'],
@@ -100,10 +100,11 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin'],
   student_groups: ['admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
   trash_items: [],
-  user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],
+  user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'user-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],
   user_alphabet_progress: ['admin-alphabet-grid', 'admin-module-progress', 'alphabet-student-summary', 'alphabet-unlock-student', 'student-progress', 'student-progress-details', 'user-alphabet-progress-page', 'user-progress', ...PROGRESS_VIEWS],
   user_daily_prayers: ['user-daily-prayers', 'user-progress'],
-  user_flashcard_learned: ['flashcard-learned'],
+  user_flashcard_learned: ['flashcard-learned', 'user-progress'],
+  user_grammaire_progress: ['grammaire-progress', 'user-progress'],
   user_nourania_progress: ['admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'nourania-progress', 'student-progress', 'student-progress-details', 'student-validated-details', 'user-progress', 'bilans', ...PROGRESS_VIEWS],
   user_prayer_progress: ['admin-module-progress', 'admin-stats', 'student-progress', 'student-progress-details', ...PROGRESS_VIEWS],
   user_ramadan_fasting: ['ramadan-fasting'],
