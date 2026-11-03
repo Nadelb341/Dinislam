@@ -18,6 +18,7 @@ Règle complète dans le CLAUDE.md global. À chaque réponse, terminer par **«
 
 ### ⚠️ ACTION EN ATTENTE — liste à jour (à rappeler en bas de chaque réponse)
 - 📜 Valider les 114 fiches des sourates (Accueil › Coran › ⋮ › Gérer le contenu › 📜 Fiches ; 0 validée au 2026-11-01). Nadia : « plus tard », mais à rappeler à chaque réponse.
+- 🍂 (2026-11-03) Décorations de saison : 10 propositions d'automne + carte admin « Décorations saisons » (bouclier › Apparence appli) dans https://claude.ai/artifact/2Z26bvnmVhEvsx1LEVAWN1 → attendre le choix de Nadia (numéros, mélange possible) avant de coder. Saisons : hiver 1/12 → fin février, printemps 1/03, été 1/06, automne 1/09 → 30/11. ⚠️ Faire les 10 propositions d'HIVER avant le 1er décembre 2026. Pas de symboles de fêtes (sapin, Père Noël, Halloween).
 - ✅ (2026-11-02) Fonctions serveur `update-user-password` (règle 6-12) et `send-push-notification` (lien des bilans) mises à jour et en ligne.
 
 ## 🔄 RÈGLE ABSOLUE — Tout changement visible EN DIRECT chez les utilisateurs concernés (2026-10-23, élargie le 2026-10-25)
