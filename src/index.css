@@ -466,3 +466,48 @@
 @keyframes prog-etoile { 0%, 80% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
 .prog-etoile { display: inline-block; animation: prog-etoile 7s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .prog-hop, .prog-point, .prog-neon, .prog-etoile, .prog-fini::before, .prog-fini::after { animation: none; } .prog-fini::before, .prog-fini::after { display: none; } }
+
+/* 🍂 Décorations de saison (2026-11-03, maquette validée par Nadia) — composants dans src/components/saisons */
+:root.saison-automne:not(.dark) {
+  --background: 36 58% 92%;
+  --card: 35 100% 97%;
+  --popover: 35 100% 97%;
+  --muted: 34 45% 89%;
+  --muted-foreground: 25 22% 38%;
+  --border: 33 48% 80%;
+  --input: 33 48% 80%;
+}
+:root.saison-automne:not(.dark) .carte-accueil { border-color: #dcbf96; box-shadow: 0 2px 0 #ead5b6; }
+:root.saison-automne:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #fbe7c8, #f6dcbc, #f1d2b0); border-color: #e2c08f; }
+.saison-arbre-bouge { transform-box: view-box; transform-origin: 58px 200px; animation: saison-arbre 5s ease-in-out infinite; }
+@keyframes saison-arbre { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.8deg); } }
+.saison-frisson { transform-box: fill-box; transform-origin: 50% 50%; animation: saison-frisson 2.4s ease-in-out infinite; }
+@keyframes saison-frisson { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+.saison-oiseau { animation: saison-oiseau 9s linear infinite; }
+@keyframes saison-oiseau { 0% { transform: translate(0, 0); opacity: 0; } 8% { opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(120px, -50px); opacity: 0; } }
+.saison-aile { transform-box: fill-box; transform-origin: 50% 100%; animation: saison-aile .5s ease-in-out infinite alternate; }
+@keyframes saison-aile { to { transform: scaleY(-.6); } }
+.saison-fl { transform-box: fill-box; transform-origin: 50% 100%; animation: saison-flamme 1.1s ease-in-out infinite; }
+.saison-fl.b { animation-duration: .85s; animation-delay: .2s; }
+.saison-fl.c { animation-duration: 1.35s; animation-delay: .45s; }
+@keyframes saison-flamme { 0%, 100% { transform: scale(1, 1); } 30% { transform: scale(.93, 1.12); } 60% { transform: scale(1.05, .92); } }
+.saison-feu { transition: transform .8s, opacity .8s; transform-box: view-box; transform-origin: 100px 140px; }
+.saison-feu-jour .saison-feu { transform: scale(.6); opacity: .85; }
+.saison-lueur { animation: saison-lueur 2.6s ease-in-out infinite; }
+.saison-feu-jour .saison-lueur { animation: none; opacity: .3; }
+@keyframes saison-lueur { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
+.saison-braise { animation: saison-braise 1.6s ease-in-out infinite alternate; }
+@keyframes saison-braise { to { opacity: .4; } }
+.saison-voile-soir { pointer-events: none; background: radial-gradient(110% 60% at 85% 100%, rgba(255, 140, 50, .16), transparent 65%); }
+.saison-msg-arrive { animation: saison-msg-arrive .6s cubic-bezier(.2, .9, .3, 1.2) both; }
+.saison-msg-part { animation: saison-msg-part .45s ease-in both; }
+@keyframes saison-msg-arrive { from { transform: translateY(60px) scale(.9); } to { transform: none; } }
+@keyframes saison-msg-part { to { transform: translateY(30px) scale(.95); opacity: 0; } }
+.saison-msg-feuille { animation: saison-msg-feuille 3s ease-in-out infinite; }
+.saison-msg-feuille.b { animation-duration: 3.6s; animation-delay: .5s; }
+@keyframes saison-msg-feuille { 0%, 100% { transform: rotate(-14deg) translateY(0); } 50% { transform: rotate(12deg) translateY(4px); } }
+.saison-sticker { position: absolute; top: -12px; width: 38px; height: 38px; pointer-events: none; z-index: 15; transform: rotate(8deg); filter: drop-shadow(0 1.5px 1px rgba(60, 30, 10, .22)); }
+@media (prefers-reduced-motion: reduce) {
+  .saison-arbre-bouge, .saison-frisson, .saison-oiseau, .saison-aile, .saison-fl, .saison-lueur, .saison-braise, .saison-msg-feuille, .saison-msg-arrive, .saison-msg-part { animation: none; }
+  .saison-oiseau { display: none; }
+}

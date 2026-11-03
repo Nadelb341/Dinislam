@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import usePresenceHeartbeat from '@/hooks/usePresenceHeartbeat';
@@ -17,6 +17,17 @@ import { useWindowScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import OfflineBanner from '@/components/shared/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { useSaisonActive } from '@/lib/saisons';
+
+/** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
+function useCouleursSaison() {
+  const { saison, r } = useSaisonActive();
+  const actif = saison === 'automne' && r.automne.couleurs;
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle('saison-automne', actif);
+  }, [actif]);
+}
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -32,6 +43,7 @@ const AppLayout = ({
   showBack = false
 }: AppLayoutProps) => {
   usePresenceHeartbeat();
+  useCouleursSaison();
   const { showTop, showBottom, scrollToTop, scrollToBottom } = useWindowScrollToTop();
 
   return (

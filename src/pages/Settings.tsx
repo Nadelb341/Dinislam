@@ -5,6 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,25 @@ import {
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
+import { couperDecor, decorCoupe, saisonDuJour, useReglagesSaisons, NOM_SAISON, SAISONS_PRETES } from '@/lib/saisons';
+
+function CarteDecorSaison() {
+  const { data: r } = useReglagesSaisons();
+  const [coupe, setCoupe] = useState(decorCoupe());
+  const saison = r && !r.auto ? r.saisonChoisie : saisonDuJour();
+  if (!r || r.neutre || !r.elevesPeuventCouper || !SAISONS_PRETES.includes(saison)) return null;
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-between gap-3 p-4">
+        <Label htmlFor="deco-saison" className="min-w-0 cursor-pointer">
+          <span className="block font-bold">{NOM_SAISON[saison]} : décorations de saison</span>
+          <span className="block text-xs text-muted-foreground">Arbre, feuilles qui tombent, cheminée et images sur les cartes de l'accueil</span>
+        </Label>
+        <Switch id="deco-saison" checked={!coupe} onCheckedChange={(v) => { couperDecor(!v); setCoupe(!v); }} />
+      </CardContent>
+    </Card>
+  );
+}
 
 const TRASH_TYPE_LABELS: Record<string, string> = {
   learning_module: 'Module',
@@ -313,6 +333,9 @@ const Settings = () => {
         {/* 👨‍👩‍👧 Espace parents : déplacé dans la fenêtre ⚙️, sous « Changer le mot de passe » (demande de Nadia, 2026-11-02) */}
 
         {/* « Panneau d'administration » retiré le 2026-10-27 : le Tableau de bord n'existe plus (menu ⋮ de chaque carte de l'accueil) */}
+
+        {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
+        <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
 
         {/* Notifications Section — élèves seulement : l'enseignante a tout dans le bouclier › Notifs (demande de Nadia 2026-09-30) */}
         {!isAdmin && (

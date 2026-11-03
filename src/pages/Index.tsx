@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -30,6 +30,9 @@ import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 import { TitreAccueil } from '@/components/home/TitreAppli';
 import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
+import { useSaisonActive } from '@/lib/saisons';
+import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
+const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -231,6 +234,15 @@ const Index = () => {
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
 
+  // 🍂 Décor de saison (bouclier › Apparence appli › Décorations saisons). Soir = après le Maghrib (ou avant Sobh)
+  const { saison, r: reglagesSaison } = useSaisonActive();
+  const automne = saison === 'automne';
+  const [maintenant, setMaintenant] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setMaintenant(Date.now()), 60_000); return () => clearInterval(t); }, []);
+  const soir = prayerTimes
+    ? maintenant >= prayerTimes.maghribDate.getTime() || maintenant < prayerTimes.fajrDate.getTime()
+    : new Date(maintenant).getHours() >= 18 || new Date(maintenant).getHours() < 6;
+
   // Dialog visibilité
   const [visibilityTarget, setVisibilityTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -431,7 +443,12 @@ const handleModuleClick = (mod) => {
   return (
     <>
 <AppLayout showBottomNav={false}>
-        <div className="p-4 space-y-6">
+        <div className={cn('p-4 space-y-6', automne && 'relative isolate pb-32')}>
+          {automne && (
+            <SilentBoundary name="Décor de saison">
+              <Suspense fallback={null}><DecorAutomne r={reglagesSaison} soir={soir} userId={user?.id ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
           {/* Notification Permission Banner */}
           {showNotifBanner &&
           <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
@@ -613,7 +630,7 @@ const handleModuleClick = (mod) => {
                   <button
                     onClick={() => handleModuleClick(mod)}
                     className={cn(
-                      'relative bg-card rounded-2xl p-4 shadow-sm border border-border w-full',
+                      'carte-accueil relative bg-card rounded-2xl p-4 shadow-sm border border-border w-full',
                       'flex flex-col items-center justify-center min-h-[160px]',
                       'animate-slide-up',
                       `stagger-${index % 6 + 1}`,
@@ -658,6 +675,11 @@ const handleModuleClick = (mod) => {
                     </p>
                   </button>
 
+                  {/* 🍂 Image de saison en haut à droite de la carte (à gauche du menu ⋮ pour l'enseignante, pour ne rien cacher) */}
+                  {automne && reglagesSaison.automne.images && (
+                    <svg aria-hidden viewBox="0 0 48 48" className="saison-sticker" style={{ right: isAdmin ? 34 : -8 }}
+                      dangerouslySetInnerHTML={{ __html: imageDeCarte(slug, index) }} />
+                  )}
 
                   {/* Admin 3-dot menu */}
                   {isAdmin &&

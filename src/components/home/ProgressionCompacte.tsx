@@ -44,7 +44,7 @@ export function ProgressionCompacte({ elements }: { elements: ElementProgression
   if (!elements.length) return null;
 
   return (
-    <div className="rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/80 via-sky-50/80 to-violet-50/80 px-2 py-2 shadow-card dark:border-border dark:from-amber-950/20 dark:via-sky-950/20 dark:to-violet-950/20">
+    <div className="prog-carte rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50/80 via-sky-50/80 to-violet-50/80 px-2 py-2 shadow-card dark:border-border dark:from-amber-950/20 dark:via-sky-950/20 dark:to-violet-950/20">
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {elements.map((e, i) => {
           const s = STYLE[e.path];

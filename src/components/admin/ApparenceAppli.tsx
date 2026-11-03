@@ -14,6 +14,7 @@ import {
 import { POLICES, TITRE_DEFAUT, useReglagesTitre, type Police, type ReglagesTitre } from '@/lib/apparence';
 import { TitreAppli } from '@/components/home/TitreAppli';
 import { cn, errorMessage } from '@/lib/utils';
+import DecorationsSaisons from '@/components/admin/DecorationsSaisons';
 
 const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } };
 
@@ -23,17 +24,22 @@ const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'En
  * textes d'accueil et couleurs du Ramadan. Aperçu en direct ; enregistré pour tout le monde (en direct chez les élèves).
  */
 export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
-  const [sousCarte, setSousCarte] = useState<'titre' | null>(null);
+  const [sousCarte, setSousCarte] = useState<'titre' | 'saisons' | null>(null);
   return (
     <div className="space-y-4">
       <Button variant="ghost" onClick={sousCarte ? () => setSousCarte(null) : onBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button>
       <h2 className="text-xl font-extrabold">🔧 Apparence appli</h2>
-      {sousCarte === 'titre' ? <ReglageTitre /> : (
+      {sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : (
         <div className="grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={() => setSousCarte('titre')}
             className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-sky-50 dark:from-amber-950/30 dark:to-sky-950/30 p-4 text-left">
             <p className="text-lg font-extrabold">✨ Le titre</p>
             <p className="text-sm text-muted-foreground">Le haut de l'accueil : le croissant, le nom de l'appli, la pluie d'étoiles, « Assalamou Alaykoum », « Bienvenue » et le Bismillah.</p>
+          </button>
+          <button type="button" onClick={() => setSousCarte('saisons')}
+            className="rounded-2xl border-2 border-[#e2c08f] bg-gradient-to-br from-[#fff8ee] to-[#fbe7c8] dark:from-amber-950/30 dark:to-orange-950/20 p-4 text-left">
+            <p className="text-lg font-extrabold">🍂 Décorations saisons</p>
+            <p className="text-sm text-muted-foreground">L'appli habillée selon la saison : arbre, feuilles qui tombent, cheminée, images sur les cartes, couleurs. « Ambiance neutre » pour tout enlever.</p>
           </button>
         </div>
       )}
