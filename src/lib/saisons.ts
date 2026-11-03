@@ -35,6 +35,11 @@ export interface ReglagesSaisons {
   elevesPeuventCouper: boolean;
   ramadanDabord: boolean;
   themeSombre: boolean;
+  /** 🏆 Badge de la saison (jours d'activité = jours où l'élève a ouvert au moins une carte) */
+  badge: boolean;
+  badgeJours: number;
+  /** Pluie d'étoiles du titre pendant une saison décorée (non par défaut : « ça fait chargé avec les feuilles », Nadia 2026-11-04) */
+  pluieEtoiles: boolean;
   /** Feuilles : 5 à 40 (18 = « Normal ») */
   quantite: number;
   /** 1 (très lente) à 5 (très rapide) */
@@ -54,7 +59,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
-  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false,
+  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, badge: true, badgeJours: 15,
   quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT,
 };
 
@@ -129,4 +134,24 @@ export function lundiDeLaSemaine(d = new Date()): string {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+}
+
+/** Nom du badge : « Élève de l'automne 2026 », « Élève de l'hiver 2026-2027 » */
+export function nomBadge(seasonKey: string): string {
+  const [s, a] = seasonKey.split('-'); const an = Number(a);
+  const nom: Record<string, string> = { hiver: "de l'hiver", printemps: 'du printemps', ete: "de l'été", automne: "de l'automne" };
+  return `Élève ${nom[s] ?? ''} ${s === 'hiver' ? `${an}-${an + 1}` : an}`;
+}
+export const EMOJI_SAISON: Record<Saison, string> = { hiver: '❄️', printemps: '🌸', ete: '☀️', automne: '🍂' };
+
+/** Bornes de la saison d'une date, comme la fonction season_bounds du serveur */
+export function bornesSaison(d = new Date()): { cle: string; saison: Saison; debut: string; fin: string } {
+  const y = d.getFullYear(), m = d.getMonth() + 1;
+  const iso = (a: number, mo: number, j: number) => `${a}-${String(mo).padStart(2, '0')}-${String(j).padStart(2, '0')}`;
+  const finFevrier = (a: number) => (new Date(a, 2, 0)).getDate();
+  if (m === 12) return { cle: `hiver-${y}`, saison: 'hiver', debut: iso(y, 12, 1), fin: iso(y + 1, 2, finFevrier(y + 1)) };
+  if (m <= 2) return { cle: `hiver-${y - 1}`, saison: 'hiver', debut: iso(y - 1, 12, 1), fin: iso(y, 2, finFevrier(y)) };
+  if (m <= 5) return { cle: `printemps-${y}`, saison: 'printemps', debut: iso(y, 3, 1), fin: iso(y, 5, 31) };
+  if (m <= 8) return { cle: `ete-${y}`, saison: 'ete', debut: iso(y, 6, 1), fin: iso(y, 8, 31) };
+  return { cle: `automne-${y}`, saison: 'automne', debut: iso(y, 9, 1), fin: iso(y, 11, 30) };
 }

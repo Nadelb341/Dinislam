@@ -3149,6 +3149,33 @@ export type Database = {
         }
         Relationships: []
       }
+      season_badges: {
+        Row: {
+          days: number
+          earned_at: string
+          required: number
+          saison: string
+          season_key: string
+          user_id: string
+        }
+        Insert: {
+          days: number
+          earned_at?: string
+          required: number
+          saison: string
+          season_key: string
+          user_id: string
+        }
+        Update: {
+          days?: number
+          earned_at?: string
+          required?: number
+          saison?: string
+          season_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sourate_admin_unlocks: {
         Row: {
           created_at: string | null
@@ -4293,6 +4320,7 @@ export type Database = {
       bilan_public: { Args: { p_code: string; p_token: string }; Returns: Json }
       can_act_for_child: { Args: { p_child: string }; Returns: boolean }
       claim_program_reward: { Args: { p_kind: string }; Returns: boolean }
+      claim_season_badge: { Args: never; Returns: Json }
       class_program_streaks: {
         Args: never
         Returns: {
@@ -4448,6 +4476,15 @@ export type Database = {
       recalculate_student_points: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      season_bounds: {
+        Args: { p_day: string }
+        Returns: {
+          end_day: string
+          saison: string
+          season_key: string
+          start_day: string
+        }[]
       }
       student_engagement: {
         Args: never

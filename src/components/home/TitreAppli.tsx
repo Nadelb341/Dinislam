@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { POLICES, TITRE_DEFAUT, estRamadan, useReglagesTitre, type ReglagesTitre } from '@/lib/apparence';
+import { useSaisonActive } from '@/lib/saisons';
 
 /**
  * 🌠 Pluie d'étoiles PERMANENTE (2026-10-30, modèle choisi par Nadia) : de petits points de lumière dorés qui scintillent
@@ -89,9 +90,12 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
 /** Sur l'accueil : les réglages enregistrés (les réglages d'origine pendant le chargement) */
 export function TitreAccueil({ nom, children }: { nom: string | null; children?: React.ReactNode }) {
   const { data: r = TITRE_DEFAUT } = useReglagesTitre();
+  // 🍂 Pendant une saison décorée, pas de pluie d'étoiles (déjà les feuilles / flocons qui tombent), sauf si Nadia la remet
+  const { saison, r: rs } = useSaisonActive();
+  const titre = saison && !rs.pluieEtoiles ? { ...r, pluie: false } : r;
   return (
     <div>
-      <TitreAppli r={r} nom={nom} />
+      <TitreAppli r={titre} nom={nom} />
       {children}
     </div>
   );

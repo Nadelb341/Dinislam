@@ -32,6 +32,7 @@ import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
+import { BadgeSaison } from '@/components/saisons/BadgeSaison';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 
 /**
@@ -432,7 +433,8 @@ const Index = () => {
 
 const handleModuleClick = (mod) => {
     // 👁️ Une visite par élève, par carte et par jour (« Vu par N élèves cette semaine », 2026-10-27)
-    if (user && !isAdmin) void supabase.from('module_visits').upsert({ user_id: user.id, module_id: mod.id }, { ignoreDuplicates: true });
+    // ⚠️ Une requête Supabase ne part que si on l'attend (.then) : le « void » seul ne l'envoyait jamais (corrigé 2026-11-04)
+    if (user && !isAdmin) supabase.from('module_visits').upsert({ user_id: user.id, module_id: mod.id }, { ignoreDuplicates: true }).then(() => {}, () => {});
     if (mod.is_builtin && mod.builtin_path) {
       navigate(mod.builtin_path);
     } else {
@@ -610,6 +612,11 @@ const handleModuleClick = (mod) => {
               });
             return <ProgressionCompacte elements={elements} />;
           })()}
+
+          {/* 🏆 Badge de la saison (élèves), sous la carte Progrès (2026-11-04) */}
+          {saison && reglagesSaison.badge && user && !isAdmin && (
+            <SilentBoundary name="Badge de la saison"><BadgeSaison userId={user.id} required={reglagesSaison.badgeJours} /></SilentBoundary>
+          )}
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">

@@ -16,6 +16,7 @@ import {
 } from '@/lib/saisons';
 import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { cn, errorMessage } from '@/lib/utils';
+import { BadgeSaisonAdmin } from '@/components/admin/BadgeSaisonAdmin';
 
 /**
  * 🍂 Bouclier › 🔧 Apparence appli › « Décorations saisons » (2026-11-03, maquette validée par Nadia).
@@ -84,7 +85,7 @@ export default function DecorationsSaisons() {
 
   const maj = <K extends keyof ReglagesSaisons>(k: K, v: ReglagesSaisons[K]) => setR((x) => ({ ...x, [k]: v }));
   const majA = (k: keyof ReglagesAutomne, v: boolean) => setR((x) => ({ ...x, automne: { ...x.automne, [k]: v } }));
-  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre', label: string, aide?: string) => (
+  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles', label: string, aide?: string) => (
     <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2 cursor-pointer">
       <span className="min-w-0"><span className="block text-sm font-bold">{label}</span>{aide && <span className="block text-xs text-muted-foreground">{aide}</span>}</span>
       <Switch checked={r[k]} onCheckedChange={(v) => maj(k, v)} />
@@ -120,6 +121,7 @@ export default function DecorationsSaisons() {
           {ligne('elevesPeuventCouper', 'Les élèves peuvent couper les décorations pour eux', 'Dans leurs ⚙️ Paramètres')}
           {ligne('ramadanDabord', 'Pendant le Ramadan, pas de décor de saison', 'Les couleurs du Ramadan passent avant')}
           {ligne('themeSombre', 'Décorer aussi le thème sombre', 'Décoché au départ')}
+          {ligne('pluieEtoiles', "Garder la pluie d'étoiles du titre", "Décoché : pendant une saison, il y a déjà les feuilles ou les flocons qui tombent")}
           <label className="block text-sm font-semibold">Quantité de feuilles : <b>{r.quantite <= 12 ? 'Très discret' : r.quantite <= 24 ? 'Normal' : 'Festif'}</b> ({r.quantite})
             <input type="range" min={5} max={40} value={r.quantite} onChange={(e) => maj('quantite', Number(e.target.value))} className="w-full accent-[#b5562b]" />
           </label>
@@ -130,6 +132,8 @@ export default function DecorationsSaisons() {
             <input type="range" min={1} max={3} value={r.tailleArbre} onChange={(e) => maj('tailleArbre', Number(e.target.value))} className="w-full accent-[#b5562b]" />
           </label>
         </section>
+
+        <BadgeSaisonAdmin r={r} maj={maj} />
 
         <div className="grid grid-cols-4 gap-1.5" role="tablist">
           {ORDRE.map((s) => (

@@ -137,7 +137,8 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
 
   const ouvrirBilan = (b: BilanParent) => {
     setBilanOuvert(b);
-    if (!b.lu) void supabase.rpc('bilan_mark_read', { p_report: b.id, p_code: code });
+    // ⚠️ .then obligatoire : sans lui la requête ne partait jamais et le bilan restait « non lu » (corrigé 2026-11-04)
+    if (!b.lu) supabase.rpc('bilan_mark_read', { p_report: b.id, p_code: code }).then(() => {}, () => {});
   };
 
   const lignesCahier = (cahier?.devoirs ?? []).map((d) => {
