@@ -1,3 +1,4 @@
+import { logEchecAudio } from '@/lib/crashLog';
 import { useState, useRef, useEffect } from 'react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { withName } from '@/lib/encouragements';
@@ -220,8 +221,9 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
       setRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    } catch {
-      toast.error('Impossible d\'accéder au microphone');
+    } catch (e) {
+      void logEchecAudio('micro', e, `récitation ${sourateName}`);
+      toast.error('Impossible d\'accéder au micro. Sur iPhone : Réglages › Safari (ou l\'appli) › Micro › Autoriser, puis réessaie.', { duration: 10000 });
     }
   };
 
@@ -277,7 +279,8 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
       resetRecording();
       changeComment('');
     } catch (e) {
-      toast.error(errorMessage(e) || 'Erreur lors de l\'envoi');
+      void logEchecAudio('envoi', e, `récitation ${sourateName}`);
+      toast.error(`${navigator.onLine ? '' : '📡 Pas de connexion Internet. '}Ta récitation n'est pas partie : ${errorMessage(e) || 'erreur inconnue'}. Ton enregistrement est gardé, réessaie « Envoyer ».`, { duration: 12000 });
     } finally {
       setUploading(false);
     }

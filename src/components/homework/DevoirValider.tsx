@@ -11,6 +11,7 @@ import { envoyerDevoir, lienTravail } from '@/lib/devoirTravail';
 import { withName } from '@/lib/encouragements';
 import { errorMessage, cn } from '@/lib/utils';
 import { AudioProf } from './AudioProf';
+import { logEchecAudio } from '@/lib/crashLog';
 import { AudioApercu } from '@/components/shared/AudioApercu';
 
 export interface DevoirAValider {
@@ -59,7 +60,7 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
       queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });
       queryClient.invalidateQueries({ queryKey: ['devoir-en-cours', devoir.id] });
       onSent?.();
-    } catch (e) { toast.error(errorMessage(e)); } finally { setSending(false); }
+    } catch (e) { void logEchecAudio('envoi', e, `devoir ${devoir.titre}`); toast.error(`${navigator.onLine ? '' : '📡 Pas de connexion Internet. '}${errorMessage(e)}`); } finally { setSending(false); }
   };
 
   if (devoir.statut === 'corrige') {

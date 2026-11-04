@@ -31,3 +31,20 @@ export async function logCrash(error: Error, componentStack?: string | null) {
     });
   } catch { /* le Monitoring ne doit jamais faire planter l'écran d'erreur */ }
 }
+
+/**
+ * 🎙️ Envoi d'un audio raté (2026-11-04, Yacine n'arrivait pas à envoyer sa récitation et rien n'était arrivé) :
+ * la vraie raison (micro refusé, réseau, format…) est notée dans le Monitoring pour que le professeur la voie.
+ */
+export async function logEchecAudio(etape: 'micro' | 'envoi', error: unknown, contexte: string) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const e = error as { message?: string; name?: string; statusCode?: string } | null;
+    await supabase.from('app_logs').insert({
+      user_id: userId, level: 'error', action: etape === 'micro' ? '🎙️ Micro inaccessible' : '🎙️ Envoi d\'un audio raté',
+      details: { error: String(e?.message || e?.name || error).slice(0, 500), code: e?.statusCode ?? null, contexte, page: window.location.pathname, user_agent: navigator.userAgent, en_ligne: navigator.onLine },
+    });
+  } catch { /* le journal ne doit jamais bloquer l'élève */ }
+}
