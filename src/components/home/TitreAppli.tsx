@@ -66,7 +66,7 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
 
       {r.icone && (
         <div className="flex justify-center mb-2">
-          <img src="/icon-192.png" alt="" width={56} height={56} className={`h-14 w-14 rounded-2xl shadow-md ${r.brillant ? 'titre-croissant-brille' : ''}`} />
+          <span className="titre-logo relative inline-block"><img src="/icon-192.png" alt="" width={56} height={56} className={`h-14 w-14 rounded-2xl shadow-md ${r.brillant ? 'titre-croissant-brille' : ''}`} /></span>
         </div>
       )}
 
@@ -75,7 +75,7 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
           <span key={i} aria-hidden className="titre-scintille text-xs" style={{ left: `${s.l}%`, top: `${s.t}%`, color: traits, animationDelay: `${i * 0.45}s` }}>✦</span>
         ))}
         {r.traits && <i aria-hidden className="block h-0.5 w-8 sm:w-12 shrink-0 rounded-full" style={{ background: `linear-gradient(90deg, transparent, ${traits})` }} />}
-        <h1 className={`text-2xl sm:text-3xl font-bold min-w-0 [overflow-wrap:anywhere] ${r.reflet ? 'titre-reflet' : ''}`} style={styleNom}>{texte}</h1>
+        <h1 className={`titre-nom text-2xl sm:text-3xl font-bold min-w-0 [overflow-wrap:anywhere] ${r.reflet ? 'titre-reflet' : ''}`} style={styleNom}>{texte}</h1>
         {r.traits && <i aria-hidden className="block h-0.5 w-8 sm:w-12 shrink-0 rounded-full" style={{ background: `linear-gradient(270deg, transparent, ${traits})` }} />}
       </div>
 

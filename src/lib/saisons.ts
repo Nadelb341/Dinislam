@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { estRamadan } from '@/lib/apparence';
 
 export type Saison = 'hiver' | 'printemps' | 'ete' | 'automne';
-export const SAISONS_PRETES: Saison[] = ['automne'];
+export const SAISONS_PRETES: Saison[] = ['automne', 'hiver'];
 
 export const NOM_SAISON: Record<Saison, string> = { hiver: '❄️ Hiver', printemps: '🌸 Printemps', ete: '☀️ Été', automne: '🍂 Automne' };
 export const DATES_SAISON: Record<Saison, string> = { hiver: '1/12 → fin février', printemps: '1/03 → 31/05', ete: '1/06 → 31/08', automne: '1/09 → 30/11' };
@@ -28,6 +28,24 @@ export interface ReglagesAutomne {
   /** Feuilles soufflées quand on fait défiler, pluie de glands/pommes de pin/feuilles à chaque validation, feuille dorée rare (2026-11-04) */
   ventDefile: boolean; pluieValidation: boolean; feuilleDoree: boolean;
 }
+
+/** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */
+export interface ReglagesHiver {
+  flocons: boolean; devantDerriere: boolean; eclate: boolean; son: boolean; messageSemaine: boolean;
+  chalet: boolean; cheminee: boolean; petitFeuJour: boolean; grandFeuSoir: boolean; transparente: boolean; chocolat: boolean;
+  neigeBas: boolean; lanternes: boolean; ours: boolean; personnage: boolean; traces: boolean; glissade: boolean;
+  givre: boolean; givreMatin: boolean; neigeCartes: boolean; cielSoir: boolean; images: boolean; couleurs: boolean;
+  /** 14 plongeon · 15 vent au défilement · 16 vitre givrée · 17 pluie dorée · 18 mot de l'ours · 19 neige sur le titre · 20 flocon doré */
+  plongeon: boolean; ventDefile: boolean; vitre: boolean; pluieDoree: boolean; motOurs: boolean; neigeTitre: boolean; floconDore: boolean;
+}
+
+export const HIVER_DEFAUT: ReglagesHiver = {
+  flocons: true, devantDerriere: true, eclate: true, son: true, messageSemaine: true,
+  chalet: true, cheminee: true, petitFeuJour: true, grandFeuSoir: true, transparente: true, chocolat: true,
+  neigeBas: true, lanternes: true, ours: true, personnage: true, traces: true, glissade: true,
+  givre: true, givreMatin: true, neigeCartes: true, cielSoir: true, images: true, couleurs: true,
+  plongeon: true, ventDefile: true, vitre: true, pluieDoree: true, motOurs: true, neigeTitre: true, floconDore: true,
+};
 
 export interface ReglagesSaisons {
   /** « Ambiance neutre » : aucun décor, l'appli comme avant */
@@ -50,6 +68,7 @@ export interface ReglagesSaisons {
   /** 1 petit, 2 moyen, 3 grand */
   tailleArbre: number;
   automne: ReglagesAutomne;
+  hiver: ReglagesHiver;
 }
 
 export const AUTOMNE_DEFAUT: ReglagesAutomne = {
@@ -63,11 +82,11 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
   neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
-  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT,
+  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT,
 };
 
 export function fusionner(v: Partial<ReglagesSaisons> | null | undefined): ReglagesSaisons {
-  return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) } };
+  return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) } };
 }
 
 /** La saison d'une date (mois 0 = janvier) */

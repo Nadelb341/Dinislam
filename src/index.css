@@ -554,3 +554,87 @@
 }
 .saison-sticker { position: absolute; top: -12px; width: 38px; height: 38px; pointer-events: none; z-index: 15; transform: rotate(8deg); filter: drop-shadow(0 1.5px 1px rgba(60, 30, 10, .22)); }
 @media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .saison-arbre-bouge, html:not(.anime-toujours) .saison-frisson, html:not(.anime-toujours) .saison-oiseau, html:not(.anime-toujours) .saison-aile, html:not(.anime-toujours) .saison-fl, html:not(.anime-toujours) .saison-lueur, html:not(.anime-toujours) .saison-braise, html:not(.anime-toujours) .saison-msg-feuille, html:not(.anime-toujours) .saison-msg-arrive, html:not(.anime-toujours) .saison-msg-part, html:not(.anime-toujours) .saison-perso-marche, html:not(.anime-toujours) .saison-perso-pas, html:not(.anime-toujours) .saison-tas-secoue { animation: none; } html:not(.anime-toujours) .saison-eclat-tas { display: none; } html:not(.anime-toujours) .saison-oiseau { display: none; } }
+
+/* ❄️ Hiver (2026-11-04, maquette validée par Nadia) — composants dans src/components/saisons (DecorHiver, dessinsHiver) */
+:root.saison-hiver:not(.dark) {
+  --background: 212 68% 95%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --muted: 213 55% 93%;
+  --muted-foreground: 215 18% 44%;
+  --border: 212 62% 88%;
+  --input: 212 62% 88%;
+}
+:root.saison-hiver.saison-soir:not(.dark) {
+  --background: 34 38% 91%;
+  --card: 40 100% 98%;
+  --popover: 40 100% 98%;
+  --muted: 36 40% 90%;
+  --muted-foreground: 280 6% 40%;
+  --border: 36 44% 82%;
+  --input: 36 44% 82%;
+}
+:root.saison-hiver:not(.dark) .carte-accueil { border-color: #cddff3; box-shadow: 0 2px 0 #cddff3; }
+:root.saison-hiver.saison-soir:not(.dark) .carte-accueil { border-color: #e3d3bb; box-shadow: 0 2px 0 #e3d3bb; }
+:root.saison-hiver:not(.dark) .prog-carte { position: relative; background-image: linear-gradient(90deg, #e3eefb, #f2f7fd, #e8eefa); border-color: #bcd3ee; }
+:root.saison-hiver.saison-soir:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #f6e7cf, #f3ead9, #ece3d6); border-color: #e0c9a4; }
+/* Neige posée sur le haut des cartes, qui déborde et coule en gouttes (elle grossit jusqu'à une limite ; toucher la carte la fait tomber) */
+:root.saison-hiver.hiver-neige-cartes .carte-accueil::before, :root.saison-hiver.hiver-neige-cartes .prog-carte::before {
+  content: ""; position: absolute; left: -3px; right: -3px; height: var(--n, 14px); top: calc(var(--n, 14px) * -0.45); z-index: 1; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2030'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0%2015C8%205%2030%202%2052%203S150%201%20172%203S197%207%20200%2015V19C197%2026%20189%2025%20185%2020C179%2028%20168%2028%20163%2021C151%2025%20139%2024%20131%2020C123%2029%20111%2029%20106%2021C96%2024%2084%2023%2076%2020C69%2028%2057%2028%2052%2021C40%2025%2028%2024%2020%2020C14%2027%204%2026%200%2019Z'%20fill='%23bcd3ee'/%3E%3Cpath%20d='M0%2013C8%203%2030%200%2052%201S150%20-1%20172%201S197%205%20200%2013V17C197%2023%20189%2022%20185%2018C179%2025%20168%2025%20163%2019C151%2022%20139%2021%20131%2018C123%2026%20111%2026%20106%2019C96%2021%2084%2021%2076%2018C69%2025%2057%2025%2052%2019C40%2022%2028%2021%2020%2018C14%2024%204%2023%200%2017Z'%20fill='%23fbfdff'/%3E%3Cpath%20d='M14%206C40%203%2080%203%20120%203S180%204%20190%207'%20stroke='white'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; transition: height .8s, top .8s; filter: drop-shadow(0 1px 0 rgba(110, 150, 200, .25));
+}
+:root.saison-hiver.hiver-neige-cartes .prog-carte::before { --n: 16px; }
+/* Givre sur toutes les cartes */
+:root.saison-hiver.hiver-givre .carte-accueil::after, :root.saison-hiver.hiver-givre .prog-carte::after, :root.saison-hiver.hiver-givre .carte-givre::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 2;
+  background: radial-gradient(circle at 0 0, rgba(255,255,255,.75), rgba(214,232,250,.35) 7%, transparent 15%), radial-gradient(circle at 100% 100%, rgba(214,232,250,.45), transparent 12%);
+}
+/* 19 · Neige sur le titre et sur le logo */
+:root.saison-hiver.hiver-titre .titre-nom { position: relative; }
+:root.saison-hiver.hiver-titre .titre-nom::before { content: ""; position: absolute; left: 18%; right: 18%; top: -7px; height: 11px; background: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2030'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0%2015C8%205%2030%202%2052%203S150%201%20172%203S197%207%20200%2015V19C197%2026%20189%2025%20185%2020C179%2028%20168%2028%20163%2021C151%2025%20139%2024%20131%2020C123%2029%20111%2029%20106%2021C96%2024%2084%2023%2076%2020C69%2028%2057%2028%2052%2021C40%2025%2028%2024%2020%2020C14%2027%204%2026%200%2019Z'%20fill='%23bcd3ee'/%3E%3Cpath%20d='M0%2013C8%203%2030%200%2052%201S150%20-1%20172%201S197%205%20200%2013V17C197%2023%20189%2022%20185%2018C179%2025%20168%2025%20163%2019C151%2022%20139%2021%20131%2018C123%2026%20111%2026%20106%2019C96%2021%2084%2021%2076%2018C69%2025%2057%2025%2052%2019C40%2022%2028%2021%2020%2018C14%2024%204%2023%200%2017Z'%20fill='%23fbfdff'/%3E%3Cpath%20d='M14%206C40%203%2080%203%20120%203S180%204%20190%207'%20stroke='white'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; filter: drop-shadow(0 1px 1px rgba(80,120,180,.3)); pointer-events: none; }
+:root.saison-hiver.hiver-titre .titre-logo::after { content: ""; position: absolute; left: -3px; right: -3px; top: -4px; height: 10px; background: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2030'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0%2015C8%205%2030%202%2052%203S150%201%20172%203S197%207%20200%2015V19C197%2026%20189%2025%20185%2020C179%2028%20168%2028%20163%2021C151%2025%20139%2024%20131%2020C123%2029%20111%2029%20106%2021C96%2024%2084%2023%2076%2020C69%2028%2057%2028%2052%2021C40%2025%2028%2024%2020%2020C14%2027%204%2026%200%2019Z'%20fill='%23bcd3ee'/%3E%3Cpath%20d='M0%2013C8%203%2030%200%2052%201S150%20-1%20172%201S197%205%20200%2013V17C197%2023%20189%2022%20185%2018C179%2025%20168%2025%20163%2019C151%2022%20139%2021%20131%2018C123%2026%20111%2026%20106%2019C96%2021%2084%2021%2076%2018C69%2025%2057%2025%2052%2019C40%2022%2028%2021%2020%2018C14%2024%204%2023%200%2017Z'%20fill='%23fbfdff'/%3E%3Cpath%20d='M14%206C40%203%2080%203%20120%203S180%204%20190%207'%20stroke='white'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat; pointer-events: none; }
+.hiver-ciel { background: linear-gradient(180deg, rgba(120,210,190,.22), rgba(120,160,230,.12) 50%, transparent); }
+.hiver-ciel-etoile { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px #fff; animation: hiver-paillette 2.6s ease-in-out infinite; }
+.hiver-givre-coins { pointer-events: none; background: radial-gradient(circle at 0 0, rgba(255,255,255,.85), rgba(225,238,252,.5) 12%, transparent 26%), radial-gradient(circle at 100% 0, rgba(255,255,255,.8), rgba(225,238,252,.45) 11%, transparent 24%), radial-gradient(circle at 0 100%, rgba(255,255,255,.7), transparent 20%); }
+.hiver-voile-soir { pointer-events: none; background: radial-gradient(60% 30% at 20% 8%, rgba(255,190,90,.2), transparent 70%), radial-gradient(70% 30% at 85% 100%, rgba(255,170,70,.22), transparent 70%); }
+.hiver-vitre { pointer-events: none; opacity: 0; transition: opacity .45s ease-out;
+  background: radial-gradient(120% 85% at 50% 45%, transparent 52%, rgba(226,239,252,.55) 74%, rgba(240,247,255,.92) 100%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Cg stroke='%23ffffff' stroke-width='.8' opacity='.7' fill='none'%3E%3Cpath d='M8 6l6 6M14 6l-6 6M11 4v10M30 26l5 5M35 26l-5 5M32.5 24v9'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask: radial-gradient(130% 95% at 50% 45%, transparent 50%, #000 78%); mask: radial-gradient(130% 95% at 50% 45%, transparent 50%, #000 78%); }
+.hiver-vitre.givree { opacity: 1; transition: opacity 7s ease-in; }
+.hiver-paillette { animation: hiver-paillette 2.2s ease-in-out infinite; }
+@keyframes hiver-paillette { 0%, 100% { opacity: .15; } 50% { opacity: 1; } }
+/* Lanternes : douces et jolies (Nadia 2026-11-04 : « moins éclairées ») — veilleuse le jour, lueur chaude du Maghrib au Fajr */
+.hiver-lanterne-neige .hiver-flamme { opacity: .7; transition: opacity .6s; }
+.hiver-lanterne-neige .hiver-halo-l, .hiver-lanterne-ch .hiver-halo-c { opacity: .35; transition: opacity .6s; }
+.hiver-lanterne-neige .hiver-verre { fill: #fff4d6; transition: fill .6s; }
+.hiver-soir .hiver-lanterne-neige .hiver-flamme { opacity: 1; }
+.hiver-soir .hiver-lanterne-neige .hiver-halo-l, .hiver-soir .hiver-lanterne-ch .hiver-halo-c { animation: hiver-lanterne 3.2s ease-in-out infinite; }
+.hiver-soir .hiver-lanterne-neige .hiver-verre { fill: #ffe9b0; }
+@keyframes hiver-lanterne { 0%, 100% { opacity: .7; } 50% { opacity: .9; } }
+.hiver-chocolat-soir { opacity: 0; transition: opacity .8s; }
+.hiver-chocolat-visible .hiver-chocolat-soir { opacity: 1; }
+.hiver-fumee { animation: hiver-fumee 4s ease-out infinite; }
+.hiver-fumee.b { animation-delay: 1.3s; } .hiver-fumee.c { animation-delay: 2.6s; }
+@keyframes hiver-fumee { 0% { transform: translate(0, 0) scale(.6); opacity: 0; } 20% { opacity: .8; } 100% { transform: translate(8px, -26px) scale(1.4); opacity: 0; } }
+.hiver-fenetre { transition: fill .8s; }
+.hiver-soir .hiver-fenetre { fill: #ffcf6b; }
+.hiver-halo { opacity: .15; transition: opacity .8s; }
+.hiver-soir .hiver-halo { opacity: .7; }
+.hiver-fl { transform-box: fill-box; transform-origin: 50% 100%; animation: saison-flamme 1.1s ease-in-out infinite; }
+.hiver-fl.b { animation-duration: .85s; animation-delay: .2s; } .hiver-fl.c { animation-duration: 1.35s; animation-delay: .45s; }
+.hiver-feu { transition: transform .8s, opacity .8s; transform-box: view-box; transform-origin: 100px 140px; }
+.hiver-feu-jour .hiver-feu { transform: scale(.6); opacity: .85; }
+.hiver-lueur { animation: saison-lueur 2.6s ease-in-out infinite; }
+.hiver-feu-jour .hiver-lueur { animation: none; opacity: .3; }
+.hiver-respire { transform-box: fill-box; transform-origin: 50% 100%; animation: hiver-respire 3.2s ease-in-out infinite; }
+@keyframes hiver-respire { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.04); } }
+.hiver-tas-secoue { animation: hiver-tas .5s ease-out; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes hiver-tas { 30% { transform: scale(1.1, .85); } 60% { transform: scale(.96, 1.06); } }
+.hiver-ours-reveil { animation: hiver-ours .9s ease-out; }
+.hiver-ours-reveil text { opacity: 0; }
+@keyframes hiver-ours { 30% { transform: translateY(-6px) rotate(-4deg); } 60% { transform: translateY(0) rotate(2deg); } }
+.hiver-bulle-in { animation: hiver-bulle-in .45s cubic-bezier(.2, .9, .3, 1.3); }
+@keyframes hiver-bulle-in { from { transform: translateY(12px) scale(.85); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  html:not(.anime-toujours) .hiver-ciel-etoile, html:not(.anime-toujours) .hiver-paillette, html:not(.anime-toujours) .hiver-fumee, html:not(.anime-toujours) .hiver-fl, html:not(.anime-toujours) .hiver-lueur, html:not(.anime-toujours) .hiver-respire, html:not(.anime-toujours) .hiver-tas-secoue, html:not(.anime-toujours) .hiver-ours-reveil, html:not(.anime-toujours) .hiver-bulle-in, html:not(.anime-toujours) .hiver-soir .hiver-halo-l, html:not(.anime-toujours) .hiver-soir .hiver-halo-c { animation: none; }
+}

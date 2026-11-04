@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { EVT_VALIDATION, bruitFeuille, preparerSon } from '@/lib/sonSaison';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
 import { TapisFeuilles } from './TapisFeuilles';
 import { ARBRE_VB, CHEMINEE_VB, ERABLE, dessinerArbre, dessinerCheminee } from './dessinsAutomne';
-
-/** 🌰 Événement envoyé à chaque validation fêtée (useConfetti) : pluie de glands, pommes de pin et feuilles */
-export const EVT_VALIDATION = 'dinislam:validation';
 
 /**
  * 🍂 Décor d'automne de l'accueil (maquette validée par Nadia le 2026-11-03) :
@@ -40,20 +38,6 @@ interface Feuille {
 interface Goutte { type: 'gland' | 'pin' | 'feuille'; c: string; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number }
 interface Eclat { x: number; y: number; vx: number; vy: number; r: number; vr: number; s: number; c: string; v: number; vie: number }
 
-let audio: AudioContext | null = null;
-function bruitFeuille() {
-  try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    audio = audio || new AC();
-    const d = 0.22, n = Math.floor(audio.sampleRate * d), buf = audio.createBuffer(1, n, audio.sampleRate), data = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) { const crepite = Math.random() < 0.06 ? 1 : 0.35; data[i] = (Math.random() * 2 - 1) * crepite * Math.pow(1 - i / n, 2); }
-    const src = audio.createBufferSource(); src.buffer = buf;
-    const filtre = audio.createBiquadFilter(); filtre.type = 'bandpass'; filtre.frequency.value = 2600; filtre.Q.value = 0.7;
-    const g = audio.createGain(); g.gain.value = 0.5;
-    src.connect(filtre).connect(g).connect(audio.destination); src.start();
-  } catch { /* pas de son possible */ }
-}
-
 export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: boolean; userId: string | null }) {
   const a = r.automne;
   // « Réduire les animations » du téléphone : respecté seulement si l'admin a décoché « Animer même si… » (tout était figé sur l'iPhone de Nadia)
@@ -66,6 +50,7 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
   const avantRef = useRef<HTMLCanvasElement>(null);
   const [defile, setDefile] = useState(false);
   const largeurArbre = TAILLE_ARBRE[r.tailleArbre] ?? 92;
+  useEffect(() => { preparerSon(); }, []);
 
   // Cheminée presque transparente pendant le défilement, pour ne cacher aucune carte
   useEffect(() => {

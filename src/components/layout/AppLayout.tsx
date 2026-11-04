@@ -23,10 +23,12 @@ import { useSaisonActive } from '@/lib/saisons';
 function useCouleursSaison() {
   const { saison, r } = useSaisonActive();
   const actif = saison === 'automne' && r.automne.couleurs;
+  const hiver = saison === 'hiver' && r.hiver.couleurs;
   useEffect(() => {
     const html = document.documentElement;
     html.classList.toggle('saison-automne', actif);
-  }, [actif]);
+    html.classList.toggle('saison-hiver', hiver);
+  }, [actif, hiver]);
   // 📱 Les animations restent vivantes même si le téléphone a « Réduire les animations » (réglable dans la carte admin)
   useEffect(() => { document.documentElement.classList.toggle('anime-toujours', r.animerToujours); }, [r.animerToujours]);
 }
