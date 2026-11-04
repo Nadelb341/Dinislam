@@ -96,6 +96,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   admin_task_attachment: 'Fichier d\'une ligne du Cahier de texte',
   devoir_piece_jointe: 'Fichier ou consigne audio d\'un nouveau devoir',
   devoir_ligne: 'Ligne de devoir d\'un groupe',
+  cahier_carte: 'Carte d\'un groupe du Cahier de texte',
   devoir_modele: 'Modèle de devoir',
   allah_name_progress: 'Progression des 99 Noms d\'un élève',
   coran_note: 'Note d\'un marque-page du Coran',

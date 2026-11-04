@@ -122,7 +122,7 @@ const Classement = () => {
     setClassement(enrichis);
 
     // 4. Groupes
-    const { data: groupes } = await supabase.from('student_groups').select('id, name, color');
+    const { data: groupes } = await supabase.from('student_groups').select('id, name, color').order('position', { ascending: true, nullsFirst: false }).order('name');
     const { data: membres } = await supabase.from('student_group_members').select('group_id, user_id');
 
     if (groupes && membres) {

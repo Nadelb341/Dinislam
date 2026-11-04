@@ -213,7 +213,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const { data: groupes = [] } = useQuery({
     queryKey: ['admin-student-groups'],
     queryFn: async () => {
-      const { data } = await supabase.from('student_groups').select('id, name');
+      const { data } = await supabase.from('student_groups').select('id, name').order('position', { ascending: true, nullsFirst: false }).order('name');
       return data || [];
     },
   });
@@ -642,9 +642,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         </Button>
       </div>
 
-      {/* 💎 Chemin de la semaine automatique (2026-10-08) */}
-      <WeeklyProgramAdmin />
-
       {/* Create form */}
       {showForm && (
         <Card className="border-dashed border-2 border-primary/30">
@@ -886,6 +883,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* 💎 Chemin de la semaine automatique (2026-10-08) — sous le formulaire depuis le 2026-11-05 (demande de Nadia) */}
+      <WeeklyProgramAdmin />
 
       {/* Devoirs grouped by student */}
       <div>

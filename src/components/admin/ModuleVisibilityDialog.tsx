@@ -35,7 +35,7 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
     setLoading(true);
     Promise.all([
       supabase.from('profiles').select('user_id, full_name, email').eq('is_approved', true).order('full_name'),
-      supabase.from('student_groups').select('id, name, color').order('name'),
+      supabase.from('student_groups').select('id, name, color').order('position', { ascending: true, nullsFirst: false }).order('name'),
       supabase.from('module_visibility').select('*').eq('module_id', module.id).maybeSingle(),
     ]).then(([{ data: mbrs }, { data: grps }, { data: vis }]) => {
       setMembers((mbrs || []) as Member[]);
@@ -54,7 +54,7 @@ const ModuleVisibilityDialog = ({ open, onOpenChange, module, onSaved }: Props) 
 
   // 🔄 En direct : seulement la liste des groupes (les cases déjà cochées ne sont jamais touchées)
   useRealtimeRefresh(['student_groups'], () => {
-    supabase.from('student_groups').select('id, name, color').order('name')
+    supabase.from('student_groups').select('id, name, color').order('position', { ascending: true, nullsFirst: false }).order('name')
       .then(({ data }) => { if (data) setGroups(data as Group[]); });
   }, open && !!module);
 

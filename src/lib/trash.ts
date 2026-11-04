@@ -10,7 +10,7 @@ export type TrashItemType =
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs"
-  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress";
+  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte";
 
 export interface TrashItem {
   id: string;
@@ -22,7 +22,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -185,6 +185,17 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     if (d.attachment) pj[d.key] = [...(pj[d.key] || []).filter((x) => (x as { path?: string }).path !== d.attachment!.path), d.attachment];
     if (d.audio_url) consignes[d.key] = d.audio_url;
     saveDraft(cle, { titre: "", type: "recitation", description: "", lien_lecon: "", date_limite: "", assigned_to: "all", group_id: "", student_id: "", group_ids: [], ...draft, pj, consignes });
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 🗂️ Carte d'un groupe du Cahier de texte supprimée (2026-11-05) : elle réapparaît à sa place
+  if (item.item_type === "cahier_carte") {
+    const cle = (item.item_data as { cle?: string } | null)?.cle;
+    if (!cle) return false;
+    const { data: row } = await supabase.from("app_appearance").select("value").eq("key", "cartes_cahier").maybeSingle();
+    const v = (row?.value ?? {}) as { ordre?: string[]; cartes?: unknown; supprimees?: string[] };
+    const { error } = await supabase.from("app_appearance").upsert({ key: "cartes_cahier", value: { ...v, supprimees: (v.supprimees ?? []).filter((k) => k !== cle) } as unknown as Json, updated_at: new Date().toISOString() });
+    if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

@@ -12,6 +12,7 @@ import { errorMessage, cn } from '@/lib/utils';
 import type { AdminTask, TodoGroup } from '@/lib/adminTasks';
 import type { WeeklyProgram } from '@/lib/weeklyProgram';
 import { useNavigate } from 'react-router-dom';
+import { CartesGroupe } from './CartesGroupe';
 
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -144,36 +145,36 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
         <div className="mt-2 h-2 rounded-full bg-white/25 overflow-hidden"><div className="h-full bg-yellow-300 transition-all duration-500" style={{ width: `${pct}%` }} /></div>
       </div>
 
-      {/* ① ② ③ 🗂️ */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border bg-card p-2.5 flex flex-col gap-1.5">
-          <p className="text-sm font-extrabold">① Avant le cours</p>
-          <p className="text-[11px] text-muted-foreground">{semaine?.aValider ?? 0} devoir{(semaine?.aValider ?? 0) > 1 ? 's' : ''} à valider · {aPreparer} à préparer</p>
-          <button type="button" onClick={() => onOpen('tableau')} className="mt-auto rounded-xl bg-emerald-600 text-white py-2 text-xs font-extrabold">🎙️ Valider les devoirs</button>
-        </div>
-        <div className="rounded-2xl border bg-card p-2.5 flex flex-col gap-1.5">
-          <p className="text-sm font-extrabold">② Pendant le cours</p>
-          <p className="text-[11px] text-muted-foreground">Programme, appel, ce qu'on a vu</p>
-          <button type="button" onClick={onCourseMode} className="mt-auto rounded-xl bg-amber-500 text-white py-2 text-xs font-extrabold">▶️ Mode cours</button>
-          {group.id && next && (
-            <div className="grid grid-cols-2 gap-1">
-              <button type="button" onClick={() => setVuOuvert((v) => !v)} className={cn('rounded-lg border py-1.5 text-[11px] font-bold', session?.seen && 'border-emerald-500 text-emerald-700 dark:text-emerald-300')}>📝 Ce qu'on a vu{session?.seen ? ' ✓' : ''}</button>
-              <button type="button" onClick={() => askValidation('Dupliquer la séance ?', 'Les lignes « Prochain cours » et « À apporter » seront recopiées pour le cours suivant.', () => void dupliquer())} className="rounded-lg border py-1.5 text-[11px] font-bold">🔁 Dupliquer</button>
-            </div>
-          )}
-        </div>
-        <div className="rounded-2xl border bg-card p-2.5 flex flex-col gap-1.5">
-          <p className="text-sm font-extrabold">③ Après le cours</p>
-          <p className="text-[11px] text-muted-foreground">Donner les devoirs, par niveau si besoin</p>
-          <button type="button" onClick={() => onOpen('devoirs')} className="mt-auto rounded-xl bg-[#2457a5] text-white py-2 text-xs font-extrabold">📚 Distribuer les devoirs</button>
-          {group.id && <button type="button" onClick={() => onOpen('niveaux')} className="rounded-lg border py-1.5 text-[11px] font-bold">🎚️ Niveaux du groupe</button>}
-        </div>
-        <div className="rounded-2xl border bg-card p-2.5 flex flex-col gap-1.5">
-          <p className="text-sm font-extrabold">🗂️ Mémo</p>
-          <p className="text-[11px] text-muted-foreground">Prochain cours, à préparer, à apporter, notes et fichiers</p>
-          <button type="button" onClick={onMemo} className={cn('mt-auto rounded-xl py-2 text-xs font-extrabold text-white', memoOpen ? 'bg-violet-800' : 'bg-violet-600')}>{memoOpen ? '▲ Fermer le mémo' : '▼ Ouvrir le mémo'}</button>
-        </div>
-      </div>
+      {/* ① ② ③ 🗂️ — ⋮ Modifier / Renommer / Supprimer et appui long pour les ranger (2026-11-05) */}
+      <CartesGroupe contenu={{
+        avant: {
+          phrase: `${semaine?.aValider ?? 0} devoir${(semaine?.aValider ?? 0) > 1 ? 's' : ''} à valider · ${aPreparer} à préparer`,
+          boutons: <button type="button" onClick={() => onOpen('tableau')} className="mt-auto rounded-xl bg-emerald-600 text-white py-2 text-xs font-extrabold">🎙️ Valider les devoirs</button>,
+        },
+        pendant: {
+          phrase: "Programme, appel, ce qu'on a vu",
+          boutons: (<>
+            <button type="button" onClick={onCourseMode} className="mt-auto rounded-xl bg-amber-500 text-white py-2 text-xs font-extrabold">▶️ Mode cours</button>
+            {group.id && next && (
+              <div className="grid grid-cols-2 gap-1">
+                <button type="button" onClick={() => setVuOuvert((v) => !v)} className={cn('rounded-lg border py-1.5 text-[11px] font-bold', session?.seen && 'border-emerald-500 text-emerald-700 dark:text-emerald-300')}>📝 Ce qu'on a vu{session?.seen ? ' ✓' : ''}</button>
+                <button type="button" onClick={() => askValidation('Dupliquer la séance ?', 'Les lignes « Prochain cours » et « À apporter » seront recopiées pour le cours suivant.', () => void dupliquer())} className="rounded-lg border py-1.5 text-[11px] font-bold">🔁 Dupliquer</button>
+              </div>
+            )}
+          </>),
+        },
+        apres: {
+          phrase: 'Donner les devoirs, par niveau si besoin',
+          boutons: (<>
+            <button type="button" onClick={() => onOpen('devoirs')} className="mt-auto rounded-xl bg-[#2457a5] text-white py-2 text-xs font-extrabold">📚 Distribuer les devoirs</button>
+            {group.id && <button type="button" onClick={() => onOpen('niveaux')} className="rounded-lg border py-1.5 text-[11px] font-bold">🎚️ Niveaux du groupe</button>}
+          </>),
+        },
+        memo: {
+          phrase: 'Prochain cours, à préparer, à apporter, notes et fichiers',
+          boutons: <button type="button" onClick={onMemo} className={cn('mt-auto rounded-xl py-2 text-xs font-extrabold text-white', memoOpen ? 'bg-violet-800' : 'bg-violet-600')}>{memoOpen ? '▲ Fermer le mémo' : '▼ Ouvrir le mémo'}</button>,
+        },
+      }} />
 
       {vuOuvert && group.id && next && (
         <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2">

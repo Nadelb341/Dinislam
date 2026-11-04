@@ -73,7 +73,7 @@ export default function BilanTrimestriel({ onBack, groupeInitial }: { onBack: ()
     queryKey: ['bilan-trimestriel', 'groupes'],
     queryFn: async () => {
       const [{ data: g }, { data: m }] = await Promise.all([
-        supabase.from('student_groups').select('id, name').order('name'),
+        supabase.from('student_groups').select('id, name').order('position', { ascending: true, nullsFirst: false }).order('name'),
         supabase.from('student_group_members').select('group_id, user_id'),
       ]);
       return (g || []).map((x) => ({ ...x, membres: (m || []).filter((y) => y.group_id === x.id).map((y) => y.user_id) }));

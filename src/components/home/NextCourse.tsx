@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CARTES_DEFAUT, emojiDe, titreDe, useReglagesCartesCahier } from '@/lib/cartesCahier';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -19,6 +20,7 @@ import { courseItems, type AdminTask } from '@/lib/adminTasks';
  */
 export function CourseModeDialog({ groupId, groupName, open, onClose }: { groupId: string | null; groupName: string; open: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { data: cartes = CARTES_DEFAUT } = useReglagesCartesCahier();
   const [confirmItem, setConfirmItem] = useState<AdminTask | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
@@ -68,7 +70,7 @@ export function CourseModeDialog({ groupId, groupName, open, onClose }: { groupI
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto" level="nested">
         <DialogTitle className="text-2xl pe-8 [overflow-wrap:anywhere]">🎒 Cours · {groupName}</DialogTitle>
         {todo.length === 0 && bring.length === 0 && (
-          <p className="text-center text-muted-foreground py-6">Rien de prévu pour ce cours. Ajoute des lignes avec 🎒 dans la carte Cahier de texte.</p>
+          <p className="text-center text-muted-foreground py-6">Rien de prévu pour ce cours. Pour en ajouter : carte Cahier de texte › ton groupe › {[emojiDe(cartes, 'memo'), titreDe(cartes, 'memo')].filter(Boolean).join(' ')} › onglet « 🎒 Prochain cours ».</p>
         )}
         {todo.length > 0 && (
           <div className="space-y-2">

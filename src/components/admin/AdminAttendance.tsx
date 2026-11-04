@@ -58,7 +58,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     retry: 3,
     queryFn: async () => {
       const [g, m] = await Promise.all([
-        supabase.from('student_groups').select('id, name, color, position').order('name'),
+        supabase.from('student_groups').select('id, name, color, position').order('position', { ascending: true, nullsFirst: false }).order('name'),
         supabase.from('student_group_members').select('group_id, user_id'),
       ]);
       if (g.error) throw g.error;

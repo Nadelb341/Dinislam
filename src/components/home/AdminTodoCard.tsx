@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { toast } from 'sonner';
+import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
+import { errorMessage } from '@/lib/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
@@ -98,6 +102,16 @@ export function AdminTodoCard() {
   // « Général » = toute la classe ; un groupe = ses élèves
   const aValiderDe = (g: TodoGroup) => (g.id === null ? aValider.length : aValider.filter((id) => g.memberIds.includes(id)).length);
 
+  const queryClient = useQueryClient();
+  // ✋ Nouvel ordre des groupes : enregistré dans student_groups.position (le registre, les listes… suivent)
+  const rangerGroupes = async (n: (TodoGroup & { id: string })[]) => {
+    queryClient.setQueryData(['admin-todo-groups'], n);
+    const res = await Promise.all(n.map((g, i) => supabase.from('student_groups').update({ position: (i + 1) * 10 }).eq('id', g.id)));
+    const err = res.find((x) => x.error)?.error;
+    if (err) toast.error(errorMessage(err)); else toast.success('✋ Ordre des groupes enregistré (registre et listes aussi)');
+    for (const k of ['admin-todo-groups', 'student-groups', 'admin-student-groups', 'attendance-groups-overview', 'weekly-program-admin', 'admin-devoirs'])
+      void queryClient.invalidateQueries({ queryKey: [k] });
+  };
   const allGroups: TodoGroup[] = useMemo(() => [...groups, { ...GENERAL, memberIds: [] }], [groups]);
   // Une tâche dont le groupe a été supprimé retombe dans « Général »
   const groupIds = useMemo(() => new Set(groups.map((g) => g.id)), [groups]);
@@ -122,25 +136,9 @@ export function AdminTodoCard() {
 
   const openGroup = openId === undefined ? null : allGroups.find((g) => g.id === openId) ?? null;
 
-  return (
-    <section ref={sectionRef} className="scroll-mt-20 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm animate-fade-in">
-      <button type="button" onClick={toggleCollapsed} className="w-full flex items-center gap-2 px-4 py-3 text-start" aria-expanded={!collapsed}>
-        <span className="text-xl">📓</span>
-        {/* Renommée « Cahier de texte » le 2026-10-26 (identifiants internes « todo / admin_tasks » inchangés) */}
-        <span className="font-bold tracking-wide text-foreground">CAHIER DE TEXTE</span>
-        <DraftDot draftKey="dinislam_admin_task_" />
-        {openCount > 0 && (
-          <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${lateCount ? 'animate-pulse' : ''}`}>
-            {openCount > 99 ? '99+' : openCount}
-          </span>
-        )}
-        {lateCount > 0 && <span className="text-xs font-semibold text-destructive">{lateCount} en retard</span>}
-        <ChevronDown className={`ms-auto h-5 w-5 text-muted-foreground transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
-      </button>
-
-      {!collapsed && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 px-3 pb-3 items-start">
-          {allGroups.map((g) => {
+  // 🗂️ Une carte de groupe (rendue dans la liste réordonnable, ou seule pour « Général »)
+  const carteGroupe = (g: TodoGroup, dragProps?: DragItemProps) => {
+            const { ref: dragRef, style: dragStyle, isDragging, ...dragAttrs } = dragProps ?? ({} as Partial<DragItemProps>);
             const { open, done } = sortTasks(tasksOf(g.id));
             // 🎒 Prochain cours d'abord, puis les autres tâches, puis les faites de la semaine
             const lines = [...open.filter((t) => t.next_course), ...open.filter((t) => t.to_prepare), ...open.filter((t) => !t.next_course && !t.to_prepare), ...done.filter((t) => (t.done_at ?? '') >= new Date(Date.now() - 7 * 86400000).toISOString())];
@@ -152,7 +150,10 @@ export function AdminTodoCard() {
                 key={g.id ?? 'general'}
                 type="button"
                 onClick={() => setOpenId(g.id)}
-                className="relative overflow-hidden rounded-xl bg-card text-start shadow-sm transition-transform active:scale-[0.98] min-w-0"
+                ref={dragRef}
+                style={dragStyle}
+                {...dragAttrs}
+                className={`relative overflow-hidden rounded-xl bg-card text-start shadow-sm transition-transform active:scale-[0.98] min-w-0 touch-manipulation ${isDragging ? 'opacity-40 ring-2 ring-sky-400' : ''}`}
               >
                 <span className={`absolute inset-0 opacity-[0.13] ${g.color}`} aria-hidden />
                 <span className={`absolute inset-x-0 top-0 h-1.5 ${g.color}`} aria-hidden />
@@ -189,7 +190,31 @@ export function AdminTodoCard() {
                 </span>
               </button>
             );
-          })}
+  };
+
+  return (
+    <section ref={sectionRef} className="scroll-mt-20 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 shadow-sm animate-fade-in">
+      <button type="button" onClick={toggleCollapsed} className="w-full flex items-center gap-2 px-4 py-3 text-start" aria-expanded={!collapsed}>
+        <span className="text-xl">📓</span>
+        {/* Renommée « Cahier de texte » le 2026-10-26 (identifiants internes « todo / admin_tasks » inchangés) */}
+        <span className="font-bold tracking-wide text-foreground">CAHIER DE TEXTE</span>
+        <DraftDot draftKey="dinislam_admin_task_" />
+        {openCount > 0 && (
+          <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${lateCount ? 'animate-pulse' : ''}`}>
+            {openCount > 99 ? '99+' : openCount}
+          </span>
+        )}
+        {lateCount > 0 && <span className="text-xs font-semibold text-destructive">{lateCount} en retard</span>}
+        <ChevronDown className={`ms-auto h-5 w-5 text-muted-foreground transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
+      </button>
+
+      {!collapsed && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 px-3 pb-3 items-start">
+          {/* ✋ Appui long + glisser pour ranger les groupes (2026-11-05) : même ordre partout (registre, listes…). « Général » reste à la fin */}
+          <SortableCardList items={groups.filter((g): g is TodoGroup & { id: string } => !!g.id)} strategy={rectSortingStrategy} onReorder={(n) => void rangerGroupes(n)}
+            onDragStart={() => { try { navigator.vibrate?.(15); } catch { /* rien */ } }}
+            renderItem={(g, dragProps) => carteGroupe(g, dragProps)} />
+          {carteGroupe({ ...GENERAL, memberIds: [] })}
         </div>
       )}
 
