@@ -1,3 +1,4 @@
+import { validerSouratesPrecedentes } from '@/lib/souratesPrecedentes';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -157,6 +158,11 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
           .upsert({ user_id: studentId, sourate_id: rec.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' },
             { onConflict: 'user_id,sourate_id,context' });
         if (progressError) throw progressError;
+        // ⭐ Les sourates d'avant dans son parcours sont validées aussi (demande de Nadia, 2026-11-04)
+        if (rec.sourate_id) {
+          const n = await validerSouratesPrecedentes(studentId, rec.sourate_id);
+          if (n > 0) toast.success(`⭐ ${n} sourate${n > 1 ? 's' : ''} d'avant validée${n > 1 ? 's' : ''} aussi`);
+        }
       }
       if (isName) {
         sendPushNotification(newStatus === 'validated'

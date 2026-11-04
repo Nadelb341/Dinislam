@@ -44,7 +44,7 @@ const AdminAttendance = ({ onBack }: AdminAttendanceProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email')
+        .select('user_id, full_name, email, presence_tous_groupes')
         .eq('is_approved', true)
         .order('full_name');
       if (error) throw error;

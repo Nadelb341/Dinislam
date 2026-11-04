@@ -94,7 +94,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       const [{ data: profiles, error: profilesError }, { data: studentRoles, error: rolesError }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, email, full_name, created_at, date_of_birth, gender, prayer_group')
+          .select('user_id, email, full_name, created_at, date_of_birth, gender, prayer_group, hors_classement, presence_tous_groupes')
           .eq('is_approved', true),
         supabase
           .from('user_roles')
@@ -109,6 +109,15 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       return (profiles || []).filter((profile) => studentIds.has(profile.user_id));
     },
   });
+
+  const basculerReglage = async (id: string, champ: 'hors_classement' | 'presence_tous_groupes', valeur: boolean) => {
+    const { error } = await supabase.from('profiles').update({ [champ]: valeur }).eq('user_id', id);
+    if (error) { toast.error(errorMessage(error)); return; }
+    queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
+    toast.success(champ === 'hors_classement'
+      ? (valeur ? '🏆 Retiré du classement (ses points ne comptent plus pour personne)' : '🏆 Remis dans le classement')
+      : (valeur ? '📋 Il apparaît maintenant dans tous les groupes du registre' : '📋 Registre : seulement dans ses groupes'));
+  };
 
   const { data: noPush } = useQuery({ queryKey: ['admin-no-push-students-list'], queryFn: fetchNoPushStudents });
   const { data: authStatus } = useQuery({
@@ -506,6 +515,13 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setRenameStudent({ id: student.user_id, full_name: student.full_name })}>
                     <Pencil className="h-4 w-4 mr-2" /> ✏️ Renommer l'élève
+                  </DropdownMenuItem>
+                  {/* 🧪 Compte d'essai (ex. Test 3, 2026-11-04) : hors du classement, présent dans tous les groupes du registre */}
+                  <DropdownMenuItem onClick={() => void basculerReglage(student.user_id, 'hors_classement', !student.hors_classement)}>
+                    🏆 {student.hors_classement ? 'Remettre dans le classement' : 'Retirer du classement'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void basculerReglage(student.user_id, 'presence_tous_groupes', !student.presence_tous_groupes)}>
+                    📋 {student.presence_tous_groupes ? 'Registre : seulement dans ses groupes' : 'Registre : dans tous les groupes'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openDobDialog(student)}>
                     <CalendarIcon className="h-4 w-4 mr-2" /> 📅 Changer Date Naissance

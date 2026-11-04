@@ -15,20 +15,22 @@ export function sortGroups<G extends GroupLite>(groups: G[]): G[] {
  * Élèves rangés par groupe (demande de Nadia 2026-10-07, « Ma Présence » et Registre) :
  * groupes dans l'ordre, élèves par ordre alphabétique dans chaque groupe, « Sans groupe » à la fin.
  */
-export function groupStudents<S extends { user_id: string; full_name: string | null }>(
+export function groupStudents<S extends { user_id: string; full_name: string | null; presence_tous_groupes?: boolean | null }>(
   students: S[], groups: GroupLite[], members: { user_id: string; group_id: string }[],
 ): GroupedStudents<S>[] {
   const sorted = [...students].sort(byName<S>());
   if (groups.length === 0) return [{ groupId: null, groupName: null, groupColor: null, members: sorted }];
+  // 🧪 Compte d'essai (ex. Test 3, 2026-11-04) : présent dans TOUS les groupes du registre (seulement ici)
+  const partout = (s: S) => !!s.presence_tous_groupes;
   const memberOf = new Map<string, string>();
   for (const m of members) if (!memberOf.has(m.user_id)) memberOf.set(m.user_id, m.group_id);
   const out: GroupedStudents<S>[] = [];
   for (const g of sortGroups(groups)) {
-    const list = sorted.filter((s) => memberOf.get(s.user_id) === g.id);
+    const list = sorted.filter((s) => partout(s) || memberOf.get(s.user_id) === g.id);
     if (list.length) out.push({ groupId: g.id, groupName: g.name, groupColor: g.color, members: list });
   }
   const known = new Set(groups.map((g) => g.id));
-  const ungrouped = sorted.filter((s) => !memberOf.has(s.user_id) || !known.has(memberOf.get(s.user_id)!));
+  const ungrouped = sorted.filter((s) => !partout(s) && (!memberOf.has(s.user_id) || !known.has(memberOf.get(s.user_id)!)));
   if (ungrouped.length) out.push({ groupId: null, groupName: 'Sans groupe', groupColor: null, members: ungrouped });
   return out;
 }

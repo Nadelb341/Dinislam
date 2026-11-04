@@ -2733,6 +2733,7 @@ export type Database = {
           espace_parents: string
           full_name: string | null
           gender: string | null
+          hors_classement: boolean
           id: string
           is_admin: boolean | null
           is_approved: boolean | null
@@ -2747,6 +2748,7 @@ export type Database = {
           phone: string | null
           points: number | null
           prayer_group: string | null
+          presence_tous_groupes: boolean
           updated_at: string | null
           user_id: string
         }
@@ -2764,6 +2766,7 @@ export type Database = {
           espace_parents?: string
           full_name?: string | null
           gender?: string | null
+          hors_classement?: boolean
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
@@ -2778,6 +2781,7 @@ export type Database = {
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
+          presence_tous_groupes?: boolean
           updated_at?: string | null
           user_id: string
         }
@@ -2795,6 +2799,7 @@ export type Database = {
           espace_parents?: string
           full_name?: string | null
           gender?: string | null
+          hors_classement?: boolean
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
@@ -2809,6 +2814,7 @@ export type Database = {
           phone?: string | null
           points?: number | null
           prayer_group?: string | null
+          presence_tous_groupes?: boolean
           updated_at?: string | null
           user_id?: string
         }
@@ -4432,6 +4438,7 @@ export type Database = {
         Args: { p_joined: string; p_last: string; p_missed: number }
         Returns: string
       }
+      est_hors_classement: { Args: { _user: string }; Returns: boolean }
       find_students_by_first_name: {
         Args: { p_first: string }
         Returns: {

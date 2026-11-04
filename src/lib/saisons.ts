@@ -27,6 +27,8 @@ export interface ReglagesAutomne {
   tapis: boolean; personnage: boolean; plongeon: boolean;
   /** Feuilles soufflées quand on fait défiler, pluie de glands/pommes de pin/feuilles à chaque validation, feuille dorée rare (2026-11-04) */
   ventDefile: boolean; pluieValidation: boolean; feuilleDoree: boolean;
+  /** 🍁 7 grandes feuilles devant les cartes, lentes, faciles à attraper (2026-11-04) */
+  grandesFeuilles: boolean;
 }
 
 /** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */
@@ -158,7 +160,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
   vent: true, eclate: true, son: true, messageSemaine: true,
   cheminee: true, petitFeuJour: true, grandFeuSoir: true, transparente: true,
   bougies: true, feuillesPoutre: true, courge: true, buches: true, braises: true,
-  images: true, couleurs: true, tapis: true, personnage: true, plongeon: true, ventDefile: true, pluieValidation: true, feuilleDoree: true,
+  images: true, couleurs: true, tapis: true, personnage: true, plongeon: true, ventDefile: true, pluieValidation: true, feuilleDoree: true, grandesFeuilles: true,
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {

@@ -1,3 +1,4 @@
+import { validerSouratesPrecedentes } from '@/lib/souratesPrecedentes';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, X, User, BookOpen, GraduationCap, Mail, ClipboardList, ChevronRight, Loader2 } from 'lucide-react';
@@ -213,8 +214,12 @@ const AdminNotificationCenter = () => {
       const reqId = notif.itemId as string;
       const { data: req } = await supabase.from('sourate_validation_requests').select('sourate_id, user_id').eq('id', reqId).single();
       if (!req) throw new Error('not found');
-      await supabase.from('sourate_validation_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
-      await supabase.from('user_sourate_progress').upsert({ user_id: req.user_id, sourate_id: req.sourate_id, is_validated: true, progress_percentage: 100 }, { onConflict: 'user_id,sourate_id' });
+      const { error: e1 } = await supabase.from('sourate_validation_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
+      if (e1) throw e1;
+      // 2026-11-04 : la règle visée n'existait pas (il manquait « context ») → la sourate n'était jamais validée, sans message
+      const { error: e2 } = await supabase.from('user_sourate_progress').upsert({ user_id: req.user_id, sourate_id: req.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' }, { onConflict: 'user_id,sourate_id,context' });
+      if (e2) throw e2;
+      await validerSouratesPrecedentes(req.user_id, req.sourate_id);
       toast({ title: '✅ Sourate validée' });
       queryClient.invalidateQueries({ queryKey: ['admin-all-notifications'] });
       refetch();

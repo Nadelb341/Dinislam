@@ -78,7 +78,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts', 'user-progress'],
   // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
   module_visits: ['module-visits'],
-  module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin'],
+  module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles'],
   notification_preferences: ['admin-push-stats'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
   nourania_lessons: ['admin-dashboard-stats', 'admin-module-progress', 'admin-nourania-lessons', 'admin-nourania-validations', 'admin-stats', 'fully-unlocked-students', 'nourania-lessons', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
@@ -101,7 +101,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
   sourate_versets_audio: [],
   sourates: ['admin-dashboard-stats', 'admin-module-progress', 'admin-recitations', 'admin-sourate-validations', 'admin-sourates', 'admin-sourates-list', 'admin-stats', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
-  student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin'],
+  student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin', 'cartes-visibles'],
   student_groups: ['admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
   trash_items: [],
   user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'user-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],

@@ -3,6 +3,7 @@ import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { groupColorProps } from '@/lib/studentGroups';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { CARTES_DU_BAREME, useCartesVisibles } from '@/hooks/useCartesVisibles';
 import AppLayout from '@/components/layout/AppLayout';
 import { Crown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +16,7 @@ interface BaremeItem {
   action_key: string;
   label: string;
   points: number;
+  is_active?: boolean | null;
 }
 
 interface ClassementEntry {
@@ -51,6 +53,7 @@ function getDenseRanks<T extends { total: number }>(sortedArr: T[]): number[] {
 
 const Classement = () => {
   const { user, isAdmin } = useAuth();
+  const cartesVisibles = useCartesVisibles();
   const [editBareme, setEditBareme] = useState(false);
   const [bareme, setBareme] = useState<BaremeItem[]>([]);
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
@@ -88,10 +91,11 @@ const Classement = () => {
 
       const { data } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('user_id, full_name, hors_classement')
         .eq('is_approved', true)
         .limit(500);
-      profilesList = (data || []).filter(p => !adminIds.has(p.user_id));
+      // 🧪 Comptes « hors classement » (ex. Test 3, support de Nadia sur Zoom) : jamais dans le classement
+      profilesList = (data || []).filter(p => !adminIds.has(p.user_id) && !p.hors_classement);
     } else if (user?.id) {
       // Élève : uniquement son propre profil (privacy) + les user_ids du ranking (noms masqués)
       const { data } = await supabase
@@ -382,7 +386,8 @@ const Classement = () => {
 
         {!isAdmin && bareme.length > 0 && (
           <div className="grid grid-cols-2 gap-1 text-[10px] text-muted-foreground px-1">
-            {bareme.map(b => (
+            {/* Seulement les lignes des cartes que le professeur a ouvertes à CET élève (2026-11-04) */}
+            {bareme.filter(b => b.is_active !== false && (!cartesVisibles || !(CARTES_DU_BAREME[b.action_key]?.length) || CARTES_DU_BAREME[b.action_key].some(c => cartesVisibles.has(c)))).map(b => (
               <span key={b.id}>{b.label} : {b.points} pts</span>
             ))}
           </div>

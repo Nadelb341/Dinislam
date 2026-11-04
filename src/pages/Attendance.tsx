@@ -63,7 +63,7 @@ const Attendance = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('user_id, full_name, presence_tous_groupes')
         .eq('is_approved', true)
         .order('full_name');
       if (error) throw error;

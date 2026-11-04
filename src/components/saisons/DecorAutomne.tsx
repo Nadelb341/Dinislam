@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { EVT_VALIDATION, bruitFeuille, preparerSon } from '@/lib/sonSaison';
+import { EVT_VALIDATION, preparerSon, sonCristal } from '@/lib/sonSaison';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
 import { TapisFeuilles } from './TapisFeuilles';
@@ -12,7 +12,7 @@ import { ARBRE_VB, CHEMINEE_VB, ERABLE, dessinerArbre, dessinerCheminee } from '
  * - petit arbre à branches en haut à gauche (il défile avec l'accueil), qui se balance ; des feuilles partent de ses branches
  * - feuilles qui tombent sur toute la largeur et toute la hauteur : les « loin » (petites, pâles) DERRIÈRE les cartes,
  *   les « proches » (grandes, qui grandissent en tombant) DEVANT ; aucune ne reste en haut
- * - toucher une feuille de devant : elle éclate + petit bruit de feuille sèche (sans points), la carte dessous ne s'ouvre pas
+ * - toucher une feuille de devant : elle éclate + petit son de cristal comme les flocons (depuis le 2026-11-04, sans points), la carte dessous ne s'ouvre pas
  * - cheminée en bas à droite, petit feu en journée, grand feu après le Maghrib ; presque transparente pendant le défilement
  * - message « Attrape les feuilles ! » une fois par semaine (le 1er jour d'ouverture à partir du lundi)
  * Rien ne bloque un toucher (pointer-events: none). « Réduire les animations » du téléphone = décor immobile, sans feuilles.
@@ -34,6 +34,8 @@ interface Feuille {
   rot: number; vr: number; flip: number; vf: number; bal: number; fb: number; ph: number; age: number; xAff: number; r: number;
   /** 🌟 feuille dorée rare (à attraper) */
   doree: boolean;
+  /** 🍁 grande feuille devant les cartes, plus lente : facile à attraper pour les enfants (2026-11-04) */
+  grande: boolean;
 }
 interface Goutte { type: 'gland' | 'pin' | 'feuille'; c: string; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number }
 interface Eclat { x: number; y: number; vx: number; vy: number; r: number; vr: number; s: number; c: string; v: number; vie: number }
@@ -86,9 +88,9 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       const [x, y] = arbre.bouts[Math.floor(Math.random() * arbre.bouts.length)];
       return [b.left + x * (b.width / ARBRE_VB.w), b.top + y * (b.height / ARBRE_VB.h)];
     };
-    const nouvelle = (depart: boolean): Feuille => {
-      const devant = a.devantDerriere ? Math.random() < 0.42 : false;
-      const z = devant ? 0.8 + Math.random() * 0.5 : 0.3 + Math.random() * 0.35;
+    const nouvelle = (depart: boolean, grande = false): Feuille => {
+      const devant = grande || (a.devantDerriere ? Math.random() < 0.42 : false);
+      const z = grande ? 1 : devant ? 0.8 + Math.random() * 0.5 : 0.3 + Math.random() * 0.35;
       const pt = !depart && Math.random() < 0.45 ? pointArbre() : null;
       return {
         doree: devant && a.feuilleDoree && Math.random() < 0.03,
@@ -96,16 +98,18 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
         x: pt ? pt[0] : Math.random() * W, y: pt ? pt[1] : depart ? Math.random() * H : -30 - Math.random() * 40,
         vx: pt ? 18 + Math.random() * 34 : -12 + Math.random() * 24,
         rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 2.2, flip: Math.random() * Math.PI * 2, vf: 1.5 + Math.random() * 2.5,
-        bal: 10 + Math.random() * 18, fb: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.3, age: depart ? 1 : 0, xAff: -999, r: 0,
+        bal: 10 + Math.random() * 18, fb: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.3, age: depart ? 1 : 0, xAff: -999, r: 0, grande,
       };
     };
     const feuilles: Feuille[] = [];
     const eclats: Eclat[] = [];
     const n = Math.max(3, Math.min(40, r.quantite));
     for (let i = 0; i < n; i++) feuilles.push(nouvelle(true));
+    // 🍁 En plus : 7 grandes feuilles devant les cartes, pour que les enfants s'amusent à les attraper (demande de Nadia, 2026-11-04)
+    if (a.grandesFeuilles && a.eclate) for (let i = 0; i < 7; i++) feuilles.push(nouvelle(true, true));
 
     const dessiner = (ctx: CanvasRenderingContext2D, f: Feuille, t: number) => {
-      const px = 9 + 15 * f.z, sc = px / 40, fl = Math.cos(f.flip);
+      const px = f.grande ? 32 + 12 * Math.abs(Math.sin(f.ph)) : 9 + 15 * f.z, sc = px / 40, fl = Math.cos(f.flip);
       const sx = (Math.abs(fl) < 0.18 ? 0.18 * Math.sign(fl || 1) : fl) * sc;
       const xb = f.x + Math.sin(t * f.fb + f.ph) * f.bal * f.z * Math.min(1, f.age);
       ctx.save(); ctx.translate(xb, f.y); ctx.rotate(f.rot); ctx.scale(sx, sc); ctx.translate(-20, -20);
@@ -160,13 +164,13 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       const vent = a.vent ? Math.sin(t * 0.23) * 14 + Math.sin(t * 0.07 + 1) * 10 + 6 : 4;
       for (let i = 0; i < feuilles.length; i++) {
         const f = feuilles[i]; f.age += dt;
-        f.y += (22 + 34 * f.z) * vitesse * dt * (f.deLArbre ? Math.min(1, 0.35 + f.age) : 1) - souffle * 1.1 * f.z * dt;
+        f.y += (22 + 34 * f.z) * vitesse * dt * (f.grande ? 0.6 : 1) * (f.deLArbre ? Math.min(1, 0.35 + f.age) : 1) - souffle * 1.1 * f.z * dt;
         f.x += Math.sin(f.ph + t) * souffle * 0.25 * f.z * dt;
         f.x += (f.vx + vent) * f.z * dt; f.vx *= 1 - 0.12 * dt;
         f.rot += f.vr * dt; f.flip += f.vf * dt;
-        if (f.devant) f.z = Math.min(1.45, f.z + 0.05 * dt);
+        if (f.devant && !f.grande) f.z = Math.min(1.45, f.z + 0.05 * dt);
         if (f.x < -30) f.x = W + 20; if (f.x > W + 30) f.x = -20;
-        if (f.y > H + 30) feuilles[i] = nouvelle(false);
+        if (f.y > H + 30) feuilles[i] = nouvelle(false, f.grande);
         dessiner(f.devant ? ctxV : ctxA, f, t);
       }
       souffle *= Math.pow(0.03, dt);
@@ -212,8 +216,9 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
         const ang = Math.random() * Math.PI * 2, v = 70 + Math.random() * 110;
         eclats.push({ x: f.xAff, y: f.y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 60, r: Math.random() * 6, vr: (Math.random() - 0.5) * 14, s: 2 + Math.random() * 3.5 * f.z, c: f.c, v: 0, vie: 0.55 + Math.random() * 0.35 });
       }
-      feuilles[cible] = nouvelle(false);
-      if (a.son) bruitFeuille();
+      feuilles[cible] = nouvelle(false, f.grande);
+      // 🔊 Même petit son de cristal que les flocons de l'hiver (demande de Nadia, 2026-11-04)
+      if (a.son) sonCristal();
     };
     const clic = (ev: MouseEvent) => { if (bloquerClic) { ev.preventDefault(); ev.stopPropagation(); bloquerClic = false; } };
     window.addEventListener('pointerdown', toucher, { capture: true });
@@ -289,7 +294,7 @@ function MessageFeuilles({ userId }: { userId: string | null }) {
         <div className="relative flex items-center gap-3 pl-8">
           <div className="min-w-0">
             <p className="text-base font-extrabold text-[#7a3d17]">Attrape les feuilles ! 🍂</p>
-            <p className="text-sm leading-snug text-[#5a3a22]">Les feuilles qui passent <b>devant</b> les cartes s'attrapent : touche-en une, elle éclate avec un petit <i>crac</i> de feuille sèche&nbsp;!</p>
+            <p className="text-sm leading-snug text-[#5a3a22]">Les feuilles qui passent <b>devant</b> les cartes s'attrapent : touche-en une, elle éclate avec un petit son de cristal&nbsp;! Les grandes feuilles sont les plus faciles à attraper 🍁</p>
           </div>
         </div>
         <button type="button" onClick={fermer} aria-label="Fermer le message"

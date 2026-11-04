@@ -357,7 +357,7 @@ const SouratesPage = () => {
     });
 
     if (allValidated && !sourateProgress.get(sourateDbId)?.is_validated) {
-      if (isOver20) {
+      if (isOver20 || isAdmin) {
         setSelectedSourate(null);
         // Auto-validation pour les +20 ans — pas besoin de l'admin
         await supabase
@@ -395,9 +395,12 @@ const SouratesPage = () => {
     }
     setVerseProgress(newVerseProgress);
     try {
-      const { error } = await supabase.from('user_sourate_verse_progress')
-        .upsert(rows, { onConflict: 'user_id,sourate_id,verse_number,context' });
-      if (error) throw error;
+      // Versets déjà tous cochés (ex. Test 3, 2026-11-04) : rien à cocher, on passe directement à la validation
+      if (rows.length) {
+        const { error } = await supabase.from('user_sourate_verse_progress')
+          .upsert(rows, { onConflict: 'user_id,sourate_id,verse_number,context' });
+        if (error) throw error;
+      }
       fireConfetti(); // 🎉 confettis : sourate entière cochée (idée 2 acceptée par Nadia, 2026-10-25)
       await afterVersesChanged(sourateDbId, newVerseProgress, versesCount);
     } catch (error) {

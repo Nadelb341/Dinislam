@@ -1,3 +1,4 @@
+import { validerSouratesPrecedentes } from '@/lib/souratesPrecedentes';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,6 +71,8 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
         .upsert({ user_id: request.user_id, sourate_id: request.sourate_id, is_validated: true, progress_percentage: 100, context: 'sourates' },
           { onConflict: 'user_id,sourate_id,context' });
       if (progressError) throw progressError;
+      // ⭐ Les sourates d'avant dans son parcours sont validées aussi (demande de Nadia, 2026-11-04)
+      await validerSouratesPrecedentes(request.user_id, request.sourate_id);
     },
     onMutate: async (request: PendingRequest) => {
       setProcessingId(request.id);
