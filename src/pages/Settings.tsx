@@ -97,6 +97,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   devoir_piece_jointe: 'Fichier ou consigne audio d\'un nouveau devoir',
   devoir_ligne: 'Ligne de devoir d\'un groupe',
   devoir_modele: 'Modèle de devoir',
+  allah_name_progress: 'Progression des 99 Noms d\'un élève',
   coran_note: 'Note d\'un marque-page du Coran',
   group_level: 'Niveau d\'un groupe',
   parent_code: 'Code parents',

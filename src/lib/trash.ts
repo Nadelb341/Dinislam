@@ -10,7 +10,7 @@ export type TrashItemType =
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs"
-  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele";
+  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress";
 
 export interface TrashItem {
   id: string;
@@ -61,6 +61,8 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   app_logs: "app_logs",
   // 📓 Modèle de devoir (2026-11-04, idée 6)
   devoir_modele: "devoir_modeles",
+  // 🌟 Progression des 99 Noms d'un élève remise à zéro (2026-11-04, demande de Nadia) : toutes ses lignes, remises telles quelles
+  allah_name_progress: "user_allah_name_progress",
 };
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: unknown) {
