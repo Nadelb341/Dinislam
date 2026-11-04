@@ -17,7 +17,7 @@ import { ConsigneAudioGrande } from "./AudioProf";
 import { PiecesJointesVue } from "@/components/shared/PiecesJointesVue";
 import { asPJ, fondMatiere, matiereDe, type PieceJointe } from "@/lib/devoirFichiers";
 import { marquerVue } from "@/lib/devoirVues";
-import { PretPourLeCours, ObjectifDuJour } from "./CahierDuJour";
+import { PretPourLeCours } from "./CahierDuJour";
 import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
 import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
@@ -338,9 +338,8 @@ export default function BlocDevoirsEleve() {
 
       {ouvert && (
         <div className="p-3 bg-background">
-          {/* 🎒 Prêt pour le cours (veille 18 h → début du cours + 1 h) et 🎯 objectif du jour */}
+          {/* 🎒 Prêt pour le cours (veille 18 h → début du cours + 1 h) ; l'« objectif du jour » a été retiré le 2026-11-04 */}
           <PretPourLeCours />
-          <ObjectifDuJour devoirs={[...devoirs, ...devoirsTermines]} />
           {program && <WeeklyPath program={program} />}
           {devoirs.length === 0 && devoirsTermines.length === 0 && !program && (
             <p className="text-muted-foreground text-sm text-center py-2">

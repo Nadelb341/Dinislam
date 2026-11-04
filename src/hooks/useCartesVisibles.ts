@@ -42,4 +42,5 @@ export const CARTES_DU_BAREME: Record<string, string[]> = {
   nourania_lecon_validee: ['nourania'], sourate_validee: ['sourates'], invocation_vue: ['invocations'],
   priere_validee: ['priere'], jeune_marque: ['ramadan'], quiz_reussi: ['ramadan'], ramadan_jour_complete: ['ramadan'],
   vocabulaire_appris: ['module/vocabulaire', 'grammaire'],
+  allah_nom_valide: ['allah-names'],
 };

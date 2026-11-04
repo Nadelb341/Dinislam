@@ -116,7 +116,8 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       ctx.globalAlpha = (f.devant ? 0.95 : 0.55) * Math.min(1, f.age * 3);
       if (f.doree) { ctx.shadowColor = 'rgba(250,204,21,.95)'; ctx.shadowBlur = 14; }
       ctx.fillStyle = f.doree ? '#f5c542' : f.c; ctx.fill(FORMES[f.forme]!); ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,240,210,.18)'; ctx.fillRect(0, 0, 20, 40);
+      // Reflet de lumière sur la moitié gauche, GARDÉ dans la forme de la feuille (avant : un rectangle visible sur fond foncé, 2026-11-04)
+      ctx.save(); ctx.clip(FORMES[f.forme]!); ctx.fillStyle = 'rgba(255,240,210,.18)'; ctx.fillRect(0, 0, 20, 40); ctx.restore();
       ctx.strokeStyle = f.doree ? 'rgba(140,90,0,.7)' : 'rgba(60,25,8,.45)'; ctx.lineWidth = 1.4; ctx.stroke(nervure);
       ctx.restore();
       f.xAff = xb; f.r = px * 0.6;

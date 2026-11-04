@@ -64,7 +64,6 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   devoir_modeles: ['devoir-modeles'],
   // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)
   course_ready: ['course-ready', 'cahier-classe'],
-  daily_goals: ['daily-goals'],
   group_schedules: ['course-ready-info', 'group-course'],
   // 📝 « Ce qu'on a vu » et 🎚️ niveaux d'un groupe (2026-10-26)
   group_sessions: ['cahier-classe'],

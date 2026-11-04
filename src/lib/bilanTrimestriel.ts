@@ -156,7 +156,8 @@ export async function chargerDonneesBilan(ids: string[], debut: string): Promise
     supabase.from('attendance_records').select('user_id, date, status').in('user_id', ids).gte('date', debut),
     supabase.from('absence_justifications').select('student_id, course_date').in('student_id', ids).gte('course_date', debut),
     supabase.from('behavior_marks').select('student_id, course_date, kind').in('student_id', ids).gte('course_date', debut),
-    supabase.from('daily_goals').select('student_id, day').in('student_id', ids).gte('day', debut),
+    // 🎯 « Objectif du jour » retiré le 2026-11-04 (demande de Nadia) : plus de série d'objectifs dans les bilans
+    Promise.resolve({ data: [] as { student_id: string; day: string }[], error: null }),
     supabase.from('user_sourate_progress').select('user_id, sourate_id, validated_at, created_at').in('user_id', ids).eq('is_validated', true).eq('context', 'sourates'),
     supabase.from('sourates').select('id, number, name_french'),
     supabase.from('user_nourania_progress').select('user_id, lesson_id, completed_at, created_at').in('user_id', ids).eq('is_validated', true),
