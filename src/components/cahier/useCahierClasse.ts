@@ -13,6 +13,8 @@ export type CahierDevoir = {
   id: string; titre: string; type: string; assigned_to: string;
   group_id: string | null; student_id: string | null;
   created_at: string | null; date_limite: string | null;
+  /** Devoir préparé à l'avance : moment où l'élève le voit */
+  visible_a?: string | null;
 };
 export type CahierRendu = {
   id: string; devoir_id: string | null; student_id: string; statut: string | null;
@@ -45,7 +47,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
       if (ids.length) filtres.push(`student_id.in.(${ids.join(',')})`);
       const [devoirsRes, profilsRes, rendusRes] = await Promise.all([
         supabase.from('devoirs')
-          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite')
+          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite, visible_a')
           .or(filtres.join(','))
           .order('created_at', { ascending: true }),
         ids.length
@@ -69,7 +71,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
       let autres: CahierDevoir[] = [];
       if (manquants.length) {
         const { data: extra } = await supabase.from('devoirs')
-          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite')
+          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite, visible_a')
           .in('id', manquants);
         autres = (extra || []) as CahierDevoir[];
       }

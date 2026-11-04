@@ -7,6 +7,9 @@ import { errorMessage } from '@/lib/utils';
 import ValiderRenduDialog from './ValiderRenduDialog';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { useHolidays } from '@/hooks/useGroupCourse';
+import { horairePour, rangement } from '@/lib/rotationDevoirs';
+import type { GroupSchedule } from '@/lib/groupCourse';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCahierClasse, dateCourte, prenomOf, type CahierDevoir, type CahierEleve, type CahierRendu } from './useCahierClasse';
@@ -44,6 +47,35 @@ export default function Recapitulatif({ groupId, groupName, memberIds, onBack }:
   // 📜 Historique d'un élève (2026-11-05) : les élèves ne voient plus que leur semaine, l'enseignante garde tout ici
   const [histo, setHisto] = useState<CahierEleve | null>(null);
   const histoScroll = useScrollToTop();
+  const { data: holidays = [] } = useHolidays();
+  const { data: horaires = [] } = useQuery({
+    queryKey: ['cahier-classe', 'horaires', groupId],
+    enabled: !!groupId,
+    queryFn: async () => {
+      const { data, error: e } = await supabase.from('group_schedules').select('group_id, weekday, start_time').eq('group_id', groupId!);
+      if (e) throw e;
+      return (data || []) as GroupSchedule[];
+    },
+  });
+
+  // 🔴 Idée 3 (2026-11-05) : pastille rouge sur l'élève qui a des devoirs PAS FAITS la semaine passée
+  // (même rangement que le cahier de l'élève : cours de son groupe, vacances ; « à refaire » = pas fait)
+  const pasFaitsPassee = useMemo(() => {
+    const res = new Map<string, number>();
+    if (!calc) return res;
+    const gIds = groupId ? [groupId] : [];
+    const now = new Date();
+    for (const d of calc.titreDe.values()) {
+      if (!d.created_at) continue;
+      const horaire = horairePour(d.group_id, gIds, horaires, holidays);
+      if (rangement({ id: d.id, created_at: d.created_at, visible_a: d.visible_a, date_limite: d.date_limite }, horaire, holidays, now) !== 'passee') continue;
+      for (const e of calc.eleves) {
+        const et = calc.etat(d, e.user_id);
+        if (et === 'rien' || et === 'a_refaire') res.set(e.user_id, (res.get(e.user_id) ?? 0) + 1);
+      }
+    }
+    return res;
+  }, [calc, groupId, horaires, holidays]);
 
   const { data: aPreparer = [] } = useQuery({
     queryKey: ['cahier-classe', 'a-preparer', groupId],
@@ -156,12 +188,20 @@ export default function Recapitulatif({ groupId, groupName, memberIds, onBack }:
             <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
               {[...calc.eleves].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')).map((e) => (
                 <button key={e.user_id} type="button" onClick={() => setHisto(e)}
-                  className="rounded-xl bg-white dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 px-2.5 py-2 text-sm font-semibold text-violet-950 dark:text-violet-50 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors [overflow-wrap:anywhere]">
+                  title={pasFaitsPassee.get(e.user_id) ? `${pasFaitsPassee.get(e.user_id)} devoir(s) pas fait(s) la semaine passée` : undefined}
+                  className="relative rounded-xl bg-white dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 px-2.5 py-2 text-sm font-semibold text-violet-950 dark:text-violet-50 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors [overflow-wrap:anywhere]">
                   {e.full_name || 'Sans nom'}
+                  {!!pasFaitsPassee.get(e.user_id) && (
+                    <span aria-label={`${pasFaitsPassee.get(e.user_id)} devoir(s) pas fait(s) la semaine passée`}
+                      className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center shadow">
+                      {pasFaitsPassee.get(e.user_id)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
           )}
+          {pasFaitsPassee.size > 0 && <p className="mt-2 text-[11px] text-violet-900/80 dark:text-violet-100/80">🔴 = devoirs pas faits la semaine passée</p>}
         </section>
       )}
 
