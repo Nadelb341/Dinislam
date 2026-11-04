@@ -1,3 +1,4 @@
+import { texteBoutonCorrection } from '@/lib/messageCorrection';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { withName } from '@/lib/encouragements';
@@ -298,7 +299,7 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
                         {msg.content && (
                           <button type="button" onClick={() => { handleClose(); navigate(msg.content!); }}
                             className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-extrabold text-primary-foreground">
-                            👉 Y aller
+                            👉 {texteBoutonCorrection(msg.content)}
                           </button>
                         )}
                       </div>

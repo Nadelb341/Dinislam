@@ -515,7 +515,9 @@ const handleModuleClick = (mod) => {
 
           {/* Prochaine Prière — version compacte sur 2 lignes (2026-11-04) :
               ligne 1 = date + hégire + prochaine prière + ville, ligne 2 = les 5 horaires (la prochaine est entourée) */}
-          <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in">
+          {/* Les deux cartes côte à côte sur tablette/ordinateur, l'une sous l'autre sur téléphone (trop étroit) — 2026-11-05 */}
+          <div className="grid gap-4 sm:grid-cols-2 items-stretch">
+          <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-indigo-300 dark:border-indigo-700 flex flex-col">
             <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
                 <span className="absolute top-0 right-2 text-2xl">🌙</span>
@@ -538,7 +540,7 @@ const handleModuleClick = (mod) => {
                 </div>
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-800 px-2 py-1.5">
+            <div className="bg-white dark:bg-slate-800 px-2 py-1.5 flex-1 flex flex-col justify-center">
               {!prayerTimes ? (
                 <p className="text-sm text-muted-foreground text-center py-0.5">Chargement...</p>
               ) : (
@@ -565,7 +567,7 @@ const handleModuleClick = (mod) => {
 
           {/* Hadith du Jour — version compacte sur 2 lignes (2026-11-04) :
               ligne 1 = titre + thème + arabe, ligne 2 = le hadith suivi de sa source */}
-          <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in">
+          <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-emerald-300 dark:border-emerald-700 flex flex-col">
             <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-900/40 dark:via-teal-900/40 dark:to-cyan-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
                 <span className="absolute top-0 right-2 text-2xl">🌿</span>
@@ -584,7 +586,7 @@ const handleModuleClick = (mod) => {
                 )}
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-800 px-3 py-2">
+            <div className="bg-white dark:bg-slate-800 px-3 py-2 flex-1 flex items-center">
               <p className="text-sm font-medium text-foreground leading-snug">
                 <span className="text-emerald-400 font-serif font-bold">« </span>
                 {todayHadith.text}
@@ -592,6 +594,8 @@ const handleModuleClick = (mod) => {
                 <span className="text-xs text-muted-foreground whitespace-nowrap"> — {todayHadith.source}</span>
               </p>
             </div>
+          </div>
+
           </div>
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}

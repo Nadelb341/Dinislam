@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfetti } from '@/hooks/useConfetti';
-import { bonusEarned, courseDeadline, itemFill, nextDue, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { bonusEarned, courseDeadline, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TreasureChest } from './TreasureChest';
@@ -62,18 +62,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const pct = total ? (program.items.reduce((s, i) => s + itemFill(i), 0) / total) * 100 : 0;
   const queryClient = useQueryClient();
   const courseDay = courseDeadline(program);
-  const day = nextDue(program).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const reward = treasureFor(program.program_id);
-
-  // 🔥 Série de semaines d'affilée avec le trésor ouvert
-  const { data: streak = 0 } = useQuery({
-    queryKey: ['weekly-program', program.student_id, 'streak'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('my_program_streak');
-      if (error) throw error;
-      return Number(data) || 0;
-    },
-  });
 
   // 🎁 Récompenses déjà obtenues cette semaine (trésor ouvert : +10 points ; bonus : +5 points)
   const rewardsKey = ['weekly-program', program.student_id, 'rewards', program.program_id];
@@ -121,17 +110,8 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   };
 
   return (
-    <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 p-3 space-y-3 mb-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-extrabold text-base">🗺️ Mon chemin de la semaine</p>
-        <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">pour le {day}</span>
-      </div>
-      {streak > 0 && (
-        <p className="mx-auto w-fit rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 text-xs font-extrabold shadow">
-          🔥 {streak} semaine{streak > 1 ? 's' : ''} d'affilée avec le trésor ouvert !{streak >= 3 ? ' Quelle série ! 🏆' : ''}
-        </p>
-      )}
-
+    <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 p-2 space-y-2 mb-3">
+      {/* ✂️ 2026-11-05, demande de Nadia : la carte réduite aux diamants + bonus + trésor (titre, série 🔥 et phrases retirés) */}
       <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3">
         {program.items.map((item) => {
           const fill = item.pending && !item.done ? 1 : itemFill(item);
@@ -179,14 +159,9 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
         </button>
       </div>
 
-      <p className="text-center text-sm font-bold">
-        {chestOpened ? `✨ Trésor ouvert, machaAllah ! Tu as gagné 10 points au classement 🏆` : allDone ? `🎉 Tous tes diamants brillent, machaAllah ! Touche le trésor pour l'ouvrir (+10 points) 🎁` : `Fais briller tes ${total} diamants pour ouvrir le trésor (+10 points) 🎁`}
-      </p>
       {program.teacher_note && (
         <p className="rounded-xl bg-card border-s-4 border-amber-400 px-3 py-2 text-sm [overflow-wrap:anywhere]">💬 <b>Mot de ton prof :</b> {program.teacher_note}</p>
       )}
-      <p className="text-[11px] text-muted-foreground text-center">Un diamant par devoir : touche-le pour aller au devoir, « Commencer mon travail », puis « Je valide mon devoir ». 🟠 = en attente de ton professeur, ✨ = validé</p>
-
       {/* 🎁 Le trésor ouvert : un hadith en récompense, le même toute la semaine */}
       <Dialog open={chestOpen} onOpenChange={setChestOpen}>
         <DialogContent className="max-w-sm text-center" level="nested">

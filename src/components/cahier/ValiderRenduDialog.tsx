@@ -75,7 +75,7 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
         .update({ statut: 'a_refaire', commentaire_admin: texte || null, correction_audio_url: correctionUrl }).eq('id', rendu.id);
       if (error) throw error;
       // 📝 Aussi dans la messagerie de l'élève, avec l'audio et le lien vers son cahier
-      void envoyerMessageCorrection({ studentId: eleve.user_id, notifier: false, sorte: 'retravailler', audioUrl: correctionUrl, commentaire: texte, quoi: `ton devoir « ${titre} »`, lien: '/?open=devoirs' });
+      void envoyerMessageCorrection({ studentId: eleve.user_id, notifier: false, sorte: 'retravailler', audioUrl: correctionUrl, commentaire: texte, quoi: `ton devoir « ${titre} »`, lien: '/?open=devoirs', devoirId: devoir?.id ?? rendu.devoir_id });
       setCorrectionAudio(null);
       sendPushNotification({
         title: '🔄 {prenom}, devoir à refaire', category: 'hw_res', userId: eleve.user_id,

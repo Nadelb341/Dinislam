@@ -72,7 +72,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const [showForm, setShowForm] = useState(false);
   const [elevesRendusOuverts, setElevesRendusOuverts] = useState<Record<string, boolean>>({});
   const [modalARefaire, setModalARefaire] = useState<{
-    renduId: string; studentId: string; devoirTitre: string;
+    renduId: string; studentId: string; devoirTitre: string; devoirId?: string | null;
   } | null>(null);
   const [commentaire, setCommentaire] = useState('');
   const [form, setForm] = useState({
@@ -449,7 +449,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       if (error) throw error;
       // 📝 Aussi dans la messagerie de l'élève, avec l'audio et le lien vers son cahier (2026-11-04)
       void envoyerMessageCorrection({ studentId: modalARefaire.studentId, notifier: false, sorte: 'retravailler', audioUrl: correctionUrl, commentaire,
-        quoi: `ton devoir « ${modalARefaire.devoirTitre} »`, lien: '/?open=devoirs' });
+        quoi: `ton devoir « ${modalARefaire.devoirTitre} »`, lien: '/?open=devoirs', devoirId: modalARefaire.devoirId });
 
       sendPushNotification({
         userIds: [modalARefaire.studentId],
@@ -1029,7 +1029,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                               ✅ Valider le devoir
                             </Button>
                             <Button size="sm" variant="destructive" className="flex-1 gap-1"
-                              onClick={() => setModalARefaire({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre })}>
+                              onClick={() => setModalARefaire({ renduId: r.id, studentId: r.student_id, devoirTitre: r.devoir_titre, devoirId: r.devoir_id })}>
                               <RefreshCw className="h-3 w-3" /> À Refaire
                             </Button>
                           </div>
