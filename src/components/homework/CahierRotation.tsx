@@ -46,8 +46,11 @@ function etat(d: DevoirRange, passe: boolean) {
  * Les devoirs sont écrits à la main (proposition D). Les devoirs pas faits montent dans « 🔁 À rattraper » (proposition E).
  * Le même composant sert au professeur (`renderLigne` / `entete` adaptés).
  */
-export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, coursHistorique, vide }: {
+export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, coursHistorique, vide, simple = false }: {
   devoirs: DevoirRange[];
+  /** 🧒 Élèves (demande de Nadia, 2026-11-05) : SEULEMENT « Cette semaine » — ni onglets, ni « À rattraper ».
+   *  Le passé reste pour l'enseignante (Récapitulatif › 📜 Historique, mode fantôme). */
+  simple?: boolean;
   renderDetail: (d: DevoirRange) => React.ReactNode;
   /** Prochain cours (compte à rebours quand aucun devoir n'est encore donné) */
   prochainCours: Date | null;
@@ -65,7 +68,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
   const bande = useRef<HTMLDivElement>(null);
   const now = new Date();
 
-  const rattraper = devoirs.filter((d) => d.rattraper);
+  const rattraper = simple ? [] : devoirs.filter((d) => d.rattraper);
   const semaine = devoirs.filter((d) => d.rang === 'semaine');
   const passee = devoirs.filter((d) => d.rang === 'passee' && !d.rattraper);
   const historique = devoirs.filter((d) => d.rang === 'historique' && !d.rattraper);
@@ -155,7 +158,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
   return (
     <div className="space-y-3">
       {/* 🔁 À rattraper (proposition E) : reste en haut jusqu'à ce que ce soit fait */}
-      {rattraper.length > 0 && (
+      {!simple && rattraper.length > 0 && (
         <div className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/20 dark:border-red-800 p-3 space-y-2">
           <p className="text-sm font-extrabold text-red-800 dark:text-red-200">🔁 À rattraper ({rattraper.length})</p>
           <p className="text-[11px] font-semibold text-red-700/80 dark:text-red-300/80">Ces devoirs restent ici jusqu'à ce qu'ils soient faits 💪</p>
@@ -169,7 +172,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
       )}
 
       {/* Les 3 onglets (proposition B) */}
-      <div role="tablist" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+      {!simple && <div role="tablist" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {onglets.map((o) => (
           <button key={o.k} type="button" role="tab" aria-selected={onglet === o.k} onClick={() => { setOnglet(o.k); setOuvertId(null); }}
             className={cn('relative rounded-lg px-1.5 py-2 text-[13px] sm:text-sm font-extrabold leading-tight transition-colors',
@@ -178,7 +181,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
             {!!o.n && <span className="ml-1 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground align-middle">{o.n}</span>}
           </button>
         ))}
-      </div>
+      </div>}
 
       <div key={onglet} className={cn('cahier-papier rounded-r-2xl px-3 pt-2 pb-3 space-y-2', tourne && onglet === 'semaine' && 'page-tourne')}
         onAnimationEnd={() => setTourne(false)}>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { estEnModeFantome } from '@/lib/modeFantome';
 
 /**
  * Sends a heartbeat every 60s to update last_seen in profiles.
@@ -32,7 +33,8 @@ const usePresenceHeartbeat = () => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    // 👻 Mode fantôme : ni « dernière connexion » ni journal de connexion au nom de l'élève
+    if (!user || estEnModeFantome()) return;
 
     // Initial heartbeat
     startHeartbeat();

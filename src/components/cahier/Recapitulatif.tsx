@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/button';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { errorMessage } from '@/lib/utils';
 import ValiderRenduDialog from './ValiderRenduDialog';
+import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
+import { ScrollButtons } from '@/components/ui/ScrollButtons';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCahierClasse, dateCourte, prenomOf, type CahierDevoir, type CahierEleve, type CahierRendu } from './useCahierClasse';
 
 type Props = { groupId: string | null; groupName: string; memberIds: string[]; onBack: () => void };
@@ -37,6 +41,9 @@ function Colonne({ type, count, children, vide }: { type: keyof typeof COLONNES;
 export default function Recapitulatif({ groupId, groupName, memberIds, onBack }: Props) {
   const { calc, isLoading, error } = useCahierClasse(groupId, memberIds);
   const [choix, setChoix] = useState<{ eleve: CahierEleve; devoir: CahierDevoir | null; rendu: CahierRendu } | null>(null);
+  // 📜 Historique d'un élève (2026-11-05) : les élèves ne voient plus que leur semaine, l'enseignante garde tout ici
+  const [histo, setHisto] = useState<CahierEleve | null>(null);
+  const histoScroll = useScrollToTop();
 
   const { data: aPreparer = [] } = useQuery({
     queryKey: ['cahier-classe', 'a-preparer', groupId],
@@ -136,6 +143,40 @@ export default function Recapitulatif({ groupId, groupName, memberIds, onBack }:
           </Colonne>
         </div>
       )}
+
+      {/* 📜 Historique (2026-11-05, demande de Nadia) : une sous-carte par élève du groupe → son cahier complet
+          (cette semaine, semaine passée, à rattraper, historique), en lecture seule */}
+      {calc && (
+        <section className="rounded-2xl border-2 border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/30 p-3">
+          <h3 className="flex items-center justify-between gap-2 font-bold text-sm text-violet-900 dark:text-violet-100">
+            <span>📜 Historique</span>
+            <span className="shrink-0 min-w-[1.5rem] h-6 px-1.5 rounded-full text-white text-xs font-bold flex items-center justify-center bg-violet-600">{calc.eleves.length}</span>
+          </h3>
+          {calc.eleves.length === 0 ? <p className="mt-2 text-xs text-violet-900/80 dark:text-violet-100/80">Aucun élève dans ce groupe.</p> : (
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
+              {[...calc.eleves].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '')).map((e) => (
+                <button key={e.user_id} type="button" onClick={() => setHisto(e)}
+                  className="rounded-xl bg-white dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800 px-2.5 py-2 text-sm font-semibold text-violet-950 dark:text-violet-50 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors [overflow-wrap:anywhere]">
+                  {e.full_name || 'Sans nom'}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      <Dialog open={!!histo} onOpenChange={(o) => !o && setHisto(null)}>
+        <DialogContent level="nested" className="max-w-lg max-h-[88vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-center [overflow-wrap:anywhere]">📜 Historique de {histo?.full_name}</DialogTitle>
+            <DialogDescription className="text-center">Tous ses devoirs, semaine par semaine (lecture seule).</DialogDescription>
+          </DialogHeader>
+          <div ref={histoScroll.scrollRef} onScroll={histoScroll.handleScroll} className="relative flex-1 overflow-y-auto pr-1">
+            {histo && <BlocDevoirsEleve eleveId={histo.user_id} />}
+          </div>
+          <ScrollButtons showTop={histoScroll.showTop} showBottom={histoScroll.showBottom} onScrollTop={histoScroll.scrollToTop} onScrollBottom={histoScroll.scrollToBottom} position="absolute" />
+        </DialogContent>
+      </Dialog>
 
       <ValiderRenduDialog
         open={!!choix}

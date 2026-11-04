@@ -1,4 +1,6 @@
 import { ReactNode, useEffect } from 'react';
+import { BandeauFantome } from '@/components/fantome/BandeauFantome';
+import { estEnModeFantome } from '@/lib/modeFantome';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import usePresenceHeartbeat from '@/hooks/usePresenceHeartbeat';
@@ -56,13 +58,16 @@ const AppLayout = ({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* 👻 Mode fantôme : bandeau « Revenir à mon compte » toujours en haut */}
+      <SilentBoundary name="Bandeau fantôme"><BandeauFantome /></SilentBoundary>
       <Header title={title} showBack={showBack} />
       {/* 📡 Hors connexion : l'appli reste ouverte avec les dernières données (2026-11-02) */}
       <SilentBoundary name="Bandeau hors connexion"><OfflineBanner /></SilentBoundary>
       <EmailVerificationBanner />
       <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
         <div className="p-4">
-          <PushAutoSubscribe />
+          {/* Pas d'abonnement aux notifications en mode fantôme : ce téléphone reste celui de l'enseignante */}
+          {!estEnModeFantome() && <PushAutoSubscribe />}
           <PendingDraftsCenter />
           <TrashPurgeWarning />
           <AttendanceMessage />

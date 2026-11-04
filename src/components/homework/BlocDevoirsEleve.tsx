@@ -22,6 +22,7 @@ import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
 import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
 import type { GroupSchedule } from "@/lib/groupCourse";
+import { estEnModeFantome } from "@/lib/modeFantome";
 
 type Devoir = {
   id: string;
@@ -132,8 +133,34 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
   );
 }
 
-export default function BlocDevoirsEleve() {
+/** Un devoir vu par l'enseignante dans l'historique d'un élève : ce qu'il a fait, sans aucun bouton */
+function DetailLecture({ devoir }: { devoir: Devoir }) {
+  const statut = devoir.rendu ? devoir.statut_rendu : null;
+  const etat = statut === 'corrige' ? '✅ Validé' : statut === 'rendu' ? '🟠 Envoyé, à valider' : statut === 'a_refaire' ? '🔄 À refaire'
+    : '✗ Pas fait';
+  return (
+    <div className="rounded-2xl border-2 border-sky-200 dark:border-sky-900 bg-card p-3 space-y-1.5 text-sm">
+      <p className="font-bold [overflow-wrap:anywhere]">{matiereDe(devoir).emoji} {devoir.titre}</p>
+      {devoir.description && <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{devoir.description}</p>}
+      <p className="font-semibold">{etat}{devoir.rendu_at ? ` · envoyé le ${new Date(devoir.rendu_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}` : ''}</p>
+      {devoir.etapes.length > 0 && <p className="text-xs">💎 Étapes cochées : {devoir.etapesFaites.length}/{devoir.etapes.length}</p>}
+      {devoir.commentaire_admin && <p className="text-xs [overflow-wrap:anywhere]">💬 Ton commentaire : « {devoir.commentaire_admin} »</p>}
+    </div>
+  );
+}
+
+/**
+ * 📚 Cahier de texte de l'élève.
+ * - Élève (2026-11-05, demande de Nadia) : SEULEMENT les devoirs de cette semaine (ni « Semaine passée », ni
+ *   « Historique », ni « À rattraper »).
+ * - `eleveId` : l'enseignante regarde l'historique COMPLET d'un élève (Récapitulatif › 📜 Historique), en lecture seule.
+ * - Mode fantôme : l'enseignante dans le compte de l'élève garde aussi la version complète.
+ */
+export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {}) {
   const { user } = useAuth();
+  const uid = eleveId ?? user?.id;
+  const fantome = estEnModeFantome();
+  const simple = !eleveId && !fantome;
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [devoirsTermines, setDevoirsTermines] = useState<Devoir[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +177,7 @@ export default function BlocDevoirsEleve() {
   // 💎 Chemin de la semaine (le plus récent seulement : les anciens se rangent tout seuls)
   const { data: program = null } = useQuery({
     queryKey: ['weekly-program', user?.id],
-    enabled: !!user,
+    enabled: !!user && !eleveId,
     refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('weekly_program_view', { p_student: user!.id });
@@ -162,16 +189,16 @@ export default function BlocDevoirsEleve() {
   const diamondsLeft = program ? program.items.filter((i) => !i.done).length : 0;
 
   const chargerDevoirs = useCallback(async () => {
-    if (!user) return;
+    if (!user || !uid) return;
 
     const { data: groupData } = await supabase
       .from('student_group_members')
       .select('group_id')
-      .eq('user_id', user.id);
+      .eq('user_id', uid);
 
     const gIds = groupData?.map(g => g.group_id) || [];
 
-    let orFilter = `assigned_to.eq.all,student_id.eq.${user.id}`;
+    let orFilter = `assigned_to.eq.all,student_id.eq.${uid}`;
     if (gIds.length > 0) {
       orFilter += `,group_id.in.(${gIds.join(',')})`;
     }
@@ -186,20 +213,22 @@ export default function BlocDevoirsEleve() {
     const { data: rendus } = await supabase
       .from('devoirs_rendus')
       .select('devoir_id, statut, commentaire_admin, correction_audio_url, rendu_at')
-      .eq('student_id', user.id);
+      .eq('student_id', uid);
     // Cases « J'ai travaillé ce devoir »
-    const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', user.id);
+    const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', uid);
     const travailles = new Set((checks || []).map((c) => c.devoir_id));
-    const { data: steps } = await supabase.from('devoir_steps').select('devoir_id, step').eq('student_id', user.id);
+    const { data: steps } = await supabase.from('devoir_steps').select('devoir_id, step').eq('student_id', uid);
     // 🔄 Rotation : heures de cours de ses groupes, choix du professeur (à rattraper / historique), date d'arrivée
     const [{ data: horaires }, { data: decisions }, { data: profil }] = await Promise.all([
       gIds.length ? supabase.from('group_schedules').select('group_id, weekday, start_time').in('group_id', gIds) : Promise.resolve({ data: [] as GroupSchedule[] }),
-      supabase.from('devoir_decisions').select('devoir_id, decision').eq('student_id', user.id),
-      supabase.from('profiles').select('created_at').eq('user_id', user.id).maybeSingle(),
+      supabase.from('devoir_decisions').select('devoir_id, decision').eq('student_id', uid),
+      supabase.from('profiles').select('created_at').eq('user_id', uid).maybeSingle(),
     ]);
     setContexte({ gIds, horaires: (horaires || []) as GroupSchedule[], arrivee: profil?.created_at ?? null });
 
-    const enrichis: Devoir[] = (data || []).map(d => {
+    // L'enseignante voit tout (même les devoirs programmés) : on ne garde que ce que l'élève voit
+    const visibles = (data || []).filter((d) => !eleveId || !d.visible_a || new Date(d.visible_a) <= new Date());
+    const enrichis: Devoir[] = visibles.map(d => {
       const rendu = rendus?.find(r => r.devoir_id === d.id);
       return {
         id: d.id,
@@ -233,7 +262,7 @@ export default function BlocDevoirsEleve() {
     setDevoirs(enrichis.filter(d => !d.rendu || d.statut_rendu === 'a_refaire'));
     setDevoirsTermines(enrichis.filter(d => d.rendu && d.statut_rendu !== 'a_refaire'));
     setLoading(false);
-  }, [user]);
+  }, [user, uid, eleveId]);
 
   useEffect(() => {
     chargerDevoirs();
@@ -261,7 +290,8 @@ export default function BlocDevoirsEleve() {
     void chargerDevoirs();
   };
 
-  if (loading || (devoirs.length === 0 && devoirsTermines.length === 0 && !program)) return null;
+  if (eleveId && loading) return <p className="text-sm text-sky-700 dark:text-sky-300 text-center py-4">⏳ Chargement…</p>;
+  if (loading || (!eleveId && devoirs.length === 0 && devoirsTermines.length === 0 && !program)) return null;
 
   // 🔄 Rotation à l'heure du cours de son groupe (mercredi 14 h si aucune heure n'est réglée)
   const tous = [...devoirs, ...devoirsTermines];
@@ -280,7 +310,7 @@ export default function BlocDevoirsEleve() {
 
   // Devoirs pas encore faits (cochés ou audio envoyé), comme les diamants
   // Seulement ce qui compte encore : la semaine en cours + « À rattraper » (l'historique « pas fait » n'est plus compté)
-  const enCours = ranges.filter((d) => !estFait(d) && (d.rang === 'semaine' || d.rattraper));
+  const enCours = ranges.filter((d) => !estFait(d) && (d.rang === 'semaine' || (!simple && d.rattraper)));
   const totalAFaire = enCours.length;
   const toutAJour = totalAFaire === 0 && diamondsLeft === 0;
 
@@ -289,6 +319,14 @@ export default function BlocDevoirsEleve() {
     .filter(d => d.date_limite && d.rang === 'semaine')
     .map(d => new Date(d.date_limite!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
+
+  // 📜 Historique d'un élève pour l'enseignante : le cahier complet, chaque devoir en lecture seule
+  if (eleveId) {
+    return (
+      <CahierRotation devoirs={ranges} prochainCours={prochainCours} coursHistorique={coursHisto} vide="Aucun devoir pour cette semaine"
+        renderDetail={(r) => { const d = tous.find((x) => x.id === r.id); return d ? <DetailLecture devoir={d} /> : null; }} />
+    );
+  }
 
   return (
     <div className={cn(
@@ -348,7 +386,7 @@ export default function BlocDevoirsEleve() {
           )}
 
           {(devoirs.length > 0 || devoirsTermines.length > 0) && (
-            <CahierRotation devoirs={ranges} prochainCours={prochainCours} coursHistorique={coursHisto} pageKey={`dinislam_cahier_page_${user?.id}`}
+            <CahierRotation simple={simple} devoirs={ranges} prochainCours={prochainCours} coursHistorique={coursHisto} pageKey={`dinislam_cahier_page_${user?.id}`}
               renderDetail={(r) => { const d = tous.find((x) => x.id === r.id); return d ? <CarteDevoir devoir={d} onEtape={(id, n, v) => void handleEtape(id, n, v)} onSent={() => void chargerDevoirs()} /> : null; }} />
           )}
         </div>

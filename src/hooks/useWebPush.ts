@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { estEnModeFantome } from '@/lib/modeFantome';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -66,6 +67,11 @@ export function useWebPush() {
   // subscribe() is designed to be called directly from a user tap/click handler.
   // On iOS Safari PWA, Notification.requestPermission() MUST be in the user gesture callstack.
   const subscribe = useCallback(async (): Promise<boolean> => {
+    // 👻 Mode fantôme : ne jamais abonner (ni désabonner) CE téléphone au nom de l'élève
+    if (estEnModeFantome()) {
+      setState(s => ({ ...s, error: '👻 Pas en mode fantôme : les notifications restent celles de ton téléphone.' }));
+      return false;
+    }
     if (!user) {
       console.error('[WebPush] No user');
       return false;
@@ -179,7 +185,7 @@ export function useWebPush() {
   }, [user]);
 
   const unsubscribe = useCallback(async (): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || estEnModeFantome()) return false;
     setState(s => ({ ...s, isLoading: true }));
     try {
       const registration = await navigator.serviceWorker.getRegistration();

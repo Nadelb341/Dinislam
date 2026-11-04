@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { estEnModeFantome } from '@/lib/modeFantome';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { rememberPassword } from '@/lib/rememberPassword';
@@ -204,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           applyApproval(session.user.id);
 
           // Update last_seen silently
-          supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id).then(() => {}, () => {});
+          if (!estEnModeFantome()) supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id).then(() => {}, () => {});
         } else {
           setSession(null);
           setUser(null);

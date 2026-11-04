@@ -23,6 +23,7 @@ import { useHolidays } from '@/hooks/useGroupCourse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { periodeBilan } from '@/lib/bilanTrimestriel';
+import { ChoixFantomeDialog } from '@/components/fantome/ChoixFantomeDialog';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -91,6 +92,7 @@ const AdminCommandModal = ({
   const monitoringErrors = useMonitoringErrorCount();
   const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
+  const [fantomeOuvert, setFantomeOuvert] = useState(false);
   // Panneau principal : il défile quand il dépasse l'écran (bandeau ouvert…), le titre et la croix restent visibles
   const {
     scrollRef: panelScrollRef, handleScroll: handlePanelScroll, showTop: panelShowTop, showBottom: panelShowBottom,
@@ -167,6 +169,7 @@ const AdminCommandModal = ({
 
   return (
     <>
+      <ChoixFantomeDialog open={fantomeOuvert} onClose={() => setFantomeOuvert(false)} />
       {/* Popup principale — centrée */}
       <div
         className="fixed inset-0 bg-black/60 z-[400] flex items-center justify-center p-4"
@@ -272,6 +275,11 @@ const AdminCommandModal = ({
               <button onClick={() => { onClose(); navigate('/admin?section=apparence'); }}
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100">
                 <span>🔧 Apparence appli</span>
+              </button>
+              {/* 👻 Mode fantôme (2026-11-05) : entrer dans le compte d'un élève et agir comme lui */}
+              <button onClick={() => setFantomeOuvert(true)}
+                className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950/50 dark:text-fuchsia-100">
+                <span>👻 Mode fantôme</span>
               </button>
             </div>
 
