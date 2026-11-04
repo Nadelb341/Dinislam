@@ -17,6 +17,8 @@ import {
 import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { IMAGES_HIVER } from '@/components/saisons/dessinsHiver';
 import { IMAGES_CLAIR } from '@/components/saisons/dessinsPrintempsEte';
+import { OBJETS_LOGO } from '@/components/saisons/objetsLogo';
+import { essayerAverse, type ModeMeteo, ReglagesLogo, ReglagesMeteo, RythmeLogo } from '@/lib/saisons';
 import { cn, errorMessage } from '@/lib/utils';
 
 /**
@@ -101,7 +103,8 @@ const groupesClair = (ete: boolean): { titre: string; items: { k: keyof Reglages
   ] },
   { titre: 'Les cartes et les couleurs', items: [
     { k: 'images', label: '🖼️ Images en haut à droite des cartes' }, { k: 'couleurs', label: ete ? '🎨 Bleu clair et jaune' : '🎨 Vert clair' },
-    { k: 'titre', label: ete ? '🕶️ Lunettes de soleil sur le logo' : '🌼 Marguerite sur le logo' },
+    ete ? { k: 'chateau', label: '🏰 Château de sable que le crabe construit pendant la semaine' } : { k: 'coccinelle', label: '🐞 Coccinelle qui se promène sur une carte' },
+    { k: 'repos', label: ete ? '✨ Reflets de soleil après 1 minute sans toucher' : '🌸 Fleurs qui poussent dans les coins après 1 minute sans toucher' },
   ] },
 ];
 
@@ -277,6 +280,10 @@ export default function DecorationsSaisons() {
           <p className="rounded-xl bg-muted px-3 py-2 text-sm">{NOM_SAISON[onglet]} : {IDEES_A_VENIR[onglet]} En attendant, cette saison reste en ambiance neutre.</p>
         )}
 
+        <MeteoEtLogo saison={onglet} meteo={r.meteo[onglet]} logo={r.logo[onglet]}
+          setMeteo={(v) => setR((x) => ({ ...x, meteo: { ...x.meteo, [onglet]: { ...x.meteo[onglet], ...v } } }))}
+          setLogo={(v) => setR((x) => ({ ...x, logo: { ...x.logo, [onglet]: { ...x.logo[onglet], ...v } } }))} />
+
         <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-border bg-card px-3 py-2">
           <span className="min-w-0"><span className="block text-sm font-bold">👀 Voir une saison sur mon téléphone seulement</span><span className="block text-xs text-muted-foreground">Les élèves ne voient pas la différence</span></span>
           <select value={apercu ?? ''} onChange={(e) => { const v = (e.target.value || null) as Saison | null; setApercu(v); choisirApercu(v); }}
@@ -306,6 +313,109 @@ export default function DecorationsSaisons() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+const COULEUR: Record<Saison, string> = { hiver: '#3f6fb5', printemps: '#5a9e2f', ete: '#2e8fd0', automne: '#b5562b' };
+const MODES: { v: ModeMeteo; label: string; aide: string }[] = [
+  { v: 'parfois', label: '🌦️ De temps en temps', aide: 'Une averse de temps en temps, puis l’arc-en-ciel' },
+  { v: 'periode', label: '📅 Pendant une période', aide: 'Il pleut tout le temps entre deux dates' },
+  { v: 'meteo', label: '🛰️ Selon la vraie météo', aide: 'Quand il pleut vraiment dans la ville des horaires de prière' },
+];
+const RYTHMES: { v: RythmeLogo; label: string }[] = [
+  { v: 'connexion', label: 'à chaque connexion' }, { v: 'jour', label: 'chaque jour' }, { v: 'semaine', label: 'chaque semaine' }, { v: 'mois', label: 'chaque mois' },
+];
+
+/** 🌧️🌈 Pluie + arc-en-ciel et 🌼 objets du logo, pour la saison de l'onglet (2026-11-04) */
+function MeteoEtLogo({ saison, meteo: m, logo, setMeteo, setLogo }: {
+  saison: Saison; meteo: ReglagesMeteo; logo: ReglagesLogo; setMeteo: (v: Partial<ReglagesMeteo>) => void; setLogo: (v: Partial<ReglagesLogo>) => void;
+}) {
+  const coul = COULEUR[saison];
+  const puce = (actif: boolean, label: string, onClick: () => void, key?: string) => (
+    <button key={key ?? label} type="button" aria-pressed={actif} onClick={onClick}
+      className={cn('rounded-full border px-3 py-1 text-sm text-start', actif ? 'text-white' : 'bg-card')}
+      style={actif ? { background: coul, borderColor: coul } : undefined}>{label}</button>
+  );
+  const cat = OBJETS_LOGO[saison];
+  const basculerObjet = (k: string) => setLogo({ objets: logo.objets.includes(k) ? logo.objets.filter((x) => x !== k) : [...logo.objets, k] });
+  return (
+    <div className="space-y-3">
+      <section className="space-y-2 rounded-2xl border-2 border-sky-200 bg-sky-50/70 p-3 dark:border-sky-900 dark:bg-sky-950/20">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">La pluie et l'arc-en-ciel</p>
+        <div className="flex flex-wrap gap-1.5">
+          {puce(m.averse, saison === 'hiver' && m.neige ? '🌨️ Tempête de flocons' : '🌧️ Averse', () => setMeteo({ averse: !m.averse }))}
+          {puce(m.arcEnCiel, '🌈 Arc-en-ciel après la pluie (de jour)', () => setMeteo({ arcEnCiel: !m.arcEnCiel }))}
+          {puce(m.ciel, '☁️ Ciel un peu gris pendant l\'averse', () => setMeteo({ ciel: !m.ciel }))}
+          {saison === 'hiver' && puce(m.neige, '❄️ L\'hiver : des flocons au lieu de la pluie', () => setMeteo({ neige: !m.neige }))}
+        </div>
+        <div className="grid gap-1.5 sm:grid-cols-3">
+          {MODES.map((o) => (
+            <button key={o.v} type="button" aria-pressed={m.mode === o.v} onClick={() => setMeteo({ mode: o.v })}
+              className={cn('rounded-xl border-2 px-2 py-1.5 text-start', m.mode === o.v ? 'bg-card font-bold' : 'border-transparent bg-card/50')}
+              style={m.mode === o.v ? { borderColor: coul } : undefined}>
+              <span className="block text-sm">{o.label}</span><span className="block text-[11px] text-muted-foreground">{o.aide}</span>
+            </button>
+          ))}
+        </div>
+        {m.mode === 'parfois' && (
+          <>
+            <label className="block text-sm font-semibold">Combien de fois : <b>{['', 'Rarement (≈ toutes les 30 min)', 'De temps en temps (≈ 15 min)', 'Souvent (≈ 6 min)'][m.frequence]}</b>
+              <input type="range" min={1} max={3} value={m.frequence} onChange={(e) => setMeteo({ frequence: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+            </label>
+            <label className="block text-sm font-semibold">Durée d'une averse : <b>{m.duree} secondes</b>
+              <input type="range" min={15} max={90} step={5} value={m.duree} onChange={(e) => setMeteo({ duree: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+            </label>
+          </>
+        )}
+        {m.mode === 'periode' && (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label className="flex items-center gap-1">Du <input type="date" value={m.du} onChange={(e) => setMeteo({ du: e.target.value })} className="rounded-lg border bg-background px-2 py-1" /></label>
+            <label className="flex items-center gap-1">au <input type="date" value={m.au} min={m.du || undefined} onChange={(e) => setMeteo({ au: e.target.value })} className="rounded-lg border bg-background px-2 py-1" /></label>
+            {(!m.du || !m.au) && <span className="text-xs font-semibold text-amber-700">⚠️ Choisis les deux dates</span>}
+            {m.du && m.au && <span className="text-xs text-muted-foreground">🌈 L'arc-en-ciel apparaît le lendemain.</span>}
+          </div>
+        )}
+        {m.mode === 'meteo' && <p className="text-xs text-muted-foreground">🛰️ Chaque élève voit la météo de SA ville (celle de ses horaires de prière), vérifiée toutes les 15 minutes. Sans Internet : pas de pluie.</p>}
+        {m.mode !== 'meteo' && (
+          <label className="block text-sm font-semibold">Intensité : <b>{['', 'Petite bruine', 'Averse', 'Grosse pluie'][m.intensite]}</b>
+            <input type="range" min={1} max={3} value={m.intensite} onChange={(e) => setMeteo({ intensite: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+          </label>
+        )}
+        <label className="block text-sm font-semibold">L'arc-en-ciel reste : <b>{m.dureeArc} secondes</b>
+          <input type="range" min={10} max={60} step={5} value={m.dureeArc} onChange={(e) => setMeteo({ dureeArc: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+        </label>
+        <Button type="button" size="sm" variant="outline" onClick={() => { essayerAverse(); toast('🌧️ Retourne sur l\'accueil : l\'averse arrive (sur ce téléphone seulement), puis l\'arc-en-ciel'); }}>
+          ▶️ Essayer maintenant sur mon téléphone
+        </Button>
+      </section>
+
+      <section className="space-y-2 rounded-2xl border-2 border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/20">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">Sur le logo (en haut à droite)</p>
+        <p className="text-xs text-muted-foreground">Coche un ou plusieurs objets. Plusieurs = ils alternent. Aucun = rien sur le logo.</p>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(cat).map(([k, o]) => {
+            const actif = logo.objets.includes(k);
+            return (
+              <button key={k} type="button" aria-pressed={actif} onClick={() => basculerObjet(k)}
+                className={cn('flex w-[4.6rem] flex-col items-center gap-1 rounded-xl border-2 bg-card p-1.5 text-center text-[11px] leading-tight', !actif && 'border-transparent opacity-70')}
+                style={actif ? { borderColor: coul } : undefined}>
+                <span className="relative inline-block h-11 w-11">
+                  <img src="/icon-192.png" alt="" className="h-11 w-11 rounded-xl" />
+                  <svg viewBox="0 0 24 24" aria-hidden className="absolute overflow-visible" style={{ width: o.t * 0.8, height: o.t * 0.8, right: -o.t * 0.3, top: -o.t * 0.3, transform: `rotate(${o.rot}deg)` }} dangerouslySetInnerHTML={{ __html: o.svg }} />
+                </span>
+                {actif && <b style={{ color: coul }}>✓</b>}{o.nom}
+              </button>
+            );
+          })}
+        </div>
+        {logo.objets.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 text-sm">
+            <span className="font-semibold">🔁 Changer d'objet :</span>
+            {RYTHMES.map((o) => puce(logo.rythme === o.v, o.label, () => setLogo({ rythme: o.v }), o.v))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

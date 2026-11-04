@@ -665,9 +665,6 @@
 :root.saison-ete:not(.dark) .carte-accueil { border-color: #f3dd8e; box-shadow: 0 2px 0 #bfe3f7; }
 :root.saison-ete:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #e0f4ff, #fff6d6, #e3f5ff); border-color: #f3d877; }
 /* Petite décoration du logo : une marguerite (printemps), des lunettes de soleil (été) */
-:root.printemps-titre .titre-logo::after, :root.ete-titre .titre-logo::after { content: ""; position: absolute; pointer-events: none; background-repeat: no-repeat; background-size: contain; }
-:root.printemps-titre .titre-logo::after { right: -9px; top: -9px; width: 24px; height: 24px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23fff' stroke='%23d9d2c0' stroke-width='.6'%3E%3Cellipse cx='12' cy='5' rx='2.6' ry='4.6'/%3E%3Cellipse cx='12' cy='19' rx='2.6' ry='4.6'/%3E%3Cellipse cx='5' cy='12' rx='4.6' ry='2.6'/%3E%3Cellipse cx='19' cy='12' rx='4.6' ry='2.6'/%3E%3Cellipse cx='7' cy='7' rx='2.4' ry='4.4' transform='rotate(-45 7 7)'/%3E%3Cellipse cx='17' cy='17' rx='2.4' ry='4.4' transform='rotate(-45 17 17)'/%3E%3Cellipse cx='17' cy='7' rx='2.4' ry='4.4' transform='rotate(45 17 7)'/%3E%3Cellipse cx='7' cy='17' rx='2.4' ry='4.4' transform='rotate(45 7 17)'/%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='3.6' fill='%23f7c22e' stroke='%23e0a21a' stroke-width='.6'/%3E%3C/svg%3E"); transform: rotate(12deg); }
-:root.ete-titre .titre-logo::after { right: -12px; top: -6px; width: 30px; height: 14px; transform: rotate(14deg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 14'%3E%3Cpath d='M1 4h28' stroke='%233a2a20' stroke-width='1.6'/%3E%3Cpath d='M2 4h11c0 6-2 9-6 9S2 10 2 4zM17 4h11c0 6-2 9-6 9s-5-3-5-9z' fill='%232c3a55' stroke='%233a2a20' stroke-width='1'/%3E%3Cpath d='M4 6l3 3M19 6l3 3' stroke='%23fff' stroke-width='1.2' opacity='.7'/%3E%3C/svg%3E"); }
 .pe-rayons { transform-box: view-box; transform-origin: 60px 60px; animation: pe-tourne 60s linear infinite; }
 @keyframes pe-tourne { to { transform: rotate(360deg); } }
 .pe-halo { transform-box: view-box; transform-origin: 60px 60px; animation: pe-halo 4s ease-in-out infinite; }
@@ -701,3 +698,37 @@
 @media (prefers-reduced-motion: reduce) {
   html:not(.anime-toujours) .pe-rayons, html:not(.anime-toujours) .pe-halo, html:not(.anime-toujours) .pe-eclat, html:not(.anime-toujours) .pe-nuage, html:not(.anime-toujours) .pe-arbre-bouge, html:not(.anime-toujours) .pe-palme, html:not(.anime-toujours) .pe-fleur, html:not(.anime-toujours) .pe-vagues, html:not(.anime-toujours) .pe-ecume, html:not(.anime-toujours) .pe-respire, html:not(.anime-toujours) .pe-tas-secoue, html:not(.anime-toujours) .pe-ciel-etoile, html:not(.anime-toujours) .pe-rosee { animation: none; }
 }
+
+/* 🌼 Objet de saison sur le logo (2026-11-04) : il arrive en petit saut puis se balance très doucement */
+.logo-objet { z-index: 2; transform: rotate(var(--lo-rot, 0deg)); transform-origin: 30% 70%; filter: drop-shadow(0 1px 1px rgba(40, 30, 10, .3));
+  animation: logo-objet-pop .6s cubic-bezier(.3, 1.6, .5, 1) both, logo-objet-balance 5s ease-in-out .6s infinite; }
+@keyframes logo-objet-pop { from { transform: rotate(var(--lo-rot, 0deg)) scale(0); } to { transform: rotate(var(--lo-rot, 0deg)) scale(1); } }
+@keyframes logo-objet-balance { 0%, 100% { transform: rotate(var(--lo-rot, 0deg)); } 50% { transform: rotate(calc(var(--lo-rot, 0deg) + 7deg)); } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .logo-objet { animation: none; } }
+
+/* 🌸 Idée 2 (2026-11-04) : 1 min sans toucher → fleurs qui poussent dans les coins (printemps) / reflets de soleil (été) */
+.pe-coin-fleur { position: absolute; transform: scale(0) translateY(10px); transform-origin: 50% 100%; opacity: 0; transition: transform .35s ease-in, opacity .35s ease-in; }
+.pe-coin-fleur > svg { width: 100%; height: 100%; display: block; }
+.pe-coins.pousse .pe-coin-fleur { transform: scale(1) translateY(0); opacity: 1; transition: transform 2.4s cubic-bezier(.2, 1.3, .5, 1), opacity 1.2s ease-out; }
+.pe-reflet { position: absolute; width: 70px; height: 70px; border-radius: 50%; opacity: 0; transition: opacity .4s;
+  background: radial-gradient(circle, rgba(255,250,210,.75) 0%, rgba(255,230,120,.25) 35%, transparent 68%); }
+.pe-reflet::after { content: ""; position: absolute; inset: 30px 6px; border-radius: 4px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.8), transparent); transform: rotate(-30deg); }
+.pe-reflets.pousse .pe-reflet { opacity: 1; transition: opacity 4s ease-in; animation: pe-reflet 3.5s ease-in-out infinite; }
+@keyframes pe-reflet { 0%, 100% { transform: scale(.85); } 50% { transform: scale(1.12); } }
+/* 🐞 Idée 4 : coccinelle qui marche sur le haut d'une carte (posée dans le parent de .carte-accueil, qui est en position relative) */
+.pe-coccinelle { position: absolute; top: -9px; left: 10px; z-index: 16; pointer-events: none; animation: pe-cocci 14s linear both; }
+.pe-coccinelle svg { display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+.pe-coccinelle .pe-pattes { animation: pe-pattes .25s steps(2) infinite; }
+@keyframes pe-cocci { 0% { transform: translateX(0); opacity: 0; } 4% { opacity: 1; } 45% { transform: translateX(calc(var(--pe-w) * .5)); } 52% { transform: translateX(calc(var(--pe-w) * .5)) rotate(-8deg); } 96% { opacity: 1; } 100% { transform: translateX(var(--pe-w)); opacity: 0; } }
+@keyframes pe-pattes { to { transform: translateY(-.6px); } }
+/* 🏰 Idée 5 : château de sable, il apparaît en douceur, drapeau qui flotte */
+.pe-chateau { animation: pe-chateau-in 1.2s ease-out both; filter: drop-shadow(0 1px 1px rgba(120,80,20,.25)); }
+@keyframes pe-chateau-in { from { transform: translateY(8px) scale(.9); opacity: 0; } }
+.pe-drapeau { transform-box: fill-box; transform-origin: 0 50%; animation: pe-drapeau 1.6s ease-in-out infinite; }
+@keyframes pe-drapeau { 50% { transform: scaleX(.7) skewY(6deg); } }
+/* 🌧️🌈 Averse et arc-en-ciel (2026-11-04) */
+.pe-ciel-gris { opacity: 0; transition: opacity 3s ease; background: linear-gradient(180deg, rgba(110,125,150,.28), rgba(140,150,170,.12) 60%, transparent); }
+.pe-ciel-gris.actif { opacity: 1; }
+.pe-arc { transform: translateX(-50%) scale(.96); opacity: 0; transition: opacity 3s ease, transform 3s ease; filter: blur(.4px); }
+.pe-arc.actif { opacity: .55; transform: translateX(-50%) scale(1); }
+html.dark .pe-arc.actif { opacity: .35; }

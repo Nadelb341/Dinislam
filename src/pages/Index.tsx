@@ -36,6 +36,7 @@ import { imageDeCarteHiver } from '@/components/saisons/dessinsHiver';
 import { imageDeCarteClair } from '@/components/saisons/dessinsPrintempsEte';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
+const MeteoSaison = lazy(() => import('@/components/saisons/MeteoSaison').then((m) => ({ default: m.MeteoSaison })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
 
 /**
@@ -468,6 +469,11 @@ const handleModuleClick = (mod) => {
           {clair && (
             <SilentBoundary name="Décor de saison (printemps / été)">
               <Suspense fallback={null}><DecorClair saison={clair} r={reglagesSaison} soir={soir} matin={matin} userId={user?.id ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
+          {saison && (
+            <SilentBoundary name="Pluie et arc-en-ciel">
+              <Suspense fallback={null}><MeteoSaison saison={saison} r={reglagesSaison} soir={soir} ville={prayerCity} /></Suspense>
             </SilentBoundary>
           )}
           {/* Notification Permission Banner */}

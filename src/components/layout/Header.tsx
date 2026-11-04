@@ -96,11 +96,12 @@ const Header = ({
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary via-primary to-royal-dark shadow-royal safe-top">
-        <div className="flex items-center justify-between h-14 px-4">
-          <div className="w-10" />
+        {/* 2026-11-04 : 9 icônes de 40 px ne tenaient pas sur un iPhone (la maison sortait de l'écran) → 36 px et sans marge sur téléphone */}
+        <div className="flex items-center justify-between h-14 px-1 sm:px-4">
+          <div className="hidden sm:block w-10" />
           <div className="flex-1" />
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0 sm:gap-1 [&>button]:h-9 [&>button]:w-9 sm:[&>button]:h-10 sm:[&>button]:w-10">
             <UserSettingsDialog />
             <AccountSwitcher />
             <Button variant="ghost" size="icon" onClick={handleOpenMessaging} className="text-primary-foreground hover:bg-primary-foreground/10 relative">

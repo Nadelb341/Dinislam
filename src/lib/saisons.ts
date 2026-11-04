@@ -60,13 +60,68 @@ export interface ReglagesClair {
   /** prairie fleurie (printemps) / plage (été), en bas */
   bas: boolean; animal: boolean; plongeon: boolean; motDuJour: boolean;
   lucioles: boolean; cielSoir: boolean; rosee: boolean;
-  images: boolean; couleurs: boolean; ventDefile: boolean; pluieValidation: boolean; rare: boolean; titre: boolean;
+  images: boolean; couleurs: boolean; ventDefile: boolean; pluieValidation: boolean; rare: boolean;
+  /** Ancien réglage « objet sur le logo » (remplacé le 2026-11-04 par `logo` dans ReglagesSaisons, gardé pour les anciennes données) */
+  titre: boolean;
+  /** Idée 2 (2026-11-04) : 1 minute sans toucher → petites fleurs qui poussent dans les coins (printemps) / reflets de soleil (été) */
+  repos: boolean;
+  /** Idée 4 : une coccinelle se promène sur le bord d'une carte de temps en temps (printemps) */
+  coccinelle: boolean;
+  /** Idée 5 : château de sable que le crabe construit petit à petit pendant la semaine (été) */
+  chateau: boolean;
 }
 export const CLAIR_DEFAUT: ReglagesClair = {
   volants: true, tombants: true, devantDerriere: true, attraper: true, son: true, messageSemaine: true,
   soleil: true, nuages: true, lune: true, decor: true, transparente: true,
   bas: true, animal: true, plongeon: true, motDuJour: true, lucioles: true, cielSoir: true, rosee: true,
   images: true, couleurs: true, ventDefile: true, pluieValidation: true, rare: true, titre: true,
+  repos: true, coccinelle: true, chateau: true,
+};
+
+/**
+ * 🌧️🌈 Averse puis arc-en-ciel (idée 1, demande de Nadia du 2026-11-04, pour les 4 saisons).
+ * - « parfois » : une petite averse de temps en temps (fréquence réglable), suivie d'un arc-en-ciel derrière le titre ;
+ * - « periode » : il pleut en continu entre deux dates (ex. une semaine pluvieuse d'automne) ;
+ * - « meteo » : il pleut dans l'appli quand il pleut VRAIMENT dans la ville des horaires de prière (Open-Meteo, sans clé),
+ *   l'arc-en-ciel apparaît quand la pluie s'arrête et qu'il fait jour.
+ */
+export type ModeMeteo = 'parfois' | 'periode' | 'meteo';
+export interface ReglagesMeteo {
+  averse: boolean; arcEnCiel: boolean; mode: ModeMeteo;
+  /** 1 rarement (≈ toutes les 30 min) · 2 de temps en temps (≈ 15 min) · 3 souvent (≈ 6 min) */
+  frequence: number;
+  /** 1 petite bruine · 2 averse · 3 grosse pluie */
+  intensite: number;
+  /** durée d'une averse « parfois » en secondes (15 à 90) */
+  duree: number;
+  /** période de pluie continue (AAAA-MM-JJ) */
+  du: string; au: string;
+  /** l'arc-en-ciel reste combien de secondes (10 à 60) */
+  dureeArc: number;
+  /** Hiver : tempête de flocons au lieu de la pluie */
+  neige: boolean;
+  /** Nuages un peu plus gris pendant l'averse */
+  ciel: boolean;
+}
+const METEO_BASE: ReglagesMeteo = { averse: true, arcEnCiel: true, mode: 'parfois', frequence: 1, intensite: 2, duree: 35, du: '', au: '', dureeArc: 25, neige: false, ciel: true };
+export const METEO_DEFAUT: Record<Saison, ReglagesMeteo> = {
+  printemps: METEO_BASE, automne: METEO_BASE, hiver: METEO_BASE,
+  // L'été : pas demandé par Nadia, prêt mais éteint
+  ete: { ...METEO_BASE, averse: false },
+};
+
+/**
+ * 🌼 Petit objet en haut à droite du logo (demande de Nadia du 2026-11-04) : pour chaque saison, on coche un ou plusieurs
+ * objets ; s'il y en a plusieurs, ils ALTERNENT au rythme choisi (à chaque connexion, chaque jour, chaque semaine, chaque mois).
+ * Aucun objet coché = rien sur le logo. Les dessins sont dans `src/components/saisons/objetsLogo.ts`.
+ */
+export type RythmeLogo = 'connexion' | 'jour' | 'semaine' | 'mois';
+export interface ReglagesLogo { objets: string[]; rythme: RythmeLogo }
+export const LOGO_DEFAUT: Record<Saison, ReglagesLogo> = {
+  printemps: { objets: ['marguerite'], rythme: 'jour' },
+  ete: { objets: ['lunettes'], rythme: 'jour' },
+  automne: { objets: ['erable'], rythme: 'jour' },
+  hiver: { objets: ['flocon'], rythme: 'jour' },
 };
 
 export interface ReglagesSaisons {
@@ -93,6 +148,8 @@ export interface ReglagesSaisons {
   hiver: ReglagesHiver;
   printemps: ReglagesClair;
   ete: ReglagesClair;
+  meteo: Record<Saison, ReglagesMeteo>;
+  logo: Record<Saison, ReglagesLogo>;
 }
 
 export const AUTOMNE_DEFAUT: ReglagesAutomne = {
@@ -107,11 +164,24 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 export const SAISONS_DEFAUT: ReglagesSaisons = {
   neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
   quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT,
+  meteo: METEO_DEFAUT, logo: LOGO_DEFAUT,
 };
+
+const TOUTES: Saison[] = ['hiver', 'printemps', 'ete', 'automne'];
+function fusionParSaison<T extends object>(defaut: Record<Saison, T>, v: Partial<Record<Saison, Partial<T>>> | undefined): Record<Saison, T> {
+  return Object.fromEntries(TOUTES.map((s) => [s, { ...defaut[s], ...(v?.[s] ?? {}) }])) as Record<Saison, T>;
+}
 
 export function fusionner(v: Partial<ReglagesSaisons> | null | undefined): ReglagesSaisons {
   return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) },
-    printemps: { ...CLAIR_DEFAUT, ...(v?.printemps ?? {}) }, ete: { ...CLAIR_DEFAUT, ...(v?.ete ?? {}) } };
+    printemps: { ...CLAIR_DEFAUT, ...(v?.printemps ?? {}) }, ete: { ...CLAIR_DEFAUT, ...(v?.ete ?? {}) },
+    meteo: fusionParSaison(METEO_DEFAUT, v?.meteo),
+    // Ancien réglage : si la marguerite / les lunettes avaient été décochées, on garde « rien sur le logo »
+    logo: fusionParSaison(LOGO_DEFAUT, v?.logo ?? {
+      ...(v?.printemps?.titre === false ? { printemps: { objets: [] } } : {}),
+      ...(v?.ete?.titre === false ? { ete: { objets: [] } } : {}),
+    }),
+  };
 }
 
 /** La saison d'une date (mois 0 = janvier) */
@@ -183,3 +253,11 @@ export function lundiDeLaSemaine(d = new Date()): string {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 }
 
+
+/** 🌧️ Admin : « ▶️ Essayer maintenant » l'averse sur CE téléphone (marche aussi si l'accueil n'est pas encore ouvert : il regarde au démarrage) */
+export const EVT_ESSAI_AVERSE = 'dinislam:averse-essai';
+export const CLE_ESSAI_AVERSE = 'dinislam_averse_essai';
+export function essayerAverse() {
+  try { localStorage.setItem(CLE_ESSAI_AVERSE, String(Date.now())); } catch { /* */ }
+  window.dispatchEvent(new Event(EVT_ESSAI_AVERSE));
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import type { ReglagesSaisons } from '@/lib/saisons';
@@ -69,6 +69,39 @@ function dessinerAbeille(ctx: CanvasRenderingContext2D, s: number, battement: nu
   ctx.fillStyle = '#3a2a20'; ctx.fillRect(-s * 0.18, -s * 0.36, s * 0.13, s * 0.72); ctx.fillRect(s * 0.1, -s * 0.36, s * 0.13, s * 0.72);
   ctx.beginPath(); ctx.arc(s * 0.4, -s * 0.06, s * 0.07, 0, Math.PI * 2); ctx.fill();
 }
+/** 🌸 Idée 2 : fleurs qui poussent dans les 4 coins après 1 minute sans toucher */
+const fleurCoin = (p: string, c: string) => `<svg viewBox="0 0 24 24"><path d="M12 24v-9" stroke="#4f9a2f" stroke-width="1.6"/><path d="M12 20c-4-1-6-4-5-6 3 0 5 2 5 6z" fill="#6cbf3f"/><g fill="${p}" stroke="${c}" stroke-width=".5"><circle cx="12" cy="5" r="3.4"/><circle cx="16.5" cy="8.5" r="3.4"/><circle cx="15" cy="13.5" r="3.4"/><circle cx="9" cy="13.5" r="3.4"/><circle cx="7.5" cy="8.5" r="3.4"/></g><circle cx="12" cy="9.6" r="2.6" fill="#f7c22e"/></svg>`;
+const COINS_FLEURS: { pos: CSSProperties; t: number; d: number; svg: string }[] = [
+  { pos: { left: 4, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 74px)' }, t: 30, d: 0, svg: fleurCoin('#ffd1dc', '#e891a8') },
+  { pos: { left: 30, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }, t: 22, d: 1.2, svg: fleurCoin('#fff', '#d9d2c0') },
+  { pos: { left: 6, top: 70 }, t: 24, d: 2, svg: fleurCoin('#fff4c2', '#e0c25a') },
+  { pos: { right: 6, top: 76 }, t: 26, d: 0.6, svg: fleurCoin('#d9cdf7', '#9b7fe0') },
+  { pos: { right: 34, top: 70 }, t: 20, d: 2.6, svg: fleurCoin('#ffd1dc', '#e891a8') },
+  { pos: { left: 56, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 70px)' }, t: 18, d: 3.2, svg: fleurCoin('#fff4c2', '#e0c25a') },
+];
+
+/** 🐞 Idée 4 : la coccinelle qui se promène sur le haut d'une carte */
+const COCCINELLE_SVG = '<svg viewBox="0 0 24 20" width="20" height="17"><g class="pe-pattes" stroke="#222" stroke-width="1.2" stroke-linecap="round"><path d="M6 12l-4 2M7 15l-3 4M12 16v3M17 15l3 4M18 12l4 2"/></g><circle cx="20" cy="9" r="3.4" fill="#222"/><ellipse cx="11" cy="10" rx="8.5" ry="7" fill="#e53935" stroke="#9c1c1c" stroke-width=".8"/><path d="M19 10H3" stroke="#222" stroke-width="1"/><g fill="#222"><circle cx="8" cy="6.5" r="1.5"/><circle cx="14" cy="6.5" r="1.5"/><circle cx="7.5" cy="13" r="1.4"/><circle cx="14.5" cy="13" r="1.4"/></g><circle cx="21.2" cy="8" r=".7" fill="#fff"/></svg>';
+
+/**
+ * 🏰 Idée 5 : le château de sable que le crabe construit pendant la semaine (lundi = un petit tas, dimanche = le château fini
+ * avec son drapeau). viewBox 0 0 60 46, posé sur le sable.
+ */
+function chateauSable(etape: number): string {
+  const sable = '#e9c27a', ombre = '#c99a4c', clair = '#f6dca2';
+  const tour = (x: number, w: number, h: number) => `<rect x="${x}" y="${44 - h}" width="${w}" height="${h}" fill="${sable}" stroke="${ombre}" stroke-width=".8"/><path d="M${x} ${44 - h}h${w}v-3h-${w / 4}v2h-${w / 4}v-2h-${w / 4}v2h-${w / 4}z" fill="${clair}" stroke="${ombre}" stroke-width=".6"/>`;
+  let g = `<ellipse cx="30" cy="44" rx="28" ry="3" fill="${ombre}" opacity=".35"/>`;
+  if (etape === 1) return g + `<path d="M14 44c3-10 29-10 32 0z" fill="${sable}" stroke="${ombre}" stroke-width=".8"/>`;
+  g += `<path d="M8 44c2-6 42-6 44 0z" fill="${sable}" stroke="${ombre}" stroke-width=".8"/>`;
+  if (etape >= 4) g += `<rect x="14" y="30" width="32" height="14" fill="${sable}" stroke="${ombre}" stroke-width=".8"/>`;
+  if (etape >= 2) g += tour(24, 12, etape >= 5 ? 30 : 22);
+  if (etape >= 3) g += tour(8, 9, 18) + tour(43, 9, 18);
+  if (etape >= 6) g += `<path d="M27 44v-7a3 3 0 0 1 6 0v7z" fill="${ombre}"/><rect x="10.5" y="31" width="3" height="3" fill="${ombre}"/><rect x="46" y="31" width="3" height="3" fill="${ombre}"/><rect x="28.5" y="${etape >= 5 ? 19 : 26}" width="3" height="4" fill="${ombre}"/>`;
+  if (etape >= 7) g += `<path d="M30 ${etape >= 5 ? 11 : 19}V2" stroke="#7a5a30" stroke-width="1"/><path class="pe-drapeau" d="M30 2l9 3-9 3z" fill="#e53935"/>`;
+  g += `<g fill="#fff" opacity=".5"><circle cx="20" cy="40" r=".7"/><circle cx="38" cy="38" r=".7"/><circle cx="48" cy="42" r=".6"/></g>`;
+  return g;
+}
+
 const FEUILLE = new Path2D('M0 -10C6 -6 7 4 0 10C-7 4 -6 -6 0 -10z');
 function dessinerBulle(ctx: CanvasRenderingContext2D, r: number, dore: boolean) {
   const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
@@ -133,13 +166,49 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
 
   useEffect(() => { preparerSon(); }, []);
 
-  // Classes sur <html> : couleurs du soir, petite décoration du titre
+  // Classe sur <html> : couleurs du soir (l'objet du logo est géré par TitreAccueil depuis le 2026-11-04)
   useEffect(() => {
     const html = document.documentElement;
-    const classes: [string, boolean][] = [['saison-soir', soir], [`${saison}-titre`, c.titre]];
-    classes.forEach(([k, v]) => html.classList.toggle(k, v));
-    return () => classes.forEach(([k]) => html.classList.remove(k));
-  }, [soir, saison, c.titre]);
+    html.classList.toggle('saison-soir', soir);
+    return () => html.classList.remove('saison-soir');
+  }, [soir]);
+
+  // Idée 2 (2026-11-04) : 1 minute sans toucher → petites fleurs qui poussent dans les coins (printemps) / reflets de soleil (été) ; un toucher les efface
+  const [aurepos, setAuRepos] = useState(false);
+  useEffect(() => {
+    if (!c.repos || calme) return;
+    let t = 0;
+    const reveil = () => { setAuRepos(false); clearTimeout(t); t = window.setTimeout(() => setAuRepos(true), 60_000); };
+    const evts = ['pointerdown', 'scroll', 'keydown'] as const;
+    evts.forEach((e) => window.addEventListener(e, reveil, { passive: true }));
+    reveil();
+    return () => { clearTimeout(t); evts.forEach((e) => window.removeEventListener(e, reveil)); };
+  }, [c.repos, calme]);
+
+  // Idée 4 : une coccinelle se promène sur le bord du haut d'une carte, de temps en temps (printemps)
+  useEffect(() => {
+    if (ete || !c.coccinelle || calme) return;
+    let t = 0;
+    const promener = () => {
+      const cartes = [...document.querySelectorAll<HTMLElement>('.carte-accueil')].filter((el) => {
+        const b = el.getBoundingClientRect(); return b.top > 60 && b.bottom < window.innerHeight - 80;
+      });
+      const carte = cartes[Math.floor(Math.random() * cartes.length)];
+      const parent = carte?.parentElement;
+      if (parent && !parent.querySelector('.pe-coccinelle')) {
+        const el = document.createElement('span');
+        el.className = 'pe-coccinelle';
+        el.setAttribute('aria-hidden', 'true');
+        el.innerHTML = COCCINELLE_SVG;
+        el.style.setProperty('--pe-w', `${Math.max(60, carte.offsetWidth - 22)}px`);
+        parent.appendChild(el);
+        window.setTimeout(() => el.remove(), 15_000);
+      }
+      t = window.setTimeout(promener, 35_000 + Math.random() * 40_000);
+    };
+    t = window.setTimeout(promener, 12_000);
+    return () => { clearTimeout(t); document.querySelectorAll('.pe-coccinelle').forEach((e) => e.remove()); };
+  }, [ete, c.coccinelle, calme]);
 
   // Décor de droite presque transparent pendant le défilement
   useEffect(() => {
@@ -384,6 +453,8 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
     return () => { cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', demarrer); };
   }, [c.bas, c.animal, c.plongeon, calme, animal, ete, HB]);
 
+  // Lundi = 1 … dimanche = 7 : une étape de plus chaque jour
+  const etapeChateau = ((new Date().getDay() + 6) % 7) + 1;
   const reposer = (oui: boolean) => { setBulle(false); if (oui) { setRepos(true); try { sessionStorage.setItem(cleRepos, '1'); } catch { /* */ } } };
   const largeurSoleil = [0, 76, 92, 110][r.tailleArbre] ?? 92;
   const nomAnimal = ANIMAUX[animal].nom;
@@ -428,6 +499,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
             <>
               <svg aria-hidden width={W} height={HB} viewBox={`0 0 ${W} ${HB}`} className="fixed bottom-0 left-0 z-[27]" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 dangerouslySetInnerHTML={{ __html: bande.fond }} />
+              {ete && c.chateau && (
+                <svg aria-hidden viewBox="0 0 60 46" className="pe-chateau fixed z-[28]" key={etapeChateau}
+                  style={{ left: Math.round(W * 0.2), bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', width: 54 }}
+                  dangerouslySetInnerHTML={{ __html: chateauSable(etapeChateau) }} />
+              )}
               {c.animal && (
                 <svg ref={animalRef} viewBox="0 0 40 34" role="button" tabIndex={0} aria-label={`${nomAnimal} : touche-le pour qu'il se repose`}
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem(cleRepos); } catch { /* */ } } else setBulle(true); }}
@@ -473,6 +549,13 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
               <p className="text-xs">{mot[1]}</p>
               <button type="button" aria-label="Fermer" onClick={() => setMot(null)}
                 className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-xs font-extrabold text-white">✕</button>
+            </div>
+          )}
+          {c.repos && !calme && (
+            <div aria-hidden className={`fixed inset-0 z-[45] ${ete ? 'pe-reflets' : 'pe-coins'} ${aurepos ? 'pousse' : ''}`}>
+              {ete
+                ? [[8, 14], [78, 9], [60, 28], [18, 52]].map(([l, t], i) => <span key={i} className="pe-reflet" style={{ left: `${l}%`, top: `${t}%`, animationDelay: `${-i * 0.7}s` }} />)
+                : COINS_FLEURS.map((f, i) => <span key={i} className="pe-coin-fleur" style={{ ...f.pos, width: f.t, height: f.t, transitionDelay: `${f.d}s` }} dangerouslySetInnerHTML={{ __html: f.svg }} />)}
             </div>
           )}
           {!calme && <canvas ref={avantRef} className="fixed inset-0 z-40 h-full w-full" />}

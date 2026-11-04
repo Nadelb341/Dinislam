@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { POLICES, TITRE_DEFAUT, estRamadan, useReglagesTitre, type ReglagesTitre } from '@/lib/apparence';
 import { useSaisonActive } from '@/lib/saisons';
+import { objetDuMoment, type ObjetLogo } from '@/components/saisons/objetsLogo';
 
 /**
  * 🌠 Pluie d'étoiles PERMANENTE (2026-10-30, modèle choisi par Nadia) : de petits points de lumière dorés qui scintillent
@@ -32,8 +33,10 @@ const SCINTILLES = [{ l: 4, t: 18 }, { l: 92, t: 22 }, { l: 18, t: 70 }, { l: 80
  * (proposition 8), la pluie d'étoiles permanente, puis « Assalamou Alaykoum », « Bienvenue » (en bleu du logo) et le Bismillah.
  * Tout vient des réglages du bouclier › 🔧 Apparence appli › Le titre. `rejouer` relance la pluie dans l'aperçu.
  */
-export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
+export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = null }: {
   r: ReglagesTitre; nom: string | null; apercu?: boolean; rejouer?: number; forcerRamadan?: boolean;
+  /** 🌼 Petit objet de la saison posé en haut à droite du logo (2026-11-04) */
+  objetLogo?: ObjetLogo | null;
 }) {
   const ramadan = r.ramadan && (forcerRamadan ?? estRamadan());
   const choisie = ramadan ? r.ramadanTexte : r.couleurTexte;
@@ -66,7 +69,13 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan }: {
 
       {r.icone && (
         <div className="flex justify-center mb-2">
-          <span className="titre-logo relative inline-block"><img src="/icon-192.png" alt="" width={56} height={56} className={`h-14 w-14 rounded-2xl shadow-md ${r.brillant ? 'titre-croissant-brille' : ''}`} /></span>
+          <span className="titre-logo relative inline-block"><img src="/icon-192.png" alt="" width={56} height={56} className={`h-14 w-14 rounded-2xl shadow-md ${r.brillant ? 'titre-croissant-brille' : ''}`} />
+            {objetLogo && (
+              <svg aria-hidden viewBox="0 0 24 24" className="logo-objet pointer-events-none absolute overflow-visible"
+                style={{ width: objetLogo.t, height: objetLogo.t, right: -objetLogo.t * 0.38, top: -objetLogo.t * 0.38, ['--lo-rot' as string]: `${objetLogo.rot}deg` }}
+                dangerouslySetInnerHTML={{ __html: objetLogo.svg }} />
+            )}
+          </span>
         </div>
       )}
 
@@ -93,9 +102,11 @@ export function TitreAccueil({ nom, children }: { nom: string | null; children?:
   // 🍂 Pendant une saison décorée, pas de pluie d'étoiles (déjà les feuilles / flocons qui tombent), sauf si Nadia la remet
   const { saison, r: rs } = useSaisonActive();
   const titre = saison && !rs.pluieEtoiles ? { ...r, pluie: false } : r;
+  const logo = saison ? rs.logo[saison] : null;
+  const objetLogo = useMemo(() => (saison && logo ? objetDuMoment(saison, logo.objets, logo.rythme) : null), [saison, logo]);
   return (
     <div>
-      <TitreAppli r={titre} nom={nom} />
+      <TitreAppli r={titre} nom={nom} objetLogo={objetLogo} />
       {children}
     </div>
   );
