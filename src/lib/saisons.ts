@@ -25,6 +25,8 @@ export interface ReglagesAutomne {
   images: boolean; couleurs: boolean;
   /** Tapis de feuilles en bas (à côté de la cheminée) + écureuil / hérisson qui alternent à chaque connexion (2026-11-04) */
   tapis: boolean; personnage: boolean; plongeon: boolean;
+  /** Feuilles soufflées quand on fait défiler, pluie de glands/pommes de pin/feuilles à chaque validation, feuille dorée rare (2026-11-04) */
+  ventDefile: boolean; pluieValidation: boolean; feuilleDoree: boolean;
 }
 
 export interface ReglagesSaisons {
@@ -39,6 +41,8 @@ export interface ReglagesSaisons {
   themeSombre: boolean;
   /** Pluie d'étoiles du titre pendant une saison décorée (non par défaut : « ça fait chargé avec les feuilles », Nadia 2026-11-04) */
   pluieEtoiles: boolean;
+  /** Animer même si le téléphone a « Réduire les animations » (Nadia 2026-11-04 : tout était figé sur son iPhone) */
+  animerToujours: boolean;
   /** Feuilles : 5 à 40 (18 = « Normal ») */
   quantite: number;
   /** 1 (très lente) à 5 (très rapide) */
@@ -54,11 +58,11 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
   vent: true, eclate: true, son: true, messageSemaine: true,
   cheminee: true, petitFeuJour: true, grandFeuSoir: true, transparente: true,
   bougies: true, feuillesPoutre: true, courge: true, buches: true, braises: true,
-  images: true, couleurs: true, tapis: true, personnage: true, plongeon: true,
+  images: true, couleurs: true, tapis: true, personnage: true, plongeon: true, ventDefile: true, pluieValidation: true, feuilleDoree: true,
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
-  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false,
+  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
   quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT,
 };
 

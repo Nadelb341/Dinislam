@@ -3,6 +3,8 @@ import confetti from 'canvas-confetti';
 // Fonctions définies une seule fois (hors du composant) : elles restent identiques d'un rendu à l'autre,
 // ce qui évite par exemple de recréer la connexion en direct de la page Sourates à chaque rendu.
 const fireConfetti = () => {
+  // 🌰 Décor d'automne : pluie de glands, pommes de pin et feuilles en même temps (DecorAutomne écoute cet événement)
+  try { window.dispatchEvent(new Event('dinislam:validation')); } catch { /* */ }
   // Fire from multiple angles for a more celebratory effect
   const count = 200;
   const defaults = {

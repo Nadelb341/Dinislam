@@ -31,6 +31,9 @@ const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label
     { k: 'erable', label: '🍂 Érable' }, { k: 'chene', label: '🌿 Chêne' }, { k: 'ginkgo', label: '💛 Ginkgo' }, { k: 'simple', label: '🍃 Feuille simple' },
     { k: 'vent', label: '💨 Coups de vent' }, { k: 'eclate', label: '💥 Feuille qui éclate quand on la touche' }, { k: 'son', label: '🔊 Petit bruit de feuille' },
     { k: 'messageSemaine', label: '💬 Message « Attrape les feuilles ! » chaque semaine' },
+    { k: 'ventDefile', label: '🌬️ Feuilles soufflées quand on fait défiler' },
+    { k: 'pluieValidation', label: '🌰 Pluie de glands, pommes de pin et feuilles à chaque validation' },
+    { k: 'feuilleDoree', label: '🌟 Feuille dorée rare à attraper' },
   ] },
   { titre: 'La cheminée (en bas à droite)', items: [
     { k: 'cheminee', label: '🔥 Cheminée' }, { k: 'petitFeuJour', label: '☀️ Petit feu du Fajr au Maghrib' }, { k: 'grandFeuSoir', label: '🌙 Grand feu du Maghrib au Fajr' },
@@ -88,13 +91,14 @@ export default function DecorationsSaisons() {
 
   const maj = <K extends keyof ReglagesSaisons>(k: K, v: ReglagesSaisons[K]) => setR((x) => ({ ...x, [k]: v }));
   const majA = (k: keyof ReglagesAutomne, v: boolean) => setR((x) => ({ ...x, automne: { ...x.automne, [k]: v } }));
-  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles', label: string, aide?: string) => (
+  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles' | 'animerToujours', label: string, aide?: string) => (
     <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2 cursor-pointer">
       <span className="min-w-0"><span className="block text-sm font-bold">{label}</span>{aide && <span className="block text-xs text-muted-foreground">{aide}</span>}</span>
       <Switch checked={r[k]} onCheckedChange={(v) => maj(k, v)} />
     </label>
   );
   const enCours = saisonDuJour();
+  const reduitAnimations = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div className="space-y-4">
@@ -124,6 +128,7 @@ export default function DecorationsSaisons() {
           {ligne('elevesPeuventCouper', 'Les élèves peuvent couper les décorations pour eux', 'Dans leurs ⚙️ Paramètres')}
           {ligne('ramadanDabord', 'Pendant le Ramadan, pas de décor de saison', 'Les couleurs du Ramadan passent avant')}
           {ligne('themeSombre', 'Décorer aussi le thème sombre', 'Décoché au départ')}
+          {ligne('animerToujours', '📱 Animer même si le téléphone demande « Réduire les animations »', reduitAnimations ? "⚠️ CE téléphone a « Réduire les animations » activé (Réglages › Accessibilité › Mouvement) : décoché, tout serait figé ici" : "Ce téléphone ne demande pas moins d'animations")}
           {ligne('pluieEtoiles', "Garder la pluie d'étoiles du titre", "Décoché : pendant une saison, il y a déjà les feuilles ou les flocons qui tombent")}
           <label className="block text-sm font-semibold">Quantité de feuilles : <b>{r.quantite <= 12 ? 'Très discret' : r.quantite <= 24 ? 'Normal' : 'Festif'}</b> ({r.quantite})
             <input type="range" min={5} max={40} value={r.quantite} onChange={(e) => maj('quantite', Number(e.target.value))} className="w-full accent-[#b5562b]" />

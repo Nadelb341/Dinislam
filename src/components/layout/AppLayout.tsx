@@ -27,6 +27,8 @@ function useCouleursSaison() {
     const html = document.documentElement;
     html.classList.toggle('saison-automne', actif);
   }, [actif]);
+  // 📱 Les animations restent vivantes même si le téléphone a « Réduire les animations » (réglable dans la carte admin)
+  useEffect(() => { document.documentElement.classList.toggle('anime-toujours', r.animerToujours); }, [r.animerToujours]);
 }
 
 interface AppLayoutProps {

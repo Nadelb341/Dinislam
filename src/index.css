@@ -416,7 +416,7 @@
 /* 🎁 Trésor qui s'ouvre (2026-10-26) */
 @keyframes treasure-pop { 0% { transform: scale(.6) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.08) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
 .treasure-pop { animation: treasure-pop .55s cubic-bezier(.2,.9,.3,1.2) both; }
-@media (prefers-reduced-motion: reduce) { .gem-sparkle, .gem-shine, .treasure-pop { animation: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .gem-sparkle, html:not(.anime-toujours) .gem-shine, html:not(.anime-toujours) .treasure-pop { animation: none; } }
 
 /* 📓 Papier du cahier de texte de l'élève (2026-10-26 ; traits retirés à la demande de Nadia) */
 .cahier-papier { background: hsl(var(--card)); border-left: 3px solid hsl(0 80% 78%); }
@@ -425,14 +425,14 @@
 /* 📖 À l'heure du cours, la page du cahier se tourne une seule fois (rotation des devoirs, idée 9, 2026-10-27) */
 @keyframes page-tourne { 0% { transform: perspective(900px) rotateY(-75deg); opacity: .2; } 100% { transform: perspective(900px) rotateY(0); opacity: 1; } }
 .page-tourne { animation: page-tourne .8s cubic-bezier(.2,.7,.3,1) both; transform-origin: left center; }
-@media (prefers-reduced-motion: reduce) { .page-tourne { animation: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .page-tourne { animation: none; } }
 
 /* 🎁 Trésor ouvert : l'or scintille (2026-10-26) */
 @keyframes tresor-scintille { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(45deg); } }
 .tresor-etincelle { animation: tresor-scintille 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes tresor-lueur { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 .tresor-lueur { animation: tresor-lueur 2.2s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .tresor-etincelle, .tresor-lueur { animation: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .tresor-etincelle, html:not(.anime-toujours) .tresor-lueur { animation: none; } }
 
 /* ✨ Titre de l'accueil (2026-10-29, bouclier › Apparence appli) : croissant qui brille, pluie d'étoiles, scintillement, reflet */
 /* Halo doré FIXE autour du logo (2026-10-30 : Nadia ne veut plus qu'il clignote) */
@@ -449,7 +449,7 @@
 .titre-scintille { position: absolute; pointer-events: none; animation: titre-scintille 2.2s ease-in-out infinite; }
 @keyframes titre-reflet { 0% { background-position: 200% 0; } 100% { background-position: -100% 0; } }
 .titre-reflet { background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: titre-reflet 4s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .titre-etoile-tombe, .titre-scintille, .titre-reflet, .titre-point { animation: none; } .titre-etoile-tombe { display: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .titre-etoile-tombe, html:not(.anime-toujours) .titre-scintille, html:not(.anime-toujours) .titre-reflet, html:not(.anime-toujours) .titre-point { animation: none; } html:not(.anime-toujours) .titre-etoile-tombe { display: none; } }
 
 
 /* 📈 Anneaux « Progrès » de l'accueil (2026-11-02, choix de Nadia : 2 + 3 + 5, terminés = 4, tout le temps en douceur) */
@@ -465,7 +465,7 @@
 .prog-fini::after { bottom: -4px; right: -4px; font-size: 8px; animation-delay: 1.3s; }
 @keyframes prog-etoile { 0%, 80% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
 .prog-etoile { display: inline-block; animation: prog-etoile 7s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .prog-hop, .prog-point, .prog-neon, .prog-etoile, .prog-fini::before, .prog-fini::after { animation: none; } .prog-fini::before, .prog-fini::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .prog-hop, html:not(.anime-toujours) .prog-point, html:not(.anime-toujours) .prog-neon, html:not(.anime-toujours) .prog-etoile, html:not(.anime-toujours) .prog-fini::before, html:not(.anime-toujours) .prog-fini::after { animation: none; } html:not(.anime-toujours) .prog-fini::before, html:not(.anime-toujours) .prog-fini::after { display: none; } }
 
 /* 🍂 Décorations de saison (2026-11-03, maquette validée par Nadia) — composants dans src/components/saisons */
 :root.saison-automne:not(.dark) {
@@ -553,8 +553,4 @@
   76%, 100% { opacity: 0; transform: translate(calc(var(--dx) * .7), 12px) rotate(var(--rot)); }
 }
 .saison-sticker { position: absolute; top: -12px; width: 38px; height: 38px; pointer-events: none; z-index: 15; transform: rotate(8deg); filter: drop-shadow(0 1.5px 1px rgba(60, 30, 10, .22)); }
-@media (prefers-reduced-motion: reduce) {
-  .saison-arbre-bouge, .saison-frisson, .saison-oiseau, .saison-aile, .saison-fl, .saison-lueur, .saison-braise, .saison-msg-feuille, .saison-msg-arrive, .saison-msg-part, .saison-perso-marche, .saison-perso-pas, .saison-tas-secoue { animation: none; }
-  .saison-eclat-tas { display: none; }
-  .saison-oiseau { display: none; }
-}
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .saison-arbre-bouge, html:not(.anime-toujours) .saison-frisson, html:not(.anime-toujours) .saison-oiseau, html:not(.anime-toujours) .saison-aile, html:not(.anime-toujours) .saison-fl, html:not(.anime-toujours) .saison-lueur, html:not(.anime-toujours) .saison-braise, html:not(.anime-toujours) .saison-msg-feuille, html:not(.anime-toujours) .saison-msg-arrive, html:not(.anime-toujours) .saison-msg-part, html:not(.anime-toujours) .saison-perso-marche, html:not(.anime-toujours) .saison-perso-pas, html:not(.anime-toujours) .saison-tas-secoue { animation: none; } html:not(.anime-toujours) .saison-eclat-tas { display: none; } html:not(.anime-toujours) .saison-oiseau { display: none; } }
