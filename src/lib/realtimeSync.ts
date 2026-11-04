@@ -73,8 +73,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_content: ['module-content'],
   module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts', 'user-progress'],
   // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
-  module_visits: ['module-visits', 'season-badge'],
-  season_badges: ['season-badge'],
+  module_visits: ['module-visits'],
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin'],
   notification_preferences: ['admin-push-stats'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],

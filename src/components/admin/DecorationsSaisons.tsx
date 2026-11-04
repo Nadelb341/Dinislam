@@ -16,7 +16,6 @@ import {
 } from '@/lib/saisons';
 import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { cn, errorMessage } from '@/lib/utils';
-import { BadgeSaisonAdmin } from '@/components/admin/BadgeSaisonAdmin';
 
 /**
  * 🍂 Bouclier › 🔧 Apparence appli › « Décorations saisons » (2026-11-03, maquette validée par Nadia).
@@ -34,7 +33,7 @@ const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label
     { k: 'messageSemaine', label: '💬 Message « Attrape les feuilles ! » chaque semaine' },
   ] },
   { titre: 'La cheminée (en bas à droite)', items: [
-    { k: 'cheminee', label: '🔥 Cheminée' }, { k: 'petitFeuJour', label: '☀️ Petit feu en journée' }, { k: 'grandFeuSoir', label: '🌙 Grand feu après le Maghrib' },
+    { k: 'cheminee', label: '🔥 Cheminée' }, { k: 'petitFeuJour', label: '☀️ Petit feu du Fajr au Maghrib' }, { k: 'grandFeuSoir', label: '🌙 Grand feu du Maghrib au Fajr' },
     { k: 'transparente', label: '👻 Transparente quand on fait défiler' }, { k: 'bougies', label: '🕯️ Bougies' }, { k: 'feuillesPoutre', label: '🍁 Feuilles sur la poutre' },
     { k: 'courge', label: '🧺 Courge dans son panier' }, { k: 'buches', label: '🪵 Bûches et outils du feu' }, { k: 'braises', label: '✨ Petites braises' },
   ] },
@@ -132,8 +131,6 @@ export default function DecorationsSaisons() {
             <input type="range" min={1} max={3} value={r.tailleArbre} onChange={(e) => maj('tailleArbre', Number(e.target.value))} className="w-full accent-[#b5562b]" />
           </label>
         </section>
-
-        <BadgeSaisonAdmin r={r} maj={maj} />
 
         <div className="grid grid-cols-4 gap-1.5" role="tablist">
           {ORDRE.map((s) => (

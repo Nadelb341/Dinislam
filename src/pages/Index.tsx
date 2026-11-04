@@ -32,7 +32,6 @@ import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
-import { BadgeSaison } from '@/components/saisons/BadgeSaison';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 
 /**
@@ -235,7 +234,7 @@ const Index = () => {
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
 
-  // 🍂 Décor de saison (bouclier › Apparence appli › Décorations saisons). Soir = après le Maghrib (ou avant Sobh)
+  // 🍂 Décor de saison (bouclier › Apparence appli › Décorations saisons). Soir = du Maghrib jusqu'au Fajr ; journée = du Fajr au Maghrib
   const { saison, r: reglagesSaison } = useSaisonActive();
   const automne = saison === 'automne';
   const [maintenant, setMaintenant] = useState(() => Date.now());
@@ -612,11 +611,6 @@ const handleModuleClick = (mod) => {
               });
             return <ProgressionCompacte elements={elements} />;
           })()}
-
-          {/* 🏆 Badge de la saison (élèves), sous la carte Progrès (2026-11-04) */}
-          {saison && reglagesSaison.badge && user && !isAdmin && (
-            <SilentBoundary name="Badge de la saison"><BadgeSaison userId={user.id} required={reglagesSaison.badgeJours} /></SilentBoundary>
-          )}
 
           {/* Module Cards Grid - Dynamic from DB */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
