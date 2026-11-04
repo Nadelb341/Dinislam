@@ -23,6 +23,8 @@ export interface ReglagesAutomne {
   cheminee: boolean; petitFeuJour: boolean; grandFeuSoir: boolean; transparente: boolean;
   bougies: boolean; feuillesPoutre: boolean; courge: boolean; buches: boolean; braises: boolean;
   images: boolean; couleurs: boolean;
+  /** Tapis de feuilles en bas (à côté de la cheminée) + écureuil / hérisson qui alternent à chaque connexion (2026-11-04) */
+  tapis: boolean; personnage: boolean; plongeon: boolean;
 }
 
 export interface ReglagesSaisons {
@@ -52,7 +54,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
   vent: true, eclate: true, son: true, messageSemaine: true,
   cheminee: true, petitFeuJour: true, grandFeuSoir: true, transparente: true,
   bougies: true, feuillesPoutre: true, courge: true, buches: true, braises: true,
-  images: true, couleurs: true,
+  images: true, couleurs: true, tapis: true, personnage: true, plongeon: true,
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {

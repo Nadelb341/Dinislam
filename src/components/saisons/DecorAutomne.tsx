@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
+import { TapisFeuilles } from './TapisFeuilles';
 import { ARBRE_VB, CHEMINEE_VB, ERABLE, dessinerArbre, dessinerCheminee } from './dessinsAutomne';
 
 /**
@@ -59,12 +60,12 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
 
   // Cheminée presque transparente pendant le défilement, pour ne cacher aucune carte
   useEffect(() => {
-    if (!a.cheminee || !a.transparente) return;
+    if ((!a.cheminee && !a.tapis) || !a.transparente) return;
     let t = 0;
     const f = () => { setDefile(true); clearTimeout(t); t = window.setTimeout(() => setDefile(false), 600); };
     window.addEventListener('scroll', f, { passive: true });
     return () => { window.removeEventListener('scroll', f); clearTimeout(t); };
-  }, [a.cheminee, a.transparente]);
+  }, [a.cheminee, a.tapis, a.transparente]);
 
   // Les feuilles qui tombent (2 calques : derrière et devant les cartes)
   useEffect(() => {
@@ -190,6 +191,8 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       </div>
       {createPortal(
         <div aria-hidden className={`saison-decor pointer-events-none ${calme ? 'saison-calme' : ''}`}>
+          {/* 🍂 Tapis de feuilles à gauche de la cheminée (sous elle : la cheminée reste devant) */}
+          <TapisFeuilles a={a} userId={userId} calme={calme} defile={defile} largeurCheminee={a.cheminee ? Math.min(window.innerWidth * 0.3, 112) : 0} />
           {a.cheminee && (
             <svg viewBox={`0 0 ${CHEMINEE_VB.w} ${CHEMINEE_VB.h}`}
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && a.petitFeuJour ? 'saison-feu-jour' : ''}`}

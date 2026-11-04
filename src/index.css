@@ -506,8 +506,55 @@
 .saison-msg-feuille { animation: saison-msg-feuille 3s ease-in-out infinite; }
 .saison-msg-feuille.b { animation-duration: 3.6s; animation-delay: .5s; }
 @keyframes saison-msg-feuille { 0%, 100% { transform: rotate(-14deg) translateY(0); } 50% { transform: rotate(12deg) translateY(4px); } }
+/* 🍂 Tapis de feuilles : écureuil / hérisson qui se promène et plonge dans le tas (cycle de 26 s) */
+.saison-perso-marche { animation: saison-promene var(--cycle, 26s) linear infinite; }
+.saison-perso-marche.plonge { animation-name: saison-plonge; }
+@keyframes saison-promene {
+  0% { transform: translateX(-50px) scaleX(-1); }
+  36% { transform: translateX(calc(var(--tas) - 70px)) scaleX(-1); }
+  60% { transform: translateX(calc(var(--tas) - 70px)) scaleX(-1); }
+  62% { transform: translateX(calc(var(--tas) - 70px)) scaleX(1); }
+  100% { transform: translateX(-50px) scaleX(1); }
+}
+@keyframes saison-plonge {
+  0% { transform: translateX(-50px) translateY(0) scaleX(-1); }
+  31% { transform: translateX(calc(var(--tas) - 48px)) translateY(0) scaleX(-1); }
+  35% { transform: translateX(calc(var(--tas) - 30px)) translateY(-16px) scaleX(-1); }
+  38% { transform: translateX(calc(var(--tas) - 18px)) translateY(34px) scaleX(-1); }
+  58% { transform: translateX(calc(var(--tas) - 18px)) translateY(34px) scaleX(1); }
+  61% { transform: translateX(calc(var(--tas) - 18px)) translateY(-12px) scaleX(1); }
+  64% { transform: translateX(calc(var(--tas) - 24px)) translateY(0) scaleX(1); }
+  100% { transform: translateX(-50px) translateY(0) scaleX(1); }
+}
+.saison-perso-pas { animation: saison-pas .32s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.saison-perso-pas.saute { animation: saison-saut .5s ease-in-out infinite; }
+@keyframes saison-pas { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-2px) rotate(3deg); } }
+@keyframes saison-saut { 0%, 100% { transform: translateY(0) scaleY(.94); } 45% { transform: translateY(-9px) scaleY(1.04); } }
+.saison-tas-secoue { animation: saison-tas var(--cycle, 26s) ease-out infinite; }
+@keyframes saison-tas {
+  0%, 37.5%, 45%, 60.5%, 66%, 100% { transform: none; }
+  39% { transform: scale(1.07, .9); } 42% { transform: scale(.97, 1.05); }
+  62% { transform: scale(1.05, .93); } 64% { transform: scale(.99, 1.02); }
+}
+.saison-eclat-tas { position: absolute; opacity: 0; animation: saison-eclat var(--cycle, 26s) linear infinite; }
+.saison-eclat-tas.ressort { animation-name: saison-eclat-ressort; }
+@keyframes saison-eclat {
+  0%, 37.9% { opacity: 0; transform: translate(0, 0) rotate(0); animation-timing-function: ease-out; }
+  38% { opacity: 1; transform: translate(0, 0) rotate(0); animation-timing-function: ease-out; }
+  43% { opacity: 1; transform: translate(calc(var(--dx) * .6), var(--dy)) rotate(calc(var(--rot) * .5)); animation-timing-function: ease-in; }
+  52% { opacity: 1; transform: translate(var(--dx), 12px) rotate(var(--rot)); }
+  56%, 100% { opacity: 0; transform: translate(var(--dx), 12px) rotate(var(--rot)); }
+}
+@keyframes saison-eclat-ressort {
+  0%, 60.9% { opacity: 0; transform: translate(0, 0) rotate(0); animation-timing-function: ease-out; }
+  61% { opacity: 1; transform: translate(0, 0) rotate(0); animation-timing-function: ease-out; }
+  65% { opacity: 1; transform: translate(calc(var(--dx) * .4), calc(var(--dy) * .6)) rotate(calc(var(--rot) * .5)); animation-timing-function: ease-in; }
+  72% { opacity: 1; transform: translate(calc(var(--dx) * .7), 12px) rotate(var(--rot)); }
+  76%, 100% { opacity: 0; transform: translate(calc(var(--dx) * .7), 12px) rotate(var(--rot)); }
+}
 .saison-sticker { position: absolute; top: -12px; width: 38px; height: 38px; pointer-events: none; z-index: 15; transform: rotate(8deg); filter: drop-shadow(0 1.5px 1px rgba(60, 30, 10, .22)); }
 @media (prefers-reduced-motion: reduce) {
-  .saison-arbre-bouge, .saison-frisson, .saison-oiseau, .saison-aile, .saison-fl, .saison-lueur, .saison-braise, .saison-msg-feuille, .saison-msg-arrive, .saison-msg-part { animation: none; }
+  .saison-arbre-bouge, .saison-frisson, .saison-oiseau, .saison-aile, .saison-fl, .saison-lueur, .saison-braise, .saison-msg-feuille, .saison-msg-arrive, .saison-msg-part, .saison-perso-marche, .saison-perso-pas, .saison-tas-secoue { animation: none; }
+  .saison-eclat-tas { display: none; }
   .saison-oiseau { display: none; }
 }

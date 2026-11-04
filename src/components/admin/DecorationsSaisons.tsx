@@ -37,6 +37,10 @@ const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label
     { k: 'transparente', label: '👻 Transparente quand on fait défiler' }, { k: 'bougies', label: '🕯️ Bougies' }, { k: 'feuillesPoutre', label: '🍁 Feuilles sur la poutre' },
     { k: 'courge', label: '🧺 Courge dans son panier' }, { k: 'buches', label: '🪵 Bûches et outils du feu' }, { k: 'braises', label: '✨ Petites braises' },
   ] },
+  { titre: 'Le tapis de feuilles (en bas)', items: [
+    { k: 'tapis', label: '🍂 Tapis de feuilles' }, { k: 'personnage', label: '🐿️ Écureuil ou 🦔 hérisson (ils alternent à chaque connexion)' },
+    { k: 'plongeon', label: '💥 Il plonge dans le tas : les feuilles sautent' },
+  ] },
   { titre: 'Les cartes et les couleurs', items: [
     { k: 'images', label: '🐿️ Images en haut à droite des cartes' }, { k: 'couleurs', label: '🎨 Couleurs beige et brun' },
   ] },
