@@ -513,93 +513,84 @@ const handleModuleClick = (mod) => {
           {isAdmin && <SilentBoundary name="Absences signalées"><AbsencesSignalees compacte /></SilentBoundary>}
           {isAdmin && <AdminTodoCard />}
 
-          {/* Prochaine Prière */}
+          {/* Prochaine Prière — version compacte sur 2 lignes (2026-11-04) :
+              ligne 1 = date + hégire + prochaine prière + ville, ligne 2 = les 5 horaires (la prochaine est entourée) */}
           <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in">
-            {/* Header dégradé pastel */}
-            <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-4 pt-4 pb-6 relative">
+            <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
-                <span className="absolute top-1 right-3 text-4xl">🌙</span>
-                <span className="absolute bottom-1 left-2 text-2xl">⭐</span>
-                <span className="absolute top-2 left-1/2 text-xl">✨</span>
+                <span className="absolute top-0 right-2 text-2xl">🌙</span>
               </div>
-              <div className="relative text-center mb-2">
-                <p className="text-base font-bold text-indigo-800 dark:text-indigo-100 capitalize">{getGregorianDate()}</p>
-                {getHijriDate() && (
-                  <p className="text-sm text-indigo-500 dark:text-indigo-400 mt-0.5">{getHijriDate()}</p>
-                )}
-              </div>
-              <div className="relative flex items-center justify-between">
-                <h3 className="font-bold text-indigo-800 dark:text-indigo-200 text-base flex items-center gap-2">
-                  🕌 Prochaine prière
-                </h3>
-                <span className="text-xs text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
-              </div>
-              {nextPrayer && (
-                <div className="relative mt-3 flex items-center justify-center gap-4">
-                  <span className="text-5xl drop-shadow">{PRAYER_EMOJI[nextPrayer.name] ?? '🕌'}</span>
-                  <div>
-                    <p className="text-indigo-400 dark:text-indigo-400 text-xs font-medium uppercase tracking-wide">Prochaine</p>
-                    <p className="text-indigo-700 dark:text-indigo-200 font-extrabold text-xl leading-tight">{nextPrayer.name}</p>
-                    <p className="text-indigo-900 dark:text-white font-black text-4xl leading-none">{nextPrayer.time}</p>
-                  </div>
+              <div className="relative flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-100 flex flex-wrap items-baseline gap-x-2">
+                  <span>🕌 <span className="capitalize">{getGregorianDate()}</span></span>
+                  {getHijriDate() && (
+                    <span className="text-xs font-medium text-indigo-500 dark:text-indigo-400">{getHijriDate()}</span>
+                  )}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pr-7">
+                  {nextPrayer && (
+                    <span className="text-sm text-indigo-700 dark:text-indigo-200">
+                      {PRAYER_EMOJI[nextPrayer.name] ?? '🕌'} Prochaine : <b className="font-extrabold">{nextPrayer.name}</b>{' '}
+                      <b className="font-black text-indigo-900 dark:text-white">{nextPrayer.time}</b>
+                    </span>
+                  )}
+                  <span className="text-[11px] text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
                 </div>
-              )}
+              </div>
             </div>
-            {/* Grille horaires */}
-            <div className="bg-white dark:bg-slate-800 px-3 py-3">
+            <div className="bg-white dark:bg-slate-800 px-2 py-1.5">
               {!prayerTimes ? (
-                <p className="text-sm text-muted-foreground text-center py-1">Chargement...</p>
+                <p className="text-sm text-muted-foreground text-center py-0.5">Chargement...</p>
               ) : (
-                <div className="grid grid-cols-5 gap-1.5 text-center">
+                <div className="grid grid-cols-5 gap-1 text-center">
                   {[
                     { name: 'Fajr', emoji: '🌅', time: prayerTimes.fajr, color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300' },
                     { name: 'Dohr', emoji: '☀️', time: prayerTimes.dhuhr, color: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' },
                     { name: 'Asr', emoji: '🍃', time: prayerTimes.asr, color: 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' },
                     { name: 'Maghrib', emoji: '🌇', time: prayerTimes.maghrib, color: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' },
                     { name: 'Icha', emoji: '🌙', time: prayerTimes.isha, color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' },
-                  ].map(p => (
-                    <div key={p.name} className={`rounded-xl py-1.5 px-0.5 ${p.color}`}>
-                      <p className="text-base leading-none mb-0.5">{p.emoji}</p>
-                      <p className="text-[10px] font-semibold">{p.name}</p>
-                      <p className="text-xs font-bold">{p.time}</p>
-                    </div>
-                  ))}
+                  ].map(p => {
+                    const estProchaine = nextPrayer?.time === p.time;
+                    return (
+                      <div key={p.name} className={`rounded-lg py-1 px-0.5 flex flex-wrap items-center justify-center gap-x-1 leading-tight ${p.color} ${estProchaine ? 'ring-2 ring-indigo-400 dark:ring-indigo-300' : ''}`}>
+                        <span className="text-[11px] font-semibold whitespace-nowrap">{p.emoji} {p.name}</span>
+                        <span className="text-xs font-bold">{p.time}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Hadith du Jour */}
+          {/* Hadith du Jour — version compacte sur 2 lignes (2026-11-04) :
+              ligne 1 = titre + thème + arabe, ligne 2 = le hadith suivi de sa source */}
           <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in">
-            {/* Header dégradé vert pastel */}
-            <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-900/40 dark:via-teal-900/40 dark:to-cyan-900/40 px-4 py-4 relative">
+            <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-900/40 dark:via-teal-900/40 dark:to-cyan-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
-                <span className="absolute top-1 right-3 text-3xl">🌿</span>
-                <span className="absolute bottom-0 left-2 text-2xl">🕊️</span>
+                <span className="absolute top-0 right-2 text-2xl">🌿</span>
               </div>
-              <div className="relative flex items-center justify-between">
-                <h3 className="font-bold text-emerald-800 dark:text-emerald-200 text-base flex items-center gap-2">
-                  🕊️ Hadith du jour
-                </h3>
-                <span className="text-xs text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-200 dark:bg-emerald-800/50 px-2.5 py-0.5 rounded-full shrink-0">
-                  {todayHadith.theme}
-                </span>
+              <div className="relative flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-emerald-800 dark:text-emerald-200 text-sm">🕊️ Hadith du jour</h3>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-200 dark:bg-emerald-800/50 px-2 py-0.5 rounded-full shrink-0">
+                    {todayHadith.theme}
+                  </span>
+                </div>
+                {todayHadith.arabic && (
+                  <p dir="rtl" className="font-arabic text-base text-emerald-800 dark:text-emerald-200 leading-snug pr-7 ml-auto">
+                    {todayHadith.arabic}
+                  </p>
+                )}
               </div>
-              {todayHadith.arabic && (
-                <p className="font-arabic text-right text-lg text-emerald-800 dark:text-emerald-200 mt-2 leading-loose">
-                  {todayHadith.arabic}
-                </p>
-              )}
             </div>
-            {/* Corps */}
-            <div className="bg-white dark:bg-slate-800 px-4 py-3">
-              <div className="flex gap-2 items-start">
-                <span className="text-emerald-400 text-4xl leading-none font-serif mt-[-6px] shrink-0">"</span>
-                <p className="text-sm font-medium text-foreground leading-relaxed pt-1">
-                  {todayHadith.text}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground text-right mt-2">— {todayHadith.source}</p>
+            <div className="bg-white dark:bg-slate-800 px-3 py-2">
+              <p className="text-sm font-medium text-foreground leading-snug">
+                <span className="text-emerald-400 font-serif font-bold">« </span>
+                {todayHadith.text}
+                <span className="text-emerald-400 font-serif font-bold">{'\u00A0»'}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap"> — {todayHadith.source}</span>
+              </p>
             </div>
           </div>
 
