@@ -67,3 +67,27 @@ export function sonCristal() {
     });
   } catch { /* pas de son possible */ }
 }
+
+/** 🦋 Petit tintement doux (papillon, abeille, feuille au printemps) */
+export function sonTintement() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const t0 = c.currentTime;
+    [1319, 1760].forEach((f, i) => {
+      const o = c.createOscillator(), g = c.createGain(); o.type = 'triangle'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t0 + i * 0.07); g.gain.linearRampToValueAtTime(0.12, t0 + i * 0.07 + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t0 + i * 0.07 + 0.35);
+      o.connect(g).connect(c.destination); o.start(t0 + i * 0.07); o.stop(t0 + i * 0.07 + 0.4);
+    });
+  } catch { /* pas de son possible */ }
+}
+
+/** 🫧 « Plop » de bulle qui éclate (été) */
+export function sonPlop() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const t0 = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(380, t0); o.frequency.exponentialRampToValueAtTime(1100, t0 + 0.08);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+    o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + 0.16);
+  } catch { /* pas de son possible */ }
+}

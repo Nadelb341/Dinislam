@@ -33,7 +33,9 @@ import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
 import { imageDeCarteHiver } from '@/components/saisons/dessinsHiver';
+import { imageDeCarteClair } from '@/components/saisons/dessinsPrintempsEte';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
+const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
 
 /**
@@ -240,6 +242,7 @@ const Index = () => {
   const { saison, r: reglagesSaison } = useSaisonActive();
   const automne = saison === 'automne';
   const hiver = saison === 'hiver';
+  const clair = saison === 'printemps' || saison === 'ete' ? saison : null;
   const [maintenant, setMaintenant] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setMaintenant(Date.now()), 60_000); return () => clearInterval(t); }, []);
   const soir = prayerTimes
@@ -451,7 +454,7 @@ const handleModuleClick = (mod) => {
   return (
     <>
 <AppLayout showBottomNav={false}>
-        <div className={cn('p-4 space-y-6', (automne || hiver) && 'relative isolate pb-32')}>
+        <div className={cn('p-4 space-y-6', (automne || hiver || clair) && 'relative isolate pb-32')}>
           {automne && (
             <SilentBoundary name="Décor de saison">
               <Suspense fallback={null}><DecorAutomne r={reglagesSaison} soir={soir} userId={user?.id ?? null} /></Suspense>
@@ -460,6 +463,11 @@ const handleModuleClick = (mod) => {
           {hiver && (
             <SilentBoundary name="Décor d'hiver">
               <Suspense fallback={null}><DecorHiver r={reglagesSaison} soir={soir} matin={matin} userId={user?.id ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
+          {clair && (
+            <SilentBoundary name="Décor de saison (printemps / été)">
+              <Suspense fallback={null}><DecorClair saison={clair} r={reglagesSaison} soir={soir} matin={matin} userId={user?.id ?? null} /></Suspense>
             </SilentBoundary>
           )}
           {/* Notification Permission Banner */}
@@ -689,9 +697,9 @@ const handleModuleClick = (mod) => {
                   </button>
 
                   {/* 🍂 Image de saison en haut à droite de la carte (à gauche du menu ⋮ pour l'enseignante, pour ne rien cacher) */}
-                  {((automne && reglagesSaison.automne.images) || (hiver && reglagesSaison.hiver.images)) && (
+                  {((automne && reglagesSaison.automne.images) || (hiver && reglagesSaison.hiver.images) || (clair && reglagesSaison[clair].images)) && (
                     <svg aria-hidden viewBox="0 0 48 48" className="saison-sticker" style={{ right: isAdmin ? 34 : -8 }}
-                      dangerouslySetInnerHTML={{ __html: hiver ? imageDeCarteHiver(slug, index) : imageDeCarte(slug, index) }} />
+                      dangerouslySetInnerHTML={{ __html: clair ? imageDeCarteClair(clair, slug, index) : hiver ? imageDeCarteHiver(slug, index) : imageDeCarte(slug, index) }} />
                   )}
 
                   {/* Admin 3-dot menu */}

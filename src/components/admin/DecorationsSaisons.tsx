@@ -12,10 +12,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   DATES_SAISON, NOM_SAISON, SAISONS_DEFAUT, SAISONS_PRETES, apercuSaison, choisirApercu, saisonDuJour, useReglagesSaisons,
-  type ReglagesAutomne, type ReglagesHiver, type ReglagesSaisons, type Saison,
+  type ReglagesAutomne, type ReglagesClair, type ReglagesHiver, type ReglagesSaisons, type Saison,
 } from '@/lib/saisons';
 import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { IMAGES_HIVER } from '@/components/saisons/dessinsHiver';
+import { IMAGES_CLAIR } from '@/components/saisons/dessinsPrintempsEte';
 import { cn, errorMessage } from '@/lib/utils';
 
 /**
@@ -78,6 +79,32 @@ const GROUPES_HIVER: { titre: string; items: { k: keyof ReglagesHiver; label: st
   ] },
 ];
 
+const groupesClair = (ete: boolean): { titre: string; items: { k: keyof ReglagesClair; label: string }[] }[] => [
+  { titre: ete ? 'Les bulles et le ciel' : 'Ce qui vole et ce qui tombe', items: [
+    { k: 'volants', label: ete ? '🫧 Bulles qui montent' : '🦋 Papillons et 🐝 abeilles qui volent' }, { k: 'tombants', label: ete ? '🕊️ Mouettes au loin' : '🍃 Feuilles vertes et pétales qui tombent' },
+    { k: 'devantDerriere', label: '🔀 Devant et derrière les cartes' }, { k: 'attraper', label: ete ? '💥 Bulle qui éclate quand on la touche' : '✨ Papillon qui s\'envole quand on le touche' },
+    { k: 'son', label: ete ? '🔊 Petit « plop »' : '🔊 Petit tintement' }, { k: 'messageSemaine', label: ete ? '💬 Message « Éclate les bulles ! » chaque semaine' : '💬 Message « Attrape les papillons ! » chaque semaine' },
+    { k: 'ventDefile', label: '🌬️ Soufflés quand on fait défiler' }, { k: 'pluieValidation', label: ete ? '⭐ Pluie d\'étoiles de mer et coquillages à chaque validation' : '🌼 Pluie de pétales et coccinelles à chaque validation' },
+    { k: 'rare', label: ete ? '🌟 Bulle dorée rare' : '🌟 Papillon doré rare' },
+  ] },
+  { titre: 'Le soleil et les nuages (en haut)', items: [
+    { k: 'soleil', label: ete ? '☀️ Grand soleil qui brille' : '🌞 Soleil qui brille et tourne' }, { k: 'nuages', label: '☁️ Nuages autour du titre' },
+    { k: 'lune', label: '🌙 La lune le soir (Maghrib → Fajr)' }, { k: 'cielSoir', label: '🌌 Ciel du soir' }, { k: 'lucioles', label: '✨ Lucioles le soir' },
+    ...(ete ? [] : [{ k: 'rosee' as const, label: '💧 Rosée qui brille le matin (Fajr → Dhohr)' }]),
+  ] },
+  { titre: ete ? 'La plage (en bas)' : 'La prairie (en bas)', items: [
+    { k: 'decor', label: ete ? '🌴 Palmiers et transat en bas à droite' : '🌳 Grand arbre en bas à droite' }, { k: 'transparente', label: '👻 Transparent quand on fait défiler' },
+    { k: 'bas', label: ete ? '🏖️ Mer et sable' : '🌼 Prairie de fleurs' },
+    { k: 'animal', label: ete ? '🦀 Crabe ou 🐬 dauphin (à tour de rôle à chaque connexion)' : '🐰 Lapin, 🐌 escargot ou 🦌 biche (à tour de rôle)' },
+    { k: 'plongeon', label: ete ? '💥 Le crabe plonge dans le sable' : '💥 Il plonge dans les fleurs' },
+    { k: 'motDuJour', label: ete ? '🐢 La tortue montre un mot de l\'été chaque jour' : '🐦 L\'oiseau montre un mot du printemps chaque jour' },
+  ] },
+  { titre: 'Les cartes et les couleurs', items: [
+    { k: 'images', label: '🖼️ Images en haut à droite des cartes' }, { k: 'couleurs', label: ete ? '🎨 Bleu clair et jaune' : '🎨 Vert clair' },
+    { k: 'titre', label: ete ? '🕶️ Lunettes de soleil sur le logo' : '🌼 Marguerite sur le logo' },
+  ] },
+];
+
 const IDEES_A_VENIR: Record<Exclude<Saison, 'automne' | 'hiver'>, string> = {
   printemps: 'Pétales de cerisier, papillons, arbre en fleurs, pâquerettes… Maquette avant le 1er mars.',
   ete: 'Soleil, palmier et dattes, lucioles le soir, étoiles filantes… Maquette avant le 1er juin.',
@@ -120,6 +147,7 @@ export default function DecorationsSaisons() {
   const maj = <K extends keyof ReglagesSaisons>(k: K, v: ReglagesSaisons[K]) => setR((x) => ({ ...x, [k]: v }));
   const majA = (k: keyof ReglagesAutomne, v: boolean) => setR((x) => ({ ...x, automne: { ...x.automne, [k]: v } }));
   const majH = (k: keyof ReglagesHiver, v: boolean) => setR((x) => ({ ...x, hiver: { ...x.hiver, [k]: v } }));
+  const majC = (s: 'printemps' | 'ete', k: keyof ReglagesClair, v: boolean) => setR((x) => ({ ...x, [s]: { ...x[s], [k]: v } }));
   const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles' | 'animerToujours', label: string, aide?: string) => (
     <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2 cursor-pointer">
       <span className="min-w-0"><span className="block text-sm font-bold">{label}</span>{aide && <span className="block text-xs text-muted-foreground">{aide}</span>}</span>
@@ -223,6 +251,28 @@ export default function DecorationsSaisons() {
             </div>
             <p className="text-xs text-muted-foreground">❄️ L'hiver s'affiche tout seul du 1er décembre à fin février. Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous.</p>
           </div>
+        ) : onglet === 'printemps' || onglet === 'ete' ? (
+          <div className="space-y-3">
+            {groupesClair(onglet === 'ete').map((g) => (
+              <section key={g.titre} className="space-y-1.5">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{g.titre}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {g.items.map((it) => (
+                    <button key={it.k} type="button" aria-pressed={r[onglet][it.k]} onClick={() => majC(onglet, it.k, !r[onglet][it.k])}
+                      className={cn('rounded-full border px-3 py-1 text-sm text-start', r[onglet][it.k] ? (onglet === 'ete' ? 'bg-[#2e8fd0] text-white border-[#2e8fd0]' : 'bg-[#5a9e2f] text-white border-[#5a9e2f]') : 'bg-card')}>{it.label}</button>
+                  ))}
+                </div>
+              </section>
+            ))}
+            <div className="flex flex-wrap items-end gap-2 rounded-xl bg-card/70 p-2">
+              {Object.entries(IMAGES_CLAIR[onglet]).map(([k, [nom, svg]]) => (
+                <figure key={k} className="m-0 flex w-14 flex-col items-center text-center text-[10px] text-muted-foreground">
+                  <svg viewBox="0 0 48 48" aria-hidden className="h-10 w-10" dangerouslySetInnerHTML={{ __html: svg }} />{nom}
+                </figure>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{onglet === 'ete' ? '☀️ L\'été s\'affiche tout seul du 1er juin à fin août.' : '🌸 Le printemps s\'affiche tout seul du 1er mars à fin mai.'} Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous.</p>
+          </div>
         ) : (
           <p className="rounded-xl bg-muted px-3 py-2 text-sm">{NOM_SAISON[onglet]} : {IDEES_A_VENIR[onglet]} En attendant, cette saison reste en ambiance neutre.</p>
         )}
@@ -248,7 +298,7 @@ export default function DecorationsSaisons() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Revenir aux réglages d'origine ?</AlertDialogTitle>
-            <AlertDialogDescription>Toutes les décorations (automne et hiver) seront remises comme dans les maquettes validées (quantité « Normal »). Tes réglages actuels sont gardés en « version d'avant ».</AlertDialogDescription>
+            <AlertDialogDescription>Toutes les décorations (les 4 saisons) seront remises comme dans les maquettes validées (quantité « Normal »). Tes réglages actuels sont gardés en « version d'avant ».</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>

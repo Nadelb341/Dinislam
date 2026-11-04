@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { estRamadan } from '@/lib/apparence';
 
 export type Saison = 'hiver' | 'printemps' | 'ete' | 'automne';
-export const SAISONS_PRETES: Saison[] = ['automne', 'hiver'];
+export const SAISONS_PRETES: Saison[] = ['automne', 'hiver', 'printemps', 'ete'];
 
 export const NOM_SAISON: Record<Saison, string> = { hiver: '❄️ Hiver', printemps: '🌸 Printemps', ete: '☀️ Été', automne: '🍂 Automne' };
 export const DATES_SAISON: Record<Saison, string> = { hiver: '1/12 → fin février', printemps: '1/03 → 31/05', ete: '1/06 → 31/08', automne: '1/09 → 30/11' };
@@ -47,6 +47,28 @@ export const HIVER_DEFAUT: ReglagesHiver = {
   plongeon: true, ventDefile: true, vitre: true, pluieDoree: true, motOurs: true, neigeTitre: true, floconDore: true,
 };
 
+/** 🌸☀️ Printemps et été (même principe que l'automne et l'hiver, demande de Nadia du 2026-11-04) */
+export interface ReglagesClair {
+  /** papillons et abeilles (printemps) / bulles (été) */
+  volants: boolean;
+  /** feuilles vertes et pétales qui tombent (printemps) / mouettes au loin (été) */
+  tombants: boolean;
+  devantDerriere: boolean; attraper: boolean; son: boolean; messageSemaine: boolean;
+  soleil: boolean; nuages: boolean; lune: boolean;
+  /** grand arbre (printemps) / palmiers et transat (été), en bas à droite */
+  decor: boolean; transparente: boolean;
+  /** prairie fleurie (printemps) / plage (été), en bas */
+  bas: boolean; animal: boolean; plongeon: boolean; motDuJour: boolean;
+  lucioles: boolean; cielSoir: boolean; rosee: boolean;
+  images: boolean; couleurs: boolean; ventDefile: boolean; pluieValidation: boolean; rare: boolean; titre: boolean;
+}
+export const CLAIR_DEFAUT: ReglagesClair = {
+  volants: true, tombants: true, devantDerriere: true, attraper: true, son: true, messageSemaine: true,
+  soleil: true, nuages: true, lune: true, decor: true, transparente: true,
+  bas: true, animal: true, plongeon: true, motDuJour: true, lucioles: true, cielSoir: true, rosee: true,
+  images: true, couleurs: true, ventDefile: true, pluieValidation: true, rare: true, titre: true,
+};
+
 export interface ReglagesSaisons {
   /** « Ambiance neutre » : aucun décor, l'appli comme avant */
   neutre: boolean;
@@ -69,6 +91,8 @@ export interface ReglagesSaisons {
   tailleArbre: number;
   automne: ReglagesAutomne;
   hiver: ReglagesHiver;
+  printemps: ReglagesClair;
+  ete: ReglagesClair;
 }
 
 export const AUTOMNE_DEFAUT: ReglagesAutomne = {
@@ -82,11 +106,12 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
   neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
-  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT,
+  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT,
 };
 
 export function fusionner(v: Partial<ReglagesSaisons> | null | undefined): ReglagesSaisons {
-  return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) } };
+  return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) },
+    printemps: { ...CLAIR_DEFAUT, ...(v?.printemps ?? {}) }, ete: { ...CLAIR_DEFAUT, ...(v?.ete ?? {}) } };
 }
 
 /** La saison d'une date (mois 0 = janvier) */

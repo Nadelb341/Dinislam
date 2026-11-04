@@ -24,11 +24,15 @@ function useCouleursSaison() {
   const { saison, r } = useSaisonActive();
   const actif = saison === 'automne' && r.automne.couleurs;
   const hiver = saison === 'hiver' && r.hiver.couleurs;
+  const printemps = saison === 'printemps' && r.printemps.couleurs;
+  const ete = saison === 'ete' && r.ete.couleurs;
   useEffect(() => {
     const html = document.documentElement;
     html.classList.toggle('saison-automne', actif);
     html.classList.toggle('saison-hiver', hiver);
-  }, [actif, hiver]);
+    html.classList.toggle('saison-printemps', printemps);
+    html.classList.toggle('saison-ete', ete);
+  }, [actif, hiver, printemps, ete]);
   // 📱 Les animations restent vivantes même si le téléphone a « Réduire les animations » (réglable dans la carte admin)
   useEffect(() => { document.documentElement.classList.toggle('anime-toujours', r.animerToujours); }, [r.animerToujours]);
 }

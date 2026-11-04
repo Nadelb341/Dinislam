@@ -638,3 +638,66 @@
 @media (prefers-reduced-motion: reduce) {
   html:not(.anime-toujours) .hiver-ciel-etoile, html:not(.anime-toujours) .hiver-paillette, html:not(.anime-toujours) .hiver-fumee, html:not(.anime-toujours) .hiver-fl, html:not(.anime-toujours) .hiver-lueur, html:not(.anime-toujours) .hiver-respire, html:not(.anime-toujours) .hiver-tas-secoue, html:not(.anime-toujours) .hiver-ours-reveil, html:not(.anime-toujours) .hiver-bulle-in, html:not(.anime-toujours) .hiver-soir .hiver-halo-l, html:not(.anime-toujours) .hiver-soir .hiver-halo-c { animation: none; }
 }
+
+/* 🌸☀️ Printemps et été (2026-11-04) — composants dans src/components/saisons (DecorClair, dessinsPrintempsEte) */
+:root.saison-printemps:not(.dark) {
+  --background: 88 52% 94%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --muted: 88 40% 90%;
+  --muted-foreground: 100 14% 36%;
+  --border: 86 44% 82%;
+  --input: 86 44% 82%;
+}
+:root.saison-ete:not(.dark) {
+  --background: 199 85% 95%;
+  --card: 48 100% 99%;
+  --popover: 48 100% 99%;
+  --muted: 199 60% 91%;
+  --muted-foreground: 205 20% 38%;
+  --border: 46 80% 80%;
+  --input: 46 80% 80%;
+}
+:root.saison-printemps.saison-soir:not(.dark) { --background: 70 30% 91%; --border: 70 30% 80%; }
+:root.saison-ete.saison-soir:not(.dark) { --background: 30 70% 93%; --border: 30 60% 82%; }
+:root.saison-printemps:not(.dark) .carte-accueil { border-color: #cfe5b0; box-shadow: 0 2px 0 #cfe5b0; }
+:root.saison-printemps:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #eaf6d9, #f6fbe9, #e3f2cf); border-color: #c5e09a; }
+:root.saison-ete:not(.dark) .carte-accueil { border-color: #f3dd8e; box-shadow: 0 2px 0 #bfe3f7; }
+:root.saison-ete:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #e0f4ff, #fff6d6, #e3f5ff); border-color: #f3d877; }
+/* Petite décoration du logo : une marguerite (printemps), des lunettes de soleil (été) */
+:root.printemps-titre .titre-logo::after, :root.ete-titre .titre-logo::after { content: ""; position: absolute; pointer-events: none; background-repeat: no-repeat; background-size: contain; }
+:root.printemps-titre .titre-logo::after { right: -9px; top: -9px; width: 24px; height: 24px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%23fff' stroke='%23d9d2c0' stroke-width='.6'%3E%3Cellipse cx='12' cy='5' rx='2.6' ry='4.6'/%3E%3Cellipse cx='12' cy='19' rx='2.6' ry='4.6'/%3E%3Cellipse cx='5' cy='12' rx='4.6' ry='2.6'/%3E%3Cellipse cx='19' cy='12' rx='4.6' ry='2.6'/%3E%3Cellipse cx='7' cy='7' rx='2.4' ry='4.4' transform='rotate(-45 7 7)'/%3E%3Cellipse cx='17' cy='17' rx='2.4' ry='4.4' transform='rotate(-45 17 17)'/%3E%3Cellipse cx='17' cy='7' rx='2.4' ry='4.4' transform='rotate(45 17 7)'/%3E%3Cellipse cx='7' cy='17' rx='2.4' ry='4.4' transform='rotate(45 7 17)'/%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='3.6' fill='%23f7c22e' stroke='%23e0a21a' stroke-width='.6'/%3E%3C/svg%3E"); transform: rotate(12deg); }
+:root.ete-titre .titre-logo::after { right: -12px; top: -6px; width: 30px; height: 14px; transform: rotate(14deg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 14'%3E%3Cpath d='M1 4h28' stroke='%233a2a20' stroke-width='1.6'/%3E%3Cpath d='M2 4h11c0 6-2 9-6 9S2 10 2 4zM17 4h11c0 6-2 9-6 9s-5-3-5-9z' fill='%232c3a55' stroke='%233a2a20' stroke-width='1'/%3E%3Cpath d='M4 6l3 3M19 6l3 3' stroke='%23fff' stroke-width='1.2' opacity='.7'/%3E%3C/svg%3E"); }
+.pe-rayons { transform-box: view-box; transform-origin: 60px 60px; animation: pe-tourne 60s linear infinite; }
+@keyframes pe-tourne { to { transform: rotate(360deg); } }
+.pe-halo { transform-box: view-box; transform-origin: 60px 60px; animation: pe-halo 4s ease-in-out infinite; }
+@keyframes pe-halo { 0%, 100% { transform: scale(.92); opacity: .75; } 50% { transform: scale(1.06); opacity: 1; } }
+.pe-eclat { transform-box: fill-box; transform-origin: 50% 50%; animation: pe-eclat 2.4s ease-in-out infinite; }
+@keyframes pe-eclat { 0%, 100% { opacity: .2; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+.pe-nuage { animation: pe-nuage 16s ease-in-out infinite alternate; }
+.pe-nuage.b { animation-duration: 21s; animation-delay: -6s; } .pe-nuage.c { animation-duration: 18s; animation-delay: -11s; }
+@keyframes pe-nuage { from { transform: translateX(-14px); } to { transform: translateX(16px); } }
+.pe-lune { filter: drop-shadow(0 0 8px rgba(255, 240, 180, .6)); }
+.pe-arbre-bouge { transform-box: view-box; transform-origin: 120px 240px; animation: pe-arbre 6s ease-in-out infinite; }
+@keyframes pe-arbre { 0%, 100% { transform: rotate(-.8deg); } 50% { transform: rotate(1deg); } }
+.pe-palme { transform-box: view-box; animation: pe-palme 4.5s ease-in-out infinite; }
+.pe-palme.b { animation-duration: 5.2s; animation-delay: -1.5s; }
+@keyframes pe-palme { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2.5deg); } }
+.pe-fleur { transform-box: fill-box; transform-origin: 50% 100%; animation: pe-fleur 3.2s ease-in-out infinite; }
+@keyframes pe-fleur { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+.pe-vagues { animation: pe-vagues 3.5s linear infinite; }
+@keyframes pe-vagues { to { transform: translateX(40px); } }
+.pe-ecume { animation: pe-ecume 4s ease-in-out infinite; }
+@keyframes pe-ecume { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.pe-respire { transform-box: fill-box; transform-origin: 50% 100%; animation: pe-respire 3s ease-in-out infinite; }
+@keyframes pe-respire { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.05); } }
+.pe-tas-secoue { animation: pe-tas .5s ease-out; }
+@keyframes pe-tas { 30% { transform: scale(1.06, .9); } 60% { transform: scale(.98, 1.04); } }
+.pe-ciel-printemps { background: linear-gradient(180deg, rgba(190, 160, 230, .3), rgba(160, 180, 235, .12) 55%, transparent); }
+.pe-ciel-ete { background: linear-gradient(180deg, rgba(255, 150, 100, .32), rgba(255, 205, 130, .14) 55%, transparent); }
+.pe-ciel-etoile { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px #fff; animation: hiver-paillette 2.6s ease-in-out infinite; }
+.pe-rosee { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #bfe6fb 60%, rgba(120, 190, 235, .4)); box-shadow: 0 0 4px rgba(190, 230, 255, .9); animation: hiver-paillette 2.4s ease-in-out infinite; }
+.pe-voile-soir { pointer-events: none; background: radial-gradient(70% 35% at 15% 5%, rgba(255, 220, 150, .16), transparent 70%), radial-gradient(70% 30% at 85% 100%, rgba(255, 190, 110, .18), transparent 70%); }
+@media (prefers-reduced-motion: reduce) {
+  html:not(.anime-toujours) .pe-rayons, html:not(.anime-toujours) .pe-halo, html:not(.anime-toujours) .pe-eclat, html:not(.anime-toujours) .pe-nuage, html:not(.anime-toujours) .pe-arbre-bouge, html:not(.anime-toujours) .pe-palme, html:not(.anime-toujours) .pe-fleur, html:not(.anime-toujours) .pe-vagues, html:not(.anime-toujours) .pe-ecume, html:not(.anime-toujours) .pe-respire, html:not(.anime-toujours) .pe-tas-secoue, html:not(.anime-toujours) .pe-ciel-etoile, html:not(.anime-toujours) .pe-rosee { animation: none; }
+}
