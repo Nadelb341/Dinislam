@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { withName } from '@/lib/encouragements';
 import { Mic, Send, X, Mail, MailOpen, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,8 @@ interface Message {
   audio_url: string | null;
   message_type: string;
   deleted_at: string | null;
+  /** lien dans l'appli d'un message de correction (2026-11-04) */
+  content?: string | null;
 }
 
 interface MessagingDialogProps {
@@ -48,6 +51,7 @@ interface MessagingDialogProps {
 }
 
 const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialogProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -286,7 +290,19 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
                         ? 'bg-emerald-500/20 border border-emerald-500/50'
                         : 'bg-orange-500/20 border border-orange-500/50 animate-pulse'
                   }`}>
-                    {msg.message_type === 'audio' && msg.audio_url ? (
+                    {msg.message_type === 'correction' ? (
+                      // 📝 Correction du professeur (2026-11-04) : le texte, son audio, et le bouton qui ouvre le bon endroit
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.message}</p>
+                        {msg.audio_url && <AudioPlayer audioUrl={msg.audio_url} compact />}
+                        {msg.content && (
+                          <button type="button" onClick={() => { handleClose(); navigate(msg.content!); }}
+                            className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-extrabold text-primary-foreground">
+                            👉 Y aller
+                          </button>
+                        )}
+                      </div>
+                    ) : msg.message_type === 'audio' && msg.audio_url ? (
                       <AudioPlayer
                         audioUrl={msg.audio_url}
                         compact

@@ -547,7 +547,7 @@ const SourateDetailDialog = ({
             ) : needsRecitation && versePercentage >= 100 ? (
               // Enfant : tout est coché, la sourate attend la validation de sa récitation (2026-11-04 : avant, rien ne l'expliquait en haut)
               <span className="ml-auto mr-7 shrink-0 self-start max-w-[7.5rem] rounded-xl bg-amber-100 dark:bg-amber-950/50 px-2.5 py-1.5 text-xs font-bold leading-tight text-amber-900 dark:text-amber-200 text-center">
-                ⏳ Récitation à valider
+                🎙️ Envoie ta récitation ⬇️
               </span>
             ) : onValidateAll && (
               <button

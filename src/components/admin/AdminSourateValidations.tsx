@@ -1,3 +1,4 @@
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { validerSouratesPrecedentes } from '@/lib/souratesPrecedentes';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -127,6 +128,9 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
         data: { url: '/sourates' },
         userId: request.user_id,
       });
+      // 📝 Aussi dans la messagerie de l'élève, avec le lien direct vers la sourate (2026-11-04)
+      void envoyerMessageCorrection({ studentId: request.user_id, notifier: false, sorte: 'retravailler', lien: `/sourates?item=${request.sourate?.number ?? ''}`,
+        quoi: `ta sourate ${request.sourate?.name_french ?? ''}` });
       queryClient.invalidateQueries({ queryKey: ['admin-sourate-validations'] });
     },
     onError: (_, __, context) => {

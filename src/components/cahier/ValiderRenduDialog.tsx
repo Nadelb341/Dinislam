@@ -1,6 +1,10 @@
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
 import { asPJ } from '@/lib/devoirFichiers';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
+import { deposerAudioProf } from '@/lib/audioProf';
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,11 +30,14 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
   rendu: CahierRendu | null;
   onEncourage?: () => void;
 }) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { askValidation, validationDialog } = useConfirmValidation();
   const [refaire, setRefaire] = useState(false);
   const [commentaire, setCommentaire] = useState('');
   const [busy, setBusy] = useState(false);
+  // 🎙️ Correction audio (comme dans « Rendus à corriger », 2026-11-04)
+  const [correctionAudio, setCorrectionAudio] = useState<Blob | null>(null);
 
   const prenom = prenomOf(eleve?.full_name);
   const titre = devoir?.titre || 'Devoir';
@@ -63,9 +70,13 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
     setBusy(true);
     try {
       const texte = commentaire.trim();
+      const correctionUrl = correctionAudio && user ? await deposerAudioProf(user.id, correctionAudio, 'corrections') : null;
       const { error } = await supabase.from('devoirs_rendus')
-        .update({ statut: 'a_refaire', commentaire_admin: texte || null }).eq('id', rendu.id);
+        .update({ statut: 'a_refaire', commentaire_admin: texte || null, correction_audio_url: correctionUrl }).eq('id', rendu.id);
       if (error) throw error;
+      // 📝 Aussi dans la messagerie de l'élève, avec l'audio et le lien vers son cahier
+      void envoyerMessageCorrection({ studentId: eleve.user_id, notifier: false, sorte: 'retravailler', audioUrl: correctionUrl, commentaire: texte, quoi: `ton devoir « ${titre} »`, lien: '/?open=devoirs' });
+      setCorrectionAudio(null);
       sendPushNotification({
         title: '🔄 {prenom}, devoir à refaire', category: 'hw_res', userId: eleve.user_id,
         body: `« ${titre} » est à refaire${texte ? ` : ${texte}` : ''}`, data: { url: '/?open=devoirs' },
@@ -138,6 +149,7 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
                 placeholder={`Un petit mot pour ${prenom} (facultatif)`}
                 aria-label="Commentaire pour l'élève"
               />
+              <EnregistreurAudio label={`Correction audio pour ${prenom} (facultatif)`} onChange={setCorrectionAudio} />
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" disabled={busy} onClick={() => { setRefaire(false); setCommentaire(''); }}>Annuler</Button>
                 <Button disabled={busy} className="bg-rose-600 hover:bg-rose-700 text-white" onClick={() => void envoyerARefaire()}>🔄 Envoyer</Button>

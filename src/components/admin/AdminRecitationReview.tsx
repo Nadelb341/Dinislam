@@ -1,3 +1,4 @@
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { validerSouratesPrecedentes } from '@/lib/souratesPrecedentes';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -163,6 +164,14 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
           const n = await validerSouratesPrecedentes(studentId, rec.sourate_id);
           if (n > 0) toast.success(`⭐ ${n} sourate${n > 1 ? 's' : ''} d'avant validée${n > 1 ? 's' : ''} aussi`);
         }
+      }
+      // 📝 La correction arrive aussi dans la messagerie de l'élève, avec l'audio et le lien direct (2026-11-04)
+      if (newStatus === 'corrected') {
+        void envoyerMessageCorrection({
+          studentId, notifier: false, audioUrl: audioPublicUrl, commentaire: savedComment,
+          quoi: isName ? `ton audio du nom ${sourateName}` : `ta récitation de ${sourateName}`,
+          lien: isName ? `/allah-names?item=${rec.allah_name_id}` : `/sourates?item=${rec.sourate?.number ?? ''}`,
+        });
       }
       if (isName) {
         sendPushNotification(newStatus === 'validated'

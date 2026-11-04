@@ -104,8 +104,12 @@ export interface ReglagesMeteo {
   neige: boolean;
   /** Nuages un peu plus gris pendant l'averse */
   ciel: boolean;
+  /** 💧 Nombre de gouttes : 1 très peu · 2 peu (défaut, « c'est trop » d'après Nadia le 2026-11-04) · 3 normal · 4 beaucoup · 5 énormément */
+  gouttes: number;
+  /** 💨 Vitesse de chute : 1 très lente · 2 lente (défaut) · 3 normale · 4 rapide · 5 très rapide */
+  vitesseGouttes: number;
 }
-const METEO_BASE: ReglagesMeteo = { averse: true, arcEnCiel: true, mode: 'parfois', frequence: 1, intensite: 2, duree: 35, du: '', au: '', dureeArc: 25, neige: false, ciel: true };
+const METEO_BASE: ReglagesMeteo = { averse: true, arcEnCiel: true, mode: 'parfois', frequence: 1, intensite: 2, duree: 35, du: '', au: '', dureeArc: 25, neige: false, ciel: true, gouttes: 2, vitesseGouttes: 2 };
 export const METEO_DEFAUT: Record<Saison, ReglagesMeteo> = {
   printemps: METEO_BASE, automne: METEO_BASE, hiver: METEO_BASE,
   // L'été : pas demandé par Nadia, prêt mais éteint

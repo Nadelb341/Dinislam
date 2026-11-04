@@ -120,7 +120,9 @@ export function MeteoSaison({ saison, r, soir, ville }: { saison: Saison; r: Reg
     let LW = 0, LH = 0;
     const taille = () => { const dpr = Math.min(2, window.devicePixelRatio || 1); LW = window.innerWidth; LH = window.innerHeight; cv.width = LW * dpr; cv.height = LH * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
     taille(); window.addEventListener('resize', taille);
-    const n = [0, 55, 120, 220][pluie.intensite] ?? 120;
+    // 💧 Nombre de gouttes (réglage) × intensité (choisie, ou donnée par la vraie météo)
+    const n = Math.round(([0, 40, 80, 140][pluie.intensite] ?? 80) * ([0, 0.35, 0.6, 1, 1.5, 2.2][m.gouttes] ?? 0.6));
+    const vit = [0, 0.45, 0.65, 0.85, 1, 1.25][m.vitesseGouttes] ?? 0.65;
     const gouttes = Array.from({ length: n }, () => ({ x: Math.random() * LW, y: Math.random() * LH, z: 0.4 + Math.random() * 0.6, ph: Math.random() * 6.3 }));
     const ronds: { x: number; v: number }[] = [];
     const debut = performance.now();
@@ -132,14 +134,14 @@ export function MeteoSaison({ saison, r, soir, ville }: { saison: Saison; r: Reg
       if (pluie.neige) {
         ctx.fillStyle = 'rgba(255,255,255,.9)';
         for (const g of gouttes) {
-          g.y += (60 + 90 * g.z) * dt; g.x += (Math.sin(now / 700 + g.ph) * 20 + 25) * g.z * dt;
+          g.y += (60 + 90 * g.z) * vit * dt; g.x += (Math.sin(now / 700 + g.ph) * 20 + 25) * g.z * dt;
           if (g.y > LH) { g.y = -6; g.x = Math.random() * LW; } if (g.x > LW) g.x = 0;
           ctx.globalAlpha = (0.5 + 0.5 * g.z) * monte; ctx.beginPath(); ctx.arc(g.x, g.y, 1.2 + 2 * g.z, 0, Math.PI * 2); ctx.fill();
         }
       } else {
         ctx.lineCap = 'round';
         for (const g of gouttes) {
-          const v = (520 + 420 * g.z) * dt;
+          const v = (520 + 420 * g.z) * vit * dt;
           g.y += v; g.x -= v * 0.12;
           if (g.y > LH) { if (Math.random() < 0.25) ronds.push({ x: g.x, v: 0 }); g.y = -20 - Math.random() * 60; g.x = Math.random() * (LW + 80); }
           ctx.globalAlpha = (0.18 + 0.3 * g.z) * monte; ctx.strokeStyle = '#6f8fb3'; ctx.lineWidth = 0.8 + g.z;
@@ -160,7 +162,7 @@ export function MeteoSaison({ saison, r, soir, ville }: { saison: Saison; r: Reg
     document.addEventListener('visibilitychange', demarrer);
     demarrer();
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', taille); document.removeEventListener('visibilitychange', demarrer); };
-  }, [pluie, calme]);
+  }, [pluie, calme, m.gouttes, m.vitesseGouttes]);
 
   if (!m.averse && !m.arcEnCiel) return null;
   return (

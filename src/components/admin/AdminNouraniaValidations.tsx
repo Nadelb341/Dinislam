@@ -1,3 +1,4 @@
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -161,6 +162,9 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         data: { url: '/nourania' },
         userId: request.user_id,
       });
+      // 📝 Aussi dans la messagerie de l'élève, avec le lien direct vers la leçon (2026-11-04)
+      void envoyerMessageCorrection({ studentId: request.user_id, notifier: false, sorte: 'retravailler', lien: `/nourania?item=${request.lesson_id}`,
+        quoi: `ta leçon ${request.lesson?.lesson_number ?? ''} de Nourania${request.lesson?.title_french ? ` (${request.lesson.title_french})` : ''}` });
       queryClient.invalidateQueries({ queryKey: ['admin-nourania-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-nourania-count'] });
     },

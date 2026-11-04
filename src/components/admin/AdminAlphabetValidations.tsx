@@ -1,3 +1,4 @@
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,6 +66,14 @@ function SubmissionItem({ sub, name, letter, onDone }: { sub: AlphabetSubmission
         to_review: { title: '💪 Encore un petit effort, {prenom}', body: `Retravaille ${letterLabel}, tu vas y arriver ! Puis redemande la validation.` },
       };
       sendPushNotification({ userId: sub.student_id, category: 'rec', ...messages[status], data: { url: '/alphabet' } });
+      // 📝 Correction / à refaire / à revoir : aussi dans la messagerie de l'élève, avec l'audio et le lien vers la lettre (2026-11-04)
+      if (status !== 'validated') {
+        void envoyerMessageCorrection({
+          studentId: sub.student_id, notifier: false, sorte: status === 'corrected' ? 'corrige' : 'retravailler',
+          audioUrl: rec.blob ? adminAudio : null, commentaire: comment, lien: `/alphabet?item=${sub.letter_id}`,
+          quoi: isFinal ? `ta lettre ${letterLabel}` : `ton exercice de la lettre ${letterLabel} (${title})`,
+        });
+      }
       toast.success(status === 'validated' ? `✅ ${letterLabel} validée pour ${name}` : 'Réponse envoyée ✓');
       rec.reset();
       onDone();

@@ -485,7 +485,11 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
                         {msg.message_type === 'audio' && msg.audio_url ? (
                           <AudioPlayer audioUrl={msg.audio_url} compact />
                         ) : (
-                          <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                          <>
+                            <p className="text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.message}</p>
+                            {/* 📝 Correction envoyée à l'élève (2026-11-04) : on réécoute l'audio joint */}
+                            {msg.message_type === 'correction' && msg.audio_url && <div className="mt-1.5"><AudioPlayer audioUrl={msg.audio_url} compact /></div>}
+                          </>
                         )}
                         <p className={`text-xs mt-1 ${msg.message_type === 'audio' ? 'px-3 pb-1' : ''} ${
                           msg.sender_type === 'admin' ? 'text-primary-foreground/70' : 'text-muted-foreground'

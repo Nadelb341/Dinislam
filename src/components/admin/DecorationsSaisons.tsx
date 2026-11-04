@@ -383,6 +383,12 @@ function MeteoEtLogo({ saison, meteo: m, logo, setMeteo, setLogo }: {
             <input type="range" min={1} max={3} value={m.intensite} onChange={(e) => setMeteo({ intensite: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
           </label>
         )}
+        <label className="block text-sm font-semibold">💧 Nombre de gouttes : <b>{['', 'Très peu', 'Peu', 'Normal', 'Beaucoup', 'Énormément'][m.gouttes]}</b>
+          <input type="range" min={1} max={5} value={m.gouttes} onChange={(e) => setMeteo({ gouttes: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+        </label>
+        <label className="block text-sm font-semibold">💨 Vitesse de chute : <b>{['', 'Très lente', 'Lente', 'Normale', 'Rapide', 'Très rapide'][m.vitesseGouttes]}</b>
+          <input type="range" min={1} max={5} value={m.vitesseGouttes} onChange={(e) => setMeteo({ vitesseGouttes: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
+        </label>
         <label className="block text-sm font-semibold">L'arc-en-ciel reste : <b>{m.dureeArc} secondes</b>
           <input type="range" min={10} max={60} step={5} value={m.dureeArc} onChange={(e) => setMeteo({ dureeArc: Number(e.target.value) })} className="w-full" style={{ accentColor: coul }} />
         </label>

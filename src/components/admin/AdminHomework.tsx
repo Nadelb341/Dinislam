@@ -34,6 +34,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import type { Json, TablesInsert } from '@/integrations/supabase/types';
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
 import { asPJ, lignesHabituelles, lundiCourant, type LigneDevoir, type PieceJointe } from '@/lib/devoirFichiers';
 import { OutilsDeLigne } from '@/components/cahier/OutilsLigneDevoir';
@@ -440,12 +441,15 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const markARefaire = useMutation({
     mutationFn: async () => {
       if (!modalARefaire) throw new Error('Aucun rendu sélectionné');
+      const correctionUrl = correctionAudio && user ? await deposerAudioProf(user.id, correctionAudio, 'corrections') : null;
       const { error } = await supabase
         .from('devoirs_rendus')
-        .update({ statut: 'a_refaire', commentaire_admin: commentaire || null,
-          correction_audio_url: correctionAudio && user ? await deposerAudioProf(user.id, correctionAudio, 'corrections') : null })
+        .update({ statut: 'a_refaire', commentaire_admin: commentaire || null, correction_audio_url: correctionUrl })
         .eq('id', modalARefaire.renduId);
       if (error) throw error;
+      // 📝 Aussi dans la messagerie de l'élève, avec l'audio et le lien vers son cahier (2026-11-04)
+      void envoyerMessageCorrection({ studentId: modalARefaire.studentId, notifier: false, sorte: 'retravailler', audioUrl: correctionUrl, commentaire,
+        quoi: `ton devoir « ${modalARefaire.devoirTitre} »`, lien: '/?open=devoirs' });
 
       sendPushNotification({
         userIds: [modalARefaire.studentId],

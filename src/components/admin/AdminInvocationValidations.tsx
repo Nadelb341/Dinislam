@@ -1,3 +1,4 @@
+import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -138,6 +139,9 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
         title: '❌ Invocation refusée',
         description: `${request.invocation?.title_french || 'Invocation'} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
       });
+      // 📝 Message + notification à l'élève, avec le lien direct vers l'invocation (2026-11-04 : avant, il n'était pas prévenu)
+      void envoyerMessageCorrection({ studentId: request.user_id, sorte: 'retravailler', lien: `/invocations?item=${request.invocation_id}`,
+        quoi: `ton invocation ${request.invocation?.title_french ?? ''}` });
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-validations'] });
       queryClient.invalidateQueries({ queryKey: ['admin-pending-invocations-count'] });
     },
