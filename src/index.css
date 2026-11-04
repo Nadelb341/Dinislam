@@ -732,3 +732,7 @@
 .pe-arc { transform: translateX(-50%) scale(.96); opacity: 0; transition: opacity 3s ease, transform 3s ease; filter: blur(.4px); }
 .pe-arc.actif { opacity: .55; transform: translateX(-50%) scale(1); }
 html.dark .pe-arc.actif { opacity: .35; }
+/* 🎧 Consigne audio du professeur : le bouton ▶ respire doucement (2026-11-04) */
+.consigne-pouls { animation: consigne-pouls 2.4s ease-in-out infinite; }
+@keyframes consigne-pouls { 50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(255,255,255,.25); } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .consigne-pouls { animation: none; } }

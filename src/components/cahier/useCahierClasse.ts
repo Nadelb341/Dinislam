@@ -17,6 +17,8 @@ export type CahierDevoir = {
 export type CahierRendu = {
   id: string; devoir_id: string | null; student_id: string; statut: string | null;
   audio_url: string | null; rendu_at: string | null; commentaire_admin: string | null;
+  /** 📷 Photos du travail de l'élève (2026-11-04) */
+  photos?: unknown;
 };
 /** État d'une case élève × devoir */
 export type EtatCase = 'hors' | 'corrige' | 'rendu' | 'a_refaire' | 'rien';
@@ -51,7 +53,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
           : Promise.resolve({ data: [] as CahierEleve[], error: null }),
         ids.length
           ? supabase.from('devoirs_rendus')
-            .select('id, devoir_id, student_id, statut, audio_url, rendu_at, commentaire_admin')
+            .select('id, devoir_id, student_id, statut, audio_url, rendu_at, commentaire_admin, photos')
             .in('student_id', ids)
             .order('rendu_at', { ascending: false })
           : Promise.resolve({ data: [] as CahierRendu[], error: null }),

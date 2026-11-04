@@ -58,6 +58,10 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   app_appearance: ['app-appearance'],
   // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)
   devoir_decisions: ['admin-devoirs', 'weekly-program', 'weekly-program-admin', 'bilans', 'cahier-classe'],
+  // 📓 Cahier par groupe (2026-11-04) : réglages des lignes, qui a écouté / ouvert, modèles
+  group_devoir_settings: ['group-devoir-settings'],
+  devoir_vues: ['devoir-vues'],
+  devoir_modeles: ['devoir-modeles'],
   // 🎒 Prêt pour le cours (élève + colonne ✅ du Tableau de la classe) et 🎯 objectif du jour (2026-10-26)
   course_ready: ['course-ready', 'cahier-classe'],
   daily_goals: ['daily-goals'],

@@ -1,3 +1,5 @@
+import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
+import { asPJ } from '@/lib/devoirFichiers';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -109,6 +111,9 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
 
           {rendu?.audio_url && (
             <audio src={rendu.audio_url} controls preload="metadata" className="w-full h-10 rounded-xl" />
+          )}
+          {asPJ(rendu?.photos).length > 0 && (
+            <div className="space-y-1"><p className="text-xs font-bold">📷 Photos envoyées par {prenom}</p><PiecesJointesVue items={asPJ(rendu?.photos)} grand /></div>
           )}
 
           {statut === 'rendu' && !refaire && (

@@ -9,7 +9,8 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs";
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs"
+  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele";
 
 export interface TrashItem {
   id: string;
@@ -21,7 +22,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -58,6 +59,8 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   absence_justification: "absence_justifications",
   // Journaux du Monitoring vidés d'un coup (2026-11-02) : item_data = toutes les lignes, remises telles quelles
   app_logs: "app_logs",
+  // 📓 Modèle de devoir (2026-11-04, idée 6)
+  devoir_modele: "devoir_modeles",
 };
 
 export async function moveToTrash(userId: string, type: TrashItemType, originalId: string, label: string, data: unknown) {
@@ -165,6 +168,34 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     const { error } = await supabase.from("coran_progress")
       .upsert({ user_id: item.user_id, kind: "lecture", key: "main", data: { ...lecture, bookmarks: next } as unknown as Json, updated_at: new Date().toISOString() }, { onConflict: "user_id,kind,key" });
     if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 📎 Fichier / consigne audio retiré du formulaire d'un nouveau devoir (2026-11-04) : remis dans le brouillon du devoir
+  if (item.item_type === "devoir_piece_jointe") {
+    const d = item.item_data as { key?: string; attachment?: { path: string; name: string; type: string } | null; audio_url?: string | null } | null;
+    if (!d?.key) return false;
+    const cle = "dinislam_homework";
+    let draft: Record<string, unknown> = {};
+    try { draft = JSON.parse(localStorage.getItem(`draft_${cle}`) || "{}") || {}; } catch { draft = {}; }
+    const pj = { ...((draft.pj as Record<string, unknown[]>) || {}) };
+    const consignes = { ...((draft.consignes as Record<string, string>) || {}) };
+    if (d.attachment) pj[d.key] = [...(pj[d.key] || []).filter((x) => (x as { path?: string }).path !== d.attachment!.path), d.attachment];
+    if (d.audio_url) consignes[d.key] = d.audio_url;
+    saveDraft(cle, { titre: "", type: "recitation", description: "", lien_lecon: "", date_limite: "", assigned_to: "all", group_id: "", student_id: "", group_ids: [], ...draft, pj, consignes });
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // ⚙️ Ligne personnelle d'un groupe retirée (2026-11-04) : remise à la fin des lignes du groupe
+  if (item.item_type === "devoir_ligne") {
+    const d = item.item_data as { group_id?: string; ligne?: { key: string } } | null;
+    if (!d?.group_id || !d.ligne) return false;
+    const { data: row } = await supabase.from("group_devoir_settings").select("lignes, max_devoirs").eq("group_id", d.group_id).maybeSingle();
+    const list = Array.isArray(row?.lignes) ? (row!.lignes as { key: string }[]) : [];
+    if (!list.some((l) => l.key === d.ligne!.key)) {
+      const { error } = await supabase.from("group_devoir_settings").upsert({ group_id: d.group_id, max_devoirs: row?.max_devoirs ?? null, lignes: [...list, d.ligne] as unknown as Json });
+      if (error) return false;
+    }
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -38,15 +38,24 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
   const [sending, setSending] = useState(false);
   const [recordOpen, setRecordOpen] = useState(false);
   const lien = lienTravail(devoir);
+  // 📷 Idée 2 (2026-11-04) : photos de son travail (coloriage, cahier…), envoyées avec le devoir
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [apercus, setApercus] = useState<string[]>([]);
+  const photoRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const urls = photos.map((f) => URL.createObjectURL(f));
+    setApercus(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [photos]);
 
   const envoyer = async (audio: Blob | null) => {
     if (!user) return;
     setSending(true);
     try {
-      await envoyerDevoir({ devoirId: devoir.id, userId: user.id, userName: (user.user_metadata?.full_name as string) || '', titre: devoir.titre, audio });
+      await envoyerDevoir({ devoirId: devoir.id, userId: user.id, userName: (user.user_metadata?.full_name as string) || '', titre: devoir.titre, audio, photos });
       fireSuccess();
       toast.success(withName(user, '📨 Bravo {prenom}, ton devoir est envoyé à ton professeur ! Ton diamant attend sa validation 🟠'));
-      rec.reset(); setRecordOpen(false);
+      rec.reset(); setRecordOpen(false); setPhotos([]);
       queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });
       queryClient.invalidateQueries({ queryKey: ['devoir-en-cours', devoir.id] });
       onSent?.();
@@ -79,6 +88,26 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
           ▶️ Commencer mon travail
         </button>
       )}
+      {/* 📷 Ma photo : facultative, partout où l'élève valide un devoir */}
+      <div className="rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-800 bg-pink-50/60 dark:bg-pink-950/20 p-2 space-y-2">
+        <button type="button" onClick={() => photoRef.current?.click()} disabled={sending}
+          className="w-full rounded-lg bg-white dark:bg-card px-3 py-2 text-sm font-extrabold text-pink-800 dark:text-pink-200 border border-pink-200 dark:border-pink-900">
+          📷 {photos.length ? 'Ajouter une autre photo' : 'Ajouter une photo de mon travail'} <span className="font-semibold text-xs">(facultatif)</span>
+        </button>
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
+          onChange={(e) => { const f = [...(e.target.files || [])]; if (f.length) setPhotos((p) => [...p, ...f].slice(0, 6)); e.target.value = ''; }} />
+        {apercus.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {apercus.map((u, i) => (
+              <span key={u} className="relative">
+                <img src={u} alt="" className="h-16 w-16 rounded-lg object-cover border" />
+                <button type="button" aria-label="Enlever cette photo" onClick={() => setPhotos((p) => p.filter((_, k) => k !== i))}
+                  className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-[#EF4444] text-white text-[11px] font-extrabold grid place-items-center">✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       {devoir.audio_requis ? (
         !recordOpen ? (
           <button type="button" onClick={() => setRecordOpen(true)}
@@ -108,7 +137,7 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
         )
       ) : (
         <button type="button" disabled={sending}
-          onClick={() => askValidation('Tu as fini ton devoir ?', `« ${devoir.titre} » sera envoyé à ton professeur pour validation.`, () => void envoyer(null))}
+          onClick={() => askValidation('Tu as fini ton devoir ?', `« ${devoir.titre} »${photos.length ? ` et ${photos.length > 1 ? 'tes photos' : 'ta photo'}` : ''} sera envoyé à ton professeur pour validation.`, () => void envoyer(null))}
           className={cn('w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-sm font-extrabold flex items-center justify-center gap-2', sending && 'opacity-60')}>
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}✅ Je valide mon devoir
         </button>

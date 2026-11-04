@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { WeeklyPath } from "./WeeklyPath";
 import { praiseFor, type WeeklyProgram } from "@/lib/weeklyProgram";
-import { matiereOf } from "@/lib/devoirMatieres";
 import { DevoirValider } from "./DevoirValider";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmValidation } from "@/hooks/useConfirmValidation";
 import { useConfetti } from "@/hooks/useConfetti";
-import { AudioProf } from "./AudioProf";
+import { ConsigneAudioGrande } from "./AudioProf";
+import { PiecesJointesVue } from "@/components/shared/PiecesJointesVue";
+import { asPJ, fondMatiere, matiereDe, type PieceJointe } from "@/lib/devoirFichiers";
+import { marquerVue } from "@/lib/devoirVues";
 import { PretPourLeCours, ObjectifDuJour } from "./CahierDuJour";
 import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
@@ -44,6 +46,10 @@ type Devoir = {
   /** 🎧 Consigne audio du professeur et correction audio (2026-10-26) */
   consigne_audio_url: string | null;
   correction_audio_url: string | null;
+  /** 📎 Documents / photos du professeur et ligne personnelle (2026-11-04) */
+  pieces_jointes: PieceJointe[];
+  matiere_label: string | null;
+  matiere_emoji: string | null;
   /** Rotation à l'heure du cours (2026-10-27) */
   group_id: string | null;
   visible_a: string | null;
@@ -67,9 +73,13 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
         : statut === 'rendu' ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-700"
         : "border-sky-300 bg-sky-50/60 dark:bg-sky-950/20 dark:border-sky-800"
     )}>
-      <div className="flex items-start gap-2">
-        <span className="text-2xl">{matiereOf(devoir.type).emoji}</span>
+      {/* 🎧 L'audio d'abord (choix de Nadia, 2026-11-04) : les petits ne savent pas tous lire */}
+      {statut !== 'corrige' && <ConsigneAudioGrande url={devoir.consigne_audio_url} onEcoute={() => void marquerVue(devoir.id, user?.id, 'audio')} />}
+      <div className="flex items-start gap-2.5">
+        {/* 🎨 Idée 7 : la matière en grand pictogramme de couleur, reconnaissable sans lire */}
+        <span aria-label={matiereDe(devoir).label} className={cn("grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-3xl", fondMatiere(devoir.type))}>{matiereDe(devoir).emoji}</span>
         <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">{matiereDe(devoir).label}</p>
           <p className="font-bold text-foreground text-sm [overflow-wrap:anywhere]">{devoir.titre}</p>
           {devoir.description && <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{devoir.description}</p>}
           {devoir.date_limite && (
@@ -78,8 +88,10 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
         </div>
       </div>
 
-      {/* 🎧 Consigne audio du professeur */}
-      <AudioProf url={devoir.consigne_audio_url} kind="consigne" />
+      {/* 📎 Documents et photos du professeur, ouverts dans l'appli (idée 8) */}
+      {devoir.pieces_jointes.length > 0 && (
+        <PiecesJointesVue items={devoir.pieces_jointes} grand onOpen={() => void marquerVue(devoir.id, user?.id, 'document')} />
+      )}
 
       {/* 💎 Devoir en étapes : une case par étape, le diamant se remplit petit à petit (2026-10-26) */}
       {devoir.etapes.length > 0 && statut !== 'corrige' && (
@@ -204,6 +216,9 @@ export default function BlocDevoirsEleve() {
         cible_id: d.cible_id ?? null,
         audio_requis: !!d.audio_requis,
         consigne_audio_url: d.consigne_audio_url ?? null,
+        pieces_jointes: asPJ(d.pieces_jointes),
+        matiere_label: d.matiere_label ?? null,
+        matiere_emoji: d.matiere_emoji ?? null,
         correction_audio_url: rendu?.correction_audio_url ?? null,
         etapes: Array.isArray(d.etapes) ? (d.etapes as unknown[]).map(String) : [],
         etapesFaites: (steps || []).filter((x) => x.devoir_id === d.id).map((x) => x.step),

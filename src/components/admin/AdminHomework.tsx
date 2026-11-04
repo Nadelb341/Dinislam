@@ -3,7 +3,7 @@ import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash } from '@/lib/trash';
+import { moveToTrash, trashThenDelete } from '@/lib/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,10 +33,16 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import type { TablesInsert } from '@/integrations/supabase/types';
+import type { Json, TablesInsert } from '@/integrations/supabase/types';
+import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
+import { asPJ, lignesHabituelles, lundiCourant, type LigneDevoir, type PieceJointe } from '@/lib/devoirFichiers';
+import { OutilsDeLigne } from '@/components/cahier/OutilsLigneDevoir';
+import { ReglagesDevoirsGroupe } from '@/components/cahier/ReglagesDevoirsGroupe';
+import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
+import { CopierDevoirsDialog } from '@/components/cahier/CopierDevoirsDialog';
 
 const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean; programme?: boolean };
+type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean; programme?: boolean; pj?: Record<string, PieceJointe[]>; consignes?: Record<string, string> };
 
 interface AdminHomeworkProps {
   onBack: () => void;
@@ -56,6 +62,8 @@ const TYPE_OPTIONS = [
   { value: 'exercice_pdf', label: '📄 Exercice PDF' },
   { value: 'autre', label: '✏️ Autre' },
 ];
+
+type ItemDevoir = { titre: string; type: string; cible: string; audio: boolean; pj: PieceJointe[]; consigne: string | null; label: string | null; emoji: string | null };
 
 const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const { user } = useAuth();
@@ -83,6 +91,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     source_task_id: '' as string,
     // 🕑 Idée 2 (rotation, 2026-10-27) : préparé à l'avance, visible par les élèves au début du prochain cours
     programme: false,
+    // 📎 Documents/photos et 🎙️ consigne audio de chaque ligne (proposition A, 2026-11-04) ; clé « detail » = devoir détaillé
+    pj: {} as Record<string, PieceJointe[]>,
+    consignes: {} as Record<string, string>,
   });
   const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
@@ -90,23 +101,30 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2) et ses niveaux (idée 1)
   const { next: prochainCours, schedule: horaireGroupe } = useGroupCourse(groupeId);
   const { data: niveaux = [] } = useNiveaux(groupeId);
-  // Idée 3 : consigne audio ; idée 4 : correction audio
-  const [consigneAudio, setConsigneAudio] = useState<Blob | null>(null);
+  // Idée 4 : correction audio (la consigne audio est maintenant sur chaque ligne, 2026-11-04)
   const [correctionAudio, setCorrectionAudio] = useState<Blob | null>(null);
-  const [enregistreurKey, setEnregistreurKey] = useState(0);
   // ✍️ Matières prêtes à compléter (2026-10-26) : une ligne par matière, il suffit d'écrire la consigne
   const [parMatiere, setParMatiere] = useState(true);
   const lignes = form.lignes;
   const setLignes = (f: (l: Record<string, string>) => Record<string, string>) => setForm((cur) => ({ ...cur, lignes: f(cur.lignes) }));
-  const lignesRemplies = MATIERES.filter((m) => (lignes[m.type] || '').trim());
+  // ⚙️ Lignes du groupe visé (réglées par groupe, 2026-11-04) ; sans groupe précis : les matières habituelles
+  const groupeCible = groupeId ?? (form.assigned_to === 'group' && form.group_id ? form.group_id : null);
+  const { data: reglagesGroupe } = useReglagesDevoirsGroupe(groupeCible);
+  const lignesVisibles: LigneDevoir[] = (reglagesGroupe?.lignes ?? lignesHabituelles()).filter((l) => l.actif || (lignes[l.key] || '').trim());
+  const lignesRemplies = lignesVisibles.filter((m) => (lignes[m.key] || '').trim());
+  const setPJ = (key: string, next: PieceJointe[]) => setForm((f) => ({ ...f, pj: { ...f.pj, [key]: next } }));
+  const setConsigne = (key: string, url: string | null) => setForm((f) => { const c = { ...f.consignes }; if (url) c[key] = url; else delete c[key]; return { ...f, consignes: c }; });
+  const [reglagesOuverts, setReglagesOuverts] = useState(false);
+  const [copierOuvert, setCopierOuvert] = useState(false);
 
   useEffect(() => {
     const draft = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
-    const remplie = (d: HomeworkDraft) => !!d.titre?.trim() || Object.values(d.lignes || {}).some((v) => v.trim());
+    const remplie = (d: HomeworkDraft) => !!d.titre?.trim() || Object.values(d.lignes || {}).some((v) => v.trim())
+      || Object.values(d.pj || {}).some((a) => a.length > 0) || Object.values(d.consignes || {}).some(Boolean);
     if (!draft || !remplie(draft)) return;
     if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
       // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false, programme: draft.programme ?? false }));
+      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false, programme: draft.programme ?? false, pj: draft.pj ?? {}, consignes: draft.consignes ?? {} }));
       setShowForm(true);
     } else {
       setHomeworkDraft(draft);
@@ -114,7 +132,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   }, []);
 
   useEffect(() => {
-    if (!showForm || (!form.titre.trim() && !Object.values(form.lignes).some((v) => v.trim()))) return;
+    if (!showForm || (!form.titre.trim() && !Object.values(form.lignes).some((v) => v.trim()) && !Object.values(form.pj).some((a) => a.length) && !Object.keys(form.consignes).length)) return;
     saveDraft(DRAFT_KEY_HOMEWORK, form);
   }, [showForm, form]);
 
@@ -244,14 +262,14 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const createDevoir = useMutation({
     mutationFn: async () => {
       // Par matière : un devoir par ligne remplie ; sinon le devoir détaillé du formulaire
-      const items = parMatiere
-        ? lignesRemplies.map((m) => ({ titre: (lignes[m.type] || '').trim(), type: m.type, cible: form.cibles[m.type] || '', audio: !!form.audios[m.type] }))
-        : [{ titre: form.titre.trim(), type: form.type, cible: form.cible_id, audio: form.audio_requis }];
+      const items: ItemDevoir[] = parMatiere
+        ? lignesRemplies.map((m) => ({ titre: (lignes[m.key] || '').trim(), type: m.type, cible: form.cibles[m.key] || '', audio: !!form.audios[m.key],
+            pj: form.pj[m.key] || [], consigne: form.consignes[m.key] || null, label: m.perso ? m.label : null, emoji: m.perso ? m.emoji : null }))
+        : [{ titre: form.titre.trim(), type: form.type, cible: form.cible_id, audio: form.audio_requis, pj: form.pj.detail || [], consigne: form.consignes.detail || null, label: null, emoji: null }];
       if (!form.date_limite) throw new Error('Choisis la date à rendre 📅');
-      consigneUrl.current = consigneAudio && user ? await deposerAudioProf(user.id, consigneAudio, 'consignes') : null;
       if (!items.length || items.some((it) => !it.titre)) throw new Error(parMatiere ? 'Écris au moins une consigne sur une ligne' : 'Le titre est obligatoire');
       const destinataires = new Set<string>();
-      for (const it of items) (await creerUn(it.titre, it.type, it.cible, it.audio)).forEach((id) => destinataires.add(id));
+      for (const it of items) (await creerUn(it)).forEach((id) => destinataires.add(id));
       // 📓 Une seule notification par distribution (idée 4, texte choisi par Nadia)
       const ids = [...destinataires];
       const liste = items.map((it) => it.titre).join(' · ');
@@ -275,20 +293,18 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       toast.success(parMatiere && lignesRemplies.length > 1 ? `✅ ${lignesRemplies.length} devoirs assignés à ${count} élève(s) !` : `✅ Devoir assigné à ${count} élève(s) !`);
       clearDraft(DRAFT_KEY_HOMEWORK);
       setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false, programme: false });
-      setConsigneAudio(null); setEnregistreurKey((k) => k + 1);
+      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false, programme: false, pj: {}, consignes: {} });
     },
     onError: (err) => toast.error(err.message),
   });
-  const consigneUrl = useRef<string | null>(null);
-
-  /** Crée un devoir (titre + matière) pour les destinataires choisis ; renvoie le nombre d'élèves */
-  const creerUn = async (titre: string, type: string, cible: string, audio: boolean): Promise<string[]> => {
+  /** Crée un devoir (titre + matière + documents + consigne audio) pour les destinataires choisis ; renvoie les élèves */
+  const creerUn = async ({ titre, type, cible, audio, pj, consigne, label, emoji }: ItemDevoir): Promise<string[]> => {
     {
       const payload: TablesInsert<'devoirs'> = {
         titre, type,
         cible_module: cible ? type : null, cible_id: cible || null, audio_requis: audio,
-        consigne_audio_url: consigneUrl.current,
+        consigne_audio_url: consigne,
+        pieces_jointes: pj as unknown as Json, matiere_label: label, matiere_emoji: emoji,
         description: form.description || null,
         lien_lecon: form.lien_lecon || null,
         date_limite: form.date_limite || null,
@@ -466,6 +482,13 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     return { eleve, devoirsEleve };
   });
 
+  // 👂 Idée 3 (2026-11-04) : qui a écouté la consigne audio / ouvert les documents
+  const { data: vues = [] } = useQuery({
+    queryKey: ['devoir-vues'],
+    queryFn: async () => ((await supabase.from('devoir_vues').select('devoir_id, student_id, kind')).data || []),
+  });
+  const aVu = (devoirId: string, eleveId: string, kind: 'audio' | 'document') => vues.some((v) => v.devoir_id === devoirId && v.student_id === eleveId && v.kind === kind);
+
   // 🔄 Chaque devoir de chaque élève, rangé : Cette semaine / Semaine passée / Historique / À rattraper
   const groupesDe = (id: string) => memberships.filter((m) => m.user_id === id).map((m) => m.group_id);
   const lignesProf: LigneProf[] = devoirsParEleve.flatMap(({ eleve, devoirsEleve }) => devoirsEleve.map((d) => {
@@ -481,6 +504,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       eleveId: eleve.user_id, devoirId: d.id, titre: d.titre, type: d.type, statut: r?.statut ?? null, renduAt: r?.rendu_at ?? null,
       visibleLe: d.visible_a && new Date(d.visible_a) > now ? new Date(d.visible_a) : null,
       fait, rang, heureRendu, decision, rattraper: aRattraper(ligneR, fait, rang, decision, arrivee), retard: renduEnRetard(r?.rendu_at, heureRendu),
+      emoji: d.matiere_emoji ?? undefined,
+      ecoute: d.consigne_audio_url ? aVu(d.id, eleve.user_id, 'audio') : null,
+      ouvert: asPJ(d.pieces_jointes).length ? aVu(d.id, eleve.user_id, 'document') : null,
     };
   }));
   // Prochain cours du groupe ouvert (sinon mercredi 14 h) et cours passés pour la bande de semaines
@@ -490,6 +516,60 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const coursHisto = coursPasses(horaireVu, holidays, premierDevoir, now).slice(0, -1);
   // 🕑 Idée 2 : heure où les devoirs préparés à l'avance apparaissent (début du prochain cours) et leur date à rendre
   const heureVisible = prochainCoursVu;
+
+  // 💎 Maximum de devoirs par semaine des groupes visés (réglage de chaque groupe, 2026-11-04)
+  const { data: maxParGroupe = [] } = useQuery({
+    queryKey: ['group-devoir-settings', 'max'],
+    queryFn: async () => ((await supabase.from('group_devoir_settings').select('group_id, max_devoirs')).data || []),
+  });
+  const groupesVises = groupeCible ? [groupeCible] : form.assigned_to === 'groups' ? form.group_ids : [];
+  const lundi = lundiCourant(now).getTime();
+  const nbNouveaux = parMatiere ? lignesRemplies.length : (form.titre.trim() ? 1 : 0);
+  const compteurs = groupesVises.map((g) => ({
+    g, nom: groupes.find((x) => x.id === g)?.name ?? 'Groupe',
+    max: maxParGroupe.find((x) => x.group_id === g)?.max_devoirs ?? null,
+    deja: devoirs.filter((d) => d.group_id === g && new Date(d.created_at || 0).getTime() >= lundi).length,
+  }));
+
+  // ⚡ Idée 6 : modèles de devoirs (avec documents et consigne audio)
+  const { data: modeles = [] } = useQuery({
+    queryKey: ['devoir-modeles'],
+    queryFn: async () => ((await supabase.from('devoir_modeles').select('*').order('created_at', { ascending: false })).data || []),
+  });
+  const [gererModeles, setGererModeles] = useState(false);
+  const [modeleASupprimer, setModeleASupprimer] = useState<{ id: string; titre: string } | null>(null);
+  const matiereDeType = (t: string) => MATIERES.find((m) => m.type === t)?.emoji ?? '✏️';
+  const garderModele = async (m: LigneDevoir) => {
+    const titre = (lignes[m.key] || '').trim();
+    if (!titre) return;
+    const { error } = await supabase.from('devoir_modeles').insert({
+      titre, type: m.type, matiere_label: m.perso ? m.label : null, matiere_emoji: m.perso ? m.emoji : null, ligne_key: m.key,
+      pieces_jointes: (form.pj[m.key] || []) as unknown as Json, consigne_audio_url: form.consignes[m.key] || null,
+      cible_id: form.cibles[m.key] || null, audio_requis: !!form.audios[m.key], created_by: user?.id ?? null,
+    });
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ['devoir-modeles'] });
+    toast.success(`⚡ Modèle « ${titre} » gardé : touche-le la prochaine fois pour remplir la ligne`);
+  };
+  const appliquerModele = (m: (typeof modeles)[number]) => {
+    const ligne = lignesVisibles.find((l) => l.key === m.ligne_key) ?? lignesVisibles.find((l) => l.type === m.type && !l.perso) ?? lignesVisibles.find((l) => l.type === m.type);
+    if (!ligne) { toast.error('Cette ligne n\'est pas affichée pour ce groupe (⚙️ Lignes et maximum)'); return; }
+    setForm((f) => ({
+      ...f, lignes: { ...f.lignes, [ligne.key]: m.titre }, pj: { ...f.pj, [ligne.key]: asPJ(m.pieces_jointes) },
+      consignes: m.consigne_audio_url ? { ...f.consignes, [ligne.key]: m.consigne_audio_url } : f.consignes,
+      cibles: m.cible_id ? { ...f.cibles, [ligne.key]: m.cible_id } : f.cibles, audios: { ...f.audios, [ligne.key]: m.audio_requis },
+    }));
+    toast.success(`⚡ « ${m.titre} » ajouté sur la ligne ${ligne.emoji} ${ligne.label}`);
+  };
+  const supprimerModele = async (id: string) => {
+    const m = modeles.find((x) => x.id === id);
+    if (!m || !user) return;
+    try {
+      await trashThenDelete({ userId: user.id, type: 'devoir_modele', id, label: `⚡ Modèle « ${m.titre} »`, data: m, remove: () => supabase.from('devoir_modeles').delete().eq('id', id) });
+      queryClient.invalidateQueries({ queryKey: ['devoir-modeles'] });
+      toast.success('Modèle supprimé (dans la corbeille de Paramètres)');
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Suppression impossible'); }
+  };
 
   // 📋 Devoirs précédents pas faits sur lesquels Nadia n'a pas encore choisi (rattraper ou historique)
   const nonDecides = lignesProf.filter((l) => l.rattraper && !l.decision);
@@ -550,6 +630,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
+        {groupeId && (
+          <Button onClick={() => setCopierOuvert(true)} size="sm" variant="outline" className="ms-auto me-2">📋 Copier vers un groupe</Button>
+        )}
         <Button onClick={nouveauDevoir} size="sm">
           <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
         </Button>
@@ -562,7 +645,19 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       {showForm && (
         <Card className="border-dashed border-2 border-primary/30">
           <CardContent className="p-4 space-y-3">
-            <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
+              {compteurs.filter((c) => c.max !== null).map((c) => (
+                <span key={c.g} className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${c.deja + nbNouveaux > (c.max ?? 99) ? 'border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200' : 'bg-muted'}`}>
+                  💎 {compteurs.length > 1 ? `${c.nom} : ` : ''}{c.deja + nbNouveaux} / max {c.max} cette semaine
+                </span>
+              ))}
+            </div>
+            {groupeCible && (
+              <button type="button" onClick={() => setReglagesOuverts(true)} className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs font-bold text-start">
+                ⚙️ Lignes et maximum du groupe « {groupes.find((g) => g.id === groupeCible)?.name ?? ''} »
+              </button>
+            )}
             <div className="flex rounded-xl bg-muted p-1">
               <button type="button" onClick={() => setParMatiere(true)} aria-pressed={parMatiere}
                 className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${parMatiere ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'}`}>✍️ Par matière</button>
@@ -571,25 +666,50 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             </div>
             {parMatiere ? (
               <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground">Écris la consigne sur la ligne de la matière : un devoir (et un diamant 💎) par ligne remplie. Les lignes vides sont ignorées.</p>
-                {MATIERES.map((m) => {
-                  const rempli = !!(lignes[m.type] || '').trim();
+                <p className="text-xs text-muted-foreground">Écris la consigne sur la ligne de la matière : un devoir (et un diamant 💎) par ligne remplie. Au bout de chaque ligne : 📎 documents, 📷 photo, 🎙️ consigne audio (l'élève l'entend en premier).</p>
+                {/* ⚡ Idée 6 : modèles (avec leurs documents et leur consigne audio) */}
+                {modeles.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 px-2 py-1.5">
+                    <span className="text-xs font-bold">⚡ Modèles :</span>
+                    {modeles.map((m) => (
+                      <span key={m.id} className="relative">
+                        <button type="button" onClick={() => appliquerModele(m)} className="rounded-full border bg-card px-2.5 py-1 text-xs font-semibold text-start [overflow-wrap:anywhere]">
+                          {m.matiere_emoji || matiereDeType(m.type)} {m.titre}{m.consigne_audio_url ? ' 🎧' : ''}{asPJ(m.pieces_jointes).length ? ' 📎' : ''}
+                        </button>
+                        {gererModeles && (
+                          <button type="button" aria-label={`Supprimer le modèle ${m.titre}`} onClick={() => setModeleASupprimer({ id: m.id, titre: m.titre })}
+                            className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-[#EF4444] text-white text-[11px] font-extrabold grid place-items-center">✕</button>
+                        )}
+                      </span>
+                    ))}
+                    <button type="button" onClick={() => setGererModeles((v) => !v)} className="text-[11px] font-bold underline">{gererModeles ? 'Terminé' : 'Gérer'}</button>
+                  </div>
+                )}
+                {lignesVisibles.map((m) => {
+                  const rempli = !!(lignes[m.key] || '').trim();
                   return (
-                    <div key={m.type} data-ligne className={`rounded-xl px-2 py-1.5 ${rempli ? 'bg-sky-50 dark:bg-sky-950/30' : ''}`}>
-                      <div className="flex items-center gap-2">
-                        <span className="w-[7.5rem] shrink-0 text-sm font-semibold [overflow-wrap:anywhere]">{m.emoji} {m.label}</span>
-                        <Input value={lignes[m.type] || ''} placeholder={`ex. ${m.exemple}`} aria-label={`Devoir de ${m.label}`}
-                          onChange={(e) => setLignes((l) => ({ ...l, [m.type]: e.target.value }))}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('[data-ligne]')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
-                      </div>
-                      {/* 📍 Leçon / sourate / nom… ouvert par « Commencer mon travail » · 🎙️ audio demandé */}
+                    <div key={m.key} data-ligne className={`rounded-xl px-2 py-1.5 ${rempli ? 'bg-sky-50 dark:bg-sky-950/30' : ''}`}>
+                      <OutilsDeLigne ligneKey={m.key} ligneNom={m.label} pj={form.pj[m.key] || []} audio={form.consignes[m.key] || null}
+                        setPJ={(n) => setPJ(m.key, n)} setAudio={(u) => setConsigne(m.key, u)}>
+                        {(icones) => (
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
+                            <span className="min-w-0 flex-1 sm:flex-none sm:w-[7.5rem] shrink-0 text-sm font-semibold [overflow-wrap:anywhere]">{m.emoji} {m.label}</span>
+                            <Input value={lignes[m.key] || ''} placeholder={m.exemple ? `ex. ${m.exemple}` : 'la consigne…'} aria-label={`Devoir de ${m.label}`} className="order-last basis-full min-w-0 sm:order-none sm:basis-auto sm:flex-1"
+                              onChange={(e) => setLignes((l) => ({ ...l, [m.key]: e.target.value }))}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('[data-ligne]')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
+                            {icones}
+                          </div>
+                        )}
+                      </OutilsDeLigne>
+                      {/* 📍 Leçon / sourate / nom… ouvert par « Commencer mon travail » · 🎙️ audio demandé · ⚡ modèle */}
                       {rempli && (
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5 ps-[7.5rem]">
-                          <CibleSelect type={m.type} value={form.cibles[m.type] || ''} onChange={(v) => setForm((f) => ({ ...f, cibles: { ...f.cibles, [m.type]: v } }))} />
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5 sm:ps-[7.5rem]">
+                          {!m.perso && <CibleSelect type={m.type} value={form.cibles[m.key] || ''} onChange={(v) => setForm((f) => ({ ...f, cibles: { ...f.cibles, [m.key]: v } }))} />}
                           <label className="flex items-center gap-1.5 text-xs font-semibold">
-                            <input type="checkbox" checked={!!form.audios[m.type]} onChange={(e) => setForm((f) => ({ ...f, audios: { ...f.audios, [m.type]: e.target.checked } }))} className="h-4 w-4 accent-orange-500" />
+                            <input type="checkbox" checked={!!form.audios[m.key]} onChange={(e) => setForm((f) => ({ ...f, audios: { ...f.audios, [m.key]: e.target.checked } }))} className="h-4 w-4 accent-orange-500" />
                             🎙️ audio demandé
                           </label>
+                          <button type="button" onClick={() => void garderModele(m)} className="rounded-full border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-[11px] font-bold">⚡ Garder comme modèle</button>
                         </div>
                       )}
                     </div>
@@ -597,8 +717,16 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 })}
               </div>
             ) : (<>
-            <Input placeholder="Titre du devoir *" value={form.titre}
-              onChange={e => setForm({ ...form, titre: e.target.value })} />
+            <OutilsDeLigne ligneKey="detail" ligneNom="devoir détaillé" pj={form.pj.detail || []} audio={form.consignes.detail || null}
+              setPJ={(n) => setPJ('detail', n)} setAudio={(u) => setConsigne('detail', u)}>
+              {(icones) => (
+                <div className="flex items-center gap-2">
+                  <Input placeholder="Titre du devoir *" value={form.titre} className="min-w-0"
+                    onChange={e => setForm({ ...form, titre: e.target.value })} />
+                  {icones}
+                </div>
+              )}
+            </OutilsDeLigne>
             <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
               className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
               {TYPE_OPTIONS.map(t => (
@@ -744,8 +872,11 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 )}
               </div>
             )}
-            <EnregistreurAudio key={enregistreurKey} label="Consigne audio pour les élèves (facultatif)" onChange={setConsigneAudio} />
-            <Button onClick={() => createDevoir.mutate()} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
+            <Button onClick={() => {
+              const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
+              if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
+              else createDevoir.mutate();
+            }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
               {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
             </Button>
           </CardContent>
@@ -758,6 +889,27 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
           Devoirs assignés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
         </h3>
         {nomGroupe && <p className="text-xs text-muted-foreground mb-2">👥 Seulement les élèves du groupe « {nomGroupe} »</p>}
+        {/* 👂 Idée 3 : consignes écoutées et documents ouverts, devoir par devoir (cette semaine) */}
+        {(() => {
+          const semaine = [...new Map(lignesProf.filter((l) => l.rang === 'semaine' && (l.ecoute !== null || l.ouvert !== null)).map((l) => [l.devoirId, l])).values()];
+          if (!semaine.length) return null;
+          return (
+            <div className="mb-2 rounded-xl border border-sky-200 dark:border-sky-900 bg-sky-50/60 dark:bg-sky-950/20 p-2 space-y-1">
+              <p className="text-xs font-extrabold">👂 Qui a écouté / ouvert (cette semaine)</p>
+              {semaine.map((l) => {
+                const tous = lignesProf.filter((x) => x.devoirId === l.devoirId);
+                const n = (k: 'ecoute' | 'ouvert') => tous.filter((x) => x[k]).length;
+                return (
+                  <p key={l.devoirId} className="text-xs [overflow-wrap:anywhere]">
+                    <span className="cahier-main text-sm">{l.titre}</span>
+                    {l.ecoute !== null && <span className="ms-1.5 rounded-full bg-card border px-1.5 font-bold">🎧 écouté par {n('ecoute')}/{tous.length}</span>}
+                    {l.ouvert !== null && <span className="ms-1.5 rounded-full bg-card border px-1.5 font-bold">📎 ouvert par {n('ouvert')}/{tous.length}</span>}
+                  </p>
+                );
+              })}
+            </div>
+          );
+        })()}
         {/* 🔄 Rotation à l'heure du cours (2026-10-27) : onglets, « À rattraper », bilan, historique. Depuis un groupe : TOUS ses élèves */}
         <RotationProf
           eleves={devoirsParEleve.filter(({ devoirsEleve }) => membresGroupe || devoirsEleve.length > 0).map(({ eleve }) => eleve)}
@@ -844,7 +996,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                         <p className="text-xs text-muted-foreground mb-2">
                           {new Date(r.rendu_at).toLocaleDateString('fr-FR')}
                         </p>
-                        {!r.audio_url && r.statut === 'rendu' && (
+                        {!r.audio_url && !asPJ(r.photos).length && r.statut === 'rendu' && (
                           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">✅ L'élève a validé son devoir (sans audio demandé)</p>
                         )}
                         {r.audio_url && (
@@ -856,6 +1008,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                               style={{ width: '100%', height: '40px', borderRadius: '12px' }}
                             />
                           </div>
+                        )}
+                        {asPJ(r.photos).length > 0 && (
+                          <div className="mb-2 space-y-1"><p className="text-xs font-bold">📷 Photos de l'élève</p><PiecesJointesVue items={asPJ(r.photos)} grand /></div>
                         )}
                         {r.commentaire_admin && (
                           <p className="text-xs text-destructive bg-destructive/5 rounded-lg p-2 mb-2">
@@ -923,6 +1078,20 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         onSave={(choix) => { enregistrerDecisions.mutate(choix); fermerDecisions(); }} />
 
       {/* Dialog récupération brouillon devoir */}
+      {groupeCible && <ReglagesDevoirsGroupe groupId={groupeCible} groupName={groupes.find((g) => g.id === groupeCible)?.name ?? 'Groupe'} open={reglagesOuverts} onClose={() => setReglagesOuverts(false)} />}
+      {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} />}
+      <AlertDialog open={!!modeleASupprimer} onOpenChange={(o) => { if (!o) setModeleASupprimer(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le modèle « {modeleASupprimer?.titre} » ?</AlertDialogTitle>
+            <AlertDialogDescription>Il ira dans la corbeille de Paramètres. Les devoirs déjà donnés ne changent pas.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (modeleASupprimer) void supprimerModele(modeleASupprimer.id); }}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {validationDialog}
       {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
       <AlertDialog open={!!devoirToDelete} onOpenChange={(open) => { if (!open) setDevoirToDelete(null); }}>
@@ -960,7 +1129,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             <button
               onClick={() => {
                 if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false, programme: homeworkDraft.programme ?? false });
+                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false, programme: homeworkDraft.programme ?? false, pj: homeworkDraft.pj ?? {}, consignes: homeworkDraft.consignes ?? {} });
                 setShowForm(true);
                 setHomeworkDraft(null);
               }}

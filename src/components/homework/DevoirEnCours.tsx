@@ -3,9 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { matiereOf } from '@/lib/devoirMatieres';
 import { DevoirValider } from './DevoirValider';
-import { AudioProf } from './AudioProf';
+import { ConsigneAudioGrande } from './AudioProf';
+import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
+import { asPJ, matiereDe } from '@/lib/devoirFichiers';
+import { marquerVue } from '@/lib/devoirVues';
 
 /**
  * 📚 Bandeau « devoir en cours » (2026-10-26) : quand l'élève arrive dans une carte par « Commencer mon travail »
@@ -31,7 +33,7 @@ function Panel() {
     enabled: !!devoirId && !!user,
     queryFn: async () => {
       const [{ data: d }, { data: r }] = await Promise.all([
-        supabase.from('devoirs').select('id, titre, type, description, cible_id, audio_requis, date_limite, consigne_audio_url').eq('id', devoirId!).maybeSingle(),
+        supabase.from('devoirs').select('id, titre, type, description, cible_id, audio_requis, date_limite, consigne_audio_url, pieces_jointes, matiere_label, matiere_emoji').eq('id', devoirId!).maybeSingle(),
         supabase.from('devoirs_rendus').select('statut, commentaire_admin, correction_audio_url').eq('devoir_id', devoirId!).eq('student_id', user!.id).maybeSingle(),
       ]);
       return d ? { d, r } : null;
@@ -39,7 +41,7 @@ function Panel() {
   });
   if (!devoirId || !data) return null;
   const { d, r } = data;
-  const m = matiereOf(d.type);
+  const m = matiereDe(d);
   const fermer = () => { const n = new URLSearchParams(params); n.delete('devoir'); setParams(n, { replace: true }); };
 
   return (
@@ -53,9 +55,11 @@ function Panel() {
         </div>
         {!reduit && (
           <div className="p-3 space-y-2">
+            {/* 🎧 L'audio d'abord (2026-11-04) */}
+            <ConsigneAudioGrande compact url={d.consigne_audio_url} onEcoute={() => void marquerVue(d.id, user?.id, 'audio')} />
             {d.description && <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{d.description}</p>}
             {d.date_limite && <p className="text-xs font-semibold">📅 À rendre pour le {new Date(d.date_limite).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>}
-            <AudioProf url={d.consigne_audio_url} kind="consigne" />
+            <PiecesJointesVue items={asPJ(d.pieces_jointes)} onOpen={() => void marquerVue(d.id, user?.id, 'document')} />
             <DevoirValider dansLaCarte devoir={{ id: d.id, titre: d.titre, type: d.type, cible_id: d.cible_id, audio_requis: d.audio_requis, statut: r?.statut ?? null, commentaire: r?.commentaire_admin, correction_audio_url: r?.correction_audio_url }} />
             <button type="button" onClick={() => navigate('/?open=devoirs')} className="w-full text-center text-xs font-bold text-sky-700 dark:text-sky-300">📚 Retour à mon cahier de texte</button>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
+import { fondMatiere, matiereDe } from '@/lib/devoirFichiers';
 import { cleCours, compteARebours, estFaitRange, jourCourt, type Rangement } from '@/lib/rotationDevoirs';
 
 /** Un devoir déjà rangé par la rotation (voir src/lib/rotationDevoirs.ts) */
@@ -18,6 +19,11 @@ export interface DevoirRange {
   heureRendu: Date;
   rattraper: boolean;
   retard: boolean;
+  /** 2026-11-04 : ligne personnelle (emoji / nom), consigne audio et documents du professeur */
+  matiere_label?: string | null;
+  matiere_emoji?: string | null;
+  consigne_audio_url?: string | null;
+  pieces_jointes?: unknown[];
 }
 
 export type Onglet = 'semaine' | 'passee' | 'historique';
@@ -92,7 +98,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
   }, [pageKey, pageActuelle]);
 
   const ligne = (d: DevoirRange, passe: boolean) => {
-    const m = matiereOf(d.type);
+    const m = matiereDe(d);
     const fait = estFaitRange(d);
     const chip = etat(d, passe);
     const sous = d.etapes.length > 0 && !fait ? `💎 ${d.etapesFaites.length}/${d.etapes.length} étape${d.etapes.length > 1 ? 's' : ''}` : m.label;
@@ -102,10 +108,11 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
         <button type="button" onClick={() => setOuvertId(ouvert ? null : d.id)} aria-expanded={ouvert}
           className={cn('w-full flex items-center gap-2.5 rounded-xl border bg-card/95 px-3 py-2 text-left shadow-sm transition-colors',
             ouvert ? 'border-sky-400' : 'border-border hover:border-sky-300', passe && !ouvert && 'opacity-70')}>
-          <span className="text-xl shrink-0">{m.emoji}</span>
+          {/* 🎨 Idée 7 (2026-11-04) : pictogramme de couleur par matière, pour les enfants qui ne lisent pas encore */}
+          <span className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-xl text-2xl', fondMatiere(d.type))}>{m.emoji}</span>
           <span className="flex-1 min-w-0">
             <span className={cn('block cahier-main text-lg leading-6 [overflow-wrap:anywhere]', fait && passe && 'text-muted-foreground')}>{d.titre}</span>
-            <span className="block text-[11px] text-muted-foreground">{sous}</span>
+            <span className="block text-[11px] text-muted-foreground">{sous}{d.consigne_audio_url ? ' · 🎧 consigne à écouter' : ''}{d.pieces_jointes?.length ? ` · 📎 ${d.pieces_jointes.length}` : ''}</span>
           </span>
           <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold', chip.c)}>{chip.t}</span>
         </button>

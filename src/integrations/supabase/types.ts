@@ -1085,6 +1085,51 @@ export type Database = {
           },
         ]
       }
+      devoir_modeles: {
+        Row: {
+          audio_requis: boolean
+          cible_id: string | null
+          consigne_audio_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          ligne_key: string | null
+          matiere_emoji: string | null
+          matiere_label: string | null
+          pieces_jointes: Json
+          titre: string
+          type: string
+        }
+        Insert: {
+          audio_requis?: boolean
+          cible_id?: string | null
+          consigne_audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ligne_key?: string | null
+          matiere_emoji?: string | null
+          matiere_label?: string | null
+          pieces_jointes?: Json
+          titre: string
+          type: string
+        }
+        Update: {
+          audio_requis?: boolean
+          cible_id?: string | null
+          consigne_audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ligne_key?: string | null
+          matiere_emoji?: string | null
+          matiere_label?: string | null
+          pieces_jointes?: Json
+          titre?: string
+          type?: string
+        }
+        Relationships: []
+      }
       devoir_steps: {
         Row: {
           checked_at: string
@@ -1114,6 +1159,35 @@ export type Database = {
           },
         ]
       }
+      devoir_vues: {
+        Row: {
+          devoir_id: string
+          first_at: string
+          kind: string
+          student_id: string
+        }
+        Insert: {
+          devoir_id: string
+          first_at?: string
+          kind: string
+          student_id: string
+        }
+        Update: {
+          devoir_id?: string
+          first_at?: string
+          kind?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devoir_vues_devoir_id_fkey"
+            columns: ["devoir_id"]
+            isOneToOne: false
+            referencedRelation: "devoirs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devoirs: {
         Row: {
           assigned_to: string
@@ -1130,6 +1204,9 @@ export type Database = {
           group_id: string | null
           id: string
           lien_lecon: string | null
+          matiere_emoji: string | null
+          matiere_label: string | null
+          pieces_jointes: Json
           student_id: string | null
           titre: string
           type: string
@@ -1150,6 +1227,9 @@ export type Database = {
           group_id?: string | null
           id?: string
           lien_lecon?: string | null
+          matiere_emoji?: string | null
+          matiere_label?: string | null
+          pieces_jointes?: Json
           student_id?: string | null
           titre: string
           type: string
@@ -1170,6 +1250,9 @@ export type Database = {
           group_id?: string | null
           id?: string
           lien_lecon?: string | null
+          matiere_emoji?: string | null
+          matiere_label?: string | null
+          pieces_jointes?: Json
           student_id?: string | null
           titre?: string
           type?: string
@@ -1193,6 +1276,7 @@ export type Database = {
           correction_audio_url: string | null
           devoir_id: string | null
           id: string
+          photos: Json
           rendu_at: string | null
           statut: string | null
           student_id: string
@@ -1204,6 +1288,7 @@ export type Database = {
           correction_audio_url?: string | null
           devoir_id?: string | null
           id?: string
+          photos?: Json
           rendu_at?: string | null
           statut?: string | null
           student_id: string
@@ -1215,6 +1300,7 @@ export type Database = {
           correction_audio_url?: string | null
           devoir_id?: string | null
           id?: string
+          photos?: Json
           rendu_at?: string | null
           statut?: string | null
           student_id?: string
@@ -1279,6 +1365,38 @@ export type Database = {
           student_id?: string
         }
         Relationships: []
+      }
+      group_devoir_settings: {
+        Row: {
+          group_id: string
+          lignes: Json
+          max_devoirs: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          group_id: string
+          lignes?: Json
+          max_devoirs?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          group_id?: string
+          lignes?: Json
+          max_devoirs?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_devoir_settings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "student_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_levels: {
         Row: {

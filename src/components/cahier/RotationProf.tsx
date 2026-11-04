@@ -18,6 +18,10 @@ export interface LigneProf {
   rattraper: boolean;
   retard: boolean;
   decision?: Decision;
+  /** 2026-11-04 : emoji d'une ligne personnelle ; consigne écoutée / document ouvert (null = pas d'audio / pas de document) */
+  emoji?: string;
+  ecoute?: boolean | null;
+  ouvert?: boolean | null;
   /** Préparé à l'avance, pas encore visible par l'élève (idée 2) */
   visibleLe?: Date | null;
 }
@@ -81,9 +85,11 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
     const p = pastille(l, passe);
     return (
       <div key={`${l.devoirId}-${l.eleveId}`} className={cn('bg-background rounded-xl p-2.5 flex items-center gap-2 shadow-sm', passe && 'opacity-80')}>
-        <span className="text-lg shrink-0">{m.emoji}</span>
+        <span className="text-lg shrink-0">{l.emoji || m.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className="cahier-main text-lg leading-6 [overflow-wrap:anywhere]">{l.titre}</p>
+          {l.ecoute != null && <span className={cn('mt-0.5 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', l.ecoute ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-muted text-muted-foreground')}>{l.ecoute ? '🎧 consigne écoutée' : '🎧 pas encore écoutée'}</span>}
+          {l.ouvert != null && <span className={cn('mt-0.5 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', l.ouvert ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-muted text-muted-foreground')}>{l.ouvert ? '📎 document ouvert' : '📎 pas encore ouvert'}</span>}
           <span className={cn('mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', p.c)}>{p.t}</span>
           {l.rattraper && <span className="mt-0.5 ml-1 inline-block rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-0.5 text-[11px] font-bold text-red-800 dark:text-red-200">🔁 à rattraper</span>}
           {l.visibleLe && <span className="mt-0.5 ml-1 inline-block rounded-full bg-sky-100 dark:bg-sky-950/40 px-2 py-0.5 text-[11px] font-bold text-sky-800 dark:text-sky-200">🕑 visible {jourCourt(l.visibleLe)} à {l.visibleLe.getHours()} h{l.visibleLe.getMinutes() ? String(l.visibleLe.getMinutes()).padStart(2, '0') : ''}</span>}
