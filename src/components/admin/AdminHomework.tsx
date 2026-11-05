@@ -646,6 +646,139 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       {showForm && (
         <Card className="border-dashed border-2 border-primary/30">
           <CardContent className="p-4 space-y-3">
+            {/* 📅 Quand et pour qui (2026-11-05, demande de Nadia) : en haut du formulaire, dans son cadre */}
+            <div className="rounded-2xl border-2 border-sky-300 dark:border-sky-800 bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/40 dark:to-indigo-950/30 p-3 space-y-3 shadow-sm">
+              <p className="text-sm font-extrabold text-sky-900 dark:text-sky-100">📅 Pour quand et pour qui ?</p>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">📅 Date à rendre * (pas de cours pendant les vacances : choisis la bonne date)</label>
+                <Input type="datetime-local" value={form.date_limite}
+                  onChange={e => setForm({ ...form, date_limite: e.target.value })} />
+                {form.date_limite && (
+                  <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>
+                )}
+              </div>
+              {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
+              <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${form.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
+                <input type="checkbox" checked={form.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
+                  onChange={(e) => {
+                    const on = e.target.checked;
+                    // Visibles au début du cours → à rendre pour le cours d'après
+                    setForm((f) => ({ ...f, programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : f.date_limite) }));
+                  }} />
+                <span className="text-xs">
+                  <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
+                  {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
+                </span>
+              </label>
+              <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
+                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+                <option value="all">👥 Tous les élèves</option>
+                <option value="group">👨‍👩‍👧 Un groupe</option>
+                <option value="groups">👨‍👩‍👧 Plusieurs groupes</option>
+                <option value="student">👤 Un élève</option>
+                <option value="students">👥 Plusieurs élèves</option>
+              </select>
+              {niveaux.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-muted-foreground">🎚️ Niveau :</span>
+                  {niveaux.map((n) => {
+                    const actif = form.assigned_to === 'students' && form.student_ids.length === n.member_ids.length && n.member_ids.every((i) => form.student_ids.includes(i));
+                    return (
+                      <button key={n.id} type="button" aria-pressed={actif} disabled={!n.member_ids.length}
+                        onClick={() => setForm((f) => ({ ...f, assigned_to: 'students', student_ids: [...n.member_ids], group_id: '', group_ids: [] }))}
+                        className={`rounded-full px-3 py-1 text-xs font-bold border ${actif ? 'bg-[#2457a5] text-white border-[#2457a5]' : 'bg-card'} disabled:opacity-40`}>
+                        {n.name} ({n.member_ids.length})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {form.assigned_to === 'group' && (
+                <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
+                  className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+                  <option value="">Sélectionner un groupe...</option>
+                  {groupes.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              )}
+              {form.assigned_to === 'groups' && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Sélectionner les groupes :</p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupes.map((g) => {
+                      const selected = form.group_ids.includes(g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            group_ids: selected
+                              ? prev.group_ids.filter(id => id !== g.id)
+                              : [...prev.group_ids, g.id],
+                          }))}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                            selected
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background text-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          {selected ? '✓ ' : ''}{g.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.group_ids.length > 0 && (
+                    <p className="text-xs text-primary font-medium">{form.group_ids.length} groupe(s) sélectionné(s)</p>
+                  )}
+                </div>
+              )}
+              {form.assigned_to === 'student' && (
+                <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
+                  className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
+                  <option value="">Sélectionner un élève...</option>
+                  {elevesFormulaire.map((e) => (
+                    <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
+                  ))}
+                </select>
+              )}
+              {form.assigned_to === 'students' && (
+                <div className="space-y-2 mb-3">
+                  <p className="text-xs text-muted-foreground font-medium">Sélectionner les élèves :</p>
+                  <div className="flex flex-wrap gap-2">
+                    {elevesFormulaire.map((e) => {
+                      const selected = form.student_ids.includes(e.user_id);
+                      return (
+                        <button
+                          key={e.user_id}
+                          type="button"
+                          onClick={() => setForm(prev => ({
+                            ...prev,
+                            student_ids: selected ? prev.student_ids.filter(id => id !== e.user_id) : [...prev.student_ids, e.user_id],
+                          }))}
+                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                            selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          {selected ? '✓ ' : ''}{e.full_name || 'Sans nom'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {form.student_ids.length > 0 && (
+                    <p className="text-xs text-primary font-medium">{form.student_ids.length} élève(s) sélectionné(s)</p>
+                  )}
+                </div>
+              )}
+              <Button onClick={() => {
+                const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
+                if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
+                else createDevoir.mutate();
+              }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
+                {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
+              </Button>
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
               {compteurs.filter((c) => c.max !== null).map((c) => (
@@ -751,135 +884,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 onChange={e => setForm({ ...form, etapes: e.target.value })} />
             </div>
             </>)}
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">📅 Date à rendre * (pas de cours pendant les vacances : choisis la bonne date)</label>
-              <Input type="datetime-local" value={form.date_limite}
-                onChange={e => setForm({ ...form, date_limite: e.target.value })} />
-              {form.date_limite && (
-                <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>
-              )}
-            </div>
-            {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
-            <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${form.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
-              <input type="checkbox" checked={form.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  // Visibles au début du cours → à rendre pour le cours d'après
-                  setForm((f) => ({ ...f, programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : f.date_limite) }));
-                }} />
-              <span className="text-xs">
-                <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
-                {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
-              </span>
-            </label>
-            <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
-              className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-              <option value="all">👥 Tous les élèves</option>
-              <option value="group">👨‍👩‍👧 Un groupe</option>
-              <option value="groups">👨‍👩‍👧 Plusieurs groupes</option>
-              <option value="student">👤 Un élève</option>
-              <option value="students">👥 Plusieurs élèves</option>
-            </select>
-            {niveaux.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-xs font-bold text-muted-foreground">🎚️ Niveau :</span>
-                {niveaux.map((n) => {
-                  const actif = form.assigned_to === 'students' && form.student_ids.length === n.member_ids.length && n.member_ids.every((i) => form.student_ids.includes(i));
-                  return (
-                    <button key={n.id} type="button" aria-pressed={actif} disabled={!n.member_ids.length}
-                      onClick={() => setForm((f) => ({ ...f, assigned_to: 'students', student_ids: [...n.member_ids], group_id: '', group_ids: [] }))}
-                      className={`rounded-full px-3 py-1 text-xs font-bold border ${actif ? 'bg-[#2457a5] text-white border-[#2457a5]' : 'bg-card'} disabled:opacity-40`}>
-                      {n.name} ({n.member_ids.length})
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {form.assigned_to === 'group' && (
-              <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
-                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-                <option value="">Sélectionner un groupe...</option>
-                {groupes.map((g) => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            )}
-            {form.assigned_to === 'groups' && (
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Sélectionner les groupes :</p>
-                <div className="flex flex-wrap gap-2">
-                  {groupes.map((g) => {
-                    const selected = form.group_ids.includes(g.id);
-                    return (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => setForm(prev => ({
-                          ...prev,
-                          group_ids: selected
-                            ? prev.group_ids.filter(id => id !== g.id)
-                            : [...prev.group_ids, g.id],
-                        }))}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                          selected
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-foreground border-border hover:bg-muted'
-                        }`}
-                      >
-                        {selected ? '✓ ' : ''}{g.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.group_ids.length > 0 && (
-                  <p className="text-xs text-primary font-medium">{form.group_ids.length} groupe(s) sélectionné(s)</p>
-                )}
-              </div>
-            )}
-            {form.assigned_to === 'student' && (
-              <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
-                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-                <option value="">Sélectionner un élève...</option>
-                {elevesFormulaire.map((e) => (
-                  <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
-                ))}
-              </select>
-            )}
-            {form.assigned_to === 'students' && (
-              <div className="space-y-2 mb-3">
-                <p className="text-xs text-muted-foreground font-medium">Sélectionner les élèves :</p>
-                <div className="flex flex-wrap gap-2">
-                  {elevesFormulaire.map((e) => {
-                    const selected = form.student_ids.includes(e.user_id);
-                    return (
-                      <button
-                        key={e.user_id}
-                        type="button"
-                        onClick={() => setForm(prev => ({
-                          ...prev,
-                          student_ids: selected ? prev.student_ids.filter(id => id !== e.user_id) : [...prev.student_ids, e.user_id],
-                        }))}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                          selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'
-                        }`}
-                      >
-                        {selected ? '✓ ' : ''}{e.full_name || 'Sans nom'}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.student_ids.length > 0 && (
-                  <p className="text-xs text-primary font-medium">{form.student_ids.length} élève(s) sélectionné(s)</p>
-                )}
-              </div>
-            )}
-            <Button onClick={() => {
-              const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
-              if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
-              else createDevoir.mutate();
-            }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
-              {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
-            </Button>
           </CardContent>
         </Card>
       )}
