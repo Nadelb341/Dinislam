@@ -2330,6 +2330,8 @@ export type Database = {
           file_url: string
           id: string
           lesson_id: string
+          lignes: Json | null
+          lignes_auto: Json | null
           target_user_id: string | null
           uploaded_by: string | null
           viewed_at: string | null
@@ -2342,6 +2344,8 @@ export type Database = {
           file_url: string
           id?: string
           lesson_id: string
+          lignes?: Json | null
+          lignes_auto?: Json | null
           target_user_id?: string | null
           uploaded_by?: string | null
           viewed_at?: string | null
@@ -2354,6 +2358,8 @@ export type Database = {
           file_url?: string
           id?: string
           lesson_id?: string
+          lignes?: Json | null
+          lignes_auto?: Json | null
           target_user_id?: string | null
           uploaded_by?: string | null
           viewed_at?: string | null

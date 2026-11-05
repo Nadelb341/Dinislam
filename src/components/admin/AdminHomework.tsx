@@ -626,6 +626,17 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const toggleEleveRendu = (id: string) =>
     setElevesRendusOuverts(prev => ({ ...prev, [id]: !prev[id] }));
 
+  // ✅ Bouton « Assigner » : en haut dans « Pour quand et pour qui ? » ET en bas du formulaire (2026-11-05, demande de Nadia : ne pas avoir à remonter)
+  const boutonAssigner = (
+    <Button onClick={() => {
+        const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
+        if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
+        else createDevoir.mutate();
+      }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
+        {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
+      </Button>
+  );
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" onClick={onBack} className="mb-2">
@@ -771,13 +782,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                   )}
                 </div>
               )}
-              <Button onClick={() => {
-                const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
-                if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
-                else createDevoir.mutate();
-              }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
-                {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
-              </Button>
+              {boutonAssigner}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
@@ -884,6 +889,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                 onChange={e => setForm({ ...form, etapes: e.target.value })} />
             </div>
             </>)}
+            <div className="border-t pt-3">{boutonAssigner}</div>
           </CardContent>
         </Card>
       )}

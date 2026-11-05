@@ -581,7 +581,14 @@ const Nourania = () => {
                                     <span className="hidden sm:inline">Imprimer</span>
                                   </Button>
                                 </div>
-                                <NouraniaPdfViewer fileUrl={content.file_url} />
+                                <NouraniaPdfViewer
+                                  fileUrl={content.file_url}
+                                  contentId={content.id}
+                                  lessonId={lesson.id}
+                                  lessonTitle={`Leçon ${lesson.lesson_number} · ${lesson.title_french}`}
+                                  lignes={content.lignes}
+                                  lignesAuto={content.lignes_auto}
+                                />
                               </div>
                             )}
                             {content.content_type === 'image' && (

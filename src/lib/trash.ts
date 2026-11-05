@@ -10,7 +10,7 @@ export type TrashItemType =
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs"
-  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte";
+  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes";
 
 export interface TrashItem {
   id: string;
@@ -22,7 +22,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -223,6 +223,21 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
       const { error } = await supabase.from("admin_tasks").update({ attachments: [...list, d.attachment] as unknown as Json }).eq("id", d.task_id);
       if (error) return false;
     }
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 🔢 Réglage des lignes d'une leçon Nourania remplacé (2026-11-05) : on remet l'ancien, celui en place part à son tour dans la corbeille
+  if (item.item_type === "nourania_lignes") {
+    const d = item.item_data as { content_id?: string; lignes?: Json } | null;
+    if (!d?.content_id) return false;
+    const { data: row } = await supabase.from("nourania_lesson_content").select("lignes").eq("id", d.content_id).maybeSingle();
+    if (!row) return false;
+    if (row.lignes && JSON.stringify(row.lignes) !== JSON.stringify(d.lignes ?? null)) {
+      const ok = await moveToTrash(item.user_id, "nourania_lignes", d.content_id, item.label, { content_id: d.content_id, lignes: row.lignes });
+      if (!ok) return false;
+    }
+    const { error } = await supabase.from("nourania_lesson_content").update({ lignes: d.lignes ?? null }).eq("id", d.content_id);
+    if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

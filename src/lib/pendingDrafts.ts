@@ -120,6 +120,13 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     },
   },
 
+  // 🔢 Réglage des numéros de lignes d'une leçon Nourania pas encore enregistré (2026-11-05)
+  // Clé : dinislam_nourania_lignes_<leçon>__<contenu> → « Continuer » rouvre la leçon, le réglage reprend tout seul
+  dinislam_nourania_lignes_: {
+    place: 'Nourania › une leçon › 🔢 Régler les lignes', noun: 'réglage des lignes pas encore enregistré', route: '/nourania', adminOnly: true,
+    routeOf: (key) => `/nourania?item=${key.slice('dinislam_nourania_lignes_'.length).split('__')[0]}`,
+    labelOf: (d) => text((d as { titre?: string } | null)?.titre),
+  },
   dinislam_ramadan_quiz_: {
     place: 'Accueil › Ramadan › ⋮ › Gérer le contenu › quiz d\'un jour', noun: 'questions de quiz', route: '/admin?section=ramadan-manage', adminOnly: true,
     labelOf: (d) => {
