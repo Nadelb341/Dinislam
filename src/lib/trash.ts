@@ -108,12 +108,14 @@ export async function trashThenDelete(opts: {
   }
 }
 
+/** ⚠️ 2026-11-07 (audit DETTE) : une lecture ratée (réseau) lève une erreur au lieu d'afficher une corbeille VIDE. */
 export async function fetchTrash(userId: string): Promise<TrashItem[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("trash_items")
     .select("*")
     .eq("user_id", userId)
     .order("deleted_at", { ascending: false });
+  if (error) throw new Error("Corbeille illisible pour l'instant (réseau ?)");
   return (data as unknown as TrashItem[]) || [];
 }
 
@@ -163,7 +165,8 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   if (item.item_type === "coran_note") {
     const d = item.item_data as { index?: number; note?: { id: string; text: string; date: string } } | null;
     if (!d?.index || !d.note) return false;
-    const { data: row } = await supabase.from("coran_progress").select("data").eq("user_id", item.user_id).eq("kind", "lecture").eq("key", "main").maybeSingle();
+    const { data: row, error: lectureErr } = await supabase.from("coran_progress").select("data").eq("user_id", item.user_id).eq("kind", "lecture").eq("key", "main").maybeSingle();
+    if (lectureErr) return false; // jamais écrire « page 1 sans marque-page » par-dessus la vraie lecture
     const lecture = ((row?.data as { index?: number; bookmarks?: { index: number; color: string; label: string; notes?: { id: string }[] }[] } | null) || { index: 1, bookmarks: [] });
     const bms = lecture.bookmarks || [];
     const found = bms.find((b) => b.index === d.index);
@@ -195,7 +198,8 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   if (item.item_type === "cahier_carte") {
     const cle = (item.item_data as { cle?: string } | null)?.cle;
     if (!cle) return false;
-    const { data: row } = await supabase.from("app_appearance").select("value").eq("key", "cartes_cahier").maybeSingle();
+    const { data: row, error: lectureErr } = await supabase.from("app_appearance").select("value").eq("key", "cartes_cahier").maybeSingle();
+    if (lectureErr) return false; // sinon les réglages des cartes (communs à tous les groupes) seraient écrasés
     const v = (row?.value ?? {}) as { ordre?: string[]; cartes?: unknown; supprimees?: string[] };
     const { error } = await supabase.from("app_appearance").upsert({ key: "cartes_cahier", value: { ...v, supprimees: (v.supprimees ?? []).filter((k) => k !== cle) } as unknown as Json, updated_at: new Date().toISOString() });
     if (error) return false;
@@ -206,7 +210,8 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   if (item.item_type === "devoir_ligne") {
     const d = item.item_data as { group_id?: string; ligne?: { key: string } } | null;
     if (!d?.group_id || !d.ligne) return false;
-    const { data: row } = await supabase.from("group_devoir_settings").select("lignes, max_devoirs").eq("group_id", d.group_id).maybeSingle();
+    const { data: row, error: lectureErr } = await supabase.from("group_devoir_settings").select("lignes, max_devoirs").eq("group_id", d.group_id).maybeSingle();
+    if (lectureErr) return false; // sinon les autres lignes du groupe seraient effacées
     const list = Array.isArray(row?.lignes) ? (row!.lignes as { key: string }[]) : [];
     if (!list.some((l) => l.key === d.ligne!.key)) {
       const { error } = await supabase.from("group_devoir_settings").upsert({ group_id: d.group_id, max_devoirs: row?.max_devoirs ?? null, lignes: [...list, d.ligne] as unknown as Json });
@@ -290,13 +295,20 @@ async function removeFiles(items: TrashItem[]) {
   if (paths.length) await supabase.storage.from("recitations").remove(paths);
 }
 
-export async function permanentlyDeleteTrashItem(id: string) {
-  const { data } = await supabase.from("trash_items").select("*").eq("id", id).maybeSingle();
-  if (data) await removeFiles([data as unknown as TrashItem]);
-  await supabase.from("trash_items").delete().eq("id", id);
+/** Ligne effacée D'ABORD (vérifiée), fichier ensuite : jamais un élément resté dans la corbeille sans son audio. */
+export async function permanentlyDeleteTrashItem(id: string): Promise<boolean> {
+  const { data, error: lErr } = await supabase.from("trash_items").select("*").eq("id", id).maybeSingle();
+  if (lErr) return false;
+  const { error } = await supabase.from("trash_items").delete().eq("id", id);
+  if (error) return false;
+  if (data) await removeFiles([data as unknown as TrashItem]).catch(() => { /* fichier orphelin : sans gêne */ });
+  return true;
 }
 
 export async function emptyTrash(userId: string) {
-  await removeFiles(await fetchTrash(userId));
-  await supabase.from("trash_items").delete().eq("user_id", userId);
+  const items = await fetchTrash(userId);
+  const { error } = await supabase.from("trash_items").delete().eq("user_id", userId);
+  if (error) return false;
+  await removeFiles(items).catch(() => { /* fichiers orphelins : sans gêne */ });
+  return true;
 }

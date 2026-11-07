@@ -204,7 +204,9 @@ export function useReglagesSaisons() {
     queryKey: ['app-appearance', 'saisons'],
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<ReglagesSaisons> => {
-      const { data } = await supabase.from('app_appearance').select('value').eq('key', 'saisons').maybeSingle();
+      const { data, error } = await supabase.from('app_appearance').select('value').eq('key', 'saisons').maybeSingle();
+      // ⚠️ 2026-11-07 (audit DETTE) : lecture ratée = erreur, JAMAIS des « valeurs par défaut » qu'un enregistrement écraserait ensuite
+      if (error) throw error;
       return fusionner(data?.value as Partial<ReglagesSaisons> | null);
     },
   });

@@ -50,7 +50,7 @@ export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
 function ReglageTitre() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: enregistre, isLoading } = useReglagesTitre();
+  const { data: enregistre, isLoading, isError, refetch } = useReglagesTitre();
   const [r, setR] = useState<ReglagesTitre>(TITRE_DEFAUT);
   const [rejouer, setRejouer] = useState(0);
   const [voirRamadan, setVoirRamadan] = useState(false);
@@ -70,6 +70,8 @@ function ReglageTitre() {
 
   // La version d'avant est toujours gardée : « ↩️ Remettre la version d'avant » (rien n'est perdu)
   const enregistrer = async (valeur: ReglagesTitre) => {
+    // ⚠️ 2026-11-07 : réglages pas encore lus (réseau) → on n'enregistre rien, sinon ils seraient écrasés par ceux d'origine
+    if (!enregistre) { toast.error('📡 Réglages pas encore lus : vérifie ta connexion puis réessaie'); return; }
     setBusy(true);
     const maintenant = new Date().toISOString();
     const { error } = await supabase.from('app_appearance').upsert([
@@ -83,6 +85,12 @@ function ReglageTitre() {
   };
 
   if (isLoading) return <p className="text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>;
+  if (isError && !enregistre) return (
+    <div className="text-center text-sm space-y-2">
+      <p className="text-muted-foreground">📡 Réglages illisibles pour l'instant (connexion ?).</p>
+      <Button size="sm" variant="outline" onClick={() => void refetch()}>🔄 Réessayer</Button>
+    </div>
+  );
 
   const couleur = ({ k, label }: { k: 'couleurTexte' | 'couleurTraits' | 'ramadanTexte' | 'ramadanTraits' | 'couleurBismillah' | 'couleurBienvenue'; label: string }) => (
     <label className="flex items-center gap-2 text-sm">

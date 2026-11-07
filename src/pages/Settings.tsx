@@ -141,9 +141,13 @@ const Settings = () => {
 
   const loadTrash = useCallback(async () => {
     if (!user) return;
-    const items = await fetchTrash(user.id);
-    setTrashItems(items);
-  }, [user]);
+    try {
+      setTrashItems(await fetchTrash(user.id));
+    } catch {
+      // ⚠️ 2026-11-07 : on garde ce qui était affiché (jamais une fausse corbeille vide)
+      toast({ title: '📡 Corbeille illisible pour l\'instant', description: 'Vérifie ta connexion, puis rouvre la corbeille.', variant: 'destructive' });
+    }
+  }, [user, toast]);
 
   // 🔄 En direct : corbeille mise à jour depuis un autre appareil
   useRealtimeRefresh(['trash_items'], () => { void loadTrash(); }, !!user);
@@ -160,16 +164,17 @@ const Settings = () => {
   };
 
   const handlePermanentDelete = async (id: string) => {
-    await permanentlyDeleteTrashItem(id);
-    toast({ title: '🗑️ Élément supprimé définitivement' });
+    if (await permanentlyDeleteTrashItem(id)) toast({ title: '🗑️ Élément supprimé définitivement' });
+    else toast({ title: '❌ Suppression impossible pour l\'instant (réseau ?)', variant: 'destructive' });
     loadTrash();
     setDeleteTargetId(null);
   };
 
   const handleEmptyTrash = async () => {
     if (!user) return;
-    await emptyTrash(user.id);
-    toast({ title: '🗑️ Corbeille vidée' });
+    const ok = await emptyTrash(user.id).catch(() => false);
+    if (ok) toast({ title: '🗑️ Corbeille vidée' });
+    else toast({ title: '❌ Corbeille non vidée (réseau ?)', variant: 'destructive' });
     loadTrash();
     setEmptyTrashConfirm(false);
   };

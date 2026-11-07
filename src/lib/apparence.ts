@@ -67,7 +67,9 @@ export function useReglagesTitre() {
     queryKey: ['app-appearance', 'titre'],
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<ReglagesTitre> => {
-      const { data } = await supabase.from('app_appearance').select('value').eq('key', 'titre').maybeSingle();
+      const { data, error } = await supabase.from('app_appearance').select('value').eq('key', 'titre').maybeSingle();
+      // ⚠️ 2026-11-07 (audit DETTE) : lecture ratée = erreur, JAMAIS des « valeurs par défaut » qu'un enregistrement écraserait ensuite
+      if (error) throw error;
       return { ...TITRE_DEFAUT, ...((data?.value as Partial<ReglagesTitre> | null) ?? {}) };
     },
   });

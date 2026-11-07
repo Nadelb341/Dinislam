@@ -117,7 +117,7 @@ const IDEES_A_VENIR: Record<Exclude<Saison, 'automne' | 'hiver'>, string> = {
 export default function DecorationsSaisons() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: enregistre, isLoading } = useReglagesSaisons();
+  const { data: enregistre, isLoading, isError, refetch } = useReglagesSaisons();
   const [r, setR] = useState<ReglagesSaisons>(SAISONS_DEFAUT);
   const [onglet, setOnglet] = useState<Saison>(saisonDuJour());
   const [apercu, setApercu] = useState<Saison | null>(apercuSaison());
@@ -127,6 +127,8 @@ export default function DecorationsSaisons() {
   const modifie = !!enregistre && JSON.stringify(enregistre) !== JSON.stringify(r);
 
   const enregistrer = async (valeur: ReglagesSaisons, message = '🍂 Décorations enregistrées : tout le monde les voit déjà') => {
+    // ⚠️ 2026-11-07 : réglages pas encore lus (réseau) → on n'enregistre rien, sinon ils seraient écrasés par ceux d'origine
+    if (!enregistre) { toast.error('📡 Réglages pas encore lus : vérifie ta connexion puis réessaie'); return; }
     setBusy(true);
     const maintenant = new Date().toISOString();
     const { error } = await supabase.from('app_appearance').upsert([
@@ -147,6 +149,12 @@ export default function DecorationsSaisons() {
   };
 
   if (isLoading) return <p className="text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>;
+  if (isError && !enregistre) return (
+    <div className="text-center text-sm space-y-2">
+      <p className="text-muted-foreground">📡 Réglages illisibles pour l'instant (connexion ?).</p>
+      <Button size="sm" variant="outline" onClick={() => void refetch()}>🔄 Réessayer</Button>
+    </div>
+  );
 
   const maj = <K extends keyof ReglagesSaisons>(k: K, v: ReglagesSaisons[K]) => setR((x) => ({ ...x, [k]: v }));
   const majA = (k: keyof ReglagesAutomne, v: boolean) => setR((x) => ({ ...x, automne: { ...x.automne, [k]: v } }));

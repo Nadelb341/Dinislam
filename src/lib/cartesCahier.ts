@@ -35,7 +35,9 @@ export function useReglagesCartesCahier() {
     queryKey: ['app-appearance', 'cartes_cahier'],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase.from('app_appearance').select('value').eq('key', 'cartes_cahier').maybeSingle();
+      const { data, error } = await supabase.from('app_appearance').select('value').eq('key', 'cartes_cahier').maybeSingle();
+      // ⚠️ 2026-11-07 (audit DETTE) : lecture ratée = erreur, JAMAIS des « valeurs par défaut » qu'un enregistrement écraserait ensuite
+      if (error) throw error;
       return fusionnerCartes(data?.value as Partial<ReglagesCartesCahier> | null);
     },
   });
