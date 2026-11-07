@@ -4447,6 +4447,7 @@ export type Database = {
         Args: { p_joined: string; p_last: string; p_missed: number }
         Returns: string
       }
+      eleves_connectes_30j: { Args: never; Returns: string[] }
       est_adulte: { Args: { p_user: string }; Returns: boolean }
       est_hors_classement: { Args: { _user: string }; Returns: boolean }
       find_students_by_first_name: {
@@ -4520,6 +4521,7 @@ export type Database = {
         Returns: undefined
       }
       my_program_streak: { Args: never; Returns: number }
+      nettoyage_historiques: { Args: never; Returns: string }
       next_program_items: { Args: { p_user: string }; Returns: Json }
       parent_bilans: {
         Args: { p_child: string; p_code: string }
@@ -4594,6 +4596,14 @@ export type Database = {
       recalculate_student_points: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      stats_connexions_30j: {
+        Args: never
+        Returns: {
+          connexions: number
+          eleves: number
+          jour: string
+        }[]
       }
       student_engagement: {
         Args: never

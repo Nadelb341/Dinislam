@@ -21,14 +21,17 @@ const AdminGlobalStats = ({ onBack }: Props) => {
       const [
         { data: progress },
         { data: profiles },
-        { data: connexions },
+        { data: connexionsJours },
+        { data: connectes },
         { data: days },
         { data: quizResponses },
         { data: quizzes },
       ] = await Promise.all([
         supabase.from('user_ramadan_progress').select('user_id, day_id, quiz_completed, video_watched, pdf_read').limit(1000),
         supabase.from('profiles').select('user_id, full_name').eq('is_approved', true).limit(500),
-        supabase.from('connexion_logs').select('user_id, login_at').order('login_at', { ascending: false }).limit(2000),
+        // 📈 2026-11-07 : comptés côté serveur, à l'heure de Paris, sur 30 vrais jours (avant : 1 000 lignes max ≈ 13 jours)
+        supabase.rpc('stats_connexions_30j'),
+        supabase.rpc('eleves_connectes_30j'),
         supabase.from('ramadan_days').select('id, day_number'),
         supabase.from('quiz_responses').select('quiz_id, is_correct, user_id').eq('is_correct', false).limit(2000),
         supabase.from('ramadan_quizzes').select('id, question, day_id'),
@@ -36,7 +39,8 @@ const AdminGlobalStats = ({ onBack }: Props) => {
       return {
         progress: progress || [],
         profiles: profiles || [],
-        connexions: connexions || [],
+        connexionsJours: connexionsJours || [],
+        connectes: (connectes || []) as string[],
         days: days || [],
         quizResponses: quizResponses || [],
         quizzes: quizzes || [],
@@ -55,7 +59,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
     );
   }
 
-  const { progress, profiles, connexions, days, quizResponses, quizzes } = data;
+  const { progress, profiles, connexionsJours, connectes, days, quizResponses, quizzes } = data;
   const totalEntries = progress.length;
 
   // SECTION 1 — Taux moyens
@@ -66,7 +70,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
   // SECTION 2 — Actifs vs Inactifs
   const activeUserIds = new Set([
     ...progress.map((p) => p.user_id),
-    ...connexions.map((c) => c.user_id),
+    ...connectes,
   ]);
   const totalStudents = profiles.length;
   const activeCount = profiles.filter((p) => activeUserIds.has(p.user_id)).length;
@@ -89,18 +93,10 @@ const AdminGlobalStats = ({ onBack }: Props) => {
   const medals = ['🥇', '🥈', '🥉'];
 
   // SECTION 4 — Connexions par jour
-  const connexionsByDay = new Map<string, number>();
-  connexions.forEach((c) => {
-    const day = c.login_at?.substring(0, 10);
-    if (day) connexionsByDay.set(day, (connexionsByDay.get(day) || 0) + 1);
-  });
-  const connexionChartData = Array.from(connexionsByDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-30)
-    .map(([date, count]) => ({
-      date: format(new Date(date), 'dd MMM', { locale: fr }),
-      connexions: count,
-    }));
+  const connexionChartData = connexionsJours.map((j) => ({
+    date: format(new Date(`${j.jour}T12:00:00`), 'dd MMM', { locale: fr }),
+    connexions: j.connexions,
+  }));
 
   // SECTION 5 — Progression jour par jour
   const dayMap = new Map(days.map((d) => [d.id, d.day_number]));
@@ -177,7 +173,7 @@ const AdminGlobalStats = ({ onBack }: Props) => {
               <span className="text-muted-foreground">{inactiveCount} inactifs</span>
             </div>
             <Progress value={activePercent} className="h-3" />
-            <p className="text-xs text-muted-foreground text-center">{activePercent}% d'élèves actifs sur {totalStudents}</p>
+            <p className="text-xs text-muted-foreground text-center">{activePercent}% d'élèves actifs sur {totalStudents} (connectés ces 30 derniers jours, ou qui ont avancé dans le Ramadan)</p>
           </CardContent>
         </Card>
       </div>

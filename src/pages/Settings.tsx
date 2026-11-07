@@ -106,6 +106,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   parent_link: 'Lien parent ↔ enfant',
   absence_justification: 'Absence justifiée',
   app_logs: 'Journaux techniques (Monitoring)',
+  connexion_logs: 'Historique des connexions (plus de 13 mois)',
+  notification_history: 'Historique des notifications (plus de 13 mois)',
   sourate_story: "Fiche d'histoire d'une sourate",
 };
 

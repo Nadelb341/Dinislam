@@ -9,7 +9,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs"
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes";
 
 export interface TrashItem {
@@ -59,6 +59,9 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   absence_justification: "absence_justifications",
   // Journaux du Monitoring vidés d'un coup (2026-11-02) : item_data = toutes les lignes, remises telles quelles
   app_logs: "app_logs",
+  // 🧹 Historiques de plus de 13 mois rangés chaque nuit par nettoyage_historiques() (2026-11-07, idée 20)
+  connexion_logs: "connexion_logs",
+  notification_history: "notification_history",
   // 📓 Modèle de devoir (2026-11-04, idée 6)
   devoir_modele: "devoir_modeles",
   // 🌟 Progression des 99 Noms d'un élève remise à zéro (2026-11-04, demande de Nadia) : toutes ses lignes, remises telles quelles
