@@ -345,6 +345,22 @@ serve(async (req) => {
       targetIds = targetIds.filter(id => id !== excludeUserId);
     }
 
+    // 🔒 Audit 2026-11-07 : un élève (ni admin ni appel serveur) ne peut prévenir QUE l'enseignante (ou lui-même).
+    if (!isServiceCall && callerId) {
+      const { data: callerAdmin } = await supabase.from('user_roles').select('role').eq('user_id', callerId).eq('role', 'admin').maybeSingle();
+      if (!callerAdmin) {
+        const { data: adminRows } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+        const allowed = new Set([callerId, ...(adminRows || []).map((r: { user_id: string }) => r.user_id)]);
+        targetIds = [...new Set(targetIds)].filter(id => allowed.has(id));
+        if (targetIds.length === 0) {
+          return new Response(
+            JSON.stringify({ error: 'Un élève ne peut prévenir que l\'enseignante' }),
+            { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
     // Interrupteurs de Paramètres › Notifications (piste B, 2026-09-30) : on retire les personnes
     // qui ont coupé cette catégorie, et celles en « mode calme » entre 21 h et 8 h (heure de Paris).
     // Une notification sans catégorie (test, envoi manuel de l'enseignante) passe toujours.

@@ -32,6 +32,21 @@ serve(async (req) => {
       });
     }
 
+    // 🔒 Audit 2026-11-07 : seule l'enseignante (admin) peut créer des flashcards
+    {
+      const admin = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: { user } } = await admin.auth.getUser(authHeader.replace('Bearer ', ''));
+      const { data: role } = user
+        ? await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle()
+        : { data: null };
+      if (!user || !role) {
+        return new Response(JSON.stringify({ error: 'Réservé à l\'enseignante' }), {
+          status: user ? 403 : 401,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     const { card_id, card_title, module_title, description, content_type, file_url } = await req.json();
     if (!card_id || !card_title) throw new Error('card_id et card_title requis');
 
