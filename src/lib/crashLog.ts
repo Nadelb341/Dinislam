@@ -48,3 +48,32 @@ export async function logEchecAudio(etape: 'micro' | 'envoi', error: unknown, co
     });
   } catch { /* le journal ne doit jamais bloquer l'élève */ }
 }
+
+const blocsDejaNotes = new Set<string>();
+/**
+ * 🧩 2026-11-07 (audit DETTE) : un petit bloc protégé par SilentBoundary a planté et a disparu de l'écran.
+ * Avant : seulement dans la console (personne ne le savait). Maintenant : une ligne « avertissement » dans le Monitoring,
+ * sans l'alarme répétée du « chat qui pleure ». Une seule trace par bloc et par ouverture de page.
+ */
+export async function logBlocCache(nom: string, error: unknown) {
+  if (blocsDejaNotes.has(nom)) return;
+  blocsDejaNotes.add(nom);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const e = error as Error | undefined;
+    await supabase.from('app_logs').insert({
+      user_id: userId,
+      level: 'warn',
+      action: 'Bloc caché après une erreur',
+      details: {
+        bloc: nom,
+        error: String(e?.message || error).slice(0, 500),
+        stack: (e?.stack || '').slice(0, 1500),
+        page: window.location.pathname + window.location.search,
+        user_agent: navigator.userAgent,
+      },
+    });
+  } catch { /* le Monitoring ne doit jamais faire planter l'appli */ }
+}
