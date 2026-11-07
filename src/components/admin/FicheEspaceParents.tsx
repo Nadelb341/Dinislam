@@ -9,6 +9,7 @@ import { espaceParentsActif, type ModeEspace } from '@/lib/espaceParents';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { Input } from '@/components/ui/input';
 import { errorMessage } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 /**
  * 👨‍👩‍👧 Fiche élève › Espace parents (2026-10-28) : Espace parents (selon l'âge / toujours / jamais),
@@ -20,6 +21,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [aRetirer, setARetirer] = useState<{ type: 'code' | 'lien'; id: string; label: string; data: Record<string, unknown> } | null>(null);
   const cle = ['admin-parents', userId];
+  const [aConfirmer, setAConfirmer] = useState<{ parent_id: string; child_id: string; nom: string } | null>(null);
 
   const { data } = useQuery({
     queryKey: cle,
@@ -58,6 +60,13 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
       void rafraichir();
     } catch (e) { toast.error(errorMessage(e)); }
     setARetirer(null);
+  };
+
+  const confirmerLien = async () => {
+    if (!aConfirmer) return;
+    const { error } = await supabase.from('parent_links').update({ confirme: true }).eq('parent_id', aConfirmer.parent_id).eq('child_id', aConfirmer.child_id);
+    if (error) toast.error(errorMessage(error)); else { toast.success('✅ Lien confirmé'); void rafraichir(); }
+    setAConfirmer(null);
   };
 
   if (!data) return null;
@@ -114,13 +123,15 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
         <div className="space-y-1.5 text-sm">
           {data.parents.map((l) => (
             <div key={l.parent_id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5">
-              <span className="flex-1 [overflow-wrap:anywhere]">👤 Parent relié : <b>{l.nom}</b></span>
+              <span className="flex-1 [overflow-wrap:anywhere]">👤 Parent relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-amber-700">⏳ à confirmer</span>}</span>
+              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="text-xs font-bold text-emerald-700">✅ Confirmer</button>}
               <button type="button" onClick={() => setARetirer({ type: 'lien', id: l.parent_id, label: `Lien ${l.nom} → enfant`, data: { parent_id: l.parent_id, child_id: l.child_id } })} className="text-xs font-bold text-destructive">Retirer</button>
             </div>
           ))}
           {data.enfants.map((l) => (
             <div key={l.child_id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5">
-              <span className="flex-1 [overflow-wrap:anywhere]">🧒 Enfant relié : <b>{l.nom}</b></span>
+              <span className="flex-1 [overflow-wrap:anywhere]">🧒 Enfant relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-amber-700">⏳ à confirmer</span>}</span>
+              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="text-xs font-bold text-emerald-700">✅ Confirmer</button>}
               <button type="button" onClick={() => setARetirer({ type: 'lien', id: l.child_id, label: `Lien parent → ${l.nom}`, data: { parent_id: l.parent_id, child_id: l.child_id } })} className="text-xs font-bold text-destructive">Retirer</button>
             </div>
           ))}
@@ -128,6 +139,18 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
         </div>
       )}
 
+      <AlertDialog open={!!aConfirmer} onOpenChange={(o) => { if (!o) setAConfirmer(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer ce lien parent ?</AlertDialogTitle>
+            <AlertDialogDescription className="[overflow-wrap:anywhere]">« {aConfirmer?.nom} » pourra voir les bilans (avec le code parents), le cahier de texte et les absences. Ne confirme que si tu es sûre que c'est bien le parent.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmerLien()}>Confirmer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <ConfirmDeleteDialog open={!!aRetirer} onOpenChange={(o) => { if (!o) setARetirer(null); }} onConfirm={() => void retirer()}
         description={aRetirer?.type === 'code' ? "Les parents devront créer un nouveau code. L'ancien va dans la corbeille (Paramètres)." : 'Le lien va dans la corbeille (Paramètres), d\'où tu pourras le restaurer.'} />
     </div>

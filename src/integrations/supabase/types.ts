@@ -2490,16 +2490,19 @@ export type Database = {
       parent_links: {
         Row: {
           child_id: string
+          confirme: boolean
           created_at: string
           parent_id: string
         }
         Insert: {
           child_id: string
+          confirme?: boolean
           created_at?: string
           parent_id: string
         }
         Update: {
           child_id?: string
+          confirme?: boolean
           created_at?: string
           parent_id?: string
         }
@@ -4444,6 +4447,7 @@ export type Database = {
         Args: { p_joined: string; p_last: string; p_missed: number }
         Returns: string
       }
+      est_adulte: { Args: { p_user: string }; Returns: boolean }
       est_hors_classement: { Args: { _user: string }; Returns: boolean }
       find_students_by_first_name: {
         Args: { p_first: string }
@@ -4552,6 +4556,17 @@ export type Database = {
       parent_code_label: {
         Args: { p_child: string; p_code: string }
         Returns: string
+      }
+      parent_lien_confirmer: {
+        Args: { p_child: string; p_code: string }
+        Returns: boolean
+      }
+      parent_liens_en_attente: {
+        Args: never
+        Returns: {
+          child_id: string
+          full_name: string
+        }[]
       }
       parent_space_info: { Args: { p_child: string }; Returns: Json }
       parent_unread_count: { Args: { p_child: string }; Returns: number }

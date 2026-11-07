@@ -19,6 +19,9 @@ import { BilanVue, type BilanContenu } from '@/components/bilan/BilanVue';
 import { CodeParentsDialog } from './CodeParentsDialog';
 import { SignalerAbsenceDialog } from './SignalerAbsence';
 import { ChoixEnfants } from './MessagesProfil';
+import { CodeInput } from './CodeInput';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 /**
  * 👨‍👩‍👧 Espace parents dans les Paramètres (2026-10-28, choix de Nadia) :
@@ -74,6 +77,7 @@ export function EspaceParentsCarte() {
             <span className="shrink-0 text-muted-foreground">›</span>
           </button>
         ))}
+        <LiensEnAttente />
         {parentPossible && (
           ajout ? (
             <div className="rounded-xl border-2 border-dashed border-violet-300 bg-card p-3 space-y-2">
@@ -215,5 +219,52 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
           onOpenChange={(o) => { if (!o) setCodes(false); }} onOk={() => setCodes(false)} />}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** 🔒 2026-11-07 (audit) : enfants demandés mais pas encore confirmés. Le professeur confirme, ou le parent tape le code parents de l'enfant. */
+function LiensEnAttente() {
+  const { user, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
+  const [codes, setCodes] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const { data: attente = [] } = useQuery({
+    queryKey: ['espace-parents', 'en-attente', user?.id],
+    enabled: !!user && !isAdmin,
+    queryFn: async () => (await supabase.rpc('parent_liens_en_attente')).data || [],
+  });
+  if (!attente.length) return null;
+  const confirmer = async (childId: string, prenom: string) => {
+    const code = (codes[childId] || '').trim();
+    if (!code) return;
+    setBusy(childId);
+    const { data, error } = await supabase.rpc('parent_lien_confirmer', { p_child: childId, p_code: code });
+    setBusy(null);
+    if (error) { toast.error(errorMessage(error)); return; }
+    if (!data) { toast.error(`Ce n'est pas le code parents de ${prenom}.`); return; }
+    toast.success(`✅ ${prenom} est relié(e) à votre compte`);
+    setCodes((c) => ({ ...c, [childId]: '' }));
+    void queryClient.invalidateQueries({ queryKey: ['espace-parents'] });
+  };
+  return (
+    <div className="space-y-2">
+      {attente.map((e) => {
+        const prenom = prenomDe(e.full_name);
+        return (
+          <form key={e.child_id} onSubmit={(ev) => { ev.preventDefault(); void confirmer(e.child_id, prenom); }}
+            className="rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+            <p className="text-sm font-bold [overflow-wrap:anywhere]">⏳ {prenom} : en attente de confirmation</p>
+            <p className="text-xs text-muted-foreground">Le professeur va confirmer le lien. Vous pouvez aussi taper le code parents de {prenom} (celui créé sur son compte).</p>
+            <div className="flex gap-2">
+              <CodeInput className="flex-1 min-w-0" value={codes[e.child_id] || ''} onChange={(v) => setCodes((c) => ({ ...c, [e.child_id]: v }))}
+                placeholder={`Code parents de ${prenom}`} aria-label={`Code parents de ${prenom}`} />
+              <Button type="submit" disabled={busy === e.child_id || !(codes[e.child_id] || '').trim()}>
+                {busy === e.child_id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmer
+              </Button>
+            </div>
+          </form>
+        );
+      })}
+    </div>
   );
 }
