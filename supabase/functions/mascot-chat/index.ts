@@ -58,6 +58,21 @@ serve(async (req) => {
       );
     }
 
+    // 🌟 2026-11-07 (audit) : 50 questions par jour et par élève, comptées en base (l'enseignante n'a pas de limite)
+    {
+      const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: role } = await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+      if (!role) {
+        const { data: n } = await admin.rpc('mascotte_compter', { p_user: user.id });
+        if (typeof n === 'number' && n > 50) {
+          return new Response(
+            JSON.stringify({ response: '🌙 Tu as posé beaucoup de questions aujourd\'hui, bravo pour ta curiosité ! Je me repose et je te retrouve demain, inch\'Allah 😊' }),
+            { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
     const { message, userAge, context } = await req.json();
 
     // Input validation
