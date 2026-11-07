@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
 import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
@@ -9,13 +9,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import MessagingDialog from '@/components/messaging/MessagingDialog';
-import AdminMessagingDialog from '@/components/messaging/AdminMessagingDialog';
 import NewMessageNotification from '@/components/messaging/NewMessageNotification';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { useMonitoringErrorCount } from '@/hooks/useMonitoringErrorCount';
 import { usePendingDrafts } from '@/hooks/useDrafts';
-import AdminCommandModal from '@/components/admin/AdminCommandModal';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
+// ⚡ 2026-11-07 (audit DETTE) : le bouclier et la messagerie admin (avec leurs graphiques) ne sont téléchargés
+// QUE par l'enseignante. Avant, chaque élève les recevait dans le fichier principal (≈ 2 Mo).
+const AdminCommandModal = lazy(() => import('@/components/admin/AdminCommandModal'));
+const AdminMessagingDialog = lazy(() => import('@/components/messaging/AdminMessagingDialog'));
 
 const ZOOM_URL = 'https://us06web.zoom.us/j/4080361371?pwd=UHVDc1o0RDE3WFBmNTBNTENaMDJnUT09';
 
@@ -168,12 +171,15 @@ const Header = ({
       </header>
 
       {isAdmin ? (
-        <AdminMessagingDialog open={showMessaging} onOpenChange={(o) => { setShowMessaging(o); if (!o) setGroupMessagePrefill(null); }} onMessagesRead={clearNewMessageFlag} prefillGroupMessage={groupMessagePrefill} />
+        <SilentBoundary><Suspense fallback={null}>
+          <AdminMessagingDialog open={showMessaging} onOpenChange={(o) => { setShowMessaging(o); if (!o) setGroupMessagePrefill(null); }} onMessagesRead={clearNewMessageFlag} prefillGroupMessage={groupMessagePrefill} />
+        </Suspense></SilentBoundary>
       ) : (
         <MessagingDialog open={showMessaging} onOpenChange={setShowMessaging} onMessagesRead={clearNewMessageFlag} />
       )}
 
       {isAdmin && (
+        <SilentBoundary><Suspense fallback={null}>
         <AdminCommandModal
           open={showAdminModal}
           onOpenChange={(o) => { setShowAdminModal(o); if (!o) setAdminInitial(null); }}
@@ -192,6 +198,7 @@ const Header = ({
           total={pendingCounts.total}
           onOpenMessages={handleOpenMessaging}
         />
+        </Suspense></SilentBoundary>
       )}
 
       <NewMessageNotification onOpenMessages={handleOpenMessaging} />
