@@ -361,9 +361,14 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { user_id: userId },
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Le vrai message (en français) est dans la réponse de la fonction, pas dans « non-2xx status code »
+        let msg = 'La suppression a échoué';
+        try { const b = await (error as { context?: Response }).context?.json(); if (b?.error) msg = b.error; } catch { /* réponse illisible */ }
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
-      toast.success('Élève supprimé ✅');
+      toast.success(`Élève supprimé ✅${data?.fichiers ? ` (${data.fichiers} fichier${data.fichiers > 1 ? 's' : ''} effacé${data.fichiers > 1 ? 's' : ''})` : ''}`);
       queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
     } catch (err) {
       toast.error(errorMessage(err) || 'Erreur lors de la suppression');
