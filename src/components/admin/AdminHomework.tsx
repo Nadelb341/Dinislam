@@ -28,6 +28,7 @@ import { DecisionsDialog } from '@/components/cahier/DecisionsDialog';
 import { aRattraper, coursApres, coursPasses, COURS_PAR_DEFAUT, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from '@/lib/rotationDevoirs';
 import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
 import { deposerAudioProf } from '@/lib/audioProf';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -1015,7 +1016,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
                         )}
                         {r.audio_url && (
                           <div className="mb-2">
-                            <audio
+                            <AudioPrive
                               src={r.audio_url}
                               controls
                               preload="auto"

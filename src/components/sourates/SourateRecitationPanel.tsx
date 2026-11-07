@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { moveToTrash } from '@/lib/trash';
 import { errorMessage } from '@/lib/utils';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 
 interface SourateRecitationPanelProps {
@@ -102,19 +103,6 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
     return candidates.find(t => MediaRecorder.isTypeSupported(t)) ?? '';
   };
 
-  const extractStoragePath = (url: string): string | null => {
-    const m = url?.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
-    return m ? decodeURIComponent(m[1]) : null;
-  };
-
-  const toSignedUrl = async (url: string | null): Promise<string | null> => {
-    if (!url) return null;
-    const path = extractStoragePath(url);
-    if (!path) return url;
-    const { data } = await supabase.storage.from('recitations').createSignedUrl(path, 7200);
-    return data?.signedUrl ?? url;
-  };
-
   const { data: recitations } = useQuery({
     queryKey: ['student-recitations', targetKey, user?.id],
     enabled: !!user && !!targetKey,
@@ -126,11 +114,8 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
         .eq('student_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return Promise.all((data || []).map(async (r) => ({
-        ...r,
-        audio_url: await toSignedUrl(r.audio_url),
-        admin_audio_url: await toSignedUrl(r.admin_audio_url),
-      })));
+      // 🔒 Les adresses restent celles de la base ; le lien signé est fait au moment de jouer (AudioPrive, lib fichiersPrives)
+      return data || [];
     },
   });
 
@@ -394,7 +379,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
                     </AlertDialog>
                   </div>
                 </div>
-                <audio src={r.audio_url} controls preload="auto" className="w-full" />
+                <AudioPrive src={r.audio_url ?? undefined} controls preload="auto" className="w-full" />
                 {r.student_comment && (
                   <p className={`${t.muted} italic`}>"{r.student_comment}"</p>
                 )}
@@ -409,7 +394,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
                       <p className="text-xs text-blue-800 dark:text-blue-200">{r.admin_comment}</p>
                     )}
                     {r.admin_audio_url && (
-                      <audio src={r.admin_audio_url} controls preload="auto" className="w-full" />
+                      <AudioPrive src={r.admin_audio_url ?? undefined} controls preload="auto" className="w-full" />
                     )}
                   </div>
                 )}

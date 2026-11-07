@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, RotateCcw, Send, Loader2 } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
@@ -9,16 +10,10 @@ import { AudioApercu } from '@/components/shared/AudioApercu';
 
 export type AlphabetSubmission = Tables<'alphabet_submissions'>;
 
-/** Lecteur d'un audio d'exercice (lien signé, fiable sur iPhone) */
+/** Lecteur d'un audio d'exercice (lien signé, fiable sur iPhone ; lib commune `fichiersPrives`, 2026-11-07) */
 export function SignedAudio({ url, className = '' }: { url: string | null; className?: string }) {
-  const [src, setSrc] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    playableUrl(url).then((u) => { if (alive) setSrc(u); });
-    return () => { alive = false; };
-  }, [url]);
-  if (!src) return null;
-  return <audio src={src} controls className={`w-full h-9 ${className}`} />;
+  if (!url) return null;
+  return <AudioPrive src={url} controls className={`w-full h-9 ${className}`} />;
 }
 
 interface Props {

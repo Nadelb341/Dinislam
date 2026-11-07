@@ -13,6 +13,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { useAudioRecorder, audioExt } from '@/hooks/useAudioRecorder';
 import { AudioApercu } from '@/components/shared/AudioApercu';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
@@ -33,20 +34,6 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
   const adminAudio = enreg.blob;
   const [saving, setSaving] = useState(false);
 
-  // Extrait le path Supabase Storage depuis une URL publique ou signée
-  const extractStoragePath = (url: string): string | null => {
-    const m = url?.match(/\/storage\/v1\/object\/(?:public|sign)\/recitations\/(.+?)(?:\?|$)/);
-    return m ? decodeURIComponent(m[1]) : null;
-  };
-
-  // Génère une URL signée valide 2h (contourne cache SW, restrictions iOS, CORS)
-  const toSignedUrl = async (url: string | null): Promise<string | null> => {
-    if (!url) return null;
-    const path = extractStoragePath(url);
-    if (!path) return url;
-    const { data } = await supabase.storage.from('recitations').createSignedUrl(path, 7200);
-    return data?.signedUrl ?? url;
-  };
 
   const { data: recitations, isLoading } = useQuery({
     queryKey: ['admin-recitations', filter, kind],
@@ -75,15 +62,13 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
           : Promise.resolve({ data: [] as { id: number; name_arabic: string; name_french: string; transliteration: string | null }[] }),
       ]);
 
-      // Génère des URLs signées pour tous les audios (contourne cache et restrictions iOS)
-      return Promise.all(recs.map(async (r) => ({
+      // 🔒 Adresses de la base gardées telles quelles : le lien signé est fait au moment de jouer (AudioPrive, lib fichiersPrives)
+      return recs.map((r) => ({
         ...r,
         profile: profiles?.find((p) => p.user_id === r.student_id),
         sourate: sourates?.find((s) => s.id === r.sourate_id),
         allahName: allahNames?.find((n) => n.id === r.allah_name_id),
-        audio_url: await toSignedUrl(r.audio_url),
-        admin_audio_url: await toSignedUrl(r.admin_audio_url),
-      })));
+      }));
     },
   });
 
@@ -275,7 +260,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
               </div>
 
               {/* Student audio */}
-              <audio src={r.audio_url} controls className="w-full" style={{ height: '36px' }} />
+              <AudioPrive src={r.audio_url ?? undefined} controls className="w-full" style={{ height: '36px' }} />
 
               {/* Student comment */}
               {r.student_comment && (
@@ -290,7 +275,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
                   <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">Ma réponse précédente</p>
                   {r.admin_comment && <p className="text-xs">{r.admin_comment}</p>}
                   {r.admin_audio_url && (
-                    <audio src={r.admin_audio_url} controls className="w-full" style={{ height: '32px' }} />
+                    <AudioPrive src={r.admin_audio_url ?? undefined} controls className="w-full" style={{ height: '32px' }} />
                   )}
                 </div>
               )}

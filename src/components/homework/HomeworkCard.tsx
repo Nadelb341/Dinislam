@@ -12,6 +12,7 @@ import { cn, errorMessage } from '@/lib/utils';
 import { compressDocument } from '@/lib/compressImage';
 import { audioExt } from '@/hooks/useAudioRecorder';
 import { AudioApercu } from '@/components/shared/AudioApercu';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 
 const SUBJECTS: Record<string, { label: string; icon: typeof BookOpen; color: string; bg: string; path: string }> = {
   nourania: { label: 'Nourania', icon: Sparkles, color: 'text-sky-600', bg: 'bg-sky-100 dark:bg-sky-900/30', path: '/nourania' },
@@ -334,7 +335,7 @@ const HomeworkCard = () => {
                     {assignment.audio_url && (
                       <div className="mt-1">
                         <p className="text-[10px] text-muted-foreground mb-0.5">🎙️ Audio du prof :</p>
-                        <audio src={assignment.audio_url} controls className="w-full h-8" />
+                        <AudioPrive src={assignment.audio_url} controls className="w-full h-8" />
                       </div>
                     )}
                   </div>

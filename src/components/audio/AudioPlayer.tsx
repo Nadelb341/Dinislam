@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { useUrlLisible } from '@/lib/fichiersPrives';
 
 interface AudioPlayerProps {
   audioUrl?: string;
@@ -31,8 +32,8 @@ interface AudioPlayerProps {
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-const AudioPlayer = ({ 
-  audioUrl, 
+const AudioPlayer = ({
+  audioUrl: urlEnregistree,
   title, 
   titleArabic,
   compact = false,
@@ -41,6 +42,10 @@ const AudioPlayer = ({
   onDelete,
   canManage = false,
 }: AudioPlayerProps) => {
+  // 🔒 Messages audio (espace `messages-audio`) et corrections (`recitations`, `devoirs-audios`) : joués avec un lien signé.
+  // Tout autre audio (contenus publics) : adresse inchangée, tout de suite.
+  const audioUrl = useUrlLisible(urlEnregistree);
+  const enAttente = !!urlEnregistree && !audioUrl;
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,7 +93,7 @@ const AudioPlayer = ({
   };
 
   const handleRestart = () => {
-    if (audioRef.current) {
+    if (audioRef.current && audioUrl) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
       audioRef.current.play();
@@ -148,7 +153,7 @@ const AudioPlayer = ({
   const showMenu = !!audioUrl;
   const showManageItems = canManage && (!!onReplace || !!onDelete);
 
-  if (!audioUrl) {
+  if (!urlEnregistree) {
     return (
       <div className={cn(
         'flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/50',
@@ -167,6 +172,7 @@ const AudioPlayer = ({
         compact ? 'flex items-center gap-3' : 'space-y-3'
       )}>
         <audio
+          key={audioUrl ?? 'attente'}
           ref={audioRef}
           src={audioUrl}
           onTimeUpdate={handleTimeUpdate}
@@ -272,6 +278,7 @@ const AudioPlayer = ({
             variant="ghost"
             size="icon"
             onClick={togglePlay}
+            disabled={enAttente}
             className={cn(
               'text-primary-foreground hover:bg-primary-foreground/10',
               compact ? 'h-10 w-10' : 'h-12 w-12 bg-gold/20 hover:bg-gold/30'

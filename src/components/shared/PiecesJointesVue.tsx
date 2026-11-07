@@ -3,6 +3,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from '@/components/ui/carousel';
 import { urlPJ, type PieceJointe } from '@/lib/devoirFichiers';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+import { useUrlLisible } from '@/lib/fichiersPrives';
+import { ImgPrive } from '@/components/shared/FichiersPrives';
 
 /**
  * 📎 Idée 8 (2026-11-04) : documents et photos d'un devoir, ouverts DANS l'appli (photo en grand, PDF, Word, vidéo, audio),
@@ -26,10 +29,12 @@ const ICONES: Record<Kind, { e: string; c: string }> = {
 };
 
 function Apercu({ a }: { a: PieceJointe }) {
-  const url = urlPJ(a.path), k = kindPJ(a);
+  // 🔒 Lien signé (espace `devoirs-fichiers` bientôt privé, 2026-11-07) ; rien d'affiché tant qu'il n'est pas prêt
+  const url = useUrlLisible(urlPJ(a.path)), k = kindPJ(a);
+  if (!url) return <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (k === 'image') return <img src={url} alt={a.name} className="max-h-[62dvh] w-full object-contain rounded-xl bg-black/5" />;
-  if (k === 'video') return <video src={url} controls playsInline className="max-h-[62dvh] w-full rounded-xl bg-black" />;
-  if (k === 'audio') return <div className="py-10 px-2"><audio src={url} controls className="w-full" /></div>;
+  if (k === 'video') return <video key={url} src={url} controls playsInline className="max-h-[62dvh] w-full rounded-xl bg-black" />;
+  if (k === 'audio') return <div className="py-10 px-2"><audio key={url} src={url} controls className="w-full" /></div>;
   if (k === 'pdf') return <iframe src={url} title={a.name} className="h-[62dvh] w-full rounded-xl border" />;
   if (k === 'office') return <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`} title={a.name} className="h-[62dvh] w-full rounded-xl border" />;
   return <div className="py-10 text-center text-5xl">📎<p className="mt-2 text-sm font-bold [overflow-wrap:anywhere]">{a.name}</p></div>;
@@ -66,7 +71,7 @@ export function PiecesJointesVue({ items, onOpen, onRemove, grand = false, class
             <span key={a.path} className="relative">
               <button type="button" onClick={() => { setCur(i); setOpenAt(i); onOpen?.(); }} aria-label={`Ouvrir ${a.name}`} title={a.name}
                 className={cn('rounded-xl overflow-hidden grid place-items-center border border-border', taille, k !== 'image' && ICONES[k].c)}>
-                {k === 'image' ? <img src={urlPJ(a.path)} alt="" loading="lazy" className="h-full w-full object-cover" /> : ICONES[k].e}
+                {k === 'image' ? <ImgPrive src={urlPJ(a.path)} alt="" loading="lazy" className="h-full w-full object-cover" /> : ICONES[k].e}
               </button>
               {onRemove && (
                 <button type="button" onClick={() => onRemove(a)} aria-label={`Retirer ${a.name}`}

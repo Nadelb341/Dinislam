@@ -8,6 +8,7 @@ import { deposerFichierDevoir, type PieceJointe } from '@/lib/devoirFichiers';
 import { moveToTrash } from '@/lib/trash';
 import { errorMessage, cn } from '@/lib/utils';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -95,7 +96,7 @@ export function OutilsLigneDevoir({ ligneKey, ligneNom, pj, audio, enregistreurO
           {audio && (
             <div className="flex items-center gap-2 rounded-xl border border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-800 px-2 py-1">
               <span className="text-xs font-bold shrink-0">🎧 Consigne</span>
-              <audio src={audio} controls preload="none" className="h-8 min-w-0 flex-1" />
+              <AudioPrive src={audio} controls preload="none" className="h-8 min-w-0 flex-1" />
               <button type="button" onClick={() => setARetirer({ audio })} aria-label="Retirer la consigne audio"
                 className="h-6 w-6 shrink-0 rounded-full bg-[#EF4444] text-white text-xs font-extrabold grid place-items-center">✕</button>
             </div>

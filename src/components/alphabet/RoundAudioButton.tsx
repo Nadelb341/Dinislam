@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useUrlLisible } from '@/lib/fichiersPrives';
 
 /** Proposition « 1 » (2026-10-07) : gros bouton rond ▶, le tour se remplit pendant l'écoute. */
-export function RoundAudioButton({ url, label, from, to, size = 76 }: { url: string; label: string; from: string; to: string; size?: number }) {
+export function RoundAudioButton({ url: urlEnregistree, label, from, to, size = 76 }: { url: string; label: string; from: string; to: string; size?: number }) {
+  // 🔒 Filet (2026-11-07) : si l'audio est dans un espace privé, lien signé ; sinon (alphabet-content) adresse inchangée
+  const url = useUrlLisible(urlEnregistree);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -10,6 +13,7 @@ export function RoundAudioButton({ url, label, from, to, size = 76 }: { url: str
   useEffect(() => { audioRef.current?.pause(); audioRef.current = null; setPlaying(false); setProgress(0); }, [url]);
 
   const toggle = () => {
+    if (!url) return;
     if (!audioRef.current) {
       const a = new Audio(url);
       a.ontimeupdate = () => setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);
@@ -27,6 +31,7 @@ export function RoundAudioButton({ url, label, from, to, size = 76 }: { url: str
       <button
         type="button"
         onClick={toggle}
+        disabled={!url}
         aria-label={playing ? `Pause : ${label}` : `Écouter : ${label}`}
         className="relative grid place-items-center rounded-full shadow-md transition-transform active:scale-95"
         style={{ width: size, height: size, background: `conic-gradient(${from} ${progress}%, rgba(148,163,184,0.35) 0)` }}
