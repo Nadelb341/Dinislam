@@ -54,7 +54,10 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
   useEffect(() => {
     if (!user || !isAdmin) return;
     const channel = supabase.channel('admin-pending-breakdown')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
+      // 📱 2026-11-07 (audit ZAT) : PAS « * » — chaque élève connecté réécrit son profil chaque minute (« je suis en ligne »),
+      // ce qui relançait ces comptages ≈ 200 fois/min pendant un cours. On n'écoute que les inscriptions (le reste : relu toutes les 30 s).
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'is_approved=eq.false' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sourate_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nourania_validation_requests' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'devoirs_rendus' }, () => queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }))
