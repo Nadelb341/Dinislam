@@ -13,7 +13,7 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
  * Sans réseau, le renouvellement du jeton de connexion échoue et Supabase réessaie pendant ~25 s en bloquant
  * toute l'appli, puis renvoie vers la connexion. Ici, le renouvellement est limité à 8 s ; s'il échoue faute de
  * réseau (mode avion, wifi sans Internet), on répond avec la session déjà enregistrée sur l'appareil, valable
- * 1 minute : l'appli s'ouvre tout de suite avec les dernières données en mémoire, et le vrai renouvellement est
+ * 3 minutes (au-delà des 90 s où Supabase juge un jeton « bientôt expiré », sinon boucle de renouvellement) : l'appli s'ouvre tout de suite avec les dernières données en mémoire, et le vrai renouvellement est
  * retenté jusqu'au retour du réseau. Une vraie réponse du serveur (jeton refusé…) passe toujours telle quelle.
  */
 export const AUTH_STORAGE_KEY = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
@@ -25,7 +25,7 @@ function offlineRefreshResponse(): Response | null {
     const stored = raw ? JSON.parse(raw) : null;
     const s = stored?.currentSession ?? stored;
     if (!s?.access_token || !s?.refresh_token || !s?.user) return null;
-    const body = { access_token: s.access_token, refresh_token: s.refresh_token, token_type: 'bearer', expires_in: 60, expires_at: Math.floor(Date.now() / 1000) + 60, user: s.user };
+    const body = { access_token: s.access_token, refresh_token: s.refresh_token, token_type: 'bearer', expires_in: 180, expires_at: Math.floor(Date.now() / 1000) + 180, user: s.user };
     return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch {
     return null;
