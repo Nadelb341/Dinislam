@@ -12,6 +12,11 @@ Dinislam est une application web d'éducation islamique (en français) construit
 ## 🆓 RÈGLE ABSOLUE — Appli LIBRE : rien de payant + utilisable hors ligne même en « black-out » (Nadia, 2026-11-08)
 Règle complète tout en haut de `~/Projets Claude Code/CLAUDE.md`. Pour Dinislam : forfaits gratuits seulement (Vercel Hobby, Supabase Free), aucune fonction dépendante d'un abonnement ou de l'accès Claude de Mustapha ; vidéos allégées et servies par l'appli (Vercel) plutôt que par Supabase ; tout contenu déjà vu (vidéos d'invocations comprises) doit rester lisible sans réseau.
 
+## 🔁 Accueil vide au réveil de l'ordinateur — corrigé (✅ 2026-11-09, capture de Nadia à 00 h 22)
+- **Cause (prouvée)** : sur le Mac de Nadia, jeton expiré depuis 19 h 25 (onglet en veille) ; le 1er renouvellement a raté → `resilientFetch` a donné la session de secours (ancien jeton) → la base refusait tout (401) → accueil sans cartes, sans icônes. Le vrai renouvellement n'a eu lieu qu'à 00 h 22 min 48 s (auth.sessions), 26 s après la capture, et rien ne rechargeait les données. Mon passage 60 s → 180 s (08/11) allongeait l'attente (retentative seulement ~90 s plus tard).
+- **Correctif** : `client.ts` → session de secours = vrai renouvellement retenté toutes les 10 s ; dès qu'il réussit, événement `dinislam:session-renouvelee` → `RealtimeSync` recharge toutes les requêtes + `AuthContext` revérifie admin / compte validé. `sw.js` → une réponse 401 (jeton expiré) des données donne la dernière copie de la personne au lieu d'un écran vide.
+- **Testé** (Chrome, faux compte, base simulée, sans service worker) : ancienne version 0 carte après 25 s ; nouvelle version cartes revenues à 11 s sans recharger. Branche 401 du service worker pas testable avec l'outil (ses requêtes échappent à la simulation) : logique identique à « hors ligne », déjà testée.
+
 ## 🤲 Carte « Invocations » complétée depuis le canal Telegram de Nadia (✅ 2026-11-08, demande de Nadia)
 Canal « 🌈🤲 Invocations (Douaa) - NAD - Canal » (lien d'invitation donné par Nadia, compte Telegram de Nadia) : 13 invocations, 21 vidéos (8 ont un « extrait » + une « VIDÉO ENTIÈRE » en dessous).
 - **Choix de Nadia** : « Lorsqu'on se couche » (même invocation que « Avant de dormir ») → corbeille ; Tachahoud = 2 cartes ; vidéos allégées ; pour Avant/Après manger : « les 2 textes, avec le choix de les modifier ou supprimer ».

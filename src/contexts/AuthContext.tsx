@@ -4,7 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { rememberPassword } from '@/lib/rememberPassword';
 import type { TablesUpdate } from '@/integrations/supabase/types';
-import { AUTH_STORAGE_KEY } from '@/integrations/supabase/client';
+import { AUTH_STORAGE_KEY, SESSION_RENOUVELEE_EVENT } from '@/integrations/supabase/client';
 
 /**
  * 📡 RÈGLE ABSOLUE « l'appli s'ouvre toujours, même sans réseau » (2026-11-02).
@@ -259,8 +259,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
+    // 🔁 Vraie connexion retrouvée après une session de secours : on revérifie admin / compte validé
+    const handleRenouvelee = () => { void recheckApproval(); };
+    window.addEventListener(SESSION_RENOUVELEE_EVENT, handleRenouvelee);
 
     return () => {
+      window.removeEventListener(SESSION_RENOUVELEE_EVENT, handleRenouvelee);
       mounted = false;
       clearTimeout(safetyTimer);
       subscription.unsubscribe();

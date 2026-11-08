@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SESSION_RENOUVELEE_EVENT } from '@/integrations/supabase/client';
 import {
   REALTIME_DEBOUNCE_MS,
   REALTIME_EVENT,
@@ -22,6 +22,13 @@ const RealtimeSync = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const userId = user?.id ?? null;
+
+  // 🔁 Vraie connexion retrouvée après une session de secours : tout ce qui est affiché est rechargé
+  useEffect(() => {
+    const recharger = () => { try { void queryClient.invalidateQueries(); } catch { /* rien */ } };
+    window.addEventListener(SESSION_RENOUVELEE_EVENT, recharger);
+    return () => window.removeEventListener(SESSION_RENOUVELEE_EVENT, recharger);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!userId) return;

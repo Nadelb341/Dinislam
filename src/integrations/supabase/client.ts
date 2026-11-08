@@ -19,6 +19,32 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const AUTH_STORAGE_KEY = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
 const REFRESH_TIMEOUT_MS = 8000;
 
+/**
+ * 🔁 Session de secours (2026-11-09, accueil vide de Nadia au réveil du Mac : jeton expiré depuis 5 h,
+ * 1er renouvellement raté → l'appli a gardé l'ancien jeton et la base refusait tout) :
+ *  - tant que la session de secours est utilisée, on retente le VRAI renouvellement toutes les 10 s ;
+ *  - dès qu'il réussit, l'événement `dinislam:session-renouvelee` fait recharger toutes les données
+ *    et le statut (admin, compte validé) — sans que l'utilisateur ait à recharger la page.
+ */
+export const SESSION_RENOUVELEE_EVENT = 'dinislam:session-renouvelee';
+let sessionDeSecours = false;
+let relance: ReturnType<typeof setTimeout> | null = null;
+function marquerSecours() {
+  sessionDeSecours = true;
+  if (relance) return;
+  relance = setTimeout(() => {
+    relance = null;
+    void supabase.auth.refreshSession().catch(() => {});
+  }, 10000);
+}
+function marquerRenouvelee() {
+  if (!sessionDeSecours) return;
+  sessionDeSecours = false;
+  if (relance) { clearTimeout(relance); relance = null; }
+  // Laisse Supabase enregistrer le nouveau jeton avant de relancer les requêtes
+  setTimeout(() => { try { window.dispatchEvent(new Event(SESSION_RENOUVELEE_EVENT)); } catch { /* rien */ } }, 300);
+}
+
 function offlineRefreshResponse(): Response | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -37,15 +63,17 @@ const resilientFetch: typeof fetch = async (input, init) => {
   if (!url.includes('/auth/v1/token') || !url.includes('grant_type=refresh_token')) return fetch(input, init);
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     const offline = offlineRefreshResponse();
-    if (offline) return offline;
+    if (offline) { marquerSecours(); return offline; }
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    const response = await fetch(input, { ...init, signal: controller.signal });
+    if (response.ok) marquerRenouvelee();
+    return response;
   } catch (err) {
     const offline = offlineRefreshResponse();
-    if (offline) return offline;
+    if (offline) { marquerSecours(); return offline; }
     throw err;
   } finally {
     clearTimeout(timer);

@@ -220,6 +220,9 @@ self.addEventListener('fetch', function(event) {
         return withTimeout(net2, DATA_TIMEOUT_MS).then(function(response) {
           // Jeton expiré hors ligne → refus du serveur : on préfère la dernière copie connue
           if (!uid && response && !response.ok) throw new Error('anon');
+          // Jeton expiré refusé par le serveur (réveil de l'ordinateur, renouvellement pas encore fait) :
+          // la dernière copie de la personne plutôt qu'un écran vide (accueil vide de Nadia, 2026-11-09)
+          if (response && response.status === 401) throw new Error('jeton expiré');
           return response;
         }).catch(function() {
           return caches.open(cacheName).then(function(cache) {
