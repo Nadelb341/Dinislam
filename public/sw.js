@@ -269,8 +269,39 @@ self.addEventListener('fetch', function(event) {
       })
     );
   }
-  // Autres adresses (stockage Supabase, YouTube…) : le navigateur s'en occupe normalement.
+  // 🖼️ Images du stockage Supabase (images des cartes, photos…) : gardées sur l'appareil → visibles sans réseau
+  // (2026-11-09 : « ? » à la place des images des Invocations en mode avion). Mémoire d'abord, rafraîchie
+  // en arrière-plan. Réponse « opaque » (balise <img>) renvoyée telle quelle, jamais prise pour une erreur.
+  if (request.destination === 'image' && url.hostname.indexOf('.supabase.co') !== -1 &&
+      url.pathname.indexOf('/storage/v1/object/public/') === 0) {
+    event.respondWith(imageResponse(event, request));
+    return;
+  }
+  // Autres adresses (YouTube…) : le navigateur s'en occupe normalement.
 });
+
+var IMAGE_CACHE = 'dinislam-images';
+var IMAGE_MAX = 300;
+function imageResponse(event, request) {
+  return caches.open(IMAGE_CACHE).then(function(cache) {
+    return cache.match(request, MATCH_OPTS).then(function(cached) {
+      var network = fetch(request).then(function(response) {
+        if (response && (response.ok || response.type === 'opaque')) {
+          var copy = response.clone();
+          event.waitUntil(cache.put(request, copy).then(function() {
+            return cache.keys().then(function(keys) {
+              // Mémoire bornée : on retire les plus anciennes au-delà de 300 images
+              return Promise.all(keys.slice(0, Math.max(0, keys.length - IMAGE_MAX)).map(function(k) { return cache.delete(k); }));
+            });
+          }).catch(function() {}));
+        }
+        return response;
+      });
+      if (cached) { network.catch(function() {}); return cached; }
+      return network.catch(function() { return Response.error(); });
+    });
+  });
+}
 
 // ============ NOTIFICATIONS PUSH ============
 
