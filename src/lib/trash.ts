@@ -10,7 +10,7 @@ export type TrashItemType =
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
-  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes";
+  | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte";
 
 export interface TrashItem {
   id: string;
@@ -22,7 +22,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte">, string> = {
   learning_module: "learning_modules",
   module_content: "module_card_content",
   prayer_card_content: "prayer_card_content",
@@ -191,6 +191,19 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     if (d.attachment) pj[d.key] = [...(pj[d.key] || []).filter((x) => (x as { path?: string }).path !== d.attachment!.path), d.attachment];
     if (d.audio_url) consignes[d.key] = d.audio_url;
     saveDraft(cle, { titre: "", type: "recitation", description: "", lien_lecon: "", date_limite: "", assigned_to: "all", group_id: "", student_id: "", group_ids: [], ...draft, pj, consignes });
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 🤲 Texte d'une invocation supprimé par l'enseignante (2026-11-08) : il revient tel quel dans sa carte
+  if (item.item_type === "invocation_texte") {
+    const d = item.item_data as { invocation_id?: number; bloc?: "principal" | "autre"; valeurs?: Record<string, string | null> } | null;
+    if (!d?.invocation_id || !d.bloc || !d.valeurs) return false;
+    const v = d.valeurs;
+    const maj = d.bloc === "principal"
+      ? { content_arabic: v.arabe ?? null, content_prononciation: v.prononciation ?? null, content_french: v.traduction ?? null, content_source: v.source ?? null, texte_principal_masque: false }
+      : { autre_arabe: v.arabe ?? null, autre_prononciation: v.prononciation ?? null, autre_traduction: v.traduction ?? null, autre_source: v.source ?? null };
+    const { error } = await supabase.from("invocations").update(maj).eq("id", d.invocation_id);
+    if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

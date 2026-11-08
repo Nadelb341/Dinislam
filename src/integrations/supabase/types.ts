@@ -1712,37 +1712,58 @@ export type Database = {
       invocations: {
         Row: {
           category: string | null
+          autre_arabe: string | null
+          autre_prononciation: string | null
+          autre_source: string | null
+          autre_traduction: string | null
           content_arabic: string | null
           content_french: string | null
+          content_prononciation: string | null
+          content_source: string | null
           created_at: string | null
           display_order: number | null
           id: number
           image_url: string | null
           is_locked: boolean | null
+          texte_principal_masque: boolean
           title_arabic: string
           title_french: string
         }
         Insert: {
           category?: string | null
+          autre_arabe?: string | null
+          autre_prononciation?: string | null
+          autre_source?: string | null
+          autre_traduction?: string | null
           content_arabic?: string | null
           content_french?: string | null
+          content_prononciation?: string | null
+          content_source?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
           image_url?: string | null
           is_locked?: boolean | null
+          texte_principal_masque?: boolean
           title_arabic: string
           title_french: string
         }
         Update: {
           category?: string | null
+          autre_arabe?: string | null
+          autre_prononciation?: string | null
+          autre_source?: string | null
+          autre_traduction?: string | null
           content_arabic?: string | null
           content_french?: string | null
+          content_prononciation?: string | null
+          content_source?: string | null
           created_at?: string | null
           display_order?: number | null
           id?: number
           image_url?: string | null
           is_locked?: boolean | null
+          texte_principal_masque?: boolean
           title_arabic?: string
           title_french?: string
         }

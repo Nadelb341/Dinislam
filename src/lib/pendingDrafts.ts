@@ -101,6 +101,10 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
     place: 'Accueil › Invocations › ⋮ › Gérer le contenu', noun: 'nouvelle invocation', route: '/admin?section=invocations-manage', adminOnly: true,
     labelOf: (d) => { const v = d as { title?: string; titleAr?: string } | null; return text(v?.title) || text(v?.titleAr); },
   },
+  dinislam_invocation_texte: {
+    place: 'Accueil › Invocations › carte › ✏️', noun: "texte d'invocation", route: '/invocations', adminOnly: true,
+    labelOf: (d) => { const v = d as { arabe?: string; traduction?: string } | null; return text(v?.traduction) || text(v?.arabe); },
+  },
   dinislam_module_card_: {
     place: 'Accueil › carte d\'un module › ⋮ › Gérer le contenu', noun: 'nouvelle carte', route: '/', adminOnly: true,
     // Clé : dinislam_module_card_<module> (création) ou …<module>__edit_<carte> (modification)

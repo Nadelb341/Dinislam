@@ -98,6 +98,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   devoir_ligne: 'Ligne de devoir d\'un groupe',
   cahier_carte: 'Carte d\'un groupe du Cahier de texte',
   nourania_lignes: 'Réglage des numéros de lignes d\'une leçon Nourania',
+  invocation_texte: 'Texte d\'une invocation',
   devoir_modele: 'Modèle de devoir',
   allah_name_progress: 'Progression des 99 Noms d\'un élève',
   coran_note: 'Note d\'un marque-page du Coran',

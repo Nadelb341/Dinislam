@@ -38,7 +38,7 @@ const offlinePrecache = () => {
         }
       };
       walk(outDir);
-      const skip = /(^\/sw\.js$|^\/version\.json$|\.map$|\.woff$|^\/audio\/|^\/pdf\/|^\/robots\.txt$|^\/placeholder\.svg$)/;
+      const skip = /(^\/sw\.js$|^\/version\.json$|\.map$|\.woff$|^\/audio\/|^\/pdf\/|^\/videos\/|^\/robots\.txt$|^\/placeholder\.svg$)/;
       const list = files.filter((f) => !skip.test(f)).map((f) => (f === "/index.html" ? "/" : f)).sort();
       const version = (process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "") + Date.now().toString(36);
       const sw = fs.readFileSync(swPath, "utf8").replace("__BUILD_VERSION__", version);

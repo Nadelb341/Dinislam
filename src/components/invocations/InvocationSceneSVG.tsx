@@ -609,7 +609,7 @@ export const InvocationSceneSVG = ({ title }: SceneProps) => {
     return <SceneHabits />;
   if (t.includes('pluie'))
     return <ScenePluie />;
-  if (t.includes('maladie') || t.includes('malade'))
+  if (t.includes('maladie') || t.includes('malade') || t.includes("j'ai mal") || t.includes('j’ai mal') || t.includes('douleur'))
     return <SceneMaladie />;
   return <SceneDefaut />;
 };

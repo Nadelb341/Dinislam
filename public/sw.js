@@ -131,6 +131,38 @@ function fromCache(key) {
   });
 }
 
+// 🎬 Mémoire des vidéos : jamais effacée lors d'une mise à jour (comme la mémoire du Coran).
+// Une vidéo modifiée doit donc changer de nom de fichier.
+var VIDEO_CACHE = 'dinislam-videos';
+// Le lecteur vidéo demande des « plages » (Range) : on les découpe dans la vidéo gardée en mémoire.
+function rangeFromCached(cached, request) {
+  return cached.blob().then(function(blob) {
+    var type = cached.headers.get('content-type') || 'video/mp4';
+    var range = request.headers.get('range');
+    var m = range && /bytes=(\d*)-(\d*)/.exec(range);
+    if (!m) return new Response(blob, { status: 200, headers: { 'Content-Type': type, 'Content-Length': String(blob.size), 'Accept-Ranges': 'bytes' } });
+    var size = blob.size;
+    var start = m[1] === '' ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+    var end = m[1] !== '' && m[2] !== '' ? Math.min(Number(m[2]), size - 1) : size - 1;
+    if (start >= size || start > end) return new Response(null, { status: 416, headers: { 'Content-Range': 'bytes */' + size } });
+    return new Response(blob.slice(start, end + 1), { status: 206, headers: {
+      'Content-Type': type, 'Content-Length': String(end - start + 1),
+      'Content-Range': 'bytes ' + start + '-' + end + '/' + size, 'Accept-Ranges': 'bytes' } });
+  });
+}
+function videoResponse(event, request, key) {
+  return caches.open(VIDEO_CACHE).then(function(cache) {
+    return cache.match(key).then(function(cached) {
+      if (cached) return rangeFromCached(cached, request);
+      // Pas encore gardée : on la télécharge entière une fois, en arrière-plan, pour la prochaine fois
+      event.waitUntil(fetch(key).then(function(full) {
+        if (full && full.ok && full.status === 200) return cache.put(key, full);
+      }).catch(function() {}));
+      return fetch(request).catch(function() { return Response.error(); });
+    });
+  });
+}
+
 function shellResponse() {
   return fromCache('/').then(function(r) {
     if (r) return clean(r);
@@ -207,6 +239,12 @@ self.addEventListener('fetch', function(event) {
   // Fichiers de l'appli (même adresse) : mémoire d'abord, sinon réseau puis mise en mémoire.
   if (url.origin === self.location.origin) {
     var p = url.pathname;
+    // 🎬 Vidéos de l'appli (/videos/…) : gardées sur l'appareil dès la 1re lecture → visibles sans réseau
+    // (règle « appli libre » du 2026-11-08). Jamais préchargées toutes d'un coup.
+    if (p.indexOf('/videos/') === 0) {
+      event.respondWith(videoResponse(event, request, p));
+      return;
+    }
     // Toujours le réseau : numéro de version, audios/PDF lourds, morceaux demandés par plages (lecture audio)
     if (p === '/version.json' || p.indexOf('/audio/') === 0 || p.indexOf('/pdf/') === 0 ||
         request.headers.has('range') || request.destination === 'audio' || request.destination === 'video') return;

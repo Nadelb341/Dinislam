@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand } from 'lucide-react';
+import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand, Film, Undo2 } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
 import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
@@ -17,6 +17,7 @@ import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
+import InvocationTextes from '@/components/invocations/InvocationTextes';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import type { Tables } from '@/integrations/supabase/types';
@@ -68,10 +69,17 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
   const enrichment = getInvocationEnrichment(invocation.title_french);
   const { askValidation, validationDialog } = useConfirmValidation();
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
-  const embedUrl = enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
+  // Vidéo de l'appli (canal Telegram, 2026-11-08) en priorité ; YouTube seulement pour les cartes qui n'en ont pas
+  const videoAppli = enrichment?.video ?? null;
+  const videoEntiere = enrichment?.videoEntiere ?? null;
+  const embedUrl = !videoAppli && enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
+  const [voirEntiere, setVoirEntiere] = useState(false);
+  const lecteurRef = useRef<HTMLDivElement>(null);
+  const basculerVideo = () => {
+    setVoirEntiere((v) => !v);
+    lecteurRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
-  const arabicText = invocation.content_arabic || enrichment?.arabic || '';
-  const frenchText = invocation.content_french || enrichment?.translation || '';
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -79,10 +87,21 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
         <div ref={scrollRef} onScroll={handleScroll} className="max-h-[88vh] overflow-y-auto">
 
           {/* En-tête */}
-          <div className="px-5 pt-5 pb-4 border-b border-border">
+          <div className="pl-5 pr-14 pt-5 pb-4 border-b border-border">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <h2 className="font-bold text-base text-foreground leading-snug">{invocation.title_french}</h2>
+                {videoEntiere && (
+                  <button
+                    type="button"
+                    onClick={basculerVideo}
+                    className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${voirEntiere ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-teal-600 text-white hover:bg-teal-700'}`}
+                  >
+                    {voirEntiere
+                      ? <><Undo2 className="h-3.5 w-3.5 flex-shrink-0" /> Revenir à l'extrait</>
+                      : <><Film className="h-3.5 w-3.5 flex-shrink-0" /> Vidéo entière</>}
+                  </button>
+                )}
                 {invocation.title_arabic && (
                   <p className="font-arabic text-lg text-right text-muted-foreground mt-1">{invocation.title_arabic}</p>
                 )}
@@ -97,7 +116,29 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
 
           <div className="p-5 space-y-4 pb-8">
 
-            {/* Vidéo YouTube d'apprentissage */}
+            {/* Vidéo de l'appli (extrait ou vidéo entière) — gardée sur l'appareil après la 1re lecture */}
+            {videoAppli && (
+              <div ref={lecteurRef} className="rounded-2xl overflow-hidden border border-border shadow-sm">
+                <div className={`${voirEntiere ? 'bg-amber-600' : 'bg-teal-700'} px-3 py-1.5 flex items-center gap-2 transition-colors`}>
+                  <Video className="h-3.5 w-3.5 text-white/80 flex-shrink-0" />
+                  <p className="text-xs text-white/90 font-medium">{voirEntiere ? 'Vidéo entière' : "Apprendre l'invocation"}</p>
+                </div>
+                <div className="aspect-video bg-black">
+                  <video
+                    key={voirEntiere ? 'entiere' : 'extrait'}
+                    src={voirEntiere && videoEntiere ? videoEntiere : videoAppli}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    autoPlay={voirEntiere}
+                    controlsList="nodownload"
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Vidéo YouTube d'apprentissage (cartes sans vidéo de l'appli) */}
             {embedUrl && (
               <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
                 <div className="bg-teal-700 px-3 py-1.5 flex items-center gap-2">
@@ -114,34 +155,8 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
               </div>
             )}
 
-            {/* Texte arabe */}
-            {arabicText ? (
-              <div className="rounded-2xl p-4 text-right" style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}>
-                <p className="font-arabic leading-loose text-white" style={{ fontSize: '22px', lineHeight: '2.2' }}>
-                  {arabicText}
-                </p>
-              </div>
-            ) : null}
-
-            {/* Translittération */}
-            {enrichment?.transliteration && (
-              <div className="px-1">
-                <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-1">
-                  Prononciation
-                </p>
-                <p className="text-sm italic text-teal-700 dark:text-teal-300 leading-relaxed">
-                  {enrichment.transliteration}
-                </p>
-              </div>
-            )}
-
-            {/* Traduction */}
-            {frenchText ? (
-              <div className="rounded-xl p-4 border" style={{ backgroundColor: '#fef9ec', borderColor: '#fde68a' }}>
-                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2">Traduction</p>
-                <p className="text-sm text-gray-700 leading-relaxed italic">« {frenchText} »</p>
-              </div>
-            ) : null}
+            {/* Textes : celui de la vidéo + « autre invocation » — modifiables / supprimables par l'enseignante */}
+            <InvocationTextes invocation={invocation} enrichment={enrichment} />
 
             {/* Vertu */}
             {enrichment?.virtue && (
@@ -161,14 +176,6 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 </p>
                 <p className="text-sm text-blue-800 leading-relaxed">{enrichment.extra}</p>
               </div>
-            )}
-
-            {/* Source */}
-            {enrichment?.source && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
-                <BookOpen className="h-3 w-3 flex-shrink-0" />
-                <span>{enrichment.source}</span>
-              </p>
             )}
 
             {/* Médias ajoutés par l'admin */}
@@ -605,7 +612,7 @@ const Invocations = () => {
 
       {selectedInvocation && (
         <InvocationDetailDialog
-          invocation={selectedInvocation}
+          invocation={invocations.find((i) => i.id === selectedInvocation.id) ?? selectedInvocation}
           contents={contents.filter((c) => c.invocation_id === selectedInvocation.id)}
           progress={progress.find((p) => p.invocation_id === selectedInvocation.id)}
           validationRequest={getCardValidationRequest(selectedInvocation.id)}
