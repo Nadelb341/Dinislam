@@ -118,7 +118,8 @@ const hourLabel = (h: number) => `${h} h`;
 const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | 'teacher' | 'priere' }) => {
   const { user, isAdmin } = useAuth();
   const [prefs, setPrefs] = useState<Prefs>({});
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  // Carte « Mes rappels de prière » : dépliée d'office (demande de Nadia, 2026-11-09)
+  const [open, setOpen] = useState<Record<string, boolean>>(variant === 'priere' ? { pri: true } : {});
   // 🔄 En direct : réglage changé sur un autre appareil (interrupteurs enregistrés tout de suite, pas de saisie à perdre)
   const prefsVersion = useRealtimeVersion(['notification_preferences'], !!user);
 
