@@ -111,7 +111,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   });
 
   const basculerReglage = async (id: string, champ: 'hors_classement' | 'presence_tous_groupes', valeur: boolean) => {
-    const { error } = await supabase.from('profiles').update({ [champ]: valeur }).eq('user_id', id);
+    const { error } = await supabase.from('profiles').update(champ === 'hors_classement' ? { hors_classement: valeur } : { presence_tous_groupes: valeur }).eq('user_id', id);
     if (error) { toast.error(errorMessage(error)); return; }
     queryClient.invalidateQueries({ queryKey: ['admin-students-details'] });
     toast.success(champ === 'hors_classement'

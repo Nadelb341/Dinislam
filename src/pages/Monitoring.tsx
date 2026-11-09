@@ -168,8 +168,7 @@ const Monitoring = () => {
         await supabase.from('notification_history').insert({
           title: '🧪 Test Monitoring', body: 'Test depuis monitoring', type: 'test',
           sent_by: user?.id, total_recipients: data?.total || 0,
-          successful_sends: data?.sent || 0, failed_sends: 0,
-          expired_cleaned: 0
+          successful_sends: data?.sent || 0,
         });
         loadPushData();
       }
@@ -195,8 +194,7 @@ const Monitoring = () => {
       await supabase.from('notification_history').insert({
         title: broadcastTitle, body: broadcastBody, type: 'broadcast',
         sent_by: user?.id, total_recipients: data?.total || 0,
-        successful_sends: data?.sent || 0, failed_sends: 0,
-        expired_cleaned: 0
+        successful_sends: data?.sent || 0,
       });
       setBroadcastTitle(''); setBroadcastBody('');
       loadPushData();

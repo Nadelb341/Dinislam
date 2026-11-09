@@ -1,3 +1,4 @@
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useState, useRef, useEffect } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -632,7 +633,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           .single();
         if (insertErr) throw insertErr;
       } else {
-        const updateData: Record<string, unknown> = {
+        const updateData: TablesUpdate<'ramadan_settings'> = {
           start_enabled: newValue,
           updated_at: new Date().toISOString(),
         };

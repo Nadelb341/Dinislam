@@ -134,7 +134,7 @@ export default function PushDiagnostic() {
           const keyArray = urlBase64ToUint8Array(vapidKey);
           newSub = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: keyArray
+            applicationServerKey: keyArray as BufferSource
           });
           const keys = newSub.toJSON().keys;
           update(6, {

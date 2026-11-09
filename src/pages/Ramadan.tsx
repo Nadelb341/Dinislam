@@ -204,12 +204,12 @@ const Ramadan = () => {
       const existingProgress = userProgress.find(p => p.day_id === dayId);
       if (existingProgress) {
         const { error } = await supabase.from('user_ramadan_progress')
-          .update({ [field]: true })
+          .update(field === 'video_watched' ? { video_watched: true } : { quiz_completed: true })
           .eq('id', existingProgress.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from('user_ramadan_progress')
-          .insert({ user_id: user.id, day_id: dayId, [field]: true });
+          .insert({ user_id: user.id, day_id: dayId, ...(field === 'video_watched' ? { video_watched: true } : { quiz_completed: true }) });
         if (error) throw error;
       }
     },

@@ -23,9 +23,9 @@ const lsSet = (k: string) => { try { localStorage.setItem(k, 'true'); } catch { 
 /** 📖 Progression gardée dans la base (2026-11-03) ; le téléphone garde aussi une copie (hors connexion) */
 type GrammaireRow = { card_id: string; lecon_at: string | null; exercices_at: string | null };
 async function noteGrammaire(userId: string, cardId: string, tab: 'lecon' | 'exercices') {
-  const champ = tab === 'lecon' ? 'lecon_at' : 'exercices_at';
+  const maintenant = new Date().toISOString();
   await supabase.from('user_grammaire_progress')
-    .upsert({ user_id: userId, card_id: cardId, [champ]: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'user_id,card_id' });
+    .upsert({ user_id: userId, card_id: cardId, ...(tab === 'lecon' ? { lecon_at: maintenant } : { exercices_at: maintenant }), updated_at: maintenant }, { onConflict: 'user_id,card_id' });
 }
 
 // Palette de couleurs tournante par chapitre

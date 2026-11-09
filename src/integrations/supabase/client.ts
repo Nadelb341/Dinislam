@@ -88,3 +88,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+/**
+ * 🔌 Canaux « en direct » : un nom UNIQUE à chaque ouverture (2026-11-09).
+ * Depuis supabase-js 2.119, ouvrir deux fois un canal du même nom (ex. le badge des messages, affiché dans
+ * l'en-tête ET le menu du bas) plante l'écran : « cannot add postgres_changes callbacks … after subscribe() ».
+ * L'appli n'utilise que des abonnements aux changements de tables (ni « présence » ni « diffusion »),
+ * donc le nom du canal ne sert à rien d'autre : un suffixe unique est sans risque et protège aussi les futurs canaux.
+ */
+const canalOriginal = supabase.channel.bind(supabase);
+let numeroCanal = 0;
+supabase.channel = ((nom: string, ...reste: unknown[]) =>
+  (canalOriginal as (n: string, ...r: unknown[]) => ReturnType<typeof canalOriginal>)(`${nom}-${++numeroCanal}-${Math.random().toString(36).slice(2, 8)}`, ...reste)
+) as typeof supabase.channel;

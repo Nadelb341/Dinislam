@@ -140,7 +140,7 @@ const HomeworkCard = () => {
           user_id: user.id,
           file_url: publicUrl,
           file_name: file.name,
-          content_type: file.type,
+          file_type: file.type,
         });
       if (insertError) throw insertError;
 

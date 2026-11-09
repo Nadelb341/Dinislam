@@ -140,7 +140,7 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
       const ok = await moveToTrash(item.user_id, "alphabet_letter_audio", String(d.letter_id), item.label, { ...d, audio_url: current });
       if (!ok) return false;
     }
-    const { error } = await supabase.from("alphabet_letters").update({ [field]: d.audio_url }).eq("id", d.letter_id);
+    const { error } = await supabase.from("alphabet_letters").update(field === "audio_vowels_url" ? { audio_vowels_url: d.audio_url } : { audio_url: d.audio_url }).eq("id", d.letter_id);
     if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
@@ -277,7 +277,7 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
   const table = TABLE_BY_TYPE[item.item_type as Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note">];
   if (!table) return false;
   const { __children, ...row } = (item.item_data || {}) as { __children?: TrashChildren } & Record<string, unknown>;
-  const { error } = await untypedDb.from(table).insert(__children ? row : item.item_data);
+  const { error } = await untypedDb.from(table).insert((__children ? row : item.item_data) as Record<string, unknown>);
   if (error) return false;
   // Éléments liés gardés avec lui (réponses, membres, flashcards...) : remis dans l'ordre où ils ont été copiés
   for (const c of __children || []) {
