@@ -1,3 +1,4 @@
+import { rangParcours } from '@/lib/souratesPrecedentes';
 import { useEffect, useState, useCallback } from 'react';
 import { withName } from '@/lib/encouragements';
 import { useAuth } from '@/contexts/AuthContext';
@@ -140,14 +141,9 @@ const SOURATES_DATA = [
   { number: 114, name_arabic: 'الناس', name_french: 'An-Nas (Les Hommes)', verses_count: 6, revelation_type: 'Mecquoise' },
 ];
 
-// Display order: 114 first, then 113, ..., 1 last, with Ayat Al-Kursi between Al-Ikhlas (112) and Al-Masad (111)
-const SOURATES_ORDERED = (() => {
-  const sorted = [...SOURATES_DATA].filter(s => s.number !== 1000).sort((a, b) => b.number - a.number);
-  const ayatKursi = SOURATES_DATA.find(s => s.number === 1000)!;
-  const idx = sorted.findIndex(s => s.number === 112);
-  sorted.splice(idx + 1, 0, ayatKursi);
-  return sorted;
-})();
+// Ordre du parcours : 114, 113, 112, Ayat Al-Kursi, 111 … 1 — règle unique `rangParcours` (idée 24 de l'audit,
+// la même que « valider aussi les sourates d'avant »)
+const SOURATES_ORDERED = [...SOURATES_DATA].sort((a, b) => rangParcours(b.number) - rangParcours(a.number));
 
 // Gift sourates: Al-Fil (105) then every 5 sourates
 const GIFT_SOURATE_NUMBERS = new Set([105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]);

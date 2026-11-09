@@ -6,6 +6,19 @@ import { useAuth } from '@/contexts/AuthContext';
 export const slugCarte = (m: { builtin_path?: string | null; title?: string | null }) =>
   m.builtin_path ? m.builtin_path.replace(/^\//, '') : (m.title || '').toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[̀-ͯ]/g, '');
 
+type ModuleVisibilite = { visibility_type: string; user_ids: string[] | null; group_ids: string[] | null };
+/**
+ * 🧩 LA règle unique « cette carte est-elle ouverte à cette personne ? » (idée 24 de l'audit, 2026-11-09) :
+ * utilisée par l'accueil (Index.tsx) ET par le Classement — ne jamais la réécrire ailleurs.
+ * Ciblage personnes / groupes prioritaire ; sinon la carte doit être active. L'admin voit tout.
+ */
+export function carteOuverte(m: { is_active: boolean | null }, v: ModuleVisibilite | undefined, userId: string | undefined, mesGroupes: string[], isAdmin: boolean): boolean {
+  if (isAdmin) return true;
+  if (v?.visibility_type === 'users') return (v.user_ids || []).includes(userId ?? '');
+  if (v?.visibility_type === 'groups') return mesGroupes.some((g) => (v.group_ids || []).includes(g));
+  return !!m.is_active;
+}
+
 /**
  * Cartes de l'accueil ouvertes à l'élève connecté (2026-11-04) : ouvertes à tous et actives, ou ouvertes à lui / à son groupe.
  * Même calcul que l'accueil (Index.tsx `visibleModules`). L'admin : toutes. `null` tant que ce n'est pas chargé.
@@ -23,13 +36,7 @@ export function useCartesVisibles(): Set<string> | null {
       ]);
       const mesGroupes = (grp || []).map((g) => g.group_id);
       const parModule = new Map((vis || []).map((v) => [v.module_id, v]));
-      const ouvertes = (mods || []).filter((m) => {
-        if (isAdmin) return true;
-        const v = parModule.get(m.id);
-        if (v?.visibility_type === 'users') return (v.user_ids || []).includes(user!.id);
-        if (v?.visibility_type === 'groups') return mesGroupes.some((g) => (v.group_ids || []).includes(g));
-        return !!m.is_active;
-      });
+      const ouvertes = (mods || []).filter((m) => carteOuverte(m, parModule.get(m.id), user!.id, mesGroupes, isAdmin));
       return ouvertes.map(slugCarte);
     },
   });

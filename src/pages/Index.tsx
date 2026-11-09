@@ -1,3 +1,4 @@
+import { carteOuverte } from '@/hooks/useCartesVisibles';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
@@ -309,16 +310,8 @@ const Index = () => {
   const visibilityMap = Object.fromEntries((visibilityRows || []).map(v => [v.module_id, v]));
 
   // Filtrage des modules pour les élèves
-  const visibleModules = (modules || []).filter(mod => {
-    if (isAdmin) return true;
-    const vis = visibilityMap[mod.id];
-    // Le ciblage par personnes/groupes prend le dessus sur is_active
-    if (vis?.visibility_type === 'users') return vis.user_ids.includes(user?.id ?? '');
-    if (vis?.visibility_type === 'groups') return (myGroupIds || []).some(gid => vis.group_ids.includes(gid));
-    // Pour une visibilité 'all' ou sans règle, on respecte is_active
-    if (!mod.is_active) return false;
-    return true;
-  });
+  // Règle unique partagée avec le Classement (useCartesVisibles.ts › carteOuverte)
+  const visibleModules = (modules || []).filter(mod => carteOuverte(mod, visibilityMap[mod.id], user?.id, myGroupIds || [], isAdmin));
 
   // Réordonner les cartes par appui long + glisser (admin, 2026-10-27 : remplace les flèches ▲▼)
   const saveModuleOrder = useCallback(async (order: NonNullable<typeof modules>) => {
