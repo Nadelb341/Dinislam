@@ -142,10 +142,19 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
       row.prayer_reminders = PRAYER_KEYS.some(k => next[k] === true);
       Object.assign(row, champsVillePriere());
     }
-    const { error } = await supabase.from('notification_preferences').upsert(row, { onConflict: 'user_id' });
+    const ecrire = () => supabase.from('notification_preferences').upsert(row, { onConflict: 'user_id' });
+    let { error } = await ecrire();
+    // Connexion expirée (page restée ouverte longtemps) : on la renouvelle et on réessaie une fois, sans rien demander
+    if (error && (error.code === 'PGRST301' || error.code === 'PGRST303' || /jwt|token/i.test(error.message))) {
+      await supabase.auth.refreshSession().catch(() => {});
+      ({ error } = await ecrire());
+    }
     if (error) {
       setPrefs(prefs);
-      toast.error("Réglage non enregistré, réessaie");
+      // Erreur exacte gardée dans le Monitoring (2026-11-09 : « Réglage non enregistré » chez Nadia, cause invisible)
+      supabase.from('app_logs').insert({ user_id: user.id, level: 'error', action: 'Réglage de notification non enregistré',
+        details: { code: error.code, message: error.message, details: error.details, hint: error.hint, cles: Object.keys(changes) } }).then(() => {}, () => {});
+      toast.error(`Réglage non enregistré, réessaie (${error.code || error.message})`);
     }
   };
 
