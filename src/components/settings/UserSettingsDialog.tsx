@@ -327,13 +327,12 @@ const UserSettingsDialog = () => {
 
             {/* Accès à la page Paramètres (notifications, corbeille) — avant le 2026-09-30, aucun bouton n'y menait */}
             <Separator />
-            <div className={`grid gap-2 ${isAdmin ? 'grid-cols-1' : 'grid-cols-2'}`}>
-              {!isAdmin && (
-                <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#notifications'); }}>
-                  <Bell className="h-4 w-4 mr-2 shrink-0" />
-                  Notifications
-                </Button>
-              )}
+            <div className="grid gap-2 grid-cols-2">
+              {/* L'enseignante aussi (2026-11-09) : ses rappels de prière ; ses alertes d'enseignante restent dans le bouclier */}
+              <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#notifications'); }}>
+                <Bell className="h-4 w-4 mr-2 shrink-0" />
+                {isAdmin ? '🕌 Rappels de prière' : 'Notifications'}
+              </Button>
               <Button variant="outline" className="h-auto min-h-11 py-2 whitespace-normal" onClick={() => { setOpen(false); navigate('/settings#corbeille'); }}>
                 <Trash2 className="h-4 w-4 mr-2 shrink-0" />
                 Corbeille
