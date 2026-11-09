@@ -4,6 +4,8 @@ import { useAuth, AuthProvider } from '../AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 
 vi.mock('@/integrations/supabase/client', () => ({
+  AUTH_STORAGE_KEY: 'sb-test-auth-token',
+  SESSION_RENOUVELEE_EVENT: 'dinislam:session-renouvelee',
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
