@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -114,6 +115,11 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
 
 const Settings = () => {
   const { user, isAdmin } = useAuth();
+  // 🎯 Ouvert depuis un bouton de la fenêtre ⚙️ (« Rappels de prière », « Notifications », « Corbeille ») :
+  // on ne montre QUE cette carte (demande de Nadia, 2026-11-09 : « je dois voir uniquement ça et rien d'autre »)
+  const { hash } = useLocation();
+  const seule = hash === '#notifications' || hash === '#corbeille' ? hash.slice(1) : null;
+  const titrePage = seule === 'corbeille' ? 'Corbeille' : seule === 'notifications' ? (isAdmin ? 'Rappels de prière' : 'Notifications') : 'Paramètres';
   const { locked: parentLocked, unlock: unlockParent, unlockWithCode } = useParentLock();
   const [gateOpen, setGateOpen] = useState(true);
   const { toast } = useToast();
@@ -327,8 +333,9 @@ const Settings = () => {
   }
 
   return (
-    <AppLayout title="Paramètres">
+    <AppLayout title={titrePage}>
       <div className="p-4 space-y-4">
+        {!seule && (<>
         {/* User Info */}
         <Card>
           <CardContent className="p-4">
@@ -350,9 +357,10 @@ const Settings = () => {
 
         {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
         <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
+        </>)}
 
         {/* 🕌 Rappels de prière de l'enseignante (2026-11-09) : ses autres alertes restent dans le bouclier › Notifs */}
-        {isAdmin && (
+        {isAdmin && seule !== 'corbeille' && (
           <Card id="section-notifications" className="scroll-mt-24">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">🕌 Mes rappels de prière</CardTitle>
@@ -364,7 +372,7 @@ const Settings = () => {
         )}
 
         {/* Notifications Section — élèves seulement : l'enseignante a tout dans le bouclier › Notifs (demande de Nadia 2026-09-30) */}
-        {!isAdmin && (
+        {!isAdmin && seule !== 'corbeille' && (
         <Card id="section-notifications" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -406,6 +414,7 @@ const Settings = () => {
         )}
 
         {/* Corbeille */}
+        {seule !== 'notifications' && (
         <Card id="section-corbeille" className="scroll-mt-24">
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-2">
@@ -470,6 +479,7 @@ const Settings = () => {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Confirmation restauration */}
