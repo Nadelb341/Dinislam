@@ -2184,6 +2184,12 @@ export type Database = {
           notif_rec: boolean
           notif_sched: boolean
           notif_silent: boolean
+          priere_avance: number
+          priere_lat: number | null
+          priere_lon: number | null
+          priere_methode: number | null
+          priere_pays: string | null
+          priere_ville: string | null
           prayer_reminders: boolean | null
           quiet_end: number
           quiet_mode: boolean
@@ -2226,6 +2232,12 @@ export type Database = {
           notif_rec?: boolean
           notif_sched?: boolean
           notif_silent?: boolean
+          priere_avance?: number
+          priere_lat?: number | null
+          priere_lon?: number | null
+          priere_methode?: number | null
+          priere_pays?: string | null
+          priere_ville?: string | null
           prayer_reminders?: boolean | null
           quiet_end?: number
           quiet_mode?: boolean
@@ -2268,6 +2280,12 @@ export type Database = {
           notif_rec?: boolean
           notif_sched?: boolean
           notif_silent?: boolean
+          priere_avance?: number
+          priere_lat?: number | null
+          priere_lon?: number | null
+          priere_methode?: number | null
+          priere_pays?: string | null
+          priere_ville?: string | null
           prayer_reminders?: boolean | null
           quiet_end?: number
           quiet_mode?: boolean

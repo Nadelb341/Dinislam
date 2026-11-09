@@ -78,7 +78,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
   module_visits: ['module-visits'],
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles'],
-  notification_preferences: ['admin-push-stats'],
+  notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
   nourania_lessons: ['admin-dashboard-stats', 'admin-module-progress', 'admin-nourania-lessons', 'admin-nourania-validations', 'admin-stats', 'fully-unlocked-students', 'nourania-lessons', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
   parent_lock_settings: [],

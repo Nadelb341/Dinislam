@@ -351,6 +351,18 @@ const Settings = () => {
         {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
         <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
 
+        {/* 🕌 Rappels de prière de l'enseignante (2026-11-09) : ses autres alertes restent dans le bouclier › Notifs */}
+        {isAdmin && (
+          <Card id="section-notifications" className="scroll-mt-24">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">🕌 Mes rappels de prière</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NotificationFamilies variant="priere" />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Notifications Section — élèves seulement : l'enseignante a tout dans le bouclier › Notifs (demande de Nadia 2026-09-30) */}
         {!isAdmin && (
         <Card id="section-notifications" className="scroll-mt-24">

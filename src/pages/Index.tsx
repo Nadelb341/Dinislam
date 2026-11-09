@@ -239,6 +239,16 @@ const Index = () => {
   const { prayerTimes, getNextPrayer } = usePrayerTimesCity(prayerCity, getSavedMethod());
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
+  // 🔔 Rappels de prière (2026-11-09) : pastille « Me rappeler » / « Rappels activés » dans la carte Prière
+  const { data: rappelsPriereActifs = false } = useQuery({
+    queryKey: ['rappels-priere-actifs', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from('notification_preferences')
+        .select('fajr_reminder, dhuhr_reminder, asr_reminder, maghrib_reminder, isha_reminder').eq('user_id', user!.id).maybeSingle();
+      return !!data && (data.fajr_reminder || data.dhuhr_reminder || data.asr_reminder || data.maghrib_reminder || data.isha_reminder) === true;
+    },
+  });
 
   // 🍂 Décor de saison (bouclier › Apparence appli › Décorations saisons). Soir = du Maghrib jusqu'au Fajr ; journée = du Fajr au Maghrib
   const { saison, r: reglagesSaison } = useSaisonActive();
@@ -530,6 +540,10 @@ const handleModuleClick = (mod) => {
                     </span>
                   )}
                   <span className="text-[11px] text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
+                  <button type="button" onClick={() => navigate('/settings#notifications')}
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${rappelsPriereActifs ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+                    {rappelsPriereActifs ? '🔔 Rappels activés' : '🔔 Me rappeler'}
+                  </button>
                 </div>
               </div>
             </div>

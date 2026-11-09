@@ -1,3 +1,4 @@
+import { enregistrerVillePriere } from '@/lib/rappelsPriere';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Navigation, MapPin, ChevronDown } from 'lucide-react';
@@ -45,12 +46,15 @@ const Priere = () => {
   const handleSelectCity = (city: CityOption) => {
     setSelectedCity(city);
     localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(city));
+    // Rappels de prière envoyés par le serveur : il suit la ville choisie (2026-11-09)
+    if (user) void enregistrerVillePriere(user.id, city, selectedMethod.id);
     setShowCitySelector(false);
   };
 
   const handleSelectMethod = (method: PrayerMethod) => {
     setSelectedMethod(method);
     localStorage.setItem(PRAYER_METHOD_KEY, String(method.id));
+    if (user) void enregistrerVillePriere(user.id, selectedCity, method.id);
     setShowMethodSelector(false);
   };
 

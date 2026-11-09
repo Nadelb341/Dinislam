@@ -1,3 +1,4 @@
+import { AVANCES_RAPPEL, champsVillePriere, villePriereDeLAppareil } from '@/lib/rappelsPriere';
 import { useEffect, useState } from 'react';
 import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
 import { Users, Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield } from 'lucide-react';
@@ -107,13 +108,14 @@ const FAMILIES: Family[] = [
 
 const PRAYER_KEYS: PrefKey[] = ['fajr_reminder', 'dhuhr_reminder', 'asr_reminder', 'maghrib_reminder', 'isha_reminder'];
 
-type Prefs = Partial<Record<PrefKey | 'quiet_mode' | 'notif_silent', boolean>> & { quiet_start?: number; quiet_end?: number };
+type Prefs = Partial<Record<PrefKey | 'quiet_mode' | 'notif_silent', boolean>> & { quiet_start?: number; quiet_end?: number; priere_avance?: number; priere_ville?: string | null };
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${h} h`;
 
-/** student = Paramètres (tout le monde) ; teacher = bouclier › Notifs (alertes de l'enseignante) */
-const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | 'teacher' }) => {
+/** student = Paramètres (tout le monde) ; teacher = bouclier › Notifs (alertes de l'enseignante) ;
+ *  priere = Paramètres de l'enseignante : seulement « Prière et Ramadan » (l'admin est aussi une utilisatrice, 2026-11-09) */
+const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | 'teacher' | 'priere' }) => {
   const { user, isAdmin } = useAuth();
   const [prefs, setPrefs] = useState<Prefs>({});
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -126,16 +128,20 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
       .then(({ data }: { data: Prefs | null }) => { if (data) setPrefs(data); });
   }, [user, prefsVersion]);
 
-  // Absent = activé (tout est activé par défaut), sauf le mode calme
-  const isOn = (k: PrefKey) => prefs[k] !== false;
+  // Absent = activé (tout est activé par défaut), sauf le mode calme et les rappels de prière :
+  // ceux-ci sont ÉTEINTS au départ (choix de Nadia du 2026-11-09), comme en base — l'écran ne doit jamais dire « allumé » à tort
+  const isOn = (k: PrefKey) => (PRAYER_KEYS.includes(k) ? prefs[k] === true : prefs[k] !== false);
 
   const save = async (changes: Prefs) => {
     if (!user) return;
     const next = { ...prefs, ...changes };
     setPrefs(next);
     const row: TablesInsert<'notification_preferences'> = { user_id: user.id, ...changes };
-    // Le rappel de prière général suit les 5 prières (utilisé par usePrayerTimes)
-    if (PRAYER_KEYS.some(k => k in changes)) row.prayer_reminders = PRAYER_KEYS.some(k => next[k] !== false);
+    // Rappels de prière envoyés par le serveur (2026-11-09) : il lui faut la ville et la méthode de cet appareil
+    if (PRAYER_KEYS.some(k => k in changes)) {
+      row.prayer_reminders = PRAYER_KEYS.some(k => next[k] === true);
+      Object.assign(row, champsVillePriere());
+    }
     const { error } = await supabase.from('notification_preferences').upsert(row, { onConflict: 'user_id' });
     if (error) {
       setPrefs(prefs);
@@ -143,7 +149,7 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
     }
   };
 
-  const families = FAMILIES.filter(f => (variant === 'teacher' ? f.adminOnly && isAdmin : !f.adminOnly));
+  const families = FAMILIES.filter(f => (variant === 'teacher' ? f.adminOnly && isAdmin : variant === 'priere' ? f.id === 'pri' : !f.adminOnly));
 
   return (
     <div className="space-y-3">
@@ -179,6 +185,22 @@ const NotificationFamilies = ({ variant = 'student' }: { variant?: 'student' | '
             </button>
             {expanded && (
               <div className="px-4 pb-2">
+                {f.id === 'pri' && (
+                  <div className="py-2.5 border-t border-border space-y-2">
+                    <p className="text-sm font-medium">🕌 Moment du rappel de prière</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {AVANCES_RAPPEL.map((a) => (
+                        <button key={a.valeur} type="button" onClick={() => save({ priere_avance: a.valeur })}
+                          className={`min-h-10 rounded-lg border px-2 text-xs font-semibold transition-colors ${(prefs.priere_avance ?? 0) === a.valeur ? 'bg-teal-700 text-white border-teal-700' : 'bg-background text-teal-900 border-teal-200 hover:bg-teal-50'}`}>
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                      📍 Heures de {prefs.priere_ville ?? villePriereDeLAppareil().label} — la ville se change dans la page Prière.
+                    </p>
+                  </div>
+                )}
                 {f.items.map(it => (
                   <div key={it.key} className="flex items-center gap-3 py-2.5 border-t border-border">
                     <div className="flex-1 min-w-0">
