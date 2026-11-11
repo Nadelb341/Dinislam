@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +18,7 @@ import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { IMAGES_HIVER } from '@/components/saisons/dessinsHiver';
 import { IMAGES_CLAIR } from '@/components/saisons/dessinsPrintempsEte';
 import { OBJETS_LOGO } from '@/components/saisons/objetsLogo';
-import { essayerAverse, type ModeMeteo, ReglagesLogo, ReglagesMeteo, RythmeLogo } from '@/lib/saisons';
+import { essayerAverse, type ModeMeteo, type ReglagesJeux, ReglagesLogo, ReglagesMeteo, RythmeLogo } from '@/lib/saisons';
 import { cn, errorMessage } from '@/lib/utils';
 
 /**
@@ -289,6 +289,9 @@ export default function DecorationsSaisons() {
           <p className="rounded-xl bg-muted px-3 py-2 text-sm">{NOM_SAISON[onglet]} : {IDEES_A_VENIR[onglet]} En attendant, cette saison reste en ambiance neutre.</p>
         )}
 
+        {/* 🎠 Petits jeux des décors (2026-11-11) : rien à gagner, juste des animations — mêmes jeux à chaque saison */}
+        <JeuxReglages jeux={r.jeux} setJeux={(v) => setR((x) => ({ ...x, jeux: { ...x.jeux, ...v } }))} />
+
         <MeteoEtLogo saison={onglet} meteo={r.meteo[onglet]} logo={r.logo[onglet]}
           setMeteo={(v) => setR((x) => ({ ...x, meteo: { ...x.meteo, [onglet]: { ...x.meteo[onglet], ...v } } }))}
           setLogo={(v) => setR((x) => ({ ...x, logo: { ...x.logo, [onglet]: { ...x.logo[onglet], ...v } } }))} />
@@ -432,5 +435,40 @@ function MeteoEtLogo({ saison, meteo: m, logo, setMeteo, setLogo }: {
         )}
       </section>
     </div>
+  );
+}
+
+/** 🎠 Réglages des petits jeux des décors (idée 9 du 2026-11-11) : chaque jeu allumé/éteint, tout le monde ou certains groupes */
+function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Partial<ReglagesJeux>) => void }) {
+  const { data: groupes = [] } = useQuery({
+    queryKey: ['admin-student-groups'],
+    queryFn: async () => ((await supabase.from('student_groups').select('id, name').order('position', { ascending: true, nullsFirst: false }).order('name')).data || []),
+  });
+  const ligne = (k: Exclude<keyof ReglagesJeux, 'groupes'>, label: string, aide: string) => (
+    <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2 cursor-pointer">
+      <span className="min-w-0"><span className="block text-sm font-bold">{label}</span><span className="block text-xs text-muted-foreground">{aide}</span></span>
+      <Switch checked={jeux[k]} onCheckedChange={(v) => setJeux({ [k]: v })} />
+    </label>
+  );
+  return (
+    <section className="space-y-2">
+      <p className="text-sm font-extrabold">🎠 Petits jeux (toutes les saisons, rien à gagner)</p>
+      {ligne('compagnon', '🦔 Le compagnon grandit', 'Hérisson, écureuil, pingouin, lapin… : il grandit à la 1ʳᵉ connexion du jour (une fois par 24 h)')}
+      {ligne('parle', '💬 Le compagnon parle', 'Un nouveau message à chaque retour sur l\'accueil (5 par visite au plus) : devoirs, encouragements')}
+      {ligne('arbreSemaine', '🌳 L\'arbre de la semaine', 'Un fruit par devoir, lettre, leçon ou sourate validé depuis lundi')}
+      {ligne('secoue', '🎁 Secoue l\'arbre', 'Toucher l\'arbre (le chalet, le soleil) : un nom d\'Allah à découvrir, une fois par jour')}
+      {ligne('questionFeu', '❓ La question du coin du feu', 'Le petit « ? » sur la cheminée : une question par jour')}
+      <div className="space-y-1.5">
+        <p className="text-xs font-bold">Pour qui ?</p>
+        <div className="flex flex-wrap gap-1.5">
+          <button type="button" aria-pressed={!jeux.groupes.length} onClick={() => setJeux({ groupes: [] })}
+            className={cn('rounded-full border px-3 py-1 text-xs font-bold', !jeux.groupes.length ? 'bg-[#b5562b] text-white border-[#b5562b]' : 'bg-card')}>🌍 Tout le monde</button>
+          {groupes.map((g) => { const on = jeux.groupes.includes(g.id); return (
+            <button key={g.id} type="button" aria-pressed={on} onClick={() => setJeux({ groupes: on ? jeux.groupes.filter((x) => x !== g.id) : [...jeux.groupes, g.id] })}
+              className={cn('rounded-full border px-3 py-1 text-xs font-medium', on ? 'bg-[#b5562b] text-white border-[#b5562b]' : 'bg-card')}>{on ? '✓ ' : ''}{g.name}</button>
+          ); })}
+        </div>
+      </div>
+    </section>
   );
 }

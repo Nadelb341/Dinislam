@@ -43,6 +43,7 @@ const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then
 const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
 const MeteoSaison = lazy(() => import('@/components/saisons/MeteoSaison').then((m) => ({ default: m.MeteoSaison })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
+const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -479,6 +480,13 @@ const handleModuleClick = (mod) => {
           {clair && (
             <SilentBoundary name="Décor de saison (printemps / été)">
               <Suspense fallback={null}><DecorClair saison={clair} r={reglagesSaison} soir={soir} matin={matin} userId={user?.id ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
+          {/* 🎠 Petits jeux des décors (2026-11-11) : compagnon qui grandit et parle, arbre de la semaine, surprise, question du coin du feu */}
+          {saison && (
+            <SilentBoundary name="Jeux de saison">
+              <Suspense fallback={null}><JeuxSaison saison={saison} r={reglagesSaison} userId={user?.id ?? null} isAdmin={isAdmin}
+                prenom={(profile?.full_name || '').trim().split(/\s+/)[0]} largeurHautGauche={[0, 76, 92, 110][reglagesSaison.tailleArbre] ?? 92} /></Suspense>
             </SilentBoundary>
           )}
           {saison && (

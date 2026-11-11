@@ -130,6 +130,26 @@ export const LOGO_DEFAUT: Record<Saison, ReglagesLogo> = {
   hiver: { objets: ['flocon'], rythme: 'jour' },
 };
 
+/**
+ * 🎠 Petits jeux des décors (Nadia, 2026-11-11 : idées 2, 4, 6, 7, 9, 10 ; RIEN À GAGNER, juste des animations).
+ * Mêmes jeux à chaque saison, avec le décor de la saison (src/components/saisons/JeuxSaison.tsx).
+ */
+export interface ReglagesJeux {
+  /** 🦔 Le compagnon grandit à la 1ʳᵉ connexion du jour (1 fois par 24 h) */
+  compagnon: boolean;
+  /** 💬 … et parle à l'élève (environ 5 messages par visite, un nouveau à chaque retour sur l'accueil) */
+  parle: boolean;
+  /** 🌳 L'arbre de la semaine : un fruit par devoir / lettre / leçon / sourate validé cette semaine */
+  arbreSemaine: boolean;
+  /** 🎁 Secoue l'arbre : une fois par jour, un fruit-surprise (un nom d'Allah à découvrir) */
+  secoue: boolean;
+  /** ❓ La question du coin du feu : une question par jour */
+  questionFeu: boolean;
+  /** Groupes concernés (vide = tout le monde) */
+  groupes: string[];
+}
+export const JEUX_DEFAUT: ReglagesJeux = { compagnon: true, parle: true, arbreSemaine: true, secoue: true, questionFeu: true, groupes: [] };
+
 export interface ReglagesSaisons {
   /** « Ambiance neutre » : aucun décor, l'appli comme avant */
   neutre: boolean;
@@ -156,6 +176,7 @@ export interface ReglagesSaisons {
   ete: ReglagesClair;
   meteo: Record<Saison, ReglagesMeteo>;
   logo: Record<Saison, ReglagesLogo>;
+  jeux: ReglagesJeux;
 }
 
 export const AUTOMNE_DEFAUT: ReglagesAutomne = {
@@ -170,7 +191,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 export const SAISONS_DEFAUT: ReglagesSaisons = {
   neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
   quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT,
-  meteo: METEO_DEFAUT, logo: LOGO_DEFAUT,
+  meteo: METEO_DEFAUT, logo: LOGO_DEFAUT, jeux: JEUX_DEFAUT,
 };
 
 const TOUTES: Saison[] = ['hiver', 'printemps', 'ete', 'automne'];
@@ -182,6 +203,7 @@ export function fusionner(v: Partial<ReglagesSaisons> | null | undefined): Regla
   return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) },
     printemps: { ...CLAIR_DEFAUT, ...(v?.printemps ?? {}) }, ete: { ...CLAIR_DEFAUT, ...(v?.ete ?? {}) },
     meteo: fusionParSaison(METEO_DEFAUT, v?.meteo),
+    jeux: { ...JEUX_DEFAUT, ...(v?.jeux ?? {}) },
     // Ancien réglage : si la marguerite / les lunettes avaient été décochées, on garde « rien sur le logo »
     logo: fusionParSaison(LOGO_DEFAUT, v?.logo ?? {
       ...(v?.printemps?.titre === false ? { printemps: { objets: [] } } : {}),

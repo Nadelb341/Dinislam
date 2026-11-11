@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      compagnons: {
+        Row: { derniere_croissance: string | null; niveau: number; updated_at: string; user_id: string }
+        Insert: { derniere_croissance?: string | null; niveau?: number; updated_at?: string; user_id: string }
+        Update: { derniere_croissance?: string | null; niveau?: number; updated_at?: string; user_id?: string }
+        Relationships: []
+      }
       convocation_modeles: {
         Row: {
           created_at: string
@@ -4570,6 +4576,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compagnon_du_jour: {
+        Args: Record<PropertyKey, never>
+        Returns: { niveau: number; a_grandi: boolean }[]
+      }
       repondre_convocation: {
         Args: { p_id: string; p_reponse: string }
         Returns: undefined
