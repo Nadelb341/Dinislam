@@ -187,7 +187,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
         onAnimationEnd={() => setTourne(false)}>
         {/* 📢 2026-11-11 (Nadia) : un titre pour annoncer les devoirs de la semaine */}
         {simple && onglet === 'semaine' && (
-          <p className="mx-auto w-fit rounded-2xl bg-red-600 px-5 py-2 text-center text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-white shadow-md ring-4 ring-red-200 dark:ring-red-900">📌 Devoirs à faire</p>
+          <p className="mx-auto w-fit rounded-full border-2 border-rose-300 dark:border-rose-800 bg-gradient-to-r from-amber-50 to-rose-100 dark:from-amber-950/40 dark:to-rose-950/40 px-5 py-1.5 text-center text-lg sm:text-xl font-extrabold tracking-wide text-rose-700 dark:text-rose-200 shadow-sm">📌 Devoirs à faire</p>
         )}
         {onglet === 'semaine' && (
           semaine.length ? parCours(semaine, (c) => `Pour ${jourLong(c)} :`, false) : (

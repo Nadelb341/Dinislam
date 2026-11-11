@@ -8,7 +8,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, ArrowLeft, User } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
 
 interface AdminSourateValidationsProps {
   onBack: () => void;
@@ -120,7 +120,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
       return { previous };
     },
     onSuccess: (_, request) => {
-      toast({ title: '❌ Sourate refusée', description: `${request.sourate?.name_french || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}` });
+      toast({ title: '🔁 Sourate à refaire', description: `${request.sourate?.name_french || ''} à refaire pour ${request.profile?.full_name || 'l\'élève'}` });
       sendPushNotification({
         title: '📖 {prenom}, sourate à retravailler', category: 'rec',
         body: `Ton professeur t'invite à retravailler ${request.sourate?.name_french || 'ta sourate'}. Continue tes efforts !`,
@@ -135,7 +135,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
     },
     onError: (_, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-sourate-validations'], context.previous);
-      toast({ title: 'Erreur lors du refus', variant: 'destructive' });
+      toast({ title: 'Erreur : pas envoyé', variant: 'destructive' });
     },
     onSettled: () => setProcessingId(null),
   });
@@ -194,7 +194,7 @@ const AdminSourateValidations = ({ onBack }: AdminSourateValidationsProps) => {
                       onClick={() => refuseMutation.mutate(req)}
                       disabled={processingId === req.id}
                     >
-                      <XCircle className="h-4 w-4 mr-1" /> Refuser
+                      🔁 À refaire
                     </Button>
                     <Button
                       size="sm"

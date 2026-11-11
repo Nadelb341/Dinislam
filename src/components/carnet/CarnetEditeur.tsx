@@ -118,6 +118,8 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
 
   // 📅 Messages de l'année en avance : la veille de chaque début de vacances, à 18 h
   const prochainesVacances = vacances.filter((v) => new Date(`${v.start_date}T00:00:00`).getTime() > Date.now()).slice(0, 6);
+  // Même nom deux années de suite (Noël 2026 et Noël 2027) : la date les distingue
+  const dateCourte = (j: string) => new Date(`${j}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' });
   const veilleDe = (jour: string) => { const d = new Date(`${jour}T18:00:00`); d.setDate(d.getDate() - 1); return versLocal(d.toISOString()); };
 
   return (
@@ -216,7 +218,7 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
                   <div className="flex flex-wrap gap-1 text-[11px]">
                     <span className="text-muted-foreground">📅 Veille des vacances :</span>
                     {prochainesVacances.map((v) => (
-                      <button key={v.start_date} type="button" onClick={() => maj({ programme: veilleDe(v.start_date) })} className="rounded-full border bg-card px-2 py-0.5 font-semibold">{v.label}</button>
+                      <button key={v.start_date} type="button" onClick={() => maj({ programme: veilleDe(v.start_date) })} className="rounded-full border bg-card px-2 py-0.5 font-semibold">{v.label} · {dateCourte(v.start_date)}</button>
                     ))}
                   </div>
                 )}

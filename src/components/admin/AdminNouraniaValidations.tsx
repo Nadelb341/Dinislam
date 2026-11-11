@@ -7,7 +7,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, ArrowLeft, User } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
 
 interface AdminNouraniaValidationsProps {
   onBack: () => void;
@@ -152,8 +152,8 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
     },
     onSuccess: (_, request) => {
       toast({
-        title: `❌ Leçon refusée`,
-        description: `Leçon ${request.lesson?.lesson_number || ''} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
+        title: `🔁 Leçon à refaire`,
+        description: `Leçon ${request.lesson?.lesson_number || ''} à refaire pour ${request.profile?.full_name || 'l\'élève'}`,
       });
       sendPushNotification({
         title: '📖 {prenom}, leçon à retravailler', category: 'rec',
@@ -170,7 +170,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
     },
     onError: (err, __, context) => {
       if (context?.previous) queryClient.setQueryData(['admin-nourania-validations'], context.previous);
-      toast({ title: 'Erreur lors du refus', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
+      toast({ title: 'Erreur : pas envoyé', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
     onSettled: () => setProcessingId(null),
   });
@@ -232,8 +232,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
                       onClick={() => refuseMutation.mutate(req)}
                       disabled={processingId === req.id}
                     >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Refuser
+                      🔁 À refaire
                     </Button>
                     <Button
                       size="sm"

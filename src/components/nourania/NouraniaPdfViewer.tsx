@@ -336,11 +336,11 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                             onClick={() => setAllumee(on ? null : idx)}
                             className={cn(
                               'pointer-events-auto absolute left-[1.2%] rounded-[4px] transition-colors duration-200',
-                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : 'bg-transparent',
+                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : coche ? 'bg-white/50' : 'bg-transparent',
                             )}
                             style={{ ...zone, right: `${100 - BORD_TABLEAU}%` }}
                           >
-                            {n != null && <Pastille n={n} hauteur={hauteur} police={police} allumee={on} />}
+                            {n != null && <Pastille n={n} hauteur={hauteur} police={police} allumee={on} faite={coche && !on} />}
                           </button>
                           </div>
                         );
@@ -410,18 +410,17 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
   );
 };
 
-/** 🌈 Une couleur douce par ligne (choix B de Nadia, 2026-11-11) : chiffre français puis chiffre arabe, en blanc.
- *  La ligne allumée (lecture, réglage) garde sa couleur et prend un anneau doré. */
-const COULEURS_LIGNES = ['#ef4444', '#f59e0b', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899'];
-const Pastille = ({ n, hauteur, police, allumee }: { n: number; hauteur: number; police: number; allumee: boolean }) => (
+/** 🟢 Même vert pour toutes les lignes (Nadia, 2026-11-12 : « le vert de la ligne 3 », plus multicolore) : chiffre français
+ *  puis chiffre arabe, en blanc. Ligne allumée = anneau doré ; ligne cochée par l'élève = plus claire (pas grisée). */
+const Pastille = ({ n, hauteur, police, allumee, faite = false }: { n: number; hauteur: number; police: number; allumee: boolean; faite?: boolean }) => (
   <span
     dir="ltr"
     className={cn(
-      'absolute top-1/2 -translate-y-1/2 flex items-center whitespace-nowrap rounded-xl font-black leading-none text-white shadow-md transition-transform duration-200',
+      'absolute top-1/2 -translate-y-1/2 flex items-center whitespace-nowrap rounded-xl font-black leading-none text-white shadow-md transition-[transform,opacity] duration-200 bg-[#10b981]',
       allumee && 'ring-4 ring-amber-300 scale-110',
+      faite && 'opacity-50 shadow-none',
     )}
-    style={{ left: 'calc(100% + 2px)', height: hauteur, fontSize: police, gap: Math.round(police * 0.35), paddingInline: Math.round(hauteur * 0.28),
-      background: COULEURS_LIGNES[(((n - 1) % 6) + 6) % 6] }}
+    style={{ left: 'calc(100% + 2px)', height: hauteur, fontSize: police, gap: Math.round(police * 0.35), paddingInline: Math.round(hauteur * 0.28) }}
   >
     <span>{n}</span>
     <span className="font-arabic" style={{ fontSize: Math.round(police * 1.08) }}>{enChiffresArabes(n)}</span>

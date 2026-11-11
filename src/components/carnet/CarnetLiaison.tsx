@@ -197,11 +197,9 @@ function Note({ m, isAdmin, userId, lectures, miennes, estParent, classe, onLu, 
 
   return (
     <article className={cn('relative rounded-xl border border-amber-200 dark:border-amber-900 shadow-sm overflow-hidden',
-      'bg-[#fffdf5] dark:bg-[#2a2418] bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_27px,rgba(59,130,246,0.18)_27px,rgba(59,130,246,0.18)_28px)]',
+      'bg-[#fffdf5] dark:bg-[#2a2418]',
       !isAdmin && !lu && 'ring-2 ring-destructive/60')}>
-      {/* Marge rouge du cahier */}
-      <span aria-hidden className="absolute inset-y-0 left-7 w-px bg-red-300/80" />
-      <div className="relative pl-10 pr-3 py-2.5 space-y-1.5">
+      <div className="relative px-3.5 py-2.5 space-y-1.5">
         <div className="flex items-start gap-2">
           <p className="cahier-main flex-1 min-w-0 text-xl leading-7 font-bold text-[#1e3a8a] dark:text-sky-200 [overflow-wrap:anywhere]">{m.emoji} {m.titre}</p>
           {m.epingle && <span className="text-base" title="Épinglé">📌</span>}

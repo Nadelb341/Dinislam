@@ -6,7 +6,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Clock, ArrowLeft, User, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface AdminInvocationValidationsProps {
@@ -136,8 +136,8 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
     },
     onSuccess: (_, request) => {
       toast({
-        title: '❌ Invocation refusée',
-        description: `${request.invocation?.title_french || 'Invocation'} refusée pour ${request.profile?.full_name || 'l\'élève'}`,
+        title: '🔁 Invocation à refaire',
+        description: `${request.invocation?.title_french || 'Invocation'} à refaire pour ${request.profile?.full_name || 'l\'élève'}`,
       });
       // 📝 Message + notification à l'élève, avec le lien direct vers l'invocation (2026-11-04 : avant, il n'était pas prévenu)
       void envoyerMessageCorrection({ studentId: request.user_id, sorte: 'retravailler', lien: `/invocations?item=${request.invocation_id}`,
@@ -146,7 +146,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
       queryClient.invalidateQueries({ queryKey: ['admin-pending-invocations-count'] });
     },
     onError: (err) => {
-      toast({ title: 'Erreur lors du refus', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
+      toast({ title: 'Erreur : pas envoyé', description: err?.message || 'Veuillez réessayer.', variant: 'destructive' });
     },
   });
 
@@ -207,8 +207,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
                       onClick={() => refuseMutation.mutate(req)}
                       disabled={refuseMutation.isPending || approveMutation.isPending}
                     >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Refuser
+                      🔁 À refaire
                     </Button>
                     <Button
                       size="sm"
