@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,12 +72,19 @@ const DraggableGroupCard = ({
   dragProps?: DragItemProps;
 }) => {
   const { ref, style: dragStyle, isDragging, ...dragAttrs } = dragProps ?? {};
+  // Après un glisser-déposer, le relâchement du doigt ne doit pas ouvrir « Modifier »
+  const finDuGlisser = useRef(0);
+  useEffect(() => { if (isDragging) finDuGlisser.current = Date.now() + 100000; else if (finDuGlisser.current) finDuGlisser.current = Date.now() + 400; }, [isDragging]);
   return (
     <Card
       ref={ref}
       {...dragAttrs}
-      className={`transition-all ${isDragging ? 'opacity-40' : ''}`}
+      className={`transition-all cursor-pointer hover:shadow-md ${isDragging ? 'opacity-40' : ''}`}
       style={dragStyle}
+      // 2026-11-11 (Nadia) : toucher n'importe où sur la carte = « Modifier » (plus seulement par les ⋮)
+      onClick={() => { if (!isDragging && Date.now() > finDuGlisser.current) onEdit(group); }}
+      role="button"
+      aria-label={`Modifier le groupe ${group.name}`}
     >
       <CardContent className="p-3">
         <div className="flex items-start justify-between gap-1">
@@ -88,11 +95,11 @@ const DraggableGroupCard = ({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[600]">
+            <DropdownMenuContent align="end" className="z-[600]" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={() => onEdit(group)}>
                 <Pencil className="h-4 w-4 mr-2" /> Modifier
               </DropdownMenuItem>
@@ -112,16 +119,12 @@ const DraggableGroupCard = ({
         </div>
         {group.members.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {group.members.slice(0, 3).map(m => (
+            {/* 2026-11-11 (Nadia) : TOUS les prénoms, plus de « +3 » */}
+            {group.members.map(m => (
               <span key={m.user_id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                 {m.full_name || m.email?.split('@')[0] || '?'}
               </span>
             ))}
-            {group.members.length > 3 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                +{group.members.length - 3}
-              </span>
-            )}
           </div>
         )}
       </CardContent>
@@ -313,6 +316,8 @@ const AdminStudentGroups = () => {
   const dansUnGroupe = new Set(groups.flatMap((g) => g.members.map((m) => m.user_id)));
   const sansGroupe = allStudents.filter((s) => !dansUnGroupe.has(s.user_id));
 
+  // 2026-11-11 (Nadia) : les élèves déjà dans CE groupe en tête de liste (ordre figé à l'ouverture : la liste ne saute pas quand on coche)
+  const membresAuDepart = new Set(editingGroup?.members.map((m) => m.user_id) ?? []);
   const filteredStudents = allStudents.filter((s) => {
     if (studentSearch) {
       const q = studentSearch.toLowerCase();
@@ -325,7 +330,8 @@ const AdminStudentGroups = () => {
       if (s.gender !== genderFilter) return false;
     }
     return true;
-  }).sort((a, b) => Number(dansUnGroupe.has(a.user_id)) - Number(dansUnGroupe.has(b.user_id)));
+  }).sort((a, b) => Number(membresAuDepart.has(b.user_id)) - Number(membresAuDepart.has(a.user_id))
+    || Number(dansUnGroupe.has(a.user_id)) - Number(dansUnGroupe.has(b.user_id)));
 
   return (
     <div className="space-y-3">
