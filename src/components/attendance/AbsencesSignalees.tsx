@@ -43,7 +43,7 @@ export function AbsencesSignalees({ compacte = false }: { compacte?: boolean }) 
   const duJour = data.abs.filter((a) => a.course_date === aujourdhui).length;
 
   return (
-    <section className="rounded-2xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-800 p-3 space-y-2">
+    <section id="absences-signalees" className="rounded-2xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 dark:border-sky-800 p-3 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <p className="flex-1 min-w-0 text-sm font-extrabold text-sky-900 dark:text-sky-100">📩 Absences signalées par les parents</p>
         {duJour > 0 && <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-extrabold text-white">🔵 {duJour} aujourd'hui</span>}
