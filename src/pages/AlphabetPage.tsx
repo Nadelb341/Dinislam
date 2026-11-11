@@ -17,7 +17,9 @@ import { buildLines } from '@/lib/alphabetLines';
 import { AlphabetGameDialog } from '@/components/alphabet/AlphabetGameDialog';
 import { AlphabetUnlockDialog } from '@/components/alphabet/AlphabetUnlockDialog';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
-import { computeUnlocked, gameStatus, GAMES, READING_GAMES, type GameKey, type AlphabetLetterLite } from '@/lib/alphabetProgress';
+import { computeUnlocked, gameStatus, GAMES, READING_GAMES, type GameKey, type AlphabetLetterLite, COULEUR_LETTRE, dernierStatutFinal, etatLettre, type EtatLettre } from '@/lib/alphabetProgress';
+import { AlphabetLettreAcces } from '@/components/alphabet/AlphabetLettreAcces';
+import { useLettresEnAttente } from '@/hooks/useAlphabetClasse';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Tab = 'apprendre' | 'jouer' | 'progres';
@@ -44,6 +46,8 @@ const AlphabetPage = () => {
   const [tab, setTabState] = useState<Tab>(readTab);
   const [game, setGame] = useState<GameKey | null>(null);
   const [unlockOpen, setUnlockOpen] = useState(false);
+  // 🔤 Enseignante : toucher une lettre = « qui a cette lettre ? » (maquette B du 2026-11-11)
+  const [lettreAcces, setLettreAcces] = useState<Tables<'alphabet_letters'> | null>(null);
   const [reading, setReading] = useState<{ mode: ReadingMode; letters: AlphabetLetterLite[] } | null>(null);
 
   const setTab = (t: Tab) => {
@@ -90,6 +94,18 @@ const AlphabetPage = () => {
     },
     enabled: !!user,
   });
+
+  // 🔤 Lettres ouvertes à un de mes groupes (2026-11-11) : la base ne renvoie que celles de MES groupes
+  const { data: groupUnlocks = [], isFetched: groupUnlocksFetched } = useQuery({
+    queryKey: ['alphabet-group-unlocks', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('alphabet_group_unlocks').select('letter_id');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user && !isAdmin,
+  });
+  useLettresEnAttente(isAdmin);
 
   const { data: scores = [] } = useQuery({
     queryKey: ['alphabet-game-scores', user?.id],
@@ -167,7 +183,7 @@ const AlphabetPage = () => {
   // ── Paliers ────────────────────────────────────────────────────────────────
   const everythingOpen = isAdmin || isOver20;
   const learned = useMemo(() => new Set(progress.filter((p) => p.is_validated).map((p) => p.letter_id)), [progress]);
-  const adminSet = useMemo(() => new Set(adminUnlocks.map((u) => u.letter_id)), [adminUnlocks]);
+  const adminSet = useMemo(() => new Set([...adminUnlocks, ...groupUnlocks].map((u) => u.letter_id)), [adminUnlocks, groupUnlocks]);
   const { unlocked, currentId } = useMemo(
     () => computeUnlocked(letters.map((l) => l.id), learned, adminSet, everythingOpen),
     [letters, learned, adminSet, everythingOpen],
@@ -191,6 +207,9 @@ const AlphabetPage = () => {
     }
     return m;
   }, [submissions]);
+  // 🔤 Couleur de chaque lettre (2026-11-11) : vert apprise, jaune ouverte, ⏳ attend la validation, rouge clair à revoir
+  const statutFinal = useMemo(() => dernierStatutFinal(submissions), [submissions]);
+  const etatDe = (id: number): EtatLettre => etatLettre(id, learned, unlocked, statutFinal);
   const pendingFinal = useMemo(() => {
     const seen = new Set<number>();
     const out = new Set<number>();
@@ -243,6 +262,7 @@ const AlphabetPage = () => {
   }, [scores, learned, pointValues]);
 
   const openLetter = (letter: Tables<'alphabet_letters'>) => {
+    if (isAdmin) { setLettreAcces(letter); return; }
     if (!unlocked.has(letter.id)) {
       toast(`🔒 Apprends d'abord ${currentLetter ? `${currentLetter.name_french} (${currentLetter.letter_arabic})` : 'les lettres précédentes'}`);
       return;
@@ -251,7 +271,7 @@ const AlphabetPage = () => {
   };
 
   // « Commencer mon travail » d'un devoir : ?item=<id de la lettre> → la fiche de la lettre s'ouvre (une fois)
-  useOpenItemFromUrl(lettersFetched && ageReady && (!user || (progressFetched && unlocksFetched)), (item) => {
+  useOpenItemFromUrl(lettersFetched && ageReady && (!user || isAdmin || (progressFetched && unlocksFetched && groupUnlocksFetched)), (item) => {
     const letter = letters.find((l) => String(l.id) === item.trim());
     if (!letter) { toast(MISSING_ITEM_MESSAGE); return; }
     // Lettre fermée : même règle que dans la grille (elle s'ouvre dans l'ordre) → message clair
@@ -321,6 +341,18 @@ const AlphabetPage = () => {
               </button>
             )}
 
+            {/* Légende des couleurs (idée 5) */}
+            {isAdmin ? (
+              <p className="text-xs text-muted-foreground px-1">👆 Touche une lettre pour choisir à quels groupes ou élèves l'ouvrir.</p>
+            ) : (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1"><i className={`w-3 h-3 rounded inline-block ${COULEUR_LETTRE.apprise.carre}`} />Apprise</span>
+                <span className="inline-flex items-center gap-1"><i className={`w-3 h-3 rounded inline-block ${COULEUR_LETTRE.ouverte.carre}`} />À apprendre</span>
+                <span>⏳ Attend ton prof</span>
+                <span className="inline-flex items-center gap-1"><i className={`w-3 h-3 rounded inline-block ${COULEUR_LETTRE.a_revoir.carre}`} />À revoir</span>
+                <span>🔒 Pas encore</span>
+              </div>
+            )}
             {isLoading ? (
               <div className="grid grid-cols-4 gap-2">
                 {[...Array(28)].map((_, i) => <div key={i} className="h-20 bg-muted animate-pulse rounded-2xl" />)}
@@ -338,10 +370,8 @@ const AlphabetPage = () => {
                       onClick={() => openLetter(letter)}
                       className={`relative flex flex-col items-center justify-between rounded-2xl p-2 border-2 transition-all active:scale-95 min-h-[84px] ${
                         (starsByLetter.get(letter.id) ?? 0) >= buildLines(letter).length ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.55)]'
-                          : isLearned ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700'
-                          : isCurrent ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-400'
-                          : isOpen ? 'bg-card border-border hover:shadow-md'
-                          : 'bg-muted/40 border-transparent opacity-60'
+                          : isAdmin ? 'bg-card border-border hover:shadow-md'
+                          : `${COULEUR_LETTRE[etatDe(letter.id)].carte}${isCurrent ? ' ring-2 ring-amber-400' : ''}`
                       }`}
                     >
                       <span className="absolute top-1 start-1.5 text-[9px] text-muted-foreground">#{index + 1}</span>
@@ -351,8 +381,9 @@ const AlphabetPage = () => {
                         </span>
                       )}
                       {!isOpen && <Lock className="absolute top-1 end-1 h-3 w-3 text-muted-foreground" />}
-                      {hasContent && isOpen && !isLearned && !pendingFinal.has(letter.id) && <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full" />}
+                      {hasContent && isOpen && !isLearned && !pendingFinal.has(letter.id) && (isAdmin || etatDe(letter.id) !== 'a_revoir') && <span className="absolute top-1 end-1 w-2 h-2 bg-primary rounded-full" />}
                       {pendingFinal.has(letter.id) && <span className="absolute top-0.5 end-0.5 text-[11px]" aria-label="En attente de validation">⏳</span>}
+                      {!isAdmin && etatDe(letter.id) === 'a_revoir' && <span className="absolute top-0.5 end-0.5 text-[11px]" aria-label="À revoir">🔁</span>}
                       <div className="flex-1 flex items-center justify-center">
                         <span className="font-arabic text-3xl text-foreground">{letter.letter_arabic}</span>
                       </div>
@@ -528,6 +559,11 @@ const AlphabetPage = () => {
         <ReadingGameDialog mode={reading?.mode ?? null} letters={reading?.letters ?? []} allLetters={letters} onClose={() => setReading(null)} />
         <AlphabetGameDialog game={game} letters={letters} pool={reviewPool} learned={learnedForGames} onClose={() => setGame(null)} />
         {isAdmin && <AlphabetUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} letters={letters} />}
+        {isAdmin && (
+          <AlphabetLettreAcces open={!!lettreAcces} onOpenChange={(v) => { if (!v) setLettreAcces(null); }} lettre={lettreAcces}
+            rang={lettreAcces ? letters.findIndex((l) => l.id === lettreAcces.id) + 1 : 0}
+            onFiche={() => { const l = lettreAcces; setLettreAcces(null); if (l) setSelectedLetter(l); }} />
+        )}
       </div>
     </AppLayout>
   );

@@ -46,13 +46,18 @@ export function AlphabetUnlockDialog({ open, onOpenChange, letters, initialStude
     queryKey: ['alphabet-unlock-student', studentId],
     enabled: open && !!studentId,
     queryFn: async () => {
-      const [{ data: progress }, { data: unlocks }] = await Promise.all([
+      const [{ data: progress }, { data: unlocks }, { data: mesGroupes }] = await Promise.all([
         supabase.from('user_alphabet_progress').select('letter_id').eq('user_id', studentId).eq('is_validated', true),
         supabase.from('alphabet_admin_unlocks').select('letter_id').eq('user_id', studentId),
+        supabase.from('student_group_members').select('group_id').eq('user_id', studentId),
       ]);
+      // 2026-11-11 : lettres ouvertes à un de ses groupes (réglées dans la fenêtre de chaque lettre)
+      const gids = (mesGroupes || []).map((g) => g.group_id);
+      const { data: parGroupe } = gids.length ? await supabase.from('alphabet_group_unlocks').select('letter_id').in('group_id', gids) : { data: [] };
       return {
         learned: new Set((progress || []).map((p) => p.letter_id)),
         unlocks: new Set((unlocks || []).map((u) => u.letter_id)),
+        parGroupe: new Set((parGroupe || []).map((u) => u.letter_id)),
       };
     },
   });
@@ -70,6 +75,7 @@ export function AlphabetUnlockDialog({ open, onOpenChange, letters, initialStude
 
   const toggle = (id: number) => {
     if (learned.has(id) || byOrder.has(id)) return; // déjà ouverte par l'élève lui-même
+    if (studentData?.parGroupe.has(id) && !selected.has(id)) { toast('👥 Déjà ouverte à son groupe (touche la lettre sur l\'Alphabet pour régler les groupes)'); return; }
     setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
 
@@ -120,7 +126,7 @@ export function AlphabetUnlockDialog({ open, onOpenChange, letters, initialStude
         {studentId && (
           <>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-              <span>🟢 apprise</span><span>🔵 ouverte par son suivi</span><span>🟡 débloquée par toi</span><span>🔒 fermée</span>
+              <span>🟢 apprise</span><span>🔵 ouverte par son suivi</span><span>🟡 débloquée par toi</span><span>👥 ouverte à son groupe</span><span>🔒 fermée</span>
             </div>
             <div dir="rtl" className={`grid grid-cols-7 gap-1.5 ${isFetching ? 'opacity-50' : ''}`}>
               {letters.map((l) => {
@@ -130,6 +136,7 @@ export function AlphabetUnlockDialog({ open, onOpenChange, letters, initialStude
                 const cls = isLearned ? 'bg-emerald-100 border-emerald-400 dark:bg-emerald-950/40'
                   : isOrder ? 'bg-sky-100 border-sky-400 dark:bg-sky-950/40'
                   : isAdmin ? 'bg-amber-100 border-amber-400 dark:bg-amber-950/40'
+                  : studentData?.parGroupe.has(l.id) ? 'bg-yellow-50 border-yellow-300 border-dashed dark:bg-yellow-950/30'
                   : 'bg-muted/40 border-border opacity-70';
                 return (
                   <button

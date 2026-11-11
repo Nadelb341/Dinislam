@@ -130,3 +130,62 @@ export function pickDistractors(count: number, exclude: number[], preferred: Alp
   }
   return out;
 }
+
+// ——— 🔤 Alphabet lettre par lettre (Nadia, 2026-11-11 : maquette B, idées 2-7, 9, 10) ———
+
+/**
+ * État d'une lettre pour un élève, avec ses couleurs (mêmes codes côté élève et côté enseignante) :
+ * 🟢 apprise (validée) · 🟡 ouverte · 🟡⏳ envoyée, attend la validation · 🔴 rouge clair « à revoir » · ⚪🔒 fermée.
+ * « À revoir » : la dernière demande de validation de la lettre a reçu « 🔁 À revoir » (to_review / redo / corrected).
+ * Dès que l'élève la renvoie (nouvelle demande « pending »), elle redevient jaune ⏳, puis verte une fois validée.
+ */
+export type EtatLettre = 'apprise' | 'attente' | 'a_revoir' | 'ouverte' | 'fermee';
+
+/** Dernier statut de la demande « lettre apprise » (kind final) de chaque lettre, à partir d'envois triés du plus récent au plus ancien */
+export function dernierStatutFinal(envois: { kind: string; letter_id: number; status: string }[]): Map<number, string> {
+  const m = new Map<number, string>();
+  for (const s of envois) if (s.kind === 'final' && !m.has(s.letter_id)) m.set(s.letter_id, s.status);
+  return m;
+}
+
+export function etatLettre(id: number, learned: Set<number>, unlocked: Set<number>, statutFinal: Map<number, string>): EtatLettre {
+  if (learned.has(id)) return 'apprise';
+  const st = statutFinal.get(id);
+  if (st === 'pending') return 'attente';
+  if (st === 'to_review' || st === 'redo' || st === 'corrected') return 'a_revoir';
+  return unlocked.has(id) ? 'ouverte' : 'fermee';
+}
+
+/** Classes Tailwind des couleurs (case de la grille élève, carré de l'enseignante, légende) */
+export const COULEUR_LETTRE: Record<EtatLettre, { carte: string; carre: string; label: string; emoji: string }> = {
+  apprise: { carte: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700', carre: 'bg-emerald-200 dark:bg-emerald-800', label: 'Apprise', emoji: '✅' },
+  attente: { carte: 'bg-yellow-100 dark:bg-yellow-900/40 border-yellow-300 dark:border-yellow-700', carre: 'bg-yellow-200 dark:bg-yellow-700', label: 'Attend la validation', emoji: '⏳' },
+  a_revoir: { carte: 'bg-red-100 dark:bg-red-950/40 border-red-300 dark:border-red-800', carre: 'bg-red-200 dark:bg-red-900', label: 'À revoir', emoji: '🔁' },
+  ouverte: { carte: 'bg-yellow-100 dark:bg-yellow-900/40 border-yellow-300 dark:border-yellow-700', carre: 'bg-yellow-200 dark:bg-yellow-700', label: 'Ouverte', emoji: '🟡' },
+  fermee: { carte: 'bg-muted/40 border-transparent opacity-60', carre: 'bg-muted', label: 'Pas encore ouverte', emoji: '🔒' },
+};
+
+/**
+ * Pourquoi une lettre est ouverte pour un élève (fenêtre de l'enseignante) :
+ * 'adulte' (20 ans et plus : tout ouvert, choix de Nadia du 11/11 de le garder), 'suivi' (c'est sa prochaine lettre
+ * dans l'ordre), 'groupe' (ouverte à un de ses groupes), 'lui' (ouverte pour lui), null = fermée.
+ */
+export type RaisonLettre = 'adulte' | 'suivi' | 'groupe' | 'lui' | null;
+export function raisonLettre(id: number, ordre: number[], learned: Set<number>, perso: Set<number>, parGroupe: Set<number>, adulte: boolean): RaisonLettre {
+  if (adulte) return 'adulte';
+  if (perso.has(id)) return 'lui';
+  if (parGroupe.has(id)) return 'groupe';
+  return computeUnlocked(ordre, learned, new Set(), false).unlocked.has(id) ? 'suivi' : null;
+}
+
+/** 20 ans et plus à la date du jour (même règle que useIsOver20 : date de naissance, sinon âge saisi) */
+export function aVingtAnsOuPlus(dateNaissance: string | null | undefined, age?: number | null, maintenant = new Date()): boolean {
+  if (dateNaissance) {
+    const d = new Date(dateNaissance);
+    let a = maintenant.getFullYear() - d.getFullYear();
+    const m = maintenant.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && maintenant.getDate() < d.getDate())) a--;
+    return a >= 20;
+  }
+  return typeof age === 'number' && age >= 20;
+}

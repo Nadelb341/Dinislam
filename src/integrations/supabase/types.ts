@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      alphabet_group_unlocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          group_id: string
+          id: string
+          letter_id: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          group_id: string
+          id?: string
+          letter_id: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          letter_id?: number
+        }
+        Relationships: []
+      }
       cartes_journal: {
         Row: {
           carte: string

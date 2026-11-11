@@ -1,67 +1,53 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { computeUnlocked } from '@/lib/alphabetProgress';
+import { useAlphabetClasse } from '@/hooks/useAlphabetClasse';
+import { COULEUR_LETTRE, type EtatLettre } from '@/lib/alphabetProgress';
+import { cn } from '@/lib/utils';
 
-/** Idée bonus 9 : grille élèves × 28 lettres (validée, demandée, en cours, débloquée par toi, fermée) */
+/**
+ * Idée bonus 9 (2026-10-07) : grille élèves × 28 lettres.
+ * 2026-11-11 : mêmes couleurs que l'élève et que la fenêtre d'une lettre (vert, jaune, ⏳, rouge clair, gris),
+ * en comptant les lettres ouvertes à un groupe (même calcul : useAlphabetClasse).
+ */
 export function AlphabetProgressGrid() {
-  const { data } = useQuery({
-    queryKey: ['admin-alphabet-grid'],
-    queryFn: async () => {
-      const [{ data: profiles }, { data: admins }, { data: letters }, { data: progress }, { data: unlocks }, { data: finals }] = await Promise.all([
-        supabase.from('profiles').select('user_id, full_name').eq('is_approved', true).order('full_name'),
-        supabase.from('user_roles').select('user_id').eq('role', 'admin'),
-        supabase.from('alphabet_letters').select('id, letter_arabic, name_french').order('display_order'),
-        supabase.from('user_alphabet_progress').select('user_id, letter_id').eq('is_validated', true),
-        supabase.from('alphabet_admin_unlocks').select('user_id, letter_id'),
-        supabase.from('alphabet_submissions').select('student_id, letter_id').eq('kind', 'final').eq('status', 'pending'),
-      ]);
-      const adminIds = new Set((admins || []).map((a) => a.user_id));
-      return {
-        students: (profiles || []).filter((p) => !adminIds.has(p.user_id)),
-        letters: letters || [],
-        progress: progress || [],
-        unlocks: unlocks || [],
-        finals: finals || [],
-      };
-    },
-  });
-  if (!data) return <div className="h-40 rounded-2xl bg-muted/50 animate-pulse" />;
-  const ids = data.letters.map((l) => l.id);
+  const { lettres, eleves, groupes, calc } = useAlphabetClasse();
+  if (!calc) return <div className="h-40 rounded-2xl bg-muted/50 animate-pulse" />;
+  const nomsGroupes = (ids: string[]) => ids.map((id) => groupes.find((g) => g.id === id)?.name).filter(Boolean).join(', ');
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-        <span>🟩 validée</span><span>🟨 demandée</span><span>🟦 en cours</span><span>🟪 débloquée par toi</span><span>⬜ fermée</span>
+        {(['apprise', 'ouverte', 'attente', 'a_revoir', 'fermee'] as EtatLettre[]).map((k) => (
+          <span key={k} className="inline-flex items-center gap-1"><i className={cn('w-3 h-3 rounded inline-block', COULEUR_LETTRE[k].carre)} />{COULEUR_LETTRE[k].label}</span>
+        ))}
       </div>
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
         <table className="text-xs border-separate border-spacing-0.5 p-1">
           <thead>
             <tr>
               <th className="sticky start-0 bg-card text-start px-2 font-semibold">Élève</th>
-              {[...data.letters].reverse().map((l) => (
+              {[...lettres].reverse().map((l) => (
                 <th key={l.id} className="font-arabic text-base font-bold w-7" title={l.name_french}>{l.letter_arabic}</th>
               ))}
               <th className="px-1">✓</th>
             </tr>
           </thead>
           <tbody>
-            {data.students.map((s) => {
-              const learned = new Set(data.progress.filter((p) => p.user_id === s.user_id).map((p) => p.letter_id));
-              const admin = new Set(data.unlocks.filter((u) => u.user_id === s.user_id).map((u) => u.letter_id));
-              const asked = new Set(data.finals.filter((f) => f.student_id === s.user_id).map((f) => f.letter_id));
-              const { currentId } = computeUnlocked(ids, learned, new Set(), false);
+            {eleves.map((e) => {
+              const etats = lettres.map((l) => calc.pour(e, l.id).etat);
               return (
-                <tr key={s.user_id}>
-                  <td className="sticky start-0 bg-card px-2 py-1 font-semibold whitespace-nowrap">{s.full_name || 'Élève'}</td>
-                  {[...data.letters].reverse().map((l) => {
-                    const cls = learned.has(l.id) ? 'bg-emerald-400'
-                      : asked.has(l.id) ? 'bg-amber-300'
-                      : l.id === currentId ? 'bg-sky-400'
-                      : admin.has(l.id) ? 'bg-violet-300'
-                      : 'bg-muted';
-                    return <td key={l.id} className={`h-6 w-7 rounded ${cls}`} title={`${s.full_name ?? 'Élève'} · ${l.name_french}`} />;
+                <tr key={e.id}>
+                  <td className="sticky start-0 bg-card px-2 py-1 whitespace-nowrap">
+                    <span className="font-semibold block leading-tight">{e.nom}</span>
+                    <span className="text-[10px] text-muted-foreground">{nomsGroupes(e.groupes) || 'sans groupe'}{e.adulte ? ' · 20 ans +' : ''}</span>
+                  </td>
+                  {[...lettres].reverse().map((l) => {
+                    const etat = calc.pour(e, l.id).etat;
+                    return (
+                      <td key={l.id} className={cn('h-6 w-7 rounded text-center text-[10px]', COULEUR_LETTRE[etat].carre)} title={`${e.nom} · ${l.name_french} : ${COULEUR_LETTRE[etat].label}`}>
+                        {etat === 'attente' ? '⏳' : ''}
+                      </td>
+                    );
                   })}
-                  <td className="px-1 text-center font-bold tabular-nums">{learned.size}</td>
+                  <td className="px-1 text-center font-bold tabular-nums">{etats.filter((x) => x === 'apprise').length}</td>
                 </tr>
               );
             })}
