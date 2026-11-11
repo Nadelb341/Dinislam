@@ -81,6 +81,10 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_visits: ['module-visits'],
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
   cartes_journal: ['cartes-journal'],
+  // 📨 Convocations (2026-11-11)
+  convocations: ['convocations', 'convocations-eleve'],
+  convocation_modeles: ['convocations'],
+  convocation_programmations: ['convocations'],
   // 2026-11-11 : manquait → une carte ouverte « à tout le monde » n'apparaissait chez l'élève qu'après rechargement
   learning_modules: ['learning-modules', 'admin-learning-modules', 'cartes-visibles', 'cartes-acces', 'module-visibility'],
   notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
@@ -105,7 +109,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
   sourate_versets_audio: [],
   sourates: ['admin-dashboard-stats', 'admin-module-progress', 'admin-recitations', 'admin-sourate-validations', 'admin-sourates', 'admin-sourates-list', 'admin-stats', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
-  student_group_members: ['alphabet-classe', 'alphabet-group-unlocks', 'course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
+  student_group_members: ['convocations', 'alphabet-classe', 'alphabet-group-unlocks', 'course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
   student_groups: ['cartes-acces', 'admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
   trash_items: [],
   user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'user-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],

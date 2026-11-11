@@ -5,7 +5,7 @@ import { useCartesAcces, useAccesEnAttente, rafraichirCartes } from '@/hooks/use
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,6 +33,8 @@ import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 import { TitreAccueil } from '@/components/home/TitreAppli';
 import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
+import { ConvocationsDialog } from '@/components/convocations/ConvocationsDialog';
+import { ConvocationEleve } from '@/components/convocations/ConvocationEleve';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
 import { imageDeCarteHiver } from '@/components/saisons/dessinsHiver';
@@ -269,6 +271,14 @@ const Index = () => {
 
   // Dialog visibilité
   const [visibilityTarget, setVisibilityTarget] = useState<{ id: string; title: string } | null>(null);
+  // 📨 Convocations (ouverte aussi depuis la notification « Convocations envoyées » : /?convocations=1)
+  const [convocationsOuvert, setConvocationsOuvert] = useState(false);
+  const [paramsConv, setParamsConv] = useSearchParams();
+  useEffect(() => {
+    if (paramsConv.get('convocations') !== '1' || !isAdmin) return;
+    setConvocationsOuvert(true);
+    const p = new URLSearchParams(paramsConv); p.delete('convocations'); setParamsConv(p, { replace: true });
+  }, [paramsConv, isAdmin, setParamsConv]);
 
   // Fetch modules from DB
   const { data: modules, refetch: refetchModules } = useQuery({
@@ -509,6 +519,16 @@ const handleModuleClick = (mod) => {
           <SilentBoundary name="Annonce bilan"><AnnonceBilan /></SilentBoundary>
 
           {/* À FAIRE : enseignante seulement */}
+          {/* 📨 Convocations (2026-11-11, demande de Nadia : bouton rouge juste au-dessus des absences signalées) */}
+          {isAdmin && (
+            <button type="button" onClick={() => setConvocationsOuvert(true)}
+              className="w-full rounded-2xl bg-[#d92d20] hover:bg-[#b42318] text-white py-3 text-base font-extrabold shadow-md active:scale-[0.99] transition">
+              📨 Convocations
+            </button>
+          )}
+          {isAdmin && <ConvocationsDialog open={convocationsOuvert} onOpenChange={setConvocationsOuvert} />}
+          {/* 📨 Côté élève : sa convocation avec « Je viens / Absent » */}
+          {!isAdmin && <SilentBoundary name="Convocation"><ConvocationEleve /></SilentBoundary>}
           {/* 📩 Absences signalées par les parents (aujourd'hui et à venir), juste au-dessus du Cahier de texte (2026-10-30) */}
           {isAdmin && <SilentBoundary name="Absences signalées"><AbsencesSignalees compacte /></SilentBoundary>}
           {isAdmin && <AdminTodoCard />}

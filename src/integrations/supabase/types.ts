@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      convocation_modeles: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          texte: string
+          titre: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position?: number
+          texte: string
+          titre: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          texte?: string
+          titre?: string
+        }
+        Relationships: []
+      }
+      convocation_programmations: {
+        Row: {
+          actif: boolean
+          cible: string
+          created_at: string
+          dernier_envoi: string | null
+          dernier_rappel: string | null
+          group_ids: string[]
+          heure: string
+          id: string
+          jour: number
+          rappel_veille: boolean
+          sauter_vacances: boolean
+          student_ids: string[]
+          texte: string
+        }
+        Insert: {
+          actif?: boolean
+          cible?: string
+          created_at?: string
+          dernier_envoi?: string | null
+          dernier_rappel?: string | null
+          group_ids?: string[]
+          heure: string
+          id?: string
+          jour: number
+          rappel_veille?: boolean
+          sauter_vacances?: boolean
+          student_ids?: string[]
+          texte: string
+        }
+        Update: {
+          actif?: boolean
+          cible?: string
+          created_at?: string
+          dernier_envoi?: string | null
+          dernier_rappel?: string | null
+          group_ids?: string[]
+          heure?: string
+          id?: string
+          jour?: number
+          rappel_veille?: boolean
+          sauter_vacances?: boolean
+          student_ids?: string[]
+          texte?: string
+        }
+        Relationships: []
+      }
+      convocations: {
+        Row: {
+          canal: string
+          cours_le: string | null
+          destinataire: string | null
+          envoi_id: string
+          envoye_le: string
+          group_id: string | null
+          id: string
+          programmation_id: string | null
+          repondu_le: string | null
+          reponse: string | null
+          student_id: string
+          texte: string
+        }
+        Insert: {
+          canal: string
+          cours_le?: string | null
+          destinataire?: string | null
+          envoi_id: string
+          envoye_le?: string
+          group_id?: string | null
+          id?: string
+          programmation_id?: string | null
+          repondu_le?: string | null
+          reponse?: string | null
+          student_id: string
+          texte: string
+        }
+        Update: {
+          canal?: string
+          cours_le?: string | null
+          destinataire?: string | null
+          envoi_id?: string
+          envoye_le?: string
+          group_id?: string | null
+          id?: string
+          programmation_id?: string | null
+          repondu_le?: string | null
+          reponse?: string | null
+          student_id?: string
+          texte?: string
+        }
+        Relationships: []
+      }
       alphabet_group_unlocks: {
         Row: {
           created_at: string
@@ -4453,6 +4570,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      repondre_convocation: {
+        Args: { p_id: string; p_reponse: string }
+        Returns: undefined
+      }
       absence_alert_targets: {
         Args: never
         Returns: {
