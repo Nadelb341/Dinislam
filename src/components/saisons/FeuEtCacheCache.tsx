@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
-import { FEU_MAX, HABIT, cachetteDuJour, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
+import { FEU_MAX, HABIT, cachetteDuJour, coinDecorDuJour, echelleFeu, modeCacheDuJour, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
 /**
  * 🔥 Flamme de la cheminée + 🙈 cache-cache (Nadia, 2026-11-11 : cheminée idées 1, 2, 4, 5 ; cache-cache les 5 idées).
@@ -131,23 +131,54 @@ const ANIMAL_CACHE: Record<Saison, { vb: string; svg: string; nom: string }> = {
 };
 const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '🐚' };
 
+/** Mode « décor » : 4 cachettes au bord de l'écran, avec le petit tas qui le cache (Nadia, choix B) */
+const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
+  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁🍂' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'le panier de pommes', tas: '🍎🧺' }, { nom: 'les champignons', tas: '🍄🍂🍄' }],
+  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄❄️' }, { nom: 'le sapin', tas: '🎄' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
+  printemps: [{ nom: 'les fleurs', tas: '🌷🌼🌷' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱🌿' }, { nom: 'les papillons', tas: '🦋🌼' }],
+  ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
+};
+/** Bas à gauche, haut à gauche, bas à droite, milieu à droite : toujours au bord, sans cacher les boutons */
+const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
+  { pos: { left: 0, bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }, cote: 'g' },
+  { pos: { left: 0, top: '38%' }, cote: 'g' },
+  { pos: { right: 0, bottom: 'calc(env(safe-area-inset-bottom) + 170px)' }, cote: 'd' },
+  { pos: { right: 0, top: '30%' }, cote: 'd' },
+];
+const INDICE = {
+  tete: (nom: string) => `🙈 ${nom} se cache derrière une carte… guette sa tête !`,
+  decor: (nom: string) => `🙈 ${nom} se cache dans le décor… regarde bien sur les bords !`,
+  traces: (nom: string) => `🐾 ${nom} a laissé des traces de pas… suis-les !`,
+};
+
 export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
   const cleTrouve = `dinislam_cache_trouve_${userId}`;
   const cleAlbum = `dinislam_cache_album_${userId}`;
   const [trouveAujourdhui, setTrouveAujourdhui] = useState(() => lireJ<string>(cleTrouve, '') === jour());
   const [hote, setHote] = useState<{ el: HTMLElement; nom: string } | null>(null);
+  const [bandeau, setBandeau] = useState<HTMLElement | null>(null);
   const [trouve, setTrouve] = useState<null | { cachette: string; album: string[] }>(null);
   const [danse, setDanse] = useState(false);
   const animal = ANIMAL_CACHE[saison];
+  const mode = modeCacheDuJour(jour());
+  const cachette = CACHETTES_DECOR[saison][coinDecorDuJour(jour(), userId)];
+  const coin = COINS[coinDecorDuJour(jour(), userId)];
 
-  // La carte du jour (cherchée dans l'accueil ; retrouvée si l'accueil se redessine)
+  // La carte du jour (cherchée dans l'accueil ; retrouvée si l'accueil se redessine) + le bandeau au-dessus des cartes
   const hoteRef = useRef(hote);
   hoteRef.current = hote;
   useEffect(() => {
     if (trouveAujourdhui) return;
+    let place: HTMLElement | null = null;
     const chercher = () => {
-      if (hoteRef.current?.el.isConnected) return;
       const cartes = [...document.querySelectorAll<HTMLElement>('.carte-accueil')];
+      const premier = cartes[0]?.parentElement;
+      if (premier?.parentElement && (!place || !place.isConnected)) {
+        place = document.createElement('div');
+        place.className = 'jeux-bandeau-cache';
+        try { premier.parentElement.insertBefore(place, premier); setBandeau(place); } catch { /* accueil en train de se redessiner */ }
+      }
+      if (mode === 'decor' || hoteRef.current?.el.isConnected) return;
       const i = cachetteDuJour(jour(), userId, cartes.length);
       const carte = i >= 0 ? cartes[i] : null;
       const parent = carte?.parentElement;
@@ -155,11 +186,36 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
     };
     chercher();
     const t = setInterval(chercher, 2000);
-    return () => clearInterval(t);
-  }, [trouveAujourdhui, userId]);
+    return () => { clearInterval(t); place?.remove(); setBandeau(null); };
+  }, [trouveAujourdhui, userId, mode]);
+
+  // 🐾 Mode « traces » : les empreintes partent du bas de l'écran et vont jusqu'à la carte (recalculées en défilant)
+  const [traces, setTraces] = useState<{ x: number; y: number; r: number }[]>([]);
+  useEffect(() => {
+    if (mode !== 'traces' || !hote || trouveAujourdhui) { setTraces([]); return; }
+    let raf = 0;
+    const calculer = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const r = hote.el.getBoundingClientRect();
+        const h = window.innerHeight, w = window.innerWidth;
+        const x1 = w * 0.5, y1 = h - 70;
+        const x2 = Math.min(w - 30, Math.max(30, r.right - 40)), y2 = Math.max(70, Math.min(h - 120, r.top + 10));
+        const n = 9, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI + 90;
+        setTraces(Array.from({ length: n }, (_, i) => {
+          const t = i / (n - 1), dec = (i % 2 ? 9 : -9);
+          return { x: x1 + (x2 - x1) * t + dec, y: y1 + (y2 - y1) * t, r: ang };
+        }));
+      });
+    };
+    calculer();
+    window.addEventListener('scroll', calculer, true);
+    window.addEventListener('resize', calculer);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', calculer, true); window.removeEventListener('resize', calculer); };
+  }, [mode, hote, trouveAujourdhui]);
 
   const trouver = () => {
-    const nom = hote?.nom || 'une carte';
+    const nom = mode === 'decor' ? cachette.nom : (hote?.nom || 'une carte');
     const album = [...new Set([...lireJ<string[]>(cleAlbum, []), nom])];
     ecrireJ(cleAlbum, album);
     ecrireJ(cleTrouve, jour());
@@ -184,14 +240,33 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
 
   return (
     <>
-      {/* L'animal dépasse un peu du haut de la carte : on ne voit que ses oreilles et ses yeux */}
-      {hote && !trouveAujourdhui && createPortal(
+      {/* Le bandeau d'indice, juste au-dessus des cartes */}
+      {bandeau && !trouveAujourdhui && createPortal(
+        <p className="mb-2 rounded-full border-2 border-dashed border-amber-300 bg-amber-50/90 dark:bg-amber-950/40 px-3 py-1.5 text-center text-xs font-bold text-amber-800 dark:text-amber-200">
+          {INDICE[mode](animal.nom)}
+        </p>, bandeau)}
+      {/* A · tête qui sort de derrière la carte toutes les 15 s (les oreilles restent visibles) ; C · même cachette, au bout des traces */}
+      {hote && mode !== 'decor' && !trouveAujourdhui && createPortal(
         <button type="button" onClick={(e) => { e.stopPropagation(); trouver(); }} aria-label={`${animal.nom} se cache ici : touche-le !`}
-          className="jeux-cache absolute -top-5 right-3 z-[2] h-5 w-10 overflow-hidden">
-          <svg viewBox={animal.vb} className="h-12 w-10" dangerouslySetInnerHTML={{ __html: animal.svg }} />
+          className="pointer-events-none absolute -top-11 right-3 z-[2] h-11 w-12 overflow-hidden outline-none [-webkit-tap-highlight-color:transparent]">
+          <svg viewBox={animal.vb} className={`pointer-events-auto cursor-pointer ${mode === 'tete' ? 'jeux-tete h-12 w-12' : 'jeux-oreilles h-12 w-12'}`} dangerouslySetInnerHTML={{ __html: animal.svg }} />
         </button>,
         hote.el,
       )}
+      {/* B · caché dans le décor, au bord de l'écran, derrière un petit tas */}
+      {mode === 'decor' && !trouveAujourdhui && createPortal(
+        <button type="button" onClick={trouver} aria-label={`${animal.nom} se cache dans ${cachette.nom} : touche-le !`}
+          className="fixed z-[30] flex items-end outline-none [-webkit-tap-highlight-color:transparent]" style={coin.pos}>
+          <svg viewBox={animal.vb} aria-hidden className={`jeux-decor h-12 w-12 ${coin.cote === 'g' ? '-mr-7 jeux-decor-g' : 'order-2 -ml-7 jeux-decor-d'}`} dangerouslySetInnerHTML={{ __html: animal.svg }} />
+          <span aria-hidden className="relative text-3xl leading-none drop-shadow">{cachette.tas}</span>
+        </button>, document.body)}
+      {/* C · les empreintes */}
+      {traces.length > 0 && createPortal(
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[25]">
+          {traces.map((p, i) => (
+            <span key={i} className="jeux-trace absolute text-lg" style={{ left: p.x - 10, top: p.y - 10, transform: `rotate(${p.r}deg)`, animationDelay: `${i * 0.25}s` }}>🐾</span>
+          ))}
+        </div>, document.body)}
       {/* 💃 Il sort, fait une pirouette, et la saison tombe sur tout l'écran */}
       {danse && createPortal(
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[85] overflow-hidden">

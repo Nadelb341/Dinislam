@@ -95,6 +95,15 @@ export const echelleFeu = (niveau: number, grandFeu: boolean) => (grandFeu && ni
 
 // ——— 🙈 Cache-cache (Nadia, 2026-11-11 : les 5 idées gardées) ———
 /** La carte derrière laquelle l'animal se cache aujourd'hui (la même toute la journée, différente d'un élève à l'autre) */
+/** 🙈 Les 3 façons de jouer (Nadia, 2026-11-11 : « les 3 propositions ») tournent chaque jour :
+ *  A = il sort la tête d'une carte, B = il se cache dans le décor, C = il laisse des traces de pas jusqu'à une carte. */
+export type ModeCache = 'tete' | 'decor' | 'traces';
+export const modeCacheDuJour = (jour: string): ModeCache => {
+  const n = Math.floor(Date.parse(`${jour}T12:00:00Z`) / 864e5);
+  return (['tete', 'decor', 'traces'] as const)[((n % 3) + 3) % 3];
+};
+/** Le coin du décor où il se cache (mode « décor ») : 0 à 3 */
+export const coinDecorDuJour = (jour: string, userId: string) => graine(`${jour}|${userId}|decor`) % 4;
 export const cachetteDuJour = (jour: string, userId: string, n: number) => (n > 0 ? graine(`${jour}|${userId}|cache`) % n : -1);
 
 export interface MotArabe { arabe: string; translit: string; sens: string; image: string }

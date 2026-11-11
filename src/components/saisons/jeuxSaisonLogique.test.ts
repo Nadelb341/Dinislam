@@ -43,3 +43,14 @@ describe('jeux des décors de saison (2026-11-11)', () => {
     expect(motArabeDuJour('2026-11-11').arabe.length).toBeGreaterThan(1);
   });
 });
+
+describe('cache-cache : 3 façons de jouer', () => {
+  it('change de façon chaque jour, puis recommence', async () => {
+    const { modeCacheDuJour, coinDecorDuJour } = await import('./jeuxSaisonLogique');
+    const m = ['2026-11-11', '2026-11-12', '2026-11-13'].map(modeCacheDuJour);
+    expect(new Set(m).size).toBe(3);
+    expect(modeCacheDuJour('2026-11-14')).toBe(m[0]);
+    const c = coinDecorDuJour('2026-11-11', 'u1');
+    expect(c).toBeGreaterThanOrEqual(0); expect(c).toBeLessThan(4);
+  });
+});
