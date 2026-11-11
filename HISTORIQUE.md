@@ -917,3 +917,6 @@ Demande de Nadia (règle globale, voir `~/Projets Claude Code/CLAUDE.md` section
 
 ## Mises à jour en direct (2026-10-23)
 - La publication `supabase_realtime` n'avait que 9 tables depuis la bascule. Migration 20261023150000 : les 19 tables écoutées par le code y sont. Règle : toute nouvelle écoute `postgres_changes` → ajouter la table à la publication dans la même migration ; vérifier avec `select tablename from pg_publication_tables where pubname='supabase_realtime'`.
+
+## 🗂️ Qui voit quelles cartes — 2026-11-11
+Demande de Nadia : « je ne sais pas si le groupe 2 a la carte Alphabet… j'ai dû ouvrir des cartes à des élèves mais je ne me souviens plus qui ». Artefact https://claude.ai/artifact/BeF2BLe4uGzFAEhNiEouUm → choix : maquette A, les 10 idées gardées. État lu le 11/11 : tous = Sourates, Invocations, 99 Noms ; Nourania = tous les groupes sauf Groupe 0 ; Alphabet/Coran/Ramadan = Wiam ELB ; Grammaire = 8 élèves ; 8 cartes fermées. Migration `20261111120000_qui_voit_quoi.sql` testée en ROLLBACK (0 différence sur 480 élève×carte) puis appliquée. Détail technique dans CLAUDE.md.
