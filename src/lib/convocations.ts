@@ -1,13 +1,23 @@
 import { numeroWhatsApp } from '@/lib/bilanTrimestriel';
+import { saisonDuJour, type Saison } from '@/lib/saisons';
 
 /**
  * 📨 Convocations (Nadia, 2026-11-11) : variables du message et liens WhatsApp / SMS (1 appui, message déjà écrit).
- * {prénom} {groupe} {jour} {heure} — même rendu que la fonction serveur `convocations-programmees` (à changer ENSEMBLE).
+ * {prénom} {groupe} {jour} {heure} {frise} {saison} — même rendu que la fonction serveur `convocations-programmees` (à changer ENSEMBLE).
  */
-export const VARIABLES = ['{prénom}', '{groupe}', '{jour}', '{heure}'] as const;
+export const VARIABLES = ['{prénom}', '{groupe}', '{jour}', '{heure}', '{frise}', '{saison}'] as const;
 
-export function rendreConvocation(texte: string, v: { prenom: string; groupe: string; jour: string; heure: string }) {
-  return texte.replace(/\{pr[ée]nom\}/gi, v.prenom).replace(/\{groupe\}/gi, v.groupe).replace(/\{jour\}/gi, v.jour).replace(/\{heure\}/gi, v.heure);
+/** 🎨 Frise de saison (Nadia, 2026-11-11) : en haut et en bas du message, avec les images du décor de l'appli, sans surcharger */
+export const MOTIF_SAISON: Record<Saison, [string, string]> = {
+  automne: ['🪵', '🍂'], hiver: ['❄️', '⛄'], printemps: ['🌸', '🐰'], ete: ['☀️', '🐚'],
+};
+export const EMOJI_SAISON: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '☀️' };
+export const friseDe = (s: Saison) => { const [a, b] = MOTIF_SAISON[s]; return Array.from({ length: 11 }, (_, i) => (i % 2 ? b : a)).join(''); };
+
+export function rendreConvocation(texte: string, v: { prenom: string; groupe: string; jour: string; heure: string }, date = new Date()) {
+  const s = saisonDuJour(date);
+  return texte.replace(/\{pr[ée]nom\}/gi, v.prenom).replace(/\{groupe\}/gi, v.groupe).replace(/\{jour\}/gi, v.jour).replace(/\{heure\}/gi, v.heure)
+    .replace(/\{frise\}/gi, friseDe(s)).replace(/\{saison\}/gi, EMOJI_SAISON[s]);
 }
 
 /** « mercredi 18 novembre » et « 13 h 30 » (heure de l'appareil, en France = heure de Paris) */

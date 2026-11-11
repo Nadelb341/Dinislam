@@ -1,18 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { compagnonDe, messagesCompagnon, questionDuJour } from './jeuxSaisonLogique';
+import { messagesCompagnon, questionDuJour } from './jeuxSaisonLogique';
 
 describe('jeux des décors de saison (2026-11-11)', () => {
-  it('le compagnon change avec la saison', () => {
-    expect(compagnonDe('printemps', 'u').nom).toBe('Le lapin');
-    expect(compagnonDe('ete', 'u').nom).toBe('Le crabe');
-    expect(['Le hérisson', "L'écureuil"]).toContain(compagnonDe('automne', 'u').nom);
-  });
   it('il parle de ses devoirs et de grandir', () => {
-    const m = messagesCompagnon({ prenom: 'Bilal', nom: 'Le hérisson', grandi: true, niveau: 3, aFaire: 2 });
+    const m = messagesCompagnon({ prenom: 'Bilal', grandi: true, niveau: 3, aFaire: 2 });
     expect(m[0]).toContain('j\'ai grandi');
     expect(m[1]).toBe('Il te reste 2 devoirs à faire. On s\'y met ensemble ? 💪');
     expect(m.length).toBeGreaterThanOrEqual(5);
-    expect(messagesCompagnon({ prenom: 'Réda', nom: 'x', grandi: false, niveau: 0, aFaire: 0 })[1]).toContain('Tous tes devoirs sont faits');
+    expect(messagesCompagnon({ prenom: 'Réda', grandi: false, niveau: 0, aFaire: 0 })[1]).toContain('Tous tes devoirs sont faits');
   });
   it('la même question toute la journée, la bonne réponse parmi les choix', () => {
     const a = questionDuJour('2026-11-11', []), b = questionDuJour('2026-11-11', []);

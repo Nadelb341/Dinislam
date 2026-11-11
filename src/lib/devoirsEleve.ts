@@ -99,6 +99,15 @@ export function itemsDuFormulaire(f: FormEleve, lignes: LigneDevoir[]): ItemDevo
   });
 }
 
+// ✏️ Modifier un devoir déjà donné (2026-11-11)
+/** Même règle que la création (devoirsEleve.ts) : 1 ligne = le titre ; plusieurs = un devoir en étapes, donc 1 seul 💎 */
+export function titreEtEtapes(lignes: string[], nomMatiere: string): { titre: string; etapes: string[] } {
+  const l = lignes.map((x) => x.trim()).filter(Boolean);
+  if (l.length <= 1) return { titre: l[0] ?? '', etapes: [] };
+  const ensemble = l.join(' · ');
+  return { titre: ensemble.length <= 120 ? ensemble : `${nomMatiere} : ${l.length} choses à faire`, etapes: l };
+}
+
 // ——— Donner les devoirs (avec file hors ligne) ———
 export interface Distribution {
   eleveIds: string[];

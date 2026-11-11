@@ -9,7 +9,7 @@ import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
  *   parents reliés + carte « Je viens / Absent ») ; Nadia reçoit « 📨 Convocations envoyées » pour faire WhatsApp/SMS en 1 appui ;
  * - vacances : si le cours de la semaine tombe pendant les vacances, rien n'est envoyé (option « sauter les vacances ») ;
  * - rappel la veille (option) : à partir de 18 h, « 🎒 Demain, cours à 14 h ».
- * Variables : {prénom}, {groupe}, {jour}, {heure} — même rendu que src/lib/convocations.ts › rendreConvocation (à changer ENSEMBLE).
+ * Variables : {prénom}, {groupe}, {jour}, {heure}, {frise}, {saison} — même rendu que src/lib/convocations.ts › rendreConvocation (à changer ENSEMBLE).
  * `dernier_envoi` / `dernier_rappel` = un seul passage par jour.
  */
 type Horaire = { group_id: string; weekday: number; start_time: string };
@@ -30,8 +30,15 @@ const plusJours = (jour: string, n: number) => { const d = new Date(`${jour}T12:
 const isoJour = (jour: string) => ((new Date(`${jour}T12:00:00Z`).getUTCDay() + 6) % 7) + 1;
 const libelleJour = (jour: string) => { const d = new Date(`${jour}T12:00:00Z`); return `${JOURS[d.getUTCDay()]} ${d.getUTCDate()} ${MOIS[d.getUTCMonth()]}`; };
 const libelleHeure = (hm: string) => { const [h, m] = hm.split(':').map(Number); return `${h} h${m ? ` ${String(m).padStart(2, '0')}` : ''}`; };
-export function rendreConvocation(texte: string, v: { prenom: string; groupe: string; jour: string; heure: string }) {
-  return texte.replace(/\{pr[ée]nom\}/gi, v.prenom).replace(/\{groupe\}/gi, v.groupe).replace(/\{jour\}/gi, v.jour).replace(/\{heure\}/gi, v.heure);
+// 🎨 Frise et emoji de la saison (mois de Paris) — mêmes que src/lib/convocations.ts
+const MOTIF: Record<string, [string, string]> = { automne: ['🪵', '🍂'], hiver: ['❄️', '⛄'], printemps: ['🌸', '🐰'], ete: ['☀️', '🐚'] };
+const EMOJI: Record<string, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '☀️' };
+function saisonDe(mois0: number) { return mois0 === 11 || mois0 <= 1 ? 'hiver' : mois0 <= 4 ? 'printemps' : mois0 <= 7 ? 'ete' : 'automne'; }
+export function rendreConvocation(texte: string, v: { prenom: string; groupe: string; jour: string; heure: string }, mois0 = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Paris', month: 'numeric' }).format(new Date())) - 1) {
+  const s = saisonDe(mois0);
+  const frise = Array.from({ length: 11 }, (_, i) => MOTIF[s][i % 2]).join('');
+  return texte.replace(/\{pr[ée]nom\}/gi, v.prenom).replace(/\{groupe\}/gi, v.groupe).replace(/\{jour\}/gi, v.jour).replace(/\{heure\}/gi, v.heure)
+    .replace(/\{frise\}/gi, frise).replace(/\{saison\}/gi, EMOJI[s]);
 }
 
 serve(async () => {

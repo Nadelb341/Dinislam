@@ -738,8 +738,6 @@ html.dark .pe-arc.actif { opacity: .35; }
 @media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .consigne-pouls { animation: none; } }
 
 /* 🎠 Petits jeux des décors de saison (2026-11-11) */
-.jeux-compagnon { animation: jeux-respire 3.2s ease-in-out infinite; transform-origin: 50% 100%; transition: width .6s, height .6s; }
-@keyframes jeux-respire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, .97); } }
 .jeux-bulle { animation: jeux-pop .35s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes jeux-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .jeux-fruit { animation: jeux-balance 4s ease-in-out infinite; transform-origin: 50% 0; }
@@ -750,3 +748,6 @@ html.dark .pe-arc.actif { opacity: .35; }
 @keyframes jeux-tombe { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(120px) rotate(200deg); opacity: 0; } }
 .jeux-question { animation: jeux-sautille 1.6s ease-in-out infinite; }
 @keyframes jeux-sautille { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* 🦔 Compagnon touché (2026-11-11) : tout son décor s'arrête 10 s, puis repart */
+.jeux-pause, .jeux-pause * { animation-play-state: paused !important; }

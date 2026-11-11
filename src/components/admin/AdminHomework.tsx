@@ -36,6 +36,7 @@ import { FormulaireDevoirEleve } from '@/components/cahier/FormulaireDevoirEleve
 import { CLE_BROUILLON, lireBrouillons } from '@/lib/devoirsEleve';
 import { useDevoirsEnAttente } from '@/hooks/useDevoirsEnAttente';
 import { CopierDevoirsDialog } from '@/components/cahier/CopierDevoirsDialog';
+import { ModifierDevoirDialog } from '@/components/cahier/ModifierDevoirDialog';
 
 
 interface AdminHomeworkProps {
@@ -57,6 +58,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
   } | null>(null);
   const [commentaire, setCommentaire] = useState('');
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
+  const [devoirAModifier, setDevoirAModifier] = useState<{ id: string; eleveId: string } | null>(null);
   const { askValidation, validationDialog } = useConfirmValidation();
   // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2)
   const { next: prochainCours, schedule: horaireGroupe } = useGroupCourse(groupeId);
@@ -468,6 +470,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
             }
           }}
           onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
+          onModifier={(id, eleveId) => setDevoirAModifier({ id, eleveId })}
           onDonner={() => setEleveAOuvrir(elevesVus[0]?.user_id ?? null)}
           onValider={(id) => {
             // Ouvre ses rendus (écoute, ✅ Valider, 🔄 À refaire) et descend jusqu'à eux
@@ -625,6 +628,14 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
       {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} memberships={memberships} />}
       {validationDialog}
       {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
+      {/* ✏️ Modifier un devoir déjà donné (2026-11-11) */}
+      {(() => {
+        const d = devoirAModifier ? devoirs.find((x) => x.id === devoirAModifier.id) : null;
+        return (
+          <ModifierDevoirDialog onClose={() => setDevoirAModifier(null)} nomEleve={d?.student_name || 'l\'élève'}
+            devoir={d ? { id: d.id, titre: d.titre, type: d.type, etapes: d.etapes, date_limite: d.date_limite, audio_requis: d.audio_requis, matiere_label: d.matiere_label } : null} />
+        );
+      })()}
       <AlertDialog open={!!devoirToDelete} onOpenChange={(open) => { if (!open) setDevoirToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -1,17 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { lundiDeLaSemaine, type ReglagesSaisons, type Saison } from '@/lib/saisons';
-import { IMAGES_AUTOMNE } from './dessinsAutomne';
-import { PERSOS } from './dessinsHiver';
-import { ANIMAUX } from './dessinsPrintempsEte';
-import { compagnonDe, messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
+import { annoncerNiveau, EVT_TOUCHE, PAUSE_MS, type DetailTouche } from './compagnonEvenement';
+import { messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
 
 /**
  * 🎠 Petits jeux des décors de saison (Nadia, 2026-11-11 : idées 2, 4, 6, 7, 9, 10). RIEN À GAGNER : juste des animations.
- * - 🦔 Compagnon (hérisson/écureuil, pingouin/bonhomme, lapin, crabe) : grandit à la 1ʳᵉ connexion du jour (base : compagnon_du_jour,
- *   1 fois par 24 h) et parle : un nouveau message à chaque retour sur l'accueil, 5 par visite au plus.
+ * - 🦔 Compagnon = le personnage qui se promène en bas (2026-11-11) : grandit à la 1ʳᵉ connexion du jour (base : compagnon_du_jour,
+ *   1 fois par 24 h) ; on le touche → il s'arrête 10 s et dit un message (voir compagnonEvenement.ts).
  * - 🌳 Arbre de la semaine : un fruit (🍎 ✨ 🌸 🍊) par devoir / lettre / leçon / sourate / invocation validé depuis lundi.
  * - 🎁 Secoue l'arbre (toucher l'arbre, le chalet ou le soleil en haut à gauche) : une fois par jour, un nom d'Allah à découvrir.
  * - ❓ Question du coin du feu (toucher la cheminée / le décor en bas à droite) : une question par jour.
@@ -19,12 +17,9 @@ import { compagnonDe, messagesCompagnon, questionDuJour, type Question } from '.
  */
 const FRUIT: Record<Saison, string> = { automne: '🍎', hiver: '✨', printemps: '🌸', ete: '🍊' };
 const COIN: Record<Saison, string> = { automne: '🔥 La question du coin du feu', hiver: '🔥 La question du coin du feu', printemps: '🌳 La question de l\'arbre', ete: '⛱️ La question du parasol' };
-const MAX_MESSAGES = 5;
 const jourLocal = () => new Date().toLocaleDateString('en-CA');
 const lire = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const ecrire = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* stockage indisponible */ } };
-const lireS = (k: string) => { try { return sessionStorage.getItem(k); } catch { return null; } };
-const ecrireS = (k: string, v: string) => { try { sessionStorage.setItem(k, v); } catch { /* */ } };
 
 export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauche }: {
   saison: Saison; r: ReglagesSaisons; userId: string | null; prenom: string; isAdmin: boolean; largeurHautGauche: number;
@@ -39,19 +34,20 @@ export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauc
   if (!userId || !concerne) return null;
   return (
     <>
-      {j.compagnon && <Compagnon saison={saison} userId={userId} prenom={prenom} parle={j.parle} />}
+      {(j.compagnon || j.parle) && <Compagnon userId={userId} prenom={prenom} grandit={j.compagnon} parle={j.parle} />}
       {(j.arbreSemaine || j.secoue) && <ArbreSemaine saison={saison} userId={userId} fruits={j.arbreSemaine} secoue={j.secoue} largeur={largeurHautGauche} />}
       {j.questionFeu && <QuestionFeu saison={saison} userId={userId} />}
     </>
   );
 }
 
-// ——— 🦔 Le compagnon ———
-function Compagnon({ saison, userId, prenom, parle }: { saison: Saison; userId: string; prenom: string; parle: boolean }) {
+// ——— 🦔 Le compagnon = le personnage qui se promène en bas (le petit personnage fixe est retiré, Nadia 2026-11-11) ———
+function Compagnon({ userId, prenom, grandit, parle }: { userId: string; prenom: string; grandit: boolean; parle: boolean }) {
   const cle = `dinislam_compagnon_${userId}`;
   const { data: etat } = useQuery({
     queryKey: ['compagnon', userId, jourLocal()],
     staleTime: Infinity,
+    enabled: grandit,
     queryFn: async () => {
       try {
         const { data, error } = await supabase.rpc('compagnon_du_jour');
@@ -65,8 +61,13 @@ function Compagnon({ saison, userId, prenom, parle }: { saison: Saison; userId: 
       }
     },
   });
+  const niveau = grandit ? (etat?.niveau ?? Number(lire(cle) || 0)) : 0;
+  // Le personnage qui marche prend sa taille (rien si « Le compagnon grandit » est éteint)
+  useEffect(() => { annoncerNiveau(niveau); return () => annoncerNiveau(0); }, [niveau]);
+
   const { data: aFaire = 0 } = useQuery({
     queryKey: ['compagnon-devoirs', userId],
+    enabled: parle,
     queryFn: async () => {
       const depuis = new Date(Date.now() - 21 * 86400000).toISOString();
       const [{ data: d }, { data: rendus }] = await Promise.all([
@@ -77,44 +78,38 @@ function Compagnon({ saison, userId, prenom, parle }: { saison: Saison; userId: 
       return (d || []).filter((x) => !faits.has(x.id)).length;
     },
   });
-  const perso = compagnonDe(saison, userId);
-  const svg = perso.type === 'automne' ? { vb: '0 0 48 48', s: IMAGES_AUTOMNE[perso.cle]?.svg ?? '' }
-    : perso.type === 'hiver' ? { vb: '0 0 30 38', s: PERSOS[perso.cle as 'pingouin' | 'bonhomme'] }
-    : { vb: '0 0 40 34', s: ANIMAUX[perso.cle as 'lapin' | 'crabe'].svg };
-  const niveau = etat?.niveau ?? Number(lire(cle) || 0);
-  const taille = Math.round(44 * (1 + Math.min(niveau, 40) * 0.03));
+  const messages = useMemo(() => messagesCompagnon({ prenom, grandi: !!etat?.grandi, niveau, aFaire }), [prenom, etat?.grandi, niveau, aFaire]);
+  const refMessages = useRef(messages);
+  refMessages.current = messages;
+  const suivant = useRef(0);
+  const [bulle, setBulle] = useState<{ x: number; y: number; nom: string; texte: string } | null>(null);
 
-  // 💬 Un nouveau message à chaque retour sur l'accueil (5 par visite au plus)
-  const messages = useMemo(() => messagesCompagnon({ prenom, nom: perso.nom, grandi: !!etat?.grandi, niveau, aFaire }), [prenom, perso.nom, etat?.grandi, niveau, aFaire]);
-  const [indice, setIndice] = useState<number | null>(null);
+  // 💬 On le touche : il s'arrête 10 s (le décor s'en charge) et dit le message suivant
   useEffect(() => {
-    if (!parle || !etat) return;
-    const k = `dinislam_compagnon_vus_${userId}`;
-    const vus = Number(lireS(k) || 0);
-    if (vus >= MAX_MESSAGES) return;
-    ecrireS(k, String(vus + 1));
-    setIndice(vus);
-    const t = setTimeout(() => setIndice(null), 12000);
-    return () => clearTimeout(t);
-  }, [parle, etat, userId]);
-  const toucher = () => {
     if (!parle) return;
-    setIndice((i) => ((i ?? -1) + 1) % messages.length);
-  };
+    let t = 0;
+    const f = (e: Event) => {
+      const d = (e as CustomEvent<DetailTouche>).detail;
+      d.ecoute = true;
+      const l = refMessages.current;
+      setBulle({ x: d.x, y: d.y, nom: d.nom, texte: l[suivant.current % l.length] });
+      suivant.current += 1;
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setBulle(null), PAUSE_MS);
+    };
+    window.addEventListener(EVT_TOUCHE, f);
+    return () => { window.removeEventListener(EVT_TOUCHE, f); window.clearTimeout(t); };
+  }, [parle]);
 
+  if (!bulle) return null;
+  const larg = Math.min(260, window.innerWidth * 0.72);
+  const gauche = Math.max(8, Math.min(window.innerWidth - larg - 8, bulle.x - 24));
   return createPortal(
-    <div className="fixed z-[45] flex items-end gap-2 pointer-events-none" style={{ left: 'max(8px, env(safe-area-inset-left, 0px))', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}>
-      <button type="button" onClick={toucher} aria-label={`${perso.nom} : touche-le pour qu'il te parle`}
-        className="pointer-events-auto jeux-compagnon shrink-0" style={{ width: taille, height: taille }}>
-        <svg viewBox={svg.vb} className="w-full h-full overflow-visible drop-shadow" dangerouslySetInnerHTML={{ __html: svg.s }} />
-      </button>
-      {indice !== null && messages.length > 0 && (
-        <div role="status" className="pointer-events-auto jeux-bulle relative max-w-[min(72vw,260px)] rounded-2xl rounded-bl-sm bg-white/95 dark:bg-card px-3 py-2 text-sm shadow-lg border border-amber-200 mb-3">
-          <button type="button" aria-label="Fermer" onClick={() => setIndice(null)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#EF4444] text-white text-xs font-bold">✕</button>
-          <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{perso.nom}{niveau ? ` · taille ${niveau}` : ''}</p>
-          <p className="[overflow-wrap:anywhere]">{messages[indice % messages.length]}</p>
-        </div>
-      )}
+    <div role="status" className="jeux-bulle fixed z-[60] rounded-2xl rounded-bl-sm bg-white/95 dark:bg-card px-3 py-2 text-sm shadow-lg border border-amber-200"
+      style={{ left: gauche, bottom: Math.max(60, window.innerHeight - bulle.y + 6), width: larg }}>
+      <button type="button" aria-label="Fermer" onClick={() => setBulle(null)} className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-[#EF4444] text-white text-xs font-bold">✕</button>
+      <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">{bulle.nom}</p>
+      <p className="[overflow-wrap:anywhere]">{bulle.texte}</p>
     </div>,
     document.body,
   );

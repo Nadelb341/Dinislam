@@ -1,3 +1,4 @@
+import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -67,6 +68,11 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
   const tracesRef = useRef<SVGSVGElement>(null);
   const tasRef = useRef<SVGSVGElement>(null);
   const eclatsRef = useRef<Eclat[]>([]);
+  // 🦔 Compagnon (2026-11-11) : touché → arrêt 10 s + message ; il grandit un peu chaque jour
+  const pauseJusqua = useRef(0);
+  const echelle = useTailleCompagnon();
+  const echelleRef = useRef(echelle);
+  echelleRef.current = echelle;
   const [defile, setDefile] = useState(false);
   const [bulle, setBulle] = useState(false);
   const [repos, setRepos] = useState(() => { try { return sessionStorage.getItem('dinislam_hiver_repos') === '1'; } catch { return false; } });
@@ -307,14 +313,14 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
     const boucle = (now: number) => {
       const dt = Math.min(0.05, (now - dernier) / 1000); dernier = now;
       const larg = window.innerWidth, limite = larg * 0.62, tasX = larg * 0.42;
-      if (reposRef.current) { el.style.transform = `translateX(${P.x}px) scaleX(${P.dir})`; raf = requestAnimationFrame(boucle); return; }
+      if (reposRef.current || now < pauseJusqua.current) { el.style.transform = `translateX(${P.x}px) scaleX(${P.dir}) scale(${echelleRef.current})`; raf = requestAnimationFrame(boucle); return; }
       if (P.mode === 'plonge') {
         P.t += dt;
-        if (P.t < 0.4) { const k = P.t / 0.4; el.style.opacity = '1'; el.style.transform = `translateX(${tasX - 15}px) translateY(${-14 * Math.sin(k * Math.PI) + k * k * 26}px) scaleX(${P.dir})`; }
+        if (P.t < 0.4) { const k = P.t / 0.4; el.style.opacity = '1'; el.style.transform = `translateX(${tasX - 15}px) translateY(${-14 * Math.sin(k * Math.PI) + k * k * 26}px) scaleX(${P.dir}) scale(${echelleRef.current})`; }
         else if (P.t < 3) { if (P.eclate === 0) { P.eclate = 1; poudreuse(tasX, 1); } el.style.opacity = '0'; }
         else {
           if (P.eclate === 1) { P.eclate = 2; poudreuse(tasX, 0.45); P.dir *= -1; }
-          el.style.opacity = '1'; el.style.transform = `translateX(${tasX - 15}px) translateY(${-10 * Math.max(0, (3.4 - P.t) / 0.4)}px) scaleX(${P.dir})`;
+          el.style.opacity = '1'; el.style.transform = `translateX(${tasX - 15}px) translateY(${-10 * Math.max(0, (3.4 - P.t) / 0.4)}px) scaleX(${P.dir}) scale(${echelleRef.current})`;
           if (P.t > 3.4) { P.mode = 'marche'; P.t = 0; P.cool = 9; P.x = tasX - 15; P.eclate = 0; }
         }
         raf = requestAnimationFrame(boucle); return;
@@ -331,7 +337,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
       if (P.pas > (P.mode === 'glisse' ? 5 : 7)) { P.pas = 0; P.pied ^= 1; empreinte(P.x + 15 + (P.mode === 'glisse' ? 0 : (P.pied ? -3 : 3)), 36 + (P.mode === 'glisse' ? 0 : (P.pied ? 1 : -1)), P.mode === 'glisse'); }
       const dand = P.mode === 'marche' ? (perso === 'pingouin' ? `rotate(${Math.sin(P.t * 12) * 6}deg)` : `translateY(${-Math.abs(Math.sin(P.t * 7)) * 3}px)`)
         : P.mode === 'glisse' ? (perso === 'pingouin' ? 'rotate(70deg) translateY(10px)' : 'rotate(-8deg)') : '';
-      el.style.transform = `translateX(${P.x}px) scaleX(${P.dir})`;
+      el.style.transform = `translateX(${P.x}px) scaleX(${P.dir}) scale(${echelleRef.current})`;
       const corps = el.querySelector<SVGGElement>('.hiver-corps');
       if (corps) { corps.style.transformBox = 'fill-box'; corps.style.transformOrigin = '50% 100%'; corps.style.transform = dand; }
       raf = requestAnimationFrame(boucle);
@@ -381,11 +387,11 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
               )}
               {h.personnage && (
                 <svg ref={persoRef} viewBox="0 0 30 38" role="button" tabIndex={0}
-                  aria-label={perso === 'pingouin' ? "Le pingouin : touche-le pour qu'il se repose" : "Le bonhomme de neige : touche-le pour qu'il se repose"}
-                  onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else setBulle(true); }}
+                  aria-label={perso === 'pingouin' ? "Le pingouin : touche-le pour qu'il te parle" : "Le bonhomme de neige : touche-le pour qu'il te parle"}
+                  onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, perso === 'pingouin' ? 'Le pingouin' : 'Le bonhomme de neige')) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
                   className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] cursor-pointer overflow-visible"
-                  style={{ transform: 'translateX(70px)' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] }} />
+                  style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] }} />
               )}
               {h.personnage && h.plongeon && (
                 <svg ref={tasRef} aria-hidden viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] overflow-visible" style={{ left: 'calc(42% - 30px)' }}

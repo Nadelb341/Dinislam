@@ -10,6 +10,8 @@ export interface ProgramItem {
   due?: string | null;
   /** Envoyé par l'élève, en attente de la validation de l'enseignante (diamant orange) */
   pending?: boolean;
+  /** Matière du devoir (type de la table devoirs) et nom personnel : le nom de la carte sous le diamant (2026-11-11) */
+  type?: string; matiere_label?: string | null;
 }
 export interface WeeklyProgram {
   program_id: string; student_id: string; week_start: string; items: ProgramItem[]; message_index: number;

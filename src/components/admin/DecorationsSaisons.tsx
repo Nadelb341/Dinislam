@@ -453,8 +453,8 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
   return (
     <section className="space-y-2">
       <p className="text-sm font-extrabold">🎠 Petits jeux (toutes les saisons, rien à gagner)</p>
-      {ligne('compagnon', '🦔 Le compagnon grandit', 'Hérisson, écureuil, pingouin, lapin… : il grandit à la 1ʳᵉ connexion du jour (une fois par 24 h)')}
-      {ligne('parle', '💬 Le compagnon parle', 'Un nouveau message à chaque retour sur l\'accueil (5 par visite au plus) : devoirs, encouragements')}
+      {ligne('compagnon', '🦔 Le compagnon grandit', 'Le personnage qui se promène en bas grandit un peu à la 1ʳᵉ connexion du jour (une fois par 24 h)')}
+      {ligne('parle', '💬 Le compagnon parle', 'On touche le personnage qui se promène : il s\'arrête 10 secondes et dit un message (devoirs, encouragements), puis repart')}
       {ligne('arbreSemaine', '🌳 L\'arbre de la semaine', 'Un fruit par devoir, lettre, leçon ou sourate validé depuis lundi')}
       {ligne('secoue', '🎁 Secoue l\'arbre', 'Toucher l\'arbre (le chalet, le soleil) : un nom d\'Allah à découvrir, une fois par jour')}
       {ligne('questionFeu', '❓ La question du coin du feu', 'Le petit « ? » sur la cheminée : une question par jour')}

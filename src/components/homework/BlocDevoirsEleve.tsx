@@ -22,7 +22,6 @@ import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
 import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
 import type { GroupSchedule } from "@/lib/groupCourse";
-import { estEnModeFantome } from "@/lib/modeFantome";
 
 type Devoir = {
   id: string;
@@ -154,13 +153,14 @@ function DetailLecture({ devoir }: { devoir: Devoir }) {
  * - Élève (2026-11-05, demande de Nadia) : SEULEMENT les devoirs de cette semaine (ni « Semaine passée », ni
  *   « Historique », ni « À rattraper »).
  * - `eleveId` : l'enseignante regarde l'historique COMPLET d'un élève (Récapitulatif › 📜 Historique), en lecture seule.
- * - Mode fantôme : l'enseignante dans le compte de l'élève garde aussi la version complète.
+ * - 2026-11-11 : le mode fantôme montre la même chose que l'élève (cette semaine seulement).
  */
 export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {}) {
   const { user } = useAuth();
   const uid = eleveId ?? user?.id;
-  const fantome = estEnModeFantome();
-  const simple = !eleveId && !fantome;
+  // 2026-11-11 (Nadia) : sur l'accueil, seulement « Cette semaine », pour tout le monde (mode fantôme compris).
+  // Le passé reste dans Récapitulatif › 📜 Historique (eleveId).
+  const simple = !eleveId;
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [devoirsTermines, setDevoirsTermines] = useState<Devoir[]>([]);
   const [loading, setLoading] = useState(true);

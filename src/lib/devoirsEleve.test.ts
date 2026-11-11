@@ -50,3 +50,12 @@ describe('brouillon par élève', () => {
     expect(brouillonDe('inconnu')).toEqual(formVide());
   });
 });
+
+describe('✏️ modifier un devoir déjà donné', () => {
+  it('1 ligne = le titre, plusieurs = un devoir en étapes (1 diamant)', async () => {
+    const { titreEtEtapes } = await import('./devoirsEleve');
+    expect(titreEtEtapes(['  lire la leçon 11 ', ''], 'Nourania')).toEqual({ titre: 'lire la leçon 11', etapes: [] });
+    expect(titreEtEtapes(['A', 'B'], 'Sourate')).toEqual({ titre: 'A · B', etapes: ['A', 'B'] });
+    expect(titreEtEtapes(['x'.repeat(80), 'y'.repeat(80)], 'Sourate').titre).toBe('Sourate : 2 choses à faire');
+  });
+});

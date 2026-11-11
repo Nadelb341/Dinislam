@@ -1,3 +1,4 @@
+import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -156,6 +157,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
   const animalRef = useRef<SVGSVGElement>(null);
   const tasRef = useRef<SVGSVGElement>(null);
   const eclatsRef = useRef<Eclat[]>([]);
+  // 🦔 Compagnon (2026-11-11) : touché → arrêt 10 s + message ; il grandit un peu chaque jour
+  const pauseJusqua = useRef(0);
+  const echelle = useTailleCompagnon();
+  const echelleRef = useRef(echelle);
+  echelleRef.current = echelle;
   const [defile, setDefile] = useState(false);
   const [bulle, setBulle] = useState(false);
   const cleRepos = `dinislam_${saison}_repos`;
@@ -404,7 +410,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
     const boucle = (now: number) => {
       const dt = Math.min(0.05, (now - dernier) / 1000); dernier = now;
       const larg = window.innerWidth, limite = larg * 0.6, tas = larg * 0.42, H = window.innerHeight;
-      if (reposRef.current) { raf = requestAnimationFrame(boucle); return; }
+      if (reposRef.current || now < pauseJusqua.current) { raf = requestAnimationFrame(boucle); return; }
       P.t += dt;
       if (animal === 'dauphin') {
         const mer = H - HB + 14;
@@ -413,18 +419,18 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
           const k = Math.min(1, P.t / 1.3), x = P.x0 + P.dir * 90 * k, y = mer - Math.sin(Math.PI * k) * 72;
           const pente = Math.atan2(-Math.cos(Math.PI * k) * 72 * Math.PI, 90) * (180 / Math.PI);
           el.style.opacity = k < 0.04 || k > 0.96 ? '0.6' : '1';
-          el.style.transform = `translate(${x - 20}px, ${y - 17}px) scaleX(${P.dir}) rotate(${pente}deg)`;
+          el.style.transform = `translate(${x - 20}px, ${y - 17}px) scaleX(${P.dir}) rotate(${pente}deg) scale(${echelleRef.current})`;
           if (k >= 1) { jaillir(x, mer, 0.8, eau, 0.9); P.mode = 'eau'; P.t = 0; }
         }
         raf = requestAnimationFrame(boucle); return;
       }
       const sol = H - (ete ? 30 : 22);
       if (P.mode === 'plonge') {
-        if (P.t < 0.4) { const k = P.t / 0.4; el.style.opacity = '1'; el.style.transform = `translate(${tas - 20}px, ${sol - 34 - 16 * Math.sin(k * Math.PI) + k * k * 30}px) scaleX(${P.dir})`; }
+        if (P.t < 0.4) { const k = P.t / 0.4; el.style.opacity = '1'; el.style.transform = `translate(${tas - 20}px, ${sol - 34 - 16 * Math.sin(k * Math.PI) + k * k * 30}px) scaleX(${P.dir}) scale(${echelleRef.current})`; }
         else if (P.t < 3) { if (P.eclate === 0) { P.eclate = 1; jaillir(tas, H - 26, 1, couleursTas); } el.style.opacity = '0'; }
         else {
           if (P.eclate === 1) { P.eclate = 2; jaillir(tas, H - 26, 0.45, couleursTas); P.dir *= -1; }
-          el.style.opacity = '1'; el.style.transform = `translate(${tas - 20}px, ${sol - 34 - 12 * Math.max(0, (3.4 - P.t) / 0.4)}px) scaleX(${P.dir})`;
+          el.style.opacity = '1'; el.style.transform = `translate(${tas - 20}px, ${sol - 34 - 12 * Math.max(0, (3.4 - P.t) / 0.4)}px) scaleX(${P.dir}) scale(${echelleRef.current})`;
           if (P.t > 3.4) { P.mode = 'marche'; P.t = 0; P.cool = 10; P.x = tas - 20; P.eclate = 0; }
         }
         raf = requestAnimationFrame(boucle); return;
@@ -439,7 +445,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
       const saut = P.mode !== 'marche' ? 0 : animal === 'lapin' ? Math.abs(Math.sin(P.t * 6)) * 8 : animal === 'biche' ? Math.abs(Math.sin(P.t * 7)) * 4 : 0;
       const flip = animal === 'crabe' ? 1 : P.dir;
       el.style.opacity = '1';
-      el.style.transform = `translate(${P.x}px, ${sol - 34 - saut}px) scaleX(${flip})`;
+      el.style.transform = `translate(${P.x}px, ${sol - 34 - saut}px) scaleX(${flip}) scale(${echelleRef.current})`;
       const corps = el.querySelector<SVGGElement>('.pe-corps');
       if (corps) {
         corps.style.transformBox = 'fill-box'; corps.style.transformOrigin = '50% 100%';
@@ -505,11 +511,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
                   dangerouslySetInnerHTML={{ __html: chateauSable(etapeChateau) }} />
               )}
               {c.animal && (
-                <svg ref={animalRef} viewBox="0 0 40 34" role="button" tabIndex={0} aria-label={`${nomAnimal} : touche-le pour qu'il se repose`}
-                  onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem(cleRepos); } catch { /* */ } } else setBulle(true); }}
+                <svg ref={animalRef} viewBox="0 0 40 34" role="button" tabIndex={0} aria-label={`${nomAnimal} : touche-le pour qu'il te parle`}
+                  onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem(cleRepos); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, nomAnimal)) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
                   className="pointer-events-auto fixed left-0 top-0 z-[29] h-[34px] w-10 cursor-pointer overflow-visible"
-                  style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1 }}
+                  style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1, transformOrigin: '50% 100%' }}
                   dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg }} />
               )}
               <svg ref={tasRef} aria-hidden width={W} height={HB} viewBox={`0 0 ${W} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible"

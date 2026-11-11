@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReglagesAutomne } from '@/lib/saisons';
 import { ERABLE, IMAGES_AUTOMNE } from './dessinsAutomne';
+import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
 
 /**
  * 🍂 Tapis de feuilles en bas de l'accueil, à gauche de la cheminée (demande de Nadia 2026-11-04).
  * - un tapis de feuilles posé au sol + un petit tas plus haut
  * - un écureuil OU un hérisson (ils alternent à chaque connexion) arrive, se promène,
  *   plonge dans le tas : les feuilles sautent tout autour ; puis il ressort et repart
- * Rien ne bloque un toucher (pointer-events: none). « Réduire les animations » = personnage assis, immobile.
+ * Rien ne bloque un toucher (pointer-events: none), sauf le personnage : c'est le compagnon (2026-11-11), on le touche →
+ * tout le tapis s'arrête 10 s (classe jeux-pause) et il dit un message, puis il repart. Il grandit un peu chaque jour.
+ * « Réduire les animations » = personnage assis, immobile.
  */
 
 const COUL = ['#b5562b', '#c98a2b', '#7a4a2a', '#d9a441', '#a8432a', '#e07b2e', '#8c3a1c', '#e8b04a'];
@@ -41,6 +44,16 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
   const [W, setW] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 390));
   useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
   const perso = useMemo(() => choisirPersonnage(userId), [userId]);
+  const echelle = useTailleCompagnon();
+  const [pause, setPause] = useState(false);
+  const minuteur = useRef(0);
+  useEffect(() => () => window.clearTimeout(minuteur.current), []);
+  const toucher = (el: Element) => {
+    if (!toucherCompagnon(el, perso === 'ecureuil' ? "L'écureuil" : 'Le hérisson')) return;
+    setPause(true);
+    window.clearTimeout(minuteur.current);
+    minuteur.current = window.setTimeout(() => setPause(false), PAUSE_MS);
+  };
 
   // Largeur du tapis = écran moins la cheminée (on la chevauche un peu pour que ça se touche)
   const L = Math.max(160, W - largeurCheminee + 18);
@@ -82,7 +95,7 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
   const img = IMAGES_AUTOMNE[perso].svg;
 
   return (
-    <div className="fixed bottom-0 left-0 z-[28] transition-opacity duration-500"
+    <div className={`fixed bottom-0 left-0 z-[28] transition-opacity duration-500 ${pause ? 'jeux-pause' : ''}`}
       style={{ width: L, height: H + 30, marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1, ['--tas' as string]: `${tasX}px`, ['--cycle' as string]: `${CYCLE}s` }}>
       <svg className="absolute bottom-0 left-0" width={L} height={H} viewBox={`0 0 ${L} ${H}`} dangerouslySetInnerHTML={{ __html: tapis.fond }} />
 
@@ -90,7 +103,10 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
         <div className={`absolute bottom-[6px] left-0 ${anime ? `saison-perso-marche ${a.plongeon ? 'plonge' : ''}` : ''}`}
           style={anime ? undefined : { transform: `translateX(${tasX - 64}px)` }}>
           <div className={anime ? `saison-perso-pas ${perso === 'ecureuil' ? 'saute' : ''}` : ''}>
-            <svg viewBox="0 0 48 48" width={36} height={36} style={{ filter: 'drop-shadow(0 1.5px 1px rgba(60,30,10,.25))' }} dangerouslySetInnerHTML={{ __html: img }} />
+            <svg viewBox="0 0 48 48" width={Math.round(36 * echelle)} height={Math.round(36 * echelle)} role="button" tabIndex={0}
+              aria-label={`${perso === 'ecureuil' ? "L'écureuil" : 'Le hérisson'} : touche-le pour qu'il te parle`}
+              className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); toucher(e.currentTarget); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') toucher(e.currentTarget); }} style={{ filter: 'drop-shadow(0 1.5px 1px rgba(60,30,10,.25))' }} dangerouslySetInnerHTML={{ __html: img }} />
           </div>
         </div>
       )}

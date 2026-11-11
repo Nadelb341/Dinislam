@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfetti } from '@/hooks/useConfetti';
-import { bonusEarned, courseDeadline, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
+import { bonusEarned, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TreasureChest } from './TreasureChest';
+import { matiereOf } from '@/lib/devoirMatieres';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 /**
@@ -51,6 +52,14 @@ function Diamond({ item, fill, pending = false }: { item: Pick<ProgramItem, 'mod
   );
 }
 
+/** Nom de la carte sous le diamant : la matière du devoir (ou le nom personnel donné par l'enseignante) */
+function nomCarte(item: ProgramItem): string {
+  if (item.module !== 'devoir') return item.label;
+  if (item.matiere_label) return item.matiere_label;
+  if (item.type) return matiereOf(item.type).label;
+  return item.detail.split(' · ')[0] || 'Devoir';
+}
+
 export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const navigate = useNavigate();
   const { fireConfetti } = useConfetti();
@@ -61,7 +70,6 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
   const bonus = bonusEarned(program);
   const pct = total ? (program.items.reduce((s, i) => s + itemFill(i), 0) / total) * 100 : 0;
   const queryClient = useQueryClient();
-  const courseDay = courseDeadline(program);
   const reward = treasureFor(program.program_id);
 
   // 🎁 Récompenses déjà obtenues cette semaine (trésor ouvert : +10 points ; bonus : +5 points)
@@ -115,7 +123,6 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
       <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-3">
         {program.items.map((item) => {
           const fill = item.pending && !item.done ? 1 : itemFill(item);
-          const steps = item.steps_total ?? 0;
           return (
             <button key={`${item.module}-${item.item_id}`} type="button"
               onClick={() => {
@@ -123,13 +130,13 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
                 const el = item.module === 'devoir' ? document.getElementById(`devoir-${item.item_id}`) : null;
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else navigate(item.path);
               }}
-              aria-label={`${item.label} : ${item.detail}, ${item.done ? 'validé' : 'à faire'}`}
+              aria-label={`${nomCarte(item)} : ${item.label}, ${item.done ? 'validé' : 'à faire'}`}
               className="w-[5.5rem] flex flex-col items-center gap-0.5 rounded-xl p-1 transition-transform active:scale-95 hover:bg-white/60 dark:hover:bg-white/5">
               <Diamond item={item} fill={fill} pending={!!item.pending && !item.done} />
-              <span className="text-xs font-extrabold leading-tight text-center [overflow-wrap:anywhere]">{item.label}</span>
-              <span className="text-[11px] text-muted-foreground leading-tight text-center [overflow-wrap:anywhere]">{item.detail}</span>
+              {/* ✂️ 2026-11-11, demande de Nadia : juste le nom de la carte, puis ⏳ tant que ce n'est pas fait */}
+              <span className="text-xs font-extrabold leading-tight text-center [overflow-wrap:anywhere]">{nomCarte(item)}</span>
               <span className="text-base leading-none mt-0.5">
-                {item.done ? '✅' : item.pending ? <span className="text-[10px] font-extrabold text-orange-600 dark:text-orange-400">🟠 en attente</span> : steps > 0 ? <span className="text-[11px] font-extrabold tabular-nums">{item.steps_done ?? 0}/{steps}</span> : '⏳'}
+                {item.done ? '✅' : item.pending ? <span className="text-[10px] font-extrabold text-orange-600 dark:text-orange-400">🟠 en attente</span> : '⏳'}
               </span>
             </button>
           );
@@ -140,7 +147,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
           <div className="w-[5.5rem] flex flex-col items-center gap-0.5 p-1" aria-label={bonus ? 'Diamant bonus gagné' : 'Diamant bonus à gagner'}>
             <Diamond item={{ module: 'bonus', item_id: program.program_id, emoji: '🌟' }} fill={bonus ? 1 : 0} />
             <span className="text-xs font-extrabold">Bonus</span>
-            <span className="text-[11px] text-muted-foreground text-center leading-tight">{bonus ? 'Gagné · +5 pts !' : `tout finir avant le ${courseDay.toLocaleDateString('fr-FR', { weekday: 'long' })} · +5 pts`}</span>
+            <span className="text-base leading-none mt-0.5">{bonus ? '✅' : '⏳'}</span>
           </div>
         )}
 

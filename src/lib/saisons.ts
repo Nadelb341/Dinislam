@@ -137,7 +137,7 @@ export const LOGO_DEFAUT: Record<Saison, ReglagesLogo> = {
 export interface ReglagesJeux {
   /** 🦔 Le compagnon grandit à la 1ʳᵉ connexion du jour (1 fois par 24 h) */
   compagnon: boolean;
-  /** 💬 … et parle à l'élève (environ 5 messages par visite, un nouveau à chaque retour sur l'accueil) */
+  /** 💬 … et parle : on touche le personnage qui se promène, il s'arrête 10 s et dit un message (2026-11-11) */
   parle: boolean;
   /** 🌳 L'arbre de la semaine : un fruit par devoir / lettre / leçon / sourate validé cette semaine */
   arbreSemaine: boolean;

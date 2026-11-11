@@ -1,23 +1,7 @@
-import type { Saison } from '@/lib/saisons';
-
 /** 🎠 Logique des petits jeux de saison (pure, testée dans jeuxSaisonLogique.test.ts) */
 
-/** Le compagnon de la saison : le même personnage que celui qui se promène en bas (choix gardé pendant la visite) */
-export function compagnonDe(saison: Saison, userId: string | null): { type: 'automne' | 'hiver' | 'clair'; cle: string; nom: string } {
-  const lireS = (k: string) => { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; } };
-  if (saison === 'automne') {
-    const p = lireS(`dinislam_tapis_perso_${userId ?? 'invite'}`) === 'ecureuil' ? 'ecureuil' : 'herisson';
-    return { type: 'automne', cle: p, nom: p === 'ecureuil' ? 'L\'écureuil' : 'Le hérisson' };
-  }
-  if (saison === 'hiver') {
-    const p = lireS(`dinislam_hiver_perso_${userId ?? 'invite'}`) === 'bonhomme' ? 'bonhomme' : 'pingouin';
-    return { type: 'hiver', cle: p, nom: p === 'bonhomme' ? 'Le bonhomme de neige' : 'Le pingouin' };
-  }
-  return saison === 'printemps' ? { type: 'clair', cle: 'lapin', nom: 'Le lapin' } : { type: 'clair', cle: 'crabe', nom: 'Le crabe' };
-}
-
 /** 💬 Ce que dit le compagnon : il encourage à travailler, à faire valider ses devoirs, et à revenir pour qu'il grandisse */
-export function messagesCompagnon(c: { prenom: string; nom: string; grandi: boolean; niveau: number; aFaire: number }): string[] {
+export function messagesCompagnon(c: { prenom: string; grandi: boolean; niveau: number; aFaire: number }): string[] {
   const p = c.prenom || 'toi';
   const premier = c.grandi
     ? `Salam ${p} ! Merci d'être venu aujourd'hui : j'ai grandi 🌱 Reviens demain pour que je grandisse encore !`

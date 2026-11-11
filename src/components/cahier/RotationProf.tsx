@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { cleCours, compteARebours, jourCourt, type Decision, type Rangement } from '@/lib/rotationDevoirs';
@@ -42,7 +42,7 @@ function pastille(l: LigneProf, passe: boolean) {
  * bandeau à l'heure du cours, boîte « 🔁 À rattraper dans le groupe », onglets Cette semaine · Semaine passée (bilan, idée 1)
  * · Historique (bande de semaines + par matière), « 🔁 Redonner » un devoir pas fait (idée 3).
  */
-export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onDonner, onValider, formulaire, ouvrirEleveId, aUnBrouillon }: {
+export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onModifier, onDonner, onValider, formulaire, ouvrirEleveId, aUnBrouillon }: {
   /** 📝 Idée 4 : l'élève a un brouillon de devoirs pas encore donnés */
   aUnBrouillon?: (eleveId: string) => boolean;
   /** 📚 2026-11-11 (Nadia, maquette A) : le formulaire des nouveaux devoirs de l'élève, dans sa carte (onglet « Cette semaine ») */
@@ -55,6 +55,8 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   coursHistorique: Date[];
   onDecision: (items: { devoirId: string; studentId: string }[], decision: Decision) => void;
   onDelete: (devoirId: string, titre: string) => void;
+  /** ✏️ 2026-11-11 (Nadia) : modifier un devoir déjà donné */
+  onModifier?: (devoirId: string, eleveId: string) => void;
   onDonner: () => void;
   /** 🟠 Ouvre ses rendus à valider (écoute, ✅ Valider, 🔄 À refaire) */
   onValider?: (studentId: string) => void;
@@ -111,6 +113,10 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
         {passe && !l.fait && !l.rattraper && (
           <button type="button" onClick={() => onDecision([{ devoirId: l.devoirId, studentId: l.eleveId }], 'rattraper')}
             className="shrink-0 rounded-full border border-sky-300 bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 text-[11px] font-extrabold text-sky-800 dark:text-sky-200">🔁 Redonner</button>
+        )}
+        {onModifier && (
+          <button type="button" onClick={() => onModifier(l.devoirId, l.eleveId)} aria-label="Modifier ce devoir"
+            className="shrink-0 h-8 w-8 grid place-items-center rounded-lg text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/40"><Pencil className="h-4 w-4" /></button>
         )}
         <button type="button" onClick={() => onDelete(l.devoirId, l.titre)} aria-label="Supprimer ce devoir"
           className="shrink-0 h-8 w-8 grid place-items-center rounded-lg text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>

@@ -185,6 +185,10 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
 
       <div key={onglet} className={cn('cahier-papier rounded-r-2xl px-3 pt-2 pb-3 space-y-2', tourne && onglet === 'semaine' && 'page-tourne')}
         onAnimationEnd={() => setTourne(false)}>
+        {/* 📢 2026-11-11 (Nadia) : un titre pour annoncer les devoirs de la semaine */}
+        {simple && onglet === 'semaine' && (
+          <p className="pt-1 text-center text-lg font-extrabold uppercase tracking-[0.18em] text-red-700 dark:text-red-300">Devoirs à faire</p>
+        )}
         {onglet === 'semaine' && (
           semaine.length ? parCours(semaine, (c) => `Pour ${jourLong(c)} :`, false) : (
             <div className="space-y-1 py-1">

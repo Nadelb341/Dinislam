@@ -6,6 +6,14 @@ describe('convocations', () => {
     expect(rendreConvocation('Salam {prénom}, cours {jour} à {heure} ({groupe}). {prenom} !', { prenom: 'Bilal', groupe: 'Groupe 2', jour: 'mercredi 18 novembre', heure: '14 h' }))
       .toBe('Salam Bilal, cours mercredi 18 novembre à 14 h (Groupe 2). Bilal !');
   });
+  it('frise de la saison en haut et en bas (11 images, 2 qui alternent)', () => {
+    const v = { prenom: 'Bilal', groupe: 'G', jour: 'j', heure: 'h' };
+    expect(rendreConvocation('{frise}\nSalam {prénom} {saison}\n{frise}', v, new Date(2026, 10, 11)))
+      .toBe('🪵🍂🪵🍂🪵🍂🪵🍂🪵🍂🪵\nSalam Bilal 🍂\n🪵🍂🪵🍂🪵🍂🪵🍂🪵🍂🪵');
+    expect(rendreConvocation('{frise}', v, new Date(2026, 11, 25))).toBe('❄️⛄❄️⛄❄️⛄❄️⛄❄️⛄❄️');
+    expect(rendreConvocation('{saison}', v, new Date(2026, 3, 1))).toBe('🌸');
+    expect(rendreConvocation('{saison}', v, new Date(2026, 6, 1))).toBe('☀️');
+  });
   it('heure et prénom', () => {
     expect(libelleHeure(new Date(2026, 10, 18, 13, 30))).toBe('13 h 30');
     expect(libelleHeure(new Date(2026, 10, 18, 14, 0))).toBe('14 h');
