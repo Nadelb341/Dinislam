@@ -264,7 +264,7 @@ const AlphabetPage = () => {
   const openLetter = (letter: Tables<'alphabet_letters'>) => {
     if (isAdmin) { setLettreAcces(letter); return; }
     if (!unlocked.has(letter.id)) {
-      toast(`🔒 Apprends d'abord ${currentLetter ? `${currentLetter.name_french} (${currentLetter.letter_arabic})` : 'les lettres précédentes'}`);
+      toast(currentLetter ? `🔒 Apprends d'abord ${currentLetter.name_french} (${currentLetter.letter_arabic})` : '🔒 Ton professeur va bientôt t\'ouvrir cette lettre');
       return;
     }
     setSelectedLetter(letter);
@@ -326,6 +326,12 @@ const AlphabetPage = () => {
         {/* ── Apprendre ── */}
         {tab === 'apprendre' && (
           <div className="space-y-3">
+            {/* 2026-11-11 : Alif aussi attend que le professeur l'ouvre */}
+            {!currentLetter && !isAdmin && !everythingOpen && learned.size < letters.length && (
+              <p className="rounded-2xl p-3 text-sm bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+                🔒 Ton professeur va bientôt t'ouvrir ta {learned.size ? 'prochaine' : 'première'} lettre. Reviens vite ! 🤲
+              </p>
+            )}
             {currentLetter && !isAdmin && (
               <button
                 type="button"

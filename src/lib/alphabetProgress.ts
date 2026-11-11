@@ -1,10 +1,11 @@
 /**
- * Alphabet par paliers (règles de Nadia, 2026-10-05).
- * - Les lettres s'ouvrent dans l'ordre : une lettre s'ouvre quand toutes celles d'avant sont apprises.
- * - L'admin peut débloquer à la main une ou plusieurs lettres pour un élève : elles restent ouvertes,
- *   mais n'ouvrent PAS les suivantes. Seul le suivi de l'élève fait avancer l'ordre.
- *   Ex. Wiam : lettres 1-4 apprises + 10 débloquée (et apprise) → ouvertes : 1 à 5 et 10.
- *   Quand elle apprend la 9, la chaîne passe la 10 (déjà apprise) et ouvre la 11.
+ * Alphabet par paliers.
+ * Règles de Nadia du 2026-11-11 (remplacent celles du 2026-10-05) :
+ * - AUCUNE lettre n'est ouverte au départ, pas même Alif : l'élève attend que l'enseignante la débloque
+ *   (pour lui ou pour son groupe). Exception gardée : 20 ans et plus et admin = tout ouvert (`everythingOpen`).
+ * - Une lettre débloquée s'ouvre seule (elle n'ouvre pas la suivante tout de suite, question A = A).
+ * - Dès qu'une lettre est VALIDÉE, la suivante s'ouvre toute seule (« à apprendre »), dans l'ordre de l'alphabet.
+ *   Ex. Wiam : 1-4 apprises + 10 débloquée (et apprise) → ouvertes : 1 à 5, 10 et 11.
  */
 
 export interface AlphabetLetterLite {
@@ -21,7 +22,7 @@ export interface AlphabetLetterLite {
 export interface UnlockState {
   /** Lettres que l'élève peut ouvrir */
   unlocked: Set<number>;
-  /** Lettre en cours dans l'ordre (la première pas encore apprise), null si tout est appris */
+  /** Lettre à apprendre en premier (la 1ʳᵉ ouverte et pas encore apprise, dans l'ordre), null s'il n'y en a pas */
   currentId: number | null;
 }
 
@@ -34,13 +35,11 @@ export function computeUnlocked(
   if (everythingOpen) {
     return { unlocked: new Set(orderedIds), currentId: orderedIds.find((id) => !learned.has(id)) ?? null };
   }
-  const unlocked = new Set<number>(adminUnlocked);
-  let currentId: number | null = null;
-  for (const id of orderedIds) {
-    unlocked.add(id);
-    if (!learned.has(id)) { currentId = id; break; }
-  }
-  return { unlocked, currentId };
+  const unlocked = new Set<number>();
+  orderedIds.forEach((id, i) => {
+    if (learned.has(id) || adminUnlocked.has(id) || (i > 0 && learned.has(orderedIds[i - 1]))) unlocked.add(id);
+  });
+  return { unlocked, currentId: orderedIds.find((id) => unlocked.has(id) && !learned.has(id)) ?? null };
 }
 
 export type GameKey = 'ecoute' | 'ballons' | 'formes' | 'sosies' | 'defi' | 'syllabes' | 'defi_jour' | 'lettre';

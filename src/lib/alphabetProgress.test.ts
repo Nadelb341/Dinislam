@@ -3,34 +3,40 @@ import { computeUnlocked } from './alphabetProgress';
 
 const ids = Array.from({ length: 28 }, (_, i) => i + 1);
 
+// Règles de Nadia du 2026-11-11 : Alif fermée au départ, la validation d'une lettre ouvre la suivante
 describe('Alphabet par paliers', () => {
-  it("nouvel élève : seule la 1ʳᵉ lettre est ouverte", () => {
+  it('nouvel élève : AUCUNE lettre ouverte, pas même Alif', () => {
     const s = computeUnlocked(ids, new Set(), new Set(), false);
+    expect(s.unlocked.size).toBe(0);
+    expect(s.currentId).toBeNull();
+  });
+
+  it('Alif débloquée par le professeur : seule Alif s\'ouvre (pas Ba)', () => {
+    const s = computeUnlocked(ids, new Set(), new Set([1]), false);
     expect([...s.unlocked]).toEqual([1]);
     expect(s.currentId).toBe(1);
   });
 
-  it("exemple de Wiam : 1-4 apprises + 10 débloquée par l'admin → 1 à 5 et 10, pas la 11", () => {
+  it('Alif validée : Ba passe toute seule à « à apprendre »', () => {
+    const s = computeUnlocked(ids, new Set([1]), new Set([1]), false);
+    expect([...s.unlocked].sort((a, b) => a - b)).toEqual([1, 2]);
+    expect(s.currentId).toBe(2);
+  });
+
+  it('exemple de Wiam : 1-4 apprises + 10 débloquée et apprise → 1 à 5, 10 et 11', () => {
     const s = computeUnlocked(ids, new Set([1, 2, 3, 4, 10]), new Set([10]), false);
-    expect([...s.unlocked].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 10]);
-    expect(s.unlocked.has(11)).toBe(false);
+    expect([...s.unlocked].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 10, 11]);
     expect(s.currentId).toBe(5);
   });
 
-  it("quand Wiam apprend la 9, la 10 (déjà apprise) est passée et la 11 s'ouvre", () => {
-    const s = computeUnlocked(ids, new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), new Set([10]), false);
-    expect(s.unlocked.has(11)).toBe(true);
-    expect(s.unlocked.has(12)).toBe(false);
-    expect(s.currentId).toBe(11);
-  });
-
-  it("une lettre débloquée mais pas encore apprise n'ouvre pas la suivante", () => {
-    const s = computeUnlocked(ids, new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]), new Set([10]), false);
-    expect(s.currentId).toBe(10);
+  it('une lettre débloquée mais pas encore apprise n\'ouvre pas la suivante', () => {
+    const s = computeUnlocked(ids, new Set([1, 2, 3]), new Set([10]), false);
+    expect(s.unlocked.has(10)).toBe(true);
     expect(s.unlocked.has(11)).toBe(false);
+    expect(s.currentId).toBe(4);
   });
 
-  it("accès complet : tout est ouvert", () => {
+  it('accès complet (20 ans et plus) : tout est ouvert', () => {
     expect(computeUnlocked(ids, new Set(), new Set(), true).unlocked.size).toBe(28);
   });
 });

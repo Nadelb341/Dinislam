@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { rangParcours } from '@/lib/souratesPrecedentes';
-import { computeUnlocked } from '@/lib/alphabetProgress';
 import { dansLaPeriode, raisonAcces } from '@/lib/cartesAcces';
 import { useCartesAcces } from '@/hooks/useCartesAcces';
 import type { Cible } from '@/lib/devoirsEleve';
@@ -45,8 +44,9 @@ export function useProchainesEtapes(eleveId: string | null) {
       if (s) { const nom = s.name_french.split(' (')[0]; out.push({ type: 'sourate', texte: `apprendre ${nom}`, cible: { v: String(s.number), l: `${s.number === 1000 ? '2-255' : s.number} · ${nom}` } }); }
 
       const ordre = (lettres.data || []).map((x) => x.id);
-      const { currentId } = computeUnlocked(ordre, new Set((alpha.data || []).map((x) => x.letter_id)), new Set(), false);
-      const lt = (lettres.data || []).find((x) => x.id === currentId);
+      // La 1ʳᵉ lettre pas encore validée, dans l'ordre (même si le professeur ne l'a pas encore ouverte)
+      const apprises = new Set((alpha.data || []).map((x) => x.letter_id));
+      const lt = (lettres.data || []).find((x) => x.id === ordre.find((id) => !apprises.has(id)));
       if (lt) out.push({ type: 'alphabet', texte: `apprendre la lettre ${lt.letter_arabic} (${lt.name_french})`, cible: { v: String(lt.id), l: `${lt.letter_arabic} · ${lt.name_french}` } });
 
       const faitsNoms = new Set((nomsP.data || []).map((x) => x.name_id));
