@@ -4,7 +4,8 @@
  * « Prêt pour le cours » et le message 2 h avant le cours.
  */
 /** Écrans du cahier de texte d'un groupe */
-export type CahierVue = 'devoirs' | 'tableau' | 'recap' | 'bilans' | 'niveaux';
+// 2026-11-11 : « niveaux » retiré (devoirs élève par élève) ; « reglages » = ⚙️ Lignes et maximum du groupe (déplacé ici)
+export type CahierVue = 'devoirs' | 'tableau' | 'recap' | 'bilans' | 'reglages';
 
 export interface GroupSchedule { group_id: string; weekday: number; start_time: string }
 export interface Holiday { label: string; start_date: string; end_date: string }

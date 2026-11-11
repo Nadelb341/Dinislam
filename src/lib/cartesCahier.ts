@@ -15,7 +15,7 @@ export const CARTES: CleCarte[] = ['avant', 'pendant', 'apres', 'memo'];
 export const CARTE_DEFAUT: Record<CleCarte, { titre: string; emoji: string; phrase: string | null; numerotee: boolean }> = {
   avant: { titre: 'Avant le cours', emoji: '', phrase: null, numerotee: true },
   pendant: { titre: 'Pendant le cours', emoji: '', phrase: "Programme, appel, ce qu'on a vu", numerotee: true },
-  apres: { titre: 'Après le cours', emoji: '', phrase: 'Donner les devoirs, par niveau si besoin', numerotee: true },
+  apres: { titre: 'Après le cours', emoji: '', phrase: 'Donner les devoirs, élève par élève', numerotee: true },
   memo: { titre: 'Mémo', emoji: '🗂️', phrase: 'Prochain cours, à préparer, à apporter, notes et fichiers', numerotee: false },
 };
 export const CARTES_DEFAUT: ReglagesCartesCahier = { ordre: [...CARTES], cartes: {}, supprimees: [] };

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { brouillonDe, enregistrerBrouillon, lireBrouillons } from "@/lib/devoirsEleve";
 import { saveDraft } from "@/hooks/useDraftRecovery";
 import { untypedDb } from "@/lib/untypedDb";
 import type { Json } from '@/integrations/supabase/types';
@@ -9,7 +10,7 @@ export type TrashItemType =
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
   | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
   | "student_group" | "scheduled_notification"
-  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "group_level" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
+  | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte";
 
 export interface TrashItem {
@@ -53,7 +54,6 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   sourate_admin_unlock: "sourate_admin_unlocks",
   coran_progress: "coran_progress",
   sourate_story: "sourate_stories",
-  group_level: "group_levels",
   parent_code: "parent_codes",
   parent_link: "parent_links",
   absence_justification: "absence_justifications",
@@ -179,18 +179,18 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
-  // 📎 Fichier / consigne audio retiré du formulaire d'un nouveau devoir (2026-11-04) : remis dans le brouillon du devoir
+  // 📎 Fichier / consigne audio retiré du formulaire d'un nouveau devoir (2026-11-04) : remis dans le brouillon de L'ÉLÈVE
+  // (2026-11-11 : un brouillon par élève, clé « <élève>|<ligne> »)
   if (item.item_type === "devoir_piece_jointe") {
     const d = item.item_data as { key?: string; attachment?: { path: string; name: string; type: string } | null; audio_url?: string | null } | null;
-    if (!d?.key) return false;
-    const cle = "dinislam_homework";
-    let draft: Record<string, unknown> = {};
-    try { draft = JSON.parse(localStorage.getItem(`draft_${cle}`) || "{}") || {}; } catch { draft = {}; }
-    const pj = { ...((draft.pj as Record<string, unknown[]>) || {}) };
-    const consignes = { ...((draft.consignes as Record<string, string>) || {}) };
-    if (d.attachment) pj[d.key] = [...(pj[d.key] || []).filter((x) => (x as { path?: string }).path !== d.attachment!.path), d.attachment];
-    if (d.audio_url) consignes[d.key] = d.audio_url;
-    saveDraft(cle, { titre: "", type: "recitation", description: "", lien_lecon: "", date_limite: "", assigned_to: "all", group_id: "", student_id: "", group_ids: [], ...draft, pj, consignes });
+    if (!d?.key || !d.key.includes("|")) return false;
+    const [eleveId, ligne] = d.key.split("|");
+    const f = brouillonDe(eleveId);
+    const pj = { ...f.pj };
+    if (d.attachment) pj[ligne] = [...(pj[ligne] || []).filter((x) => x.path !== d.attachment!.path), d.attachment];
+    const consignes = { ...f.consignes };
+    if (d.audio_url) consignes[ligne] = d.audio_url;
+    enregistrerBrouillon(eleveId, lireBrouillons().parEleve[eleveId]?.nom || "Élève", { ...f, pj, consignes });
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

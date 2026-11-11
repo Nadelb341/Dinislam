@@ -16,7 +16,6 @@ import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
-import { requestDraftResume } from '@/lib/pendingDrafts';
 import { moveToTrash } from '@/lib/trash';
 import { openAdminSection, openGroupMessage } from '@/lib/adminBridge';
 import { errorMessage } from '@/lib/utils';
@@ -30,7 +29,8 @@ import { AnnounceDialog, CourseModeDialog } from './NextCourse';
 import AdminHomework from '@/components/admin/AdminHomework';
 import { GroupCockpit } from '@/components/cahier/GroupCockpit';
 import type { CahierVue } from '@/lib/groupCourse';
-import NiveauxGroupe from '@/components/cahier/NiveauxGroupe';
+import { ReglagesDevoirsGroupe } from '@/components/cahier/ReglagesDevoirsGroupe';
+import { brouillonDe, enregistrerBrouillon } from '@/lib/devoirsEleve';
 import TableauClasse from '@/components/cahier/TableauClasse';
 import Recapitulatif from '@/components/cahier/Recapitulatif';
 
@@ -413,21 +413,22 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
     setHomeworkFor(task);
     setPicked(new Set(task.student_id ? [task.student_id] : []));
   };
+  const [eleveDuDevoir, setEleveDuDevoir] = useState<string | null>(null);
   const confirmHomework = (allGroup: boolean) => {
     const task = homeworkFor;
     if (!task) return;
-    const ids = allGroup ? [] : [...picked];
-    saveDraft('dinislam_homework', {
-      titre: task.title, type: 'autre', description: '', lien_lecon: '', date_limite: task.due_date ?? '',
-      assigned_to: ids.length === 1 ? 'student' : ids.length > 1 ? 'students' : group?.id ? 'groups' : 'all',
-      group_id: '', student_id: ids.length === 1 ? ids[0] : '', student_ids: ids.length > 1 ? ids : [],
-      group_ids: ids.length === 0 && group?.id ? [group.id] : [],
-      // Venant de « 📚 Devoirs à préparer » : la ligne sera cochée toute seule une fois le devoir envoyé
-      source_task_id: task.to_prepare ? task.id : undefined,
-    });
-    requestDraftResume('dinislam_homework');
+    // 2026-11-11 (devoirs élève par élève) : le texte va sur la ligne « ✏️ Autre » du 1er élève choisi,
+    // les autres élèves (ou tout le groupe) sont cochés dans « 📋 Donner aussi à… » ; sa carte s'ouvre tout de suite
+    const ids = allGroup ? groupStudents.map((x) => x.user_id) : [...picked];
+    const [premier, ...autres] = ids;
+    if (!premier) { toast.error('Aucun élève dans ce groupe'); return; }
+    const nom = groupStudents.find((x) => x.user_id === premier)?.full_name || 'Élève';
+    const f = brouillonDe(premier);
+    enregistrerBrouillon(premier, nom, { ...f, parMatiere: true, lignes: { ...f.lignes, autre: task.title }, aussi: [...new Set([...f.aussi, ...autres])],
+      // Venant de « 📚 Devoirs à préparer » : la ligne sera cochée toute seule une fois le devoir donné
+      source_task_id: task.to_prepare ? task.id : f.source_task_id });
     setHomeworkFor(null);
-    // Le cahier de texte est dans ce groupe (2026-10-26) : on l'ouvre ici, le devoir prérempli s'affiche
+    setEleveDuDevoir(premier);
     setCahierKey((k) => k + 1);
     setVue('devoirs');
   };
@@ -566,8 +567,8 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
               onCourseMode={() => setCourseOpen(true)} memoOpen={memoOpen} onMemo={() => setMemoOpen(!memoOpen)} />
           ) : (
             <div className="rounded-2xl border border-border p-2">
-              {vue === 'devoirs' && <AdminHomework key={cahierKey} onBack={() => setVue(null)} groupeId={group.id} />}
-              {vue === 'niveaux' && group.id && <NiveauxGroupe groupId={group.id} groupName={group.name} students={groupStudents} onBack={() => setVue(null)} />}
+              {vue === 'devoirs' && <AdminHomework key={cahierKey} onBack={() => { setVue(null); setEleveDuDevoir(null); }} groupeId={group.id} ouvrirEleveId={eleveDuDevoir} />}
+              {vue === 'reglages' && group.id && <ReglagesDevoirsGroupe groupId={group.id} groupName={group.name} open onClose={() => setVue(null)} />}
               {vue === 'tableau' && <TableauClasse groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
               {vue === 'recap' && <Recapitulatif groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
             </div>

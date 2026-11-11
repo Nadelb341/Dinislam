@@ -103,7 +103,6 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   devoir_modele: 'Modèle de devoir',
   allah_name_progress: 'Progression des 99 Noms d\'un élève',
   coran_note: 'Note d\'un marque-page du Coran',
-  group_level: 'Niveau d\'un groupe',
   parent_code: 'Code parents',
   parent_link: 'Lien parent ↔ enfant',
   absence_justification: 'Absence justifiée',

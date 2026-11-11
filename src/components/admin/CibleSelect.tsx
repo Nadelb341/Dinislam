@@ -6,9 +6,9 @@ import { SOURATES_DATA } from '@/data/sourates';
  * Élément visé par un devoir (2026-10-26) : la leçon, la sourate, le nom… que « Commencer mon travail » ouvrira chez l'élève.
  * Facultatif : sans choix, le bouton ouvre simplement la carte de la matière.
  */
-type Option = { value: string; label: string };
+export type Option = { value: string; label: string };
 
-async function optionsFor(type: string): Promise<Option[]> {
+export async function optionsFor(type: string): Promise<Option[]> {
   switch (type) {
     case 'nourania': {
       const { data } = await supabase.from('nourania_lessons').select('id, lesson_number, title_french').order('lesson_number');

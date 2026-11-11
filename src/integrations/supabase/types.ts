@@ -1449,41 +1449,6 @@ export type Database = {
           },
         ]
       }
-      group_levels: {
-        Row: {
-          created_at: string
-          group_id: string
-          id: string
-          member_ids: string[]
-          name: string
-          position: number
-        }
-        Insert: {
-          created_at?: string
-          group_id: string
-          id?: string
-          member_ids?: string[]
-          name: string
-          position?: number
-        }
-        Update: {
-          created_at?: string
-          group_id?: string
-          id?: string
-          member_ids?: string[]
-          name?: string
-          position?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_levels_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "student_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       group_schedules: {
         Row: {
           group_id: string

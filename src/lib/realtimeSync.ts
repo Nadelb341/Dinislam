@@ -70,7 +70,6 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   group_schedules: ['course-ready-info', 'group-course'],
   // 📝 « Ce qu'on a vu » et 🎚️ niveaux d'un groupe (2026-10-26)
   group_sessions: ['cahier-classe'],
-  group_levels: ['cahier-classe'],
   homework_submissions: ['my-homework-submissions'],
   invocation_content: ['admin-invocation-contents', 'admin-invocation-contents-full', 'invocation-contents-all'],
   invocations: ['admin-dashboard-stats', 'admin-invocation-validations', 'admin-invocations-full', 'admin-invocations-list', 'admin-module-progress', 'admin-stats', 'fully-unlocked-students', 'invocations-list', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],

@@ -164,10 +164,11 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
           </>),
         },
         apres: {
-          phrase: 'Donner les devoirs, par niveau si besoin',
+          phrase: 'Donner les devoirs, élève par élève',
           boutons: (<>
             <button type="button" onClick={() => onOpen('devoirs')} className="mt-auto rounded-xl bg-[#2457a5] text-white py-2 text-xs font-extrabold">📚 Distribuer les devoirs</button>
-            {group.id && <button type="button" onClick={() => onOpen('niveaux')} className="rounded-lg border py-1.5 text-[11px] font-bold">🎚️ Niveaux du groupe</button>}
+            {/* ⚙️ Q4-B du 2026-11-11 : réglage rangé ici (avant : dans le formulaire du devoir) */}
+            {group.id && <button type="button" onClick={() => onOpen('reglages')} className="rounded-lg border py-1.5 text-[11px] font-bold">⚙️ Lignes et maximum du groupe</button>}
           </>),
         },
         memo: {

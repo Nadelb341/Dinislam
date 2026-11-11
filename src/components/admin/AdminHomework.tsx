@@ -1,26 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { moveToTrash, trashThenDelete } from '@/lib/trash';
+import { moveToTrash } from '@/lib/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
-import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { takeDraftResume } from '@/lib/pendingDrafts';
 import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
-import { MATIERES } from '@/lib/devoirMatieres';
-import { CibleSelect } from './CibleSelect';
 import { useGroupCourse } from '@/hooks/useGroupCourse';
-import { useNiveaux } from '@/hooks/useNiveaux';
 import { courseAfter, courseLabel, toLocalInput, type GroupSchedule } from '@/lib/groupCourse';
 import { useHolidays } from '@/hooks/useGroupCourse';
 import { RotationProf, type LigneProf } from '@/components/cahier/RotationProf';
@@ -34,121 +29,51 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import type { Json, TablesInsert } from '@/integrations/supabase/types';
 import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
-import { asPJ, lignesHabituelles, lundiCourant, type LigneDevoir, type PieceJointe } from '@/lib/devoirFichiers';
-import { OutilsDeLigne } from '@/components/cahier/OutilsLigneDevoir';
-import { ReglagesDevoirsGroupe } from '@/components/cahier/ReglagesDevoirsGroupe';
-import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
+import { asPJ, lundiCourant } from '@/lib/devoirFichiers';
+import { FormulaireDevoirEleve } from '@/components/cahier/FormulaireDevoirEleve';
+import { CLE_BROUILLON, lireBrouillons } from '@/lib/devoirsEleve';
+import { useDevoirsEnAttente } from '@/hooks/useDevoirsEnAttente';
 import { CopierDevoirsDialog } from '@/components/cahier/CopierDevoirsDialog';
 
-const DRAFT_KEY_HOMEWORK = 'dinislam_homework';
-type HomeworkDraft = { titre: string; type: string; description: string; lien_lecon: string; date_limite: string; assigned_to: string; group_id: string; student_id: string; group_ids: string[]; student_ids?: string[]; source_task_id?: string; etapes?: string; lignes?: Record<string, string>; cibles?: Record<string, string>; audios?: Record<string, boolean>; cible_id?: string; audio_requis?: boolean; programme?: boolean; pj?: Record<string, PieceJointe[]>; consignes?: Record<string, string> };
 
 interface AdminHomeworkProps {
   onBack: () => void;
   /** Ouvert depuis un groupe de la carte « Cahier de texte » : un nouveau devoir est proposé pour ce groupe (2026-10-26) */
   groupeId?: string | null;
+  /** Élève dont la carte s'ouvre tout de suite (« En faire un devoir » depuis le cahier de texte, 2026-11-11) */
+  ouvrirEleveId?: string | null;
 }
 
-const TYPE_OPTIONS = [
-  { value: 'recitation', label: '🎙️ Récitation' },
-  { value: 'sourate', label: '📖 Sourate à mémoriser' },
-  { value: 'nourania', label: '✨ Leçon Nourania' },
-  { value: 'allah_names', label: "🌟 99 noms d'Allah" },
-  { value: 'alphabet', label: '🔤 Alphabet' },
-  { value: 'invocations', label: '🤲 Invocations' },
-  { value: 'priere', label: '🕌 Prière' },
-  { value: 'coran', label: '📗 Coran' },
-  { value: 'exercice_pdf', label: '📄 Exercice PDF' },
-  { value: 'autre', label: '✏️ Autre' },
-];
 
-type ItemDevoir = { titre: string; type: string; cible: string; audio: boolean; pj: PieceJointe[]; consigne: string | null; label: string | null; emoji: string | null };
 
-const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
+const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
   const [elevesRendusOuverts, setElevesRendusOuverts] = useState<Record<string, boolean>>({});
   const [modalARefaire, setModalARefaire] = useState<{
     renduId: string; studentId: string; devoirTitre: string; devoirId?: string | null;
   } | null>(null);
   const [commentaire, setCommentaire] = useState('');
-  const [form, setForm] = useState({
-    titre: '', type: 'recitation', description: '',
-    lien_lecon: '', date_limite: '', assigned_to: 'all',
-    group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[],
-    // 💎 Devoir en étapes (une par ligne, ex. « Ligne 1 ») : le diamant de l'élève se remplit étape par étape (2026-10-26)
-    etapes: '',
-    // ✍️ Consignes écrites sur les lignes des matières (gardées dans le brouillon, 2026-10-26)
-    lignes: {} as Record<string, string>,
-    // 📍 Élément ouvert par « Commencer mon travail » et 🎙️ audio demandé, par matière (2026-10-26)
-    cibles: {} as Record<string, string>,
-    audios: {} as Record<string, boolean>,
-    cible_id: '',
-    audio_requis: false,
-    // Ligne « 📚 Devoirs à préparer » d'où vient ce devoir : cochée toute seule une fois le devoir envoyé (2026-10-08)
-    source_task_id: '' as string,
-    // 🕑 Idée 2 (rotation, 2026-10-27) : préparé à l'avance, visible par les élèves au début du prochain cours
-    programme: false,
-    // 📎 Documents/photos et 🎙️ consigne audio de chaque ligne (proposition A, 2026-11-04) ; clé « detail » = devoir détaillé
-    pj: {} as Record<string, PieceJointe[]>,
-    consignes: {} as Record<string, string>,
-  });
-  const [homeworkDraft, setHomeworkDraft] = useState<HomeworkDraft | null>(null);
   const [devoirToDelete, setDevoirToDelete] = useState<{ id: string; titre: string } | null>(null);
   const { askValidation, validationDialog } = useConfirmValidation();
-  // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2) et ses niveaux (idée 1)
+  // Ouvert depuis un groupe : date à rendre = son prochain cours (vacances sautées, idée 2)
   const { next: prochainCours, schedule: horaireGroupe } = useGroupCourse(groupeId);
-  const { data: niveaux = [] } = useNiveaux(groupeId);
   // Idée 4 : correction audio (la consigne audio est maintenant sur chaque ligne, 2026-11-04)
   const [correctionAudio, setCorrectionAudio] = useState<Blob | null>(null);
-  // ✍️ Matières prêtes à compléter (2026-10-26) : une ligne par matière, il suffit d'écrire la consigne
-  const [parMatiere, setParMatiere] = useState(true);
-  const lignes = form.lignes;
-  const setLignes = (f: (l: Record<string, string>) => Record<string, string>) => setForm((cur) => ({ ...cur, lignes: f(cur.lignes) }));
-  // ⚙️ Lignes du groupe visé (réglées par groupe, 2026-11-04) ; sans groupe précis : les matières habituelles
-  const groupeCible = groupeId ?? (form.assigned_to === 'group' && form.group_id ? form.group_id : null);
-  const { data: reglagesGroupe } = useReglagesDevoirsGroupe(groupeCible);
-  const lignesVisibles: LigneDevoir[] = (reglagesGroupe?.lignes ?? lignesHabituelles()).filter((l) => l.actif || (lignes[l.key] || '').trim());
-  const lignesRemplies = lignesVisibles.filter((m) => (lignes[m.key] || '').trim());
-  const setPJ = (key: string, next: PieceJointe[]) => setForm((f) => ({ ...f, pj: { ...f.pj, [key]: next } }));
-  const setConsigne = (key: string, url: string | null) => setForm((f) => { const c = { ...f.consignes }; if (url) c[key] = url; else delete c[key]; return { ...f, consignes: c }; });
-  const [reglagesOuverts, setReglagesOuverts] = useState(false);
   const [copierOuvert, setCopierOuvert] = useState(false);
-
+  // 📅 2026-11-11 (Nadia) : en haut, seulement « Pour quand ? » (date + préparer à l'avance), pour tous les élèves de la liste
+  const [quand, setQuand] = useState<{ date_limite: string; programme: boolean }>({ date_limite: '', programme: false });
+  // Carte d'élève à ouvrir (devoir préparé depuis le cahier de texte, ou « 📚 Donner les devoirs » à l'heure du cours)
+  const [eleveAOuvrir, setEleveAOuvrir] = useState<string | null>(ouvrirEleveId ?? null);
+  const devoirsEnAttente = useDevoirsEnAttente();
+  // ⏳ « Continuer » un brouillon depuis le message d'ouverture : la carte du 1er élève qui a un brouillon s'ouvre
   useEffect(() => {
-    const draft = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
-    const remplie = (d: HomeworkDraft) => !!d.titre?.trim() || Object.values(d.lignes || {}).some((v) => v.trim())
-      || Object.values(d.pj || {}).some((a) => a.length > 0) || Object.values(d.consignes || {}).some(Boolean);
-    if (!draft || !remplie(draft)) return;
-    if (takeDraftResume(DRAFT_KEY_HOMEWORK)) {
-      // Choix déjà fait dans le message d'ouverture de l'appli : on reprend directement
-      setForm(prev => ({ ...prev, ...draft, student_ids: draft.student_ids ?? [], source_task_id: draft.source_task_id ?? '', etapes: draft.etapes ?? '', lignes: draft.lignes ?? {}, cibles: draft.cibles ?? {}, audios: draft.audios ?? {}, cible_id: draft.cible_id ?? '', audio_requis: draft.audio_requis ?? false, programme: draft.programme ?? false, pj: draft.pj ?? {}, consignes: draft.consignes ?? {} }));
-      setShowForm(true);
-    } else {
-      setHomeworkDraft(draft);
-    }
+    if (!takeDraftResume(CLE_BROUILLON)) return;
+    const id = Object.keys(lireBrouillons().parEleve)[0];
+    if (id) setEleveAOuvrir(id);
   }, []);
-
-  useEffect(() => {
-    if (!showForm || (!form.titre.trim() && !Object.values(form.lignes).some((v) => v.trim()) && !Object.values(form.pj).some((a) => a.length) && !Object.keys(form.consignes).length)) return;
-    saveDraft(DRAFT_KEY_HOMEWORK, form);
-  }, [showForm, form]);
-
-  // « Supprimer » le brouillon : il part dans la corbeille (Paramètres), jamais effacé directement
-  const trashHomeworkDraft = async () => {
-    const d = loadDraft<HomeworkDraft>(DRAFT_KEY_HOMEWORK);
-    if (d && user) {
-      const ok = await moveToTrash(user.id, 'draft', DRAFT_KEY_HOMEWORK, `Brouillon — nouveau devoir « ${d.titre.slice(0, 80)} »`, { key: DRAFT_KEY_HOMEWORK, data: d });
-      if (!ok) { toast.error('Mise en corbeille impossible — le brouillon est conservé'); return; }
-      toast.success('Brouillon mis dans la corbeille (Paramètres)');
-    }
-    clearDraft(DRAFT_KEY_HOMEWORK);
-    setHomeworkDraft(null);
-  };
 
   // Fetch devoirs with enriched names
   const { data: devoirs = [] } = useQuery({
@@ -247,6 +172,12 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
 
+  const { data: rolesEleves = [] } = useQuery({
+    queryKey: ['admin-devoirs', 'roles-eleves'],
+    queryFn: async () => ((await supabase.from('user_roles').select('user_id').eq('role', 'student')).data || []),
+  });
+  const idsEleves = new Set(rolesEleves.map((r) => r.user_id));
+
   // Fetch approved students
   const { data: eleves = [] } = useQuery({
     queryKey: ['admin-eleves-list'],
@@ -259,127 +190,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       return data || [];
     },
   });
-
-  // Create devoir
-  const createDevoir = useMutation({
-    mutationFn: async () => {
-      // Par matière : un devoir par ligne remplie ; sinon le devoir détaillé du formulaire
-      const items: ItemDevoir[] = parMatiere
-        ? lignesRemplies.map((m) => ({ titre: (lignes[m.key] || '').trim(), type: m.type, cible: form.cibles[m.key] || '', audio: !!form.audios[m.key],
-            pj: form.pj[m.key] || [], consigne: form.consignes[m.key] || null, label: m.perso ? m.label : null, emoji: m.perso ? m.emoji : null }))
-        : [{ titre: form.titre.trim(), type: form.type, cible: form.cible_id, audio: form.audio_requis, pj: form.pj.detail || [], consigne: form.consignes.detail || null, label: null, emoji: null }];
-      if (!form.date_limite) throw new Error('Choisis la date à rendre 📅');
-      if (!items.length || items.some((it) => !it.titre)) throw new Error(parMatiere ? 'Écris au moins une consigne sur une ligne' : 'Le titre est obligatoire');
-      const destinataires = new Set<string>();
-      for (const it of items) (await creerUn(it)).forEach((id) => destinataires.add(id));
-      // 📓 Une seule notification par distribution (idée 4, texte choisi par Nadia)
-      const ids = [...destinataires];
-      const liste = items.map((it) => it.titre).join(' · ');
-      if (ids.length && form.programme && heureVisible) {
-        // Préparé à l'avance : la notification part à l'heure du cours (process-scheduled-notifications, toutes les 5 min)
-        const p = (n: number) => String(n).padStart(2, '0');
-        const jour = `${heureVisible.getFullYear()}-${p(heureVisible.getMonth() + 1)}-${p(heureVisible.getDate())}`;
-        const { error } = await supabase.from('scheduled_notifications').insert({
-          module: 'devoirs', message: liste, start_date: jour, end_date: jour,
-          send_time: `${p(heureVisible.getHours())}:${p(heureVisible.getMinutes())}`, recipients: ids, is_active: true, created_by: user?.id,
-        });
-        if (error) toast.error("La notification de l'heure du cours n'a pas pu être programmée");
-      } else if (ids.length) {
-        sendPushNotification({ userIds: ids, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: liste, data: { url: '/?open=devoirs' } });
-      }
-      return ids.length;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
-      toast.success(parMatiere && lignesRemplies.length > 1 ? `✅ ${lignesRemplies.length} devoirs assignés à ${count} élève(s) !` : `✅ Devoir assigné à ${count} élève(s) !`);
-      clearDraft(DRAFT_KEY_HOMEWORK);
-      setShowForm(false);
-      setForm({ titre: '', type: 'recitation', description: '', lien_lecon: '', date_limite: '', assigned_to: 'all', group_id: '', student_id: '', group_ids: [] as string[], student_ids: [] as string[], source_task_id: '', etapes: '', lignes: {}, cibles: {}, audios: {}, cible_id: '', audio_requis: false, programme: false, pj: {}, consignes: {} });
-    },
-    onError: (err) => toast.error(err.message),
-  });
-  /** Crée un devoir (titre + matière + documents + consigne audio) pour les destinataires choisis ; renvoie les élèves */
-  const creerUn = async ({ titre, type, cible, audio, pj, consigne, label, emoji }: ItemDevoir): Promise<string[]> => {
-    {
-      const payload: TablesInsert<'devoirs'> = {
-        titre, type,
-        cible_module: cible ? type : null, cible_id: cible || null, audio_requis: audio,
-        consigne_audio_url: consigne,
-        pieces_jointes: pj as unknown as Json, matiere_label: label, matiere_emoji: emoji,
-        description: form.description || null,
-        lien_lecon: form.lien_lecon || null,
-        date_limite: form.date_limite || null,
-        etapes: form.etapes.split('\n').map((l) => l.trim()).filter(Boolean),
-        visible_a: form.programme && heureVisible ? heureVisible.toISOString() : null,
-        assigned_to: form.assigned_to,
-        created_by: user?.id,
-      };
-      if (form.assigned_to === 'group' && form.group_id) payload.group_id = form.group_id;
-      if (form.assigned_to === 'student' && form.student_id) payload.student_id = form.student_id;
-
-      // Determine recipients for push notification
-      let destinataires: string[] = [];
-
-      if (form.assigned_to === 'students' && form.student_ids.length > 0) {
-        // Plusieurs élèves précis (2026-10-07) : un devoir par élève coché
-        const insertResults = await Promise.all(
-          form.student_ids.map(studentId =>
-            supabase.from('devoirs').insert({ ...payload, assigned_to: 'student', student_id: studentId })
-          )
-        );
-        const firstError = insertResults.find(r => r.error)?.error;
-        if (firstError) throw firstError;
-        destinataires = [...new Set(form.student_ids)];
-      } else if (form.assigned_to === 'groups' && form.group_ids.length > 0) {
-        // Insert one devoir per selected group
-        const insertResults = await Promise.all(
-          form.group_ids.map(groupId =>
-            supabase.from('devoirs').insert({ ...payload, assigned_to: 'group', group_id: groupId })
-          )
-        );
-        const firstError = insertResults.find(r => r.error)?.error;
-        if (firstError) throw firstError;
-
-        // Collect all recipients from all selected groups (deduplicated)
-        const { data: membres } = await supabase
-          .from('student_group_members')
-          .select('user_id')
-          .in('group_id', form.group_ids);
-        if (membres) {
-          const seen = new Set<string>();
-          for (const m of membres) { if (!seen.has(m.user_id)) { seen.add(m.user_id); destinataires.push(m.user_id); } }
-        }
-      } else {
-        const { error } = await supabase.from('devoirs').insert(payload);
-        if (error) throw error;
-
-        if (form.assigned_to === 'all') {
-          const { data: allProfiles } = await supabase
-            .from('profiles')
-            .select('user_id')
-            .eq('is_approved', true);
-          if (allProfiles) destinataires = allProfiles.map(p => p.user_id);
-        } else if (form.assigned_to === 'group' && form.group_id) {
-          const { data: membres } = await supabase
-            .from('student_group_members')
-            .select('user_id')
-            .eq('group_id', form.group_id);
-          if (membres) destinataires = membres.map(m => m.user_id);
-        } else if (form.assigned_to === 'student' && form.student_id) {
-          destinataires = [form.student_id];
-        }
-      }
-
-      // La ligne « 📚 Devoirs à préparer » d'origine est faite
-      if (form.source_task_id) {
-        const now = new Date().toISOString();
-        await supabase.from('admin_tasks').update({ done: true, done_at: now, updated_at: now }).eq('id', form.source_task_id).eq('done', false);
-      }
-
-      return destinataires;
-    }
-  };
 
   // Delete devoir
   const deleteDevoir = useMutation({
@@ -470,13 +280,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
 
   // Ouvert depuis un groupe (2026-10-26, demande de Nadia) : seulement les élèves de CE groupe
   const membresGroupe = groupeId ? new Set(memberships.filter((m) => m.group_id === groupeId).map((m) => m.user_id)) : null;
-  const elevesVus = membresGroupe ? eleves.filter((e) => membresGroupe.has(e.user_id)) : eleves;
+  // « Général » (2026-11-11) : tous les ÉLÈVES (sans les comptes enseignante / parents), pour leur donner leurs devoirs un par un
+  const elevesVus = membresGroupe ? eleves.filter((e) => membresGroupe.has(e.user_id)) : eleves.filter((e) => idsEleves.has(e.user_id));
   const nomGroupe = groupeId ? groupes.find((g) => g.id === groupeId)?.name : null;
-  // Dans le formulaire : élèves du groupe + ceux déjà choisis (un brouillon peut en contenir d'autres)
-  const elevesFormulaire = membresGroupe
-    ? eleves.filter((e) => membresGroupe.has(e.user_id) || e.user_id === form.student_id || form.student_ids.includes(e.user_id))
-    : eleves;
-
   // Group devoirs by student
   const devoirsParEleve = elevesVus.map(eleve => {
     const devoirsEleve = devoirs.filter(d =>
@@ -493,6 +299,14 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     queryFn: async () => ((await supabase.from('devoir_vues').select('devoir_id, student_id, kind')).data || []),
   });
   const aVu = (devoirId: string, eleveId: string, kind: 'audio' | 'document') => vues.some((v) => v.devoir_id === devoirId && v.student_id === eleveId && v.kind === kind);
+
+  useEffect(() => {
+    if (quand.date_limite) return;
+    if (prochainCours) { setQuand((q) => (q.date_limite ? q : { ...q, date_limite: toLocalInput(prochainCours) })); return; }
+    const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3);
+    const p = (n: number) => String(n).padStart(2, '0');
+    setQuand((q) => (q.date_limite ? q : { ...q, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` }));
+  }, [prochainCours, quand.date_limite]);
 
   // 🔄 Chaque devoir de chaque élève, rangé : Cette semaine / Semaine passée / Historique / À rattraper
   const groupesDe = (id: string) => memberships.filter((m) => m.user_id === id).map((m) => m.group_id);
@@ -522,64 +336,9 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
   // 🕑 Idée 2 : heure où les devoirs préparés à l'avance apparaissent (début du prochain cours) et leur date à rendre
   const heureVisible = prochainCoursVu;
 
-  // 💎 Maximum de devoirs par semaine des groupes visés (réglage de chaque groupe, 2026-11-04)
-  const { data: maxParGroupe = [] } = useQuery({
-    queryKey: ['group-devoir-settings', 'max'],
-    queryFn: async () => ((await supabase.from('group_devoir_settings').select('group_id, max_devoirs')).data || []),
-  });
-  const groupesVises = groupeCible ? [groupeCible] : form.assigned_to === 'groups' ? form.group_ids : [];
-  const lundi = lundiCourant(now).getTime();
-  const nbNouveaux = parMatiere ? lignesRemplies.length : (form.titre.trim() ? 1 : 0);
-  const compteurs = groupesVises.map((g) => ({
-    g, nom: groupes.find((x) => x.id === g)?.name ?? 'Groupe',
-    max: maxParGroupe.find((x) => x.group_id === g)?.max_devoirs ?? null,
-    deja: devoirs.filter((d) => d.group_id === g && new Date(d.created_at || 0).getTime() >= lundi).length,
-  }));
-
-  // ⚡ Idée 6 : modèles de devoirs (avec documents et consigne audio)
-  const { data: modeles = [] } = useQuery({
-    queryKey: ['devoir-modeles'],
-    queryFn: async () => ((await supabase.from('devoir_modeles').select('*').order('created_at', { ascending: false })).data || []),
-  });
-  const [gererModeles, setGererModeles] = useState(false);
-  const [modeleASupprimer, setModeleASupprimer] = useState<{ id: string; titre: string } | null>(null);
-  const matiereDeType = (t: string) => MATIERES.find((m) => m.type === t)?.emoji ?? '✏️';
-  const garderModele = async (m: LigneDevoir) => {
-    const titre = (lignes[m.key] || '').trim();
-    if (!titre) return;
-    const { error } = await supabase.from('devoir_modeles').insert({
-      titre, type: m.type, matiere_label: m.perso ? m.label : null, matiere_emoji: m.perso ? m.emoji : null, ligne_key: m.key,
-      pieces_jointes: (form.pj[m.key] || []) as unknown as Json, consigne_audio_url: form.consignes[m.key] || null,
-      cible_id: form.cibles[m.key] || null, audio_requis: !!form.audios[m.key], created_by: user?.id ?? null,
-    });
-    if (error) { toast.error(error.message); return; }
-    queryClient.invalidateQueries({ queryKey: ['devoir-modeles'] });
-    toast.success(`⚡ Modèle « ${titre} » gardé : touche-le la prochaine fois pour remplir la ligne`);
-  };
-  const appliquerModele = (m: (typeof modeles)[number]) => {
-    const ligne = lignesVisibles.find((l) => l.key === m.ligne_key) ?? lignesVisibles.find((l) => l.type === m.type && !l.perso) ?? lignesVisibles.find((l) => l.type === m.type);
-    if (!ligne) { toast.error('Cette ligne n\'est pas affichée pour ce groupe (⚙️ Lignes et maximum)'); return; }
-    setForm((f) => ({
-      ...f, lignes: { ...f.lignes, [ligne.key]: m.titre }, pj: { ...f.pj, [ligne.key]: asPJ(m.pieces_jointes) },
-      consignes: m.consigne_audio_url ? { ...f.consignes, [ligne.key]: m.consigne_audio_url } : f.consignes,
-      cibles: m.cible_id ? { ...f.cibles, [ligne.key]: m.cible_id } : f.cibles, audios: { ...f.audios, [ligne.key]: m.audio_requis },
-    }));
-    toast.success(`⚡ « ${m.titre} » ajouté sur la ligne ${ligne.emoji} ${ligne.label}`);
-  };
-  const supprimerModele = async (id: string) => {
-    const m = modeles.find((x) => x.id === id);
-    if (!m || !user) return;
-    try {
-      await trashThenDelete({ userId: user.id, type: 'devoir_modele', id, label: `⚡ Modèle « ${m.titre} »`, data: m, remove: () => supabase.from('devoir_modeles').delete().eq('id', id) });
-      queryClient.invalidateQueries({ queryKey: ['devoir-modeles'] });
-      toast.success('Modèle supprimé (dans la corbeille de Paramètres)');
-    } catch (e) { toast.error(e instanceof Error ? e.message : 'Suppression impossible'); }
-  };
-
   // 📋 Devoirs précédents pas faits sur lesquels Nadia n'a pas encore choisi (rattraper ou historique)
   const nonDecides = lignesProf.filter((l) => l.rattraper && !l.decision);
   const [decisionsOuvert, setDecisionsOuvert] = useState(false);
-  const [formApresDecisions, setFormApresDecisions] = useState(false);
   const decisionsDemandees = useRef(false);
   useEffect(() => {
     // Ouvert depuis « Distribuer les devoirs » d'un groupe : la liste s'affiche d'abord, une fois par ouverture
@@ -605,38 +364,10 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const ouvrirFormulaire = () => {
-    if (showForm && (form.titre.trim() || Object.values(form.lignes).some((v) => v.trim()))) toast('📝 Brouillon gardé', { description: 'Tu le retrouveras en rouvrant « Nouveau devoir ».' });
-    if (!showForm && groupeId && form.assigned_to === 'all' && !form.group_id) setForm((f) => ({ ...f, assigned_to: 'group', group_id: groupeId }));
-    if (!showForm && !form.date_limite) {
-      if (prochainCours) setForm((f) => ({ ...f, date_limite: toLocalInput(prochainCours) }));
-      else { const d = new Date(); d.setHours(18, 0, 0, 0); do d.setDate(d.getDate() + 1); while (d.getDay() !== 3); const p = (n: number) => String(n).padStart(2, '0'); setForm((f) => ({ ...f, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` })); }
-    }
-    setShowForm(!showForm);
-  };
-  const nouveauDevoir = () => {
-    // Avant de donner de nouveaux devoirs : décider pour les anciens pas faits (demande de Nadia, 2026-10-27)
-    if (!showForm && nonDecides.length) { setFormApresDecisions(true); setDecisionsOuvert(true); return; }
-    ouvrirFormulaire();
-  };
-  const fermerDecisions = () => {
-    setDecisionsOuvert(false);
-    if (formApresDecisions) { setFormApresDecisions(false); if (!showForm) ouvrirFormulaire(); }
-  };
+  const fermerDecisions = () => setDecisionsOuvert(false);
 
   const toggleEleveRendu = (id: string) =>
     setElevesRendusOuverts(prev => ({ ...prev, [id]: !prev[id] }));
-
-  // ✅ Bouton « Assigner » : en haut dans « Pour quand et pour qui ? » ET en bas du formulaire (2026-11-05, demande de Nadia : ne pas avoir à remonter)
-  const boutonAssigner = (
-    <Button onClick={() => {
-        const trop = compteurs.filter((c) => c.max !== null && c.deja + nbNouveaux > c.max);
-        if (trop.length) askValidation('Maximum de devoirs dépassé', trop.map((c) => `« ${c.nom} » : ${c.max} devoir${(c.max ?? 0) > 1 ? 's' : ''} maximum par semaine (déjà ${c.deja}, + ${nbNouveaux}).`).join(' ') + ' Le donner quand même ?', () => createDevoir.mutate());
-        else createDevoir.mutate();
-      }} disabled={(parMatiere ? lignesRemplies.length === 0 : !form.titre) || !form.date_limite || createDevoir.isPending || (form.assigned_to === 'groups' && form.group_ids.length === 0) || (form.assigned_to === 'students' && form.student_ids.length === 0)} className="w-full">
-        {parMatiere && lignesRemplies.length > 1 ? `✅ Assigner les ${lignesRemplies.length} devoirs` : '✅ Assigner le devoir'}
-      </Button>
-  );
 
   return (
     <div className="space-y-4">
@@ -647,253 +378,37 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">📚 Devoirs</h2>
         {groupeId && (
-          <Button onClick={() => setCopierOuvert(true)} size="sm" variant="outline" className="ms-auto me-2">📋 Copier vers un groupe</Button>
+          <Button onClick={() => setCopierOuvert(true)} size="sm" variant="outline" className="ms-auto">📋 Copier vers un groupe</Button>
         )}
-        <Button onClick={nouveauDevoir} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Nouveau devoir <DraftDot draftKey="dinislam_homework" className="ml-1.5" />
-        </Button>
       </div>
 
-      {/* Create form */}
-      {showForm && (
-        <Card className="border-dashed border-2 border-primary/30">
-          <CardContent className="p-4 space-y-3">
-            {/* 📅 Quand et pour qui (2026-11-05, demande de Nadia) : en haut du formulaire, dans son cadre */}
-            <div className="rounded-2xl border-2 border-sky-300 dark:border-sky-800 bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/40 dark:to-indigo-950/30 p-3 space-y-3 shadow-sm">
-              <p className="text-sm font-extrabold text-sky-900 dark:text-sky-100">📅 Pour quand et pour qui ?</p>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">📅 Date à rendre * (pas de cours pendant les vacances : choisis la bonne date)</label>
-                <Input type="datetime-local" value={form.date_limite}
-                  onChange={e => setForm({ ...form, date_limite: e.target.value })} />
-                {form.date_limite && (
-                  <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>
-                )}
-              </div>
-              {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
-              <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${form.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
-                <input type="checkbox" checked={form.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
-                  onChange={(e) => {
-                    const on = e.target.checked;
-                    // Visibles au début du cours → à rendre pour le cours d'après
-                    setForm((f) => ({ ...f, programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : f.date_limite) }));
-                  }} />
-                <span className="text-xs">
-                  <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
-                  {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
-                </span>
-              </label>
-              <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value, group_id: '', group_ids: [], student_ids: [] })}
-                className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-                <option value="all">👥 Tous les élèves</option>
-                <option value="group">👨‍👩‍👧 Un groupe</option>
-                <option value="groups">👨‍👩‍👧 Plusieurs groupes</option>
-                <option value="student">👤 Un élève</option>
-                <option value="students">👥 Plusieurs élèves</option>
-              </select>
-              {niveaux.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-bold text-muted-foreground">🎚️ Niveau :</span>
-                  {niveaux.map((n) => {
-                    const actif = form.assigned_to === 'students' && form.student_ids.length === n.member_ids.length && n.member_ids.every((i) => form.student_ids.includes(i));
-                    return (
-                      <button key={n.id} type="button" aria-pressed={actif} disabled={!n.member_ids.length}
-                        onClick={() => setForm((f) => ({ ...f, assigned_to: 'students', student_ids: [...n.member_ids], group_id: '', group_ids: [] }))}
-                        className={`rounded-full px-3 py-1 text-xs font-bold border ${actif ? 'bg-[#2457a5] text-white border-[#2457a5]' : 'bg-card'} disabled:opacity-40`}>
-                        {n.name} ({n.member_ids.length})
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {form.assigned_to === 'group' && (
-                <select value={form.group_id} onChange={e => setForm({ ...form, group_id: e.target.value })}
-                  className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-                  <option value="">Sélectionner un groupe...</option>
-                  {groupes.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              )}
-              {form.assigned_to === 'groups' && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium">Sélectionner les groupes :</p>
-                  <div className="flex flex-wrap gap-2">
-                    {groupes.map((g) => {
-                      const selected = form.group_ids.includes(g.id);
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          onClick={() => setForm(prev => ({
-                            ...prev,
-                            group_ids: selected
-                              ? prev.group_ids.filter(id => id !== g.id)
-                              : [...prev.group_ids, g.id],
-                          }))}
-                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                            selected
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-background text-foreground border-border hover:bg-muted'
-                          }`}
-                        >
-                          {selected ? '✓ ' : ''}{g.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {form.group_ids.length > 0 && (
-                    <p className="text-xs text-primary font-medium">{form.group_ids.length} groupe(s) sélectionné(s)</p>
-                  )}
-                </div>
-              )}
-              {form.assigned_to === 'student' && (
-                <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })}
-                  className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-                  <option value="">Sélectionner un élève...</option>
-                  {elevesFormulaire.map((e) => (
-                    <option key={e.user_id} value={e.user_id}>{e.full_name || 'Sans nom'}</option>
-                  ))}
-                </select>
-              )}
-              {form.assigned_to === 'students' && (
-                <div className="space-y-2 mb-3">
-                  <p className="text-xs text-muted-foreground font-medium">Sélectionner les élèves :</p>
-                  <div className="flex flex-wrap gap-2">
-                    {elevesFormulaire.map((e) => {
-                      const selected = form.student_ids.includes(e.user_id);
-                      return (
-                        <button
-                          key={e.user_id}
-                          type="button"
-                          onClick={() => setForm(prev => ({
-                            ...prev,
-                            student_ids: selected ? prev.student_ids.filter(id => id !== e.user_id) : [...prev.student_ids, e.user_id],
-                          }))}
-                          className={`px-3 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                            selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-muted'
-                          }`}
-                        >
-                          {selected ? '✓ ' : ''}{e.full_name || 'Sans nom'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {form.student_ids.length > 0 && (
-                    <p className="text-xs text-primary font-medium">{form.student_ids.length} élève(s) sélectionné(s)</p>
-                  )}
-                </div>
-              )}
-              {boutonAssigner}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-foreground">✏️ Créer un devoir</p>
-              {compteurs.filter((c) => c.max !== null).map((c) => (
-                <span key={c.g} className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${c.deja + nbNouveaux > (c.max ?? 99) ? 'border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200' : 'bg-muted'}`}>
-                  💎 {compteurs.length > 1 ? `${c.nom} : ` : ''}{c.deja + nbNouveaux} / max {c.max} cette semaine
-                </span>
-              ))}
-            </div>
-            {groupeCible && (
-              <button type="button" onClick={() => setReglagesOuverts(true)} className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs font-bold text-start">
-                ⚙️ Lignes et maximum du groupe « {groupes.find((g) => g.id === groupeCible)?.name ?? ''} »
-              </button>
-            )}
-            <div className="flex rounded-xl bg-muted p-1">
-              <button type="button" onClick={() => setParMatiere(true)} aria-pressed={parMatiere}
-                className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${parMatiere ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'}`}>✍️ Par matière</button>
-              <button type="button" onClick={() => setParMatiere(false)} aria-pressed={!parMatiere}
-                className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${!parMatiere ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'}`}>📝 Devoir détaillé</button>
-            </div>
-            {parMatiere ? (
-              <div className="space-y-1.5">
-                <p className="text-xs text-muted-foreground">Écris la consigne sur la ligne de la matière : un devoir (et un diamant 💎) par ligne remplie. Au bout de chaque ligne : 📎 documents, 📷 photo, 🎙️ consigne audio (l'élève l'entend en premier).</p>
-                {/* ⚡ Idée 6 : modèles (avec leurs documents et leur consigne audio) */}
-                {modeles.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 px-2 py-1.5">
-                    <span className="text-xs font-bold">⚡ Modèles :</span>
-                    {modeles.map((m) => (
-                      <span key={m.id} className="relative">
-                        <button type="button" onClick={() => appliquerModele(m)} className="rounded-full border bg-card px-2.5 py-1 text-xs font-semibold text-start [overflow-wrap:anywhere]">
-                          {m.matiere_emoji || matiereDeType(m.type)} {m.titre}{m.consigne_audio_url ? ' 🎧' : ''}{asPJ(m.pieces_jointes).length ? ' 📎' : ''}
-                        </button>
-                        {gererModeles && (
-                          <button type="button" aria-label={`Supprimer le modèle ${m.titre}`} onClick={() => setModeleASupprimer({ id: m.id, titre: m.titre })}
-                            className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-[#EF4444] text-white text-[11px] font-extrabold grid place-items-center">✕</button>
-                        )}
-                      </span>
-                    ))}
-                    <button type="button" onClick={() => setGererModeles((v) => !v)} className="text-[11px] font-bold underline">{gererModeles ? 'Terminé' : 'Gérer'}</button>
-                  </div>
-                )}
-                {lignesVisibles.map((m) => {
-                  const rempli = !!(lignes[m.key] || '').trim();
-                  return (
-                    <div key={m.key} data-ligne className={`rounded-xl px-2 py-1.5 ${rempli ? 'bg-sky-50 dark:bg-sky-950/30' : ''}`}>
-                      <OutilsDeLigne ligneKey={m.key} ligneNom={m.label} pj={form.pj[m.key] || []} audio={form.consignes[m.key] || null}
-                        setPJ={(n) => setPJ(m.key, n)} setAudio={(u) => setConsigne(m.key, u)}>
-                        {(icones) => (
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
-                            <span className="min-w-0 flex-1 sm:flex-none sm:w-[7.5rem] shrink-0 text-sm font-semibold [overflow-wrap:anywhere]">{m.emoji} {m.label}</span>
-                            <Input value={lignes[m.key] || ''} placeholder={m.exemple ? `ex. ${m.exemple}` : 'la consigne…'} aria-label={`Devoir de ${m.label}`} className="order-last basis-full min-w-0 sm:order-none sm:basis-auto sm:flex-1"
-                              onChange={(e) => setLignes((l) => ({ ...l, [m.key]: e.target.value }))}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('[data-ligne]')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
-                            {icones}
-                          </div>
-                        )}
-                      </OutilsDeLigne>
-                      {/* 📍 Leçon / sourate / nom… ouvert par « Commencer mon travail » · 🎙️ audio demandé · ⚡ modèle */}
-                      {rempli && (
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5 sm:ps-[7.5rem]">
-                          {!m.perso && <CibleSelect type={m.type} value={form.cibles[m.key] || ''} onChange={(v) => setForm((f) => ({ ...f, cibles: { ...f.cibles, [m.key]: v } }))} />}
-                          <label className="flex items-center gap-1.5 text-xs font-semibold">
-                            <input type="checkbox" checked={!!form.audios[m.key]} onChange={(e) => setForm((f) => ({ ...f, audios: { ...f.audios, [m.key]: e.target.checked } }))} className="h-4 w-4 accent-orange-500" />
-                            🎙️ audio demandé
-                          </label>
-                          <button type="button" onClick={() => void garderModele(m)} className="rounded-full border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-[11px] font-bold">⚡ Garder comme modèle</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (<>
-            <OutilsDeLigne ligneKey="detail" ligneNom="devoir détaillé" pj={form.pj.detail || []} audio={form.consignes.detail || null}
-              setPJ={(n) => setPJ('detail', n)} setAudio={(u) => setConsigne('detail', u)}>
-              {(icones) => (
-                <div className="flex items-center gap-2">
-                  <Input placeholder="Titre du devoir *" value={form.titre} className="min-w-0"
-                    onChange={e => setForm({ ...form, titre: e.target.value })} />
-                  {icones}
-                </div>
-              )}
-            </OutilsDeLigne>
-            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}
-              className="w-full border rounded-xl p-3 mb-3 text-sm bg-white" style={{ position: 'relative', zIndex: 300 }}>
-              {TYPE_OPTIONS.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            <div className="flex flex-wrap items-center gap-2">
-              <CibleSelect type={form.type} value={form.cible_id} onChange={(v) => setForm({ ...form, cible_id: v })} />
-              <label className="flex items-center gap-1.5 text-xs font-semibold">
-                <input type="checkbox" checked={form.audio_requis} onChange={(e) => setForm({ ...form, audio_requis: e.target.checked })} className="h-4 w-4 accent-orange-500" />
-                🎙️ audio demandé
-              </label>
-            </div>
-            <Textarea placeholder="Description (optionnel)" value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })} rows={2} />
-            <Input placeholder="Lien vers la leçon (optionnel)" value={form.lien_lecon}
-              onChange={e => setForm({ ...form, lien_lecon: e.target.value })} />
-            <div className="space-y-1 mb-3">
-              <label className="text-xs font-medium text-muted-foreground">💎 Étapes (optionnel, une par ligne) : le diamant de l'élève se remplit à chaque étape cochée</label>
-              <Textarea placeholder={'Ex. :\nLigne 1\nLigne 2\nLigne 3'} value={form.etapes} rows={3}
-                onChange={e => setForm({ ...form, etapes: e.target.value })} />
-            </div>
-            </>)}
-            <div className="border-t pt-3">{boutonAssigner}</div>
-          </CardContent>
-        </Card>
+      {devoirsEnAttente > 0 && (
+        <p className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm">📡 {devoirsEnAttente} distribution{devoirsEnAttente > 1 ? 's' : ''} de devoirs pas encore envoyée{devoirsEnAttente > 1 ? 's' : ''} (hors connexion) : elle{devoirsEnAttente > 1 ? 's partiront' : ' partira'} toute seule au retour du réseau.</p>
       )}
+
+      {/* 📅 Pour quand ? (2026-11-11, Nadia : on garde la date et « Préparer à l'avance », le reste se fait élève par élève) */}
+      <div className="rounded-2xl border-2 border-sky-300 dark:border-sky-800 bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-sky-950/40 dark:to-indigo-950/30 p-3 space-y-3 shadow-sm">
+        <p className="text-sm font-extrabold text-sky-900 dark:text-sky-100">📅 Pour quand ?</p>
+        <div className="space-y-1">
+          <label htmlFor="devoirs-date" className="text-xs font-medium text-muted-foreground">📅 Date à rendre * (pas de cours pendant les vacances : choisis la bonne date)</label>
+          <Input id="devoirs-date" type="datetime-local" value={quand.date_limite} onChange={(e) => setQuand((q) => ({ ...q, date_limite: e.target.value }))} />
+          {quand.date_limite && <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>}
+        </div>
+        {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
+        <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${quand.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
+          <input type="checkbox" checked={quand.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
+            onChange={(e) => {
+              const on = e.target.checked;
+              // Visibles au début du cours → à rendre pour le cours d'après
+              setQuand((q) => ({ programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : q.date_limite) }));
+            }} />
+          <span className="text-xs">
+            <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
+            {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
+          </span>
+        </label>
+        <p className="text-xs text-sky-900 dark:text-sky-100">👇 Touche un élève dans la liste pour lui donner ses devoirs.</p>
+      </div>
 
       {/* 💎 Chemin de la semaine automatique (2026-10-08) — sous le formulaire depuis le 2026-11-05 (demande de Nadia) */}
       <WeeklyProgramAdmin />
@@ -927,7 +442,22 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         })()}
         {/* 🔄 Rotation à l'heure du cours (2026-10-27) : onglets, « À rattraper », bilan, historique. Depuis un groupe : TOUS ses élèves */}
         <RotationProf
-          eleves={devoirsParEleve.filter(({ devoirsEleve }) => membresGroupe || devoirsEleve.length > 0).map(({ eleve }) => eleve)}
+          eleves={devoirsParEleve.map(({ eleve }) => eleve)}
+          ouvrirEleveId={eleveAOuvrir}
+          aUnBrouillon={(id) => !!lireBrouillons().parEleve[id]}
+          formulaire={(e, suivant) => {
+            const autres = elevesVus.filter((x) => x.user_id !== e.user_id);
+            const siens = devoirsParEleve.find((x) => x.eleve.user_id === e.user_id)?.devoirsEleve ?? [];
+            const passes = lignesProf.filter((l) => l.eleveId === e.user_id && l.rang === 'passee')
+              .map((l) => devoirs.find((d) => d.id === l.devoirId)).filter((d): d is NonNullable<typeof d> => !!d)
+              .map((d) => ({ titre: d.titre, type: d.type, cible_id: d.cible_id, matiere_emoji: d.matiere_emoji }));
+            return (
+              <FormulaireDevoirEleve key={e.user_id} eleve={e} groupeId={groupeId ?? null} autres={autres}
+                dateLimite={quand.date_limite} visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null}
+                dejaCetteSemaine={siens.filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
+                semainePassee={passes} onSuivant={suivant} />
+            );
+          }}
           lignes={lignesProf} prochainCours={prochainCoursVu} coursHistorique={coursHisto}
           onDecision={(items, decision) => {
             enregistrerDecisions.mutate(items.map((it) => ({ ...it, decision })));
@@ -938,7 +468,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
             }
           }}
           onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
-          onDonner={nouveauDevoir}
+          onDonner={() => setEleveAOuvrir(elevesVus[0]?.user_id ?? null)}
           onValider={(id) => {
             // Ouvre ses rendus (écoute, ✅ Valider, 🔄 À refaire) et descend jusqu'à eux
             setElevesRendusOuverts((prev) => ({ ...prev, [id]: true }));
@@ -1092,21 +622,7 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         onClose={fermerDecisions}
         onSave={(choix) => { enregistrerDecisions.mutate(choix); fermerDecisions(); }} />
 
-      {/* Dialog récupération brouillon devoir */}
-      {groupeCible && <ReglagesDevoirsGroupe groupId={groupeCible} groupName={groupes.find((g) => g.id === groupeCible)?.name ?? 'Groupe'} open={reglagesOuverts} onClose={() => setReglagesOuverts(false)} />}
-      {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} />}
-      <AlertDialog open={!!modeleASupprimer} onOpenChange={(o) => { if (!o) setModeleASupprimer(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le modèle « {modeleASupprimer?.titre} » ?</AlertDialogTitle>
-            <AlertDialogDescription>Il ira dans la corbeille de Paramètres. Les devoirs déjà donnés ne changent pas.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (modeleASupprimer) void supprimerModele(modeleASupprimer.id); }}>Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} memberships={memberships} />}
       {validationDialog}
       {/* Supprimer un devoir : confirmation d'abord, il part dans la corbeille (corrigé le 2026-10-26) */}
       <AlertDialog open={!!devoirToDelete} onOpenChange={(open) => { if (!open) setDevoirToDelete(null); }}>
@@ -1124,37 +640,6 @@ const AdminHomework = ({ onBack, groupeId }: AdminHomeworkProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!homeworkDraft} onOpenChange={(open) => { if (!open) setHomeworkDraft(null); }}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>⏳ Action inachevée</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
-              Tu as commencé à créer un devoir :{" "}
-              <span className="font-semibold text-foreground">« {homeworkDraft?.titre} »</span>
-              <br />Souhaites-tu continuer ?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex gap-2 flex-row justify-end">
-            <button
-              onClick={trashHomeworkDraft}
-              className="px-4 py-2 text-sm rounded-md border border-destructive text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              Supprimer
-            </button>
-            <button
-              onClick={() => {
-                if (!homeworkDraft) return;
-                setForm({ ...homeworkDraft, group_ids: homeworkDraft.group_ids ?? [], student_ids: homeworkDraft.student_ids ?? [], source_task_id: homeworkDraft.source_task_id ?? '', etapes: homeworkDraft.etapes ?? '', lignes: homeworkDraft.lignes ?? {}, cibles: homeworkDraft.cibles ?? {}, audios: homeworkDraft.audios ?? {}, cible_id: homeworkDraft.cible_id ?? '', audio_requis: homeworkDraft.audio_requis ?? false, programme: homeworkDraft.programme ?? false, pj: homeworkDraft.pj ?? {}, consignes: homeworkDraft.consignes ?? {} });
-                setShowForm(true);
-                setHomeworkDraft(null);
-              }}
-              className="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Continuer
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

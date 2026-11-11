@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
@@ -42,7 +42,13 @@ function pastille(l: LigneProf, passe: boolean) {
  * bandeau à l'heure du cours, boîte « 🔁 À rattraper dans le groupe », onglets Cette semaine · Semaine passée (bilan, idée 1)
  * · Historique (bande de semaines + par matière), « 🔁 Redonner » un devoir pas fait (idée 3).
  */
-export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onDonner, onValider }: {
+export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onDonner, onValider, formulaire, ouvrirEleveId, aUnBrouillon }: {
+  /** 📝 Idée 4 : l'élève a un brouillon de devoirs pas encore donnés */
+  aUnBrouillon?: (eleveId: string) => boolean;
+  /** 📚 2026-11-11 (Nadia, maquette A) : le formulaire des nouveaux devoirs de l'élève, dans sa carte (onglet « Cette semaine ») */
+  formulaire?: (eleve: { user_id: string; full_name: string | null }, suivant: (() => void) | undefined) => ReactNode;
+  /** Carte d'élève à ouvrir tout de suite (devoir préparé depuis le cahier de texte) */
+  ouvrirEleveId?: string | null;
   eleves: { user_id: string; full_name: string | null }[];
   lignes: LigneProf[];
   prochainCours: Date | null;
@@ -54,7 +60,13 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   onValider?: (studentId: string) => void;
 }) {
   const [onglet, setOnglet] = useState<Onglet>('semaine');
-  const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
+  const [ouverts, setOuverts] = useState<Record<string, boolean>>(() => (ouvrirEleveId ? { [`semaine-${ouvrirEleveId}`]: true } : {}));
+  useEffect(() => {
+    if (!ouvrirEleveId) return;
+    setOnglet('semaine');
+    setOuverts((o) => ({ ...o, [`semaine-${ouvrirEleveId}`]: true }));
+    setTimeout(() => document.getElementById(`carte-eleve-${ouvrirEleveId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+  }, [ouvrirEleveId]);
   const [semaineChoisie, setSemaineChoisie] = useState<string | null>(null);
   const [matiere, setMatiere] = useState<string | null>(null);
   const bande = useRef<HTMLDivElement>(null);
@@ -109,22 +121,31 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   /** Une carte par élève (tous les élèves, même sans devoir dans l'onglet).
    *  Tri (2026-10-30, demande de Nadia) : d'abord ceux qui ont un devoir à valider (carte déjà ouverte),
    *  puis ceux qui ont des devoirs pas faits, puis ceux qui ont des devoirs, puis les autres ; par prénom ensuite. */
-  const parEleve = (liste: LigneProf[], passe: boolean) => eleves.map((e) => {
+  const parEleve = (liste: LigneProf[], passe: boolean) => { const ordre = eleves.map((e) => {
     const siens = liste.filter((l) => l.eleveId === e.user_id);
     return { e, siens, pasFaits: siens.filter((l) => !l.fait).length, aValider: siens.filter((l) => l.statut === 'rendu').length };
   }).sort((a, b) => b.aValider - a.aValider || (passe ? b.pasFaits - a.pasFaits : 0) || Number(b.siens.length > 0) - Number(a.siens.length > 0)
-    || (a.e.full_name || '').localeCompare(b.e.full_name || '', 'fr'))
-    .map(({ e, siens, pasFaits, aValider }) => {
+    || (a.e.full_name || '').localeCompare(b.e.full_name || '', 'fr'));
+    return ordre.map(({ e, siens, pasFaits, aValider }, rangEleve) => {
     const couleur = aValider ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20'
       : siens.length && !pasFaits ? 'border-green-400 bg-green-50 dark:bg-green-950/20'
       : passe && pasFaits ? 'border-red-300 bg-red-50/60 dark:bg-red-950/20' : 'border-border bg-muted/30';
     const cle = `${onglet}-${e.user_id}`;
     const ouvert = ouverts[cle] ?? aValider > 0; // un devoir à valider : la carte est déjà ouverte
+    // ‹ › Idée 6 : élève suivant (ferme cette carte, ouvre la suivante et descend jusqu'à elle)
+    const prochain = ordre[rangEleve + 1]?.e;
+    const suivant = prochain ? () => {
+      setOuverts((o) => ({ ...o, [cle]: false, [`${onglet}-${prochain.user_id}`]: true }));
+      setTimeout(() => document.getElementById(`carte-eleve-${prochain.user_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    } : undefined;
     return (
-      <div key={e.user_id} className={cn('mb-2 rounded-xl overflow-hidden border-2', couleur)}>
+      <div key={e.user_id} id={onglet === 'semaine' ? `carte-eleve-${e.user_id}` : undefined} className={cn('mb-2 rounded-xl overflow-hidden border-2 scroll-mt-24', couleur)}>
         <button type="button" onClick={() => setOuverts((o) => ({ ...o, [cle]: !ouvert }))} className="w-full flex items-center gap-2 p-3 text-left">
           <span className="flex-1 min-w-0 font-semibold text-sm [overflow-wrap:anywhere]">👤 {e.full_name} ({siens.length} devoir{siens.length > 1 ? 's' : ''})</span>
           {aValider > 0 && <span className="shrink-0 rounded-full bg-orange-500 px-2 h-5 grid place-items-center text-[11px] font-bold text-white">🟠 {aValider} à valider</span>}
+          {/* 🟢 Idée 7 : élève qui a déjà ses devoirs cette semaine */}
+          {!passe && aUnBrouillon?.(e.user_id) && <span className="shrink-0 rounded-full bg-amber-400 px-2 h-5 grid place-items-center text-[11px] font-bold text-amber-950">📝 brouillon</span>}
+          {!passe && formulaire && siens.length > 0 && <span className="shrink-0 rounded-full bg-emerald-600 px-2 h-5 grid place-items-center text-[11px] font-bold text-white">🟢 servi</span>}
           {passe && pasFaits > 0 && <span className="shrink-0 rounded-full bg-destructive px-1.5 min-w-[20px] h-5 grid place-items-center text-[11px] font-bold text-destructive-foreground">{pasFaits}</span>}
           {ouvert ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
         </button>
@@ -134,11 +155,12 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
             {aValider > 0 && onValider && (
               <button type="button" onClick={() => onValider(e.user_id)} className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white py-2 text-sm font-extrabold">🟠 Écouter et valider</button>
             )}
+            {!passe && formulaire?.(e, suivant)}
           </div>
         )}
       </div>
     );
-  });
+  }); };
 
   // Idée 1 : bilan automatique de la semaine passée
   const bilan = (() => {

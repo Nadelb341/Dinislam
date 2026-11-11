@@ -21,9 +21,11 @@ import type { Tables, TablesInsert } from '@/integrations/supabase/types';
  * leur consigne audio, l'élément à ouvrir et les étapes. La date à rendre devient le prochain cours de CHAQUE groupe
  * (vacances sautées). Les élèves du groupe reçoivent « 📓 Tes nouveaux devoirs sont prêts ! ».
  */
-export function CopierDevoirsDialog({ open, onClose, groupeId, groupeNom, groupes, devoirs }: {
+export function CopierDevoirsDialog({ open, onClose, groupeId, groupeNom, groupes, devoirs, memberships }: {
   open: boolean; onClose: () => void; groupeId: string; groupeNom: string;
   groupes: { id: string; name: string }[]; devoirs: Tables<'devoirs'>[];
+  /** 2026-11-11 : les devoirs sont donnés élève par élève → on retrouve ceux des élèves de ce groupe */
+  memberships: { user_id: string; group_id: string }[];
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -36,9 +38,13 @@ export function CopierDevoirsDialog({ open, onClose, groupeId, groupeNom, groupe
   // Devoirs de ce groupe des 3 dernières semaines (les plus récents d'abord), ceux de la semaine cochés d'office
   const recents = useMemo(() => {
     const depuis = Date.now() - 21 * 86_400_000;
-    return devoirs.filter((d) => d.group_id === groupeId && new Date(d.created_at || 0).getTime() > depuis)
-      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-  }, [devoirs, groupeId]);
+    const membres = new Set(memberships.filter((m) => m.group_id === groupeId).map((m) => m.user_id));
+    // Devoirs du groupe entier (avant le 11/11) + devoirs donnés à ses élèves un par un (le même devoir n'apparaît qu'une fois)
+    const vus = new Set<string>();
+    return devoirs.filter((d) => (d.group_id === groupeId || (!!d.student_id && membres.has(d.student_id))) && new Date(d.created_at || 0).getTime() > depuis)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .filter((d) => { const k = `${d.titre}|${d.type}|${d.cible_id ?? ''}|${d.date_limite ?? ''}`; if (vus.has(k)) return false; vus.add(k); return true; });
+  }, [devoirs, groupeId, memberships]);
   const [choisis, setChoisis] = useState<string[] | null>(null);
   const coches = choisis ?? recents.filter((d) => Date.now() - new Date(d.created_at || 0).getTime() < 7 * 86_400_000).map((d) => d.id);
   const [cibles, setCibles] = useState<string[]>([]);
@@ -51,22 +57,24 @@ export function CopierDevoirsDialog({ open, onClose, groupeId, groupeNom, groupe
     setBusy(true);
     try {
       const lignes: TablesInsert<'devoirs'>[] = [];
+      // 2026-11-11 : un devoir par ÉLÈVE du groupe visé (comme la nouvelle distribution élève par élève)
       for (const gid of cibles) {
         const date = prochainDe(gid).toISOString();
+        const eleves = [...new Set(memberships.filter((m) => m.group_id === gid).map((m) => m.user_id))];
         for (const id of coches) {
           const d = recents.find((x) => x.id === id); if (!d) continue;
-          lignes.push({
+          for (const sid of eleves) lignes.push({
             titre: d.titre, type: d.type, description: d.description, lien_lecon: d.lien_lecon, etapes: d.etapes,
             cible_module: d.cible_module, cible_id: d.cible_id, audio_requis: d.audio_requis, consigne_audio_url: d.consigne_audio_url,
             pieces_jointes: d.pieces_jointes, matiere_label: d.matiere_label, matiere_emoji: d.matiere_emoji,
-            assigned_to: 'group', group_id: gid, date_limite: date, created_by: user.id,
+            assigned_to: 'student', student_id: sid, date_limite: date, created_by: user.id,
           });
         }
       }
+      if (!lignes.length) throw new Error('Aucun élève dans le ou les groupes choisis');
       const { error } = await supabase.from('devoirs').insert(lignes);
       if (error) throw error;
-      const { data: membres } = await supabase.from('student_group_members').select('user_id').in('group_id', cibles);
-      const ids = [...new Set((membres || []).map((m) => m.user_id))];
+      const ids = [...new Set(lignes.map((l) => l.student_id!).filter(Boolean))];
       if (ids.length) sendPushNotification({ userIds: ids, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: coches.map((id) => recents.find((x) => x.id === id)?.titre).filter(Boolean).join(' · '), data: { url: '/?open=devoirs' } });
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
       toast.success(`📋 ${coches.length} devoir${coches.length > 1 ? 's' : ''} copié${coches.length > 1 ? 's' : ''} vers ${cibles.length} groupe${cibles.length > 1 ? 's' : ''}`);

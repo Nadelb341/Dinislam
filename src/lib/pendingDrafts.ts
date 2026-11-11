@@ -31,7 +31,13 @@ const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 export const DRAFT_DEFS: Record<string, DraftDef> = {
   dinislam_homework: {
     place: 'Accueil › Cahier de texte › Devoirs', noun: 'nouveau devoir', route: '/?open=todo&cahier=1', adminOnly: true,
-    labelOf: (d) => { const v = d as { titre?: string; lignes?: Record<string, string> } | null; return text(v?.titre) || text(Object.values(v?.lignes || {}).find((x) => x.trim())); },
+    // 2026-11-11 : un brouillon PAR ÉLÈVE ({ v: 2, parEleve }) → « Bilal : leçon 7 · Réda : … »
+    labelOf: (d) => {
+      const v = d as { v?: number; titre?: string; lignes?: Record<string, string>; parEleve?: Record<string, { nom?: string; titre?: string; lignes?: Record<string, string> }> } | null;
+      const un = (f: { titre?: string; lignes?: Record<string, string> } | undefined) => text(f?.titre) || text(Object.values(f?.lignes || {}).find((x) => x?.trim()));
+      if (v?.v === 2) return Object.values(v.parEleve || {}).map((f) => (un(f) ? `${f.nom || 'Élève'} : ${un(f)}` : '')).filter(Boolean).join(' · ');
+      return un(v ?? undefined);
+    },
   },
   dinislam_admin_task_: {
     place: 'Accueil › Cahier de texte', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
