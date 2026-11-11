@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { titreEtEtapes } from '@/lib/devoirsEleve';
+import { BoutonDictee } from '@/components/shared/BoutonDictee';
+import { ajouterDicte } from '@/lib/dictee';
 
 /** Ce qu'il faut d'un devoir déjà donné pour le modifier */
 export interface DevoirAModifier {
@@ -78,6 +80,7 @@ export function ModifierDevoirDialog({ devoir, nomEleve, onClose }: { devoir: De
               {lignes.length > 1 && <span className="pt-2 text-sm font-bold text-muted-foreground">{i + 1}.</span>}
               <Textarea value={l} rows={2} className="flex-1" aria-label={`Ligne ${i + 1}`}
                 onChange={(e) => setLignes((x) => x.map((y, k) => (k === i ? e.target.value : y)))} />
+              <BoutonDictee className="mt-1" onTexte={(t) => setLignes((x) => x.map((y, k) => (k === i ? ajouterDicte(y, t) : y)))} />
               {lignes.length > 1 && (
                 <button type="button" aria-label={`Retirer la ligne ${i + 1}`} onClick={() => setLignes((x) => x.filter((_, k) => k !== i))}
                   className="mt-1 h-8 w-8 shrink-0 rounded-full bg-[#EF4444] text-white font-bold">✕</button>

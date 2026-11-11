@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { BoutonDictee } from '@/components/shared/BoutonDictee';
+import { ajouterDicte } from '@/lib/dictee';
 import { groupColorProps } from '@/lib/studentGroups';
 import { elevesVises, resumeCible, type MessageCarnet } from '@/lib/carnet';
 import type { useConvocations } from '@/components/convocations/useConvocations';
@@ -143,7 +145,10 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
             </div>
             <Input id="carnet-titre" value={f.titre} onChange={(e) => maj({ titre: e.target.value })} placeholder="Titre (ex. Sortie à la mosquée)"
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('carnet-texte')?.focus(); } }} />
-            <Textarea id="carnet-texte" value={f.texte} onChange={(e) => maj({ texte: e.target.value })} rows={5} placeholder="Ton message…" className="cahier-main text-lg bg-[#fffdf5] dark:bg-[#2a2418]" />
+            <div className="relative">
+              <Textarea id="carnet-texte" value={f.texte} onChange={(e) => maj({ texte: e.target.value })} rows={5} placeholder="Ton message… (ou touche 🎤 pour dicter)" className="cahier-main text-lg bg-[#fffdf5] dark:bg-[#2a2418] pr-11" />
+              <BoutonDictee className="absolute right-2 bottom-2" onTexte={(t) => setF((x) => ({ ...x, texte: ajouterDicte(x.texte, t) }))} />
+            </div>
 
             {/* À qui */}
             <div className="space-y-1.5">

@@ -13,6 +13,8 @@ import { MATIERES } from '@/lib/devoirMatieres';
 import { asPJ, lignesHabituelles, type LigneDevoir, type PieceJointe } from '@/lib/devoirFichiers';
 import type { Json } from '@/integrations/supabase/types';
 import { OutilsDeLigne } from '@/components/cahier/OutilsLigneDevoir';
+import { BoutonDictee } from '@/components/shared/BoutonDictee';
+import { ajouterDicte } from '@/lib/dictee';
 import { CiblesMulti } from '@/components/cahier/CiblesMulti';
 import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
 import { useProchainesEtapes } from '@/hooks/useProchainesEtapes';
@@ -240,6 +242,7 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
                         className="order-last basis-full min-w-0 sm:order-none sm:basis-auto sm:flex-1"
                         onChange={(e) => setLigne(m.key, e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('[data-ligne]')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null)?.focus(); } }} />
+                      <BoutonDictee onTexte={(t) => setForm((f) => ({ ...f, lignes: { ...f.lignes, [m.key]: ajouterDicte(f.lignes[m.key] || '', t) } }))} />
                       {icones}
                     </div>
                   )}

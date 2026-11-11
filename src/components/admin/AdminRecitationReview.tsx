@@ -14,6 +14,8 @@ import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { useAudioRecorder, audioExt } from '@/hooks/useAudioRecorder';
 import { AudioApercu } from '@/components/shared/AudioApercu';
 import { AudioPrive } from '@/components/shared/FichiersPrives';
+import { BoutonDictee } from '@/components/shared/BoutonDictee';
+import { ajouterDicte } from '@/lib/dictee';
 
 interface AdminRecitationReviewProps {
   onBack: () => void;
@@ -287,13 +289,16 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
                   {responding === r.id && (
                     <div className="border border-orange-200 dark:border-orange-900 rounded-lg p-3 space-y-3 bg-orange-50/60 dark:bg-orange-950/20">
                       <p className="text-xs font-bold text-orange-800 dark:text-orange-200">🔁 À refaire : ton conseil (facultatif)</p>
-                      <textarea
-                        value={adminComment}
-                        onChange={e => setAdminComment(e.target.value)}
-                        placeholder="Ton commentaire pour l'élève…"
-                        className="w-full text-sm border rounded-lg p-2 resize-none bg-background"
-                        rows={2}
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={adminComment}
+                          onChange={e => setAdminComment(e.target.value)}
+                          placeholder="Ton commentaire pour l'élève… (ou 🎤 pour dicter)"
+                          className="w-full text-sm border rounded-lg p-2 pr-11 resize-none bg-background"
+                          rows={2}
+                        />
+                        <BoutonDictee className="absolute right-1.5 bottom-2.5" onTexte={(t) => setAdminComment((x) => ajouterDicte(x, t))} />
+                      </div>
                       <div>
                         {!adminAudio ? (
                           <Button size="sm" variant="outline" onClick={recording ? stopRecording : startRecording} className="gap-2">
