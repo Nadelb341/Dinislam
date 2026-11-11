@@ -43,6 +43,7 @@ const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then
 const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
 const MeteoSaison = lazy(() => import('@/components/saisons/MeteoSaison').then((m) => ({ default: m.MeteoSaison })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
+const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').then((m) => ({ default: m.CarnetLiaison })));
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 
 /**
@@ -521,6 +522,11 @@ const handleModuleClick = (mod) => {
                 </div>
               )}
             </TitreAccueil>
+          </SilentBoundary>
+
+          {/* 📒 Carnet de liaison (2026-11-12) : juste sous le message de bienvenue, élèves ET enseignante */}
+          <SilentBoundary name="Carnet de liaison">
+            <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>
           </SilentBoundary>
 
           {/* 📊 Nouveau bilan trimestriel pas encore ouvert par un parent : jaune bordé de rouge (2026-11-02) */}

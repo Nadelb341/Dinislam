@@ -14,6 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
+      carnet_lectures: {
+        Row: {
+          id: string
+          lu_le: string
+          message_id: string
+          reponse: string | null
+          reponse_le: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          lu_le?: string
+          message_id: string
+          reponse?: string | null
+          reponse_le?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          lu_le?: string
+          message_id?: string
+          reponse?: string | null
+          reponse_le?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carnet_lectures_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "carnet_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carnet_messages: {
+        Row: {
+          auteur: string | null
+          cible: string
+          created_at: string
+          emoji: string
+          envoyer_le: string
+          epingle: boolean
+          group_ids: string[]
+          id: string
+          notifie_le: string | null
+          piece_nom: string | null
+          piece_type: string | null
+          piece_url: string | null
+          relance: boolean
+          relance_le: string | null
+          signature: boolean
+          student_ids: string[]
+          texte: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          auteur?: string | null
+          cible?: string
+          created_at?: string
+          emoji?: string
+          envoyer_le?: string
+          epingle?: boolean
+          group_ids?: string[]
+          id?: string
+          notifie_le?: string | null
+          piece_nom?: string | null
+          piece_type?: string | null
+          piece_url?: string | null
+          relance?: boolean
+          relance_le?: string | null
+          signature?: boolean
+          student_ids?: string[]
+          texte?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          auteur?: string | null
+          cible?: string
+          created_at?: string
+          emoji?: string
+          envoyer_le?: string
+          epingle?: boolean
+          group_ids?: string[]
+          id?: string
+          notifie_le?: string | null
+          piece_nom?: string | null
+          piece_type?: string | null
+          piece_url?: string | null
+          relance?: boolean
+          relance_le?: string | null
+          signature?: boolean
+          student_ids?: string[]
+          texte?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      carnet_modeles: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          position: number
+          texte: string
+          titre: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          position?: number
+          texte: string
+          titre: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          position?: number
+          texte?: string
+          titre?: string
+        }
+        Relationships: []
+      }
       compagnons: {
         Row: { derniere_croissance: string | null; niveau: number; updated_at: string; user_id: string }
         Insert: { derniere_croissance?: string | null; niveau?: number; updated_at?: string; user_id: string }

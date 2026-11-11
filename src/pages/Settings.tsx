@@ -105,6 +105,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   coran_note: 'Note d\'un marque-page du Coran',
   convocation_modele: 'Modèle de convocation',
   convocation_programmation: 'Convocation programmée',
+  carnet_message: 'Message du carnet de liaison',
+  carnet_modele: 'Modèle du carnet de liaison',
   parent_code: 'Code parents',
   parent_link: 'Lien parent ↔ enfant',
   absence_justification: 'Absence justifiée',

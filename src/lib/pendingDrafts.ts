@@ -144,6 +144,11 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
       return qs.map((q) => text(q.question)).filter(Boolean).join(' · ');
     },
   },
+  // 📒 Message du carnet de liaison pas encore envoyé (2026-11-12)
+  dinislam_carnet: {
+    place: 'Accueil › 📒 Carnet de liaison › ✏️ Écrire', noun: 'message du carnet pas encore envoyé', route: '/?carnet=1', adminOnly: true,
+    labelOf: (d) => { const v = d as { titre?: string; texte?: string } | null; return text(v?.titre) || text(v?.texte); },
+  },
   dinislam_moon_assistant: {
     place: 'Assistant 🌙 de l\'enseignante', noun: 'question pas encore envoyée', route: '/', adminOnly: true,
     labelOf: (d) => text(d),

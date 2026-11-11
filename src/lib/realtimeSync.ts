@@ -85,6 +85,10 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   convocations: ['convocations', 'convocations-eleve'],
   convocation_modeles: ['convocations'],
   convocation_programmations: ['convocations'],
+  // 📒 Carnet de liaison (2026-11-12)
+  carnet_messages: ['carnet'],
+  carnet_lectures: ['carnet'],
+  carnet_modeles: ['carnet'],
   // 2026-11-11 : manquait → une carte ouverte « à tout le monde » n'apparaissait chez l'élève qu'après rechargement
   learning_modules: ['learning-modules', 'admin-learning-modules', 'cartes-visibles', 'cartes-acces', 'module-visibility'],
   notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
