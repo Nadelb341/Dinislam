@@ -7,8 +7,8 @@ import { optionsFor } from '@/components/admin/CibleSelect';
 import type { Cible } from '@/lib/devoirsEleve';
 
 /**
- * 📍 Choisir UN OU PLUSIEURS éléments (leçon, sourate, invocations…) sur une ligne de devoir (Nadia, 2026-11-11, Q2-A) :
- * chaque élément coché = un devoir (et un 💎), « Commencer mon travail » ouvre le bon élément.
+ * 📍 Choisir UN OU PLUSIEURS éléments (leçon, sourate, invocations…) sur une ligne de devoir (Nadia, 2026-11-11) :
+ * chaque élément coché = une étape du devoir de la matière (un seul 💎) ; « Commencer mon travail » ouvre le 1er.
  */
 export function CiblesMulti({ type, value, onChange }: { type: string; value: Cible[]; onChange: (v: Cible[]) => void }) {
   const { data: options = [] } = useQuery({ queryKey: ['devoir-cibles', type], queryFn: () => optionsFor(type), staleTime: 10 * 60 * 1000 });
@@ -23,7 +23,7 @@ export function CiblesMulti({ type, value, onChange }: { type: string; value: Ci
     <Popover>
       <PopoverTrigger asChild>
         <button type="button" className={cn('rounded-lg border bg-background px-2 py-1.5 text-xs max-w-[14rem] text-start [overflow-wrap:anywhere]', value.length && 'border-sky-400 bg-sky-50 dark:bg-sky-950/30 font-semibold')}>
-          📍 {value.length === 0 ? 'Ouvrir… (un ou plusieurs)' : value.length === 1 ? value[0].l : `${value.length} choisis = ${value.length} devoirs`}
+          📍 {value.length === 0 ? 'Ouvrir… (un ou plusieurs)' : value.length === 1 ? value[0].l : `${value.length} choisis = ${value.length} étapes`}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-2 z-[700]">
@@ -39,7 +39,7 @@ export function CiblesMulti({ type, value, onChange }: { type: string; value: Ci
         {value.length > 0 && (
           <button type="button" onClick={() => onChange([])} className="mt-1.5 text-xs text-muted-foreground underline">Tout décocher</button>
         )}
-        <p className="mt-1 text-[11px] text-muted-foreground">Chaque élément coché = un devoir et un 💎.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Chaque élément coché = une étape à cocher (un seul 💎 pour la matière).</p>
       </PopoverContent>
     </Popover>
   );

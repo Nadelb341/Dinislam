@@ -8,7 +8,9 @@ import type { LigneDevoir, PieceJointe } from '@/lib/devoirFichiers';
  * 📚 Devoirs élève par élève (Nadia, 2026-11-11 : maquette A + Q1-A, Q2-A, Q3-A, Q4-B + les 9 idées).
  * - Chaque élève a SON formulaire (Par matière / Devoir détaillé) dans sa carte de la liste.
  * - Un devoir par élève (assigned_to 'student') ; « 📋 Donner aussi à… » = même devoir pour d'autres élèves.
- * - Q2-A : plusieurs éléments choisis sur une ligne (ex. 3 invocations) = un devoir (et un 💎) par élément.
+ * - Plusieurs lignes dans UNE matière (2026-11-11, 2ᵉ demande) et/ou plusieurs éléments 📍 sur une ligne = UN devoir
+ *   « en étapes » (une étape par ligne / par élément) = UN diamant par matière, qui se remplit à chaque étape cochée
+ *   par l'élève et brille quand Nadia valide. (Remplace « 3 invocations = 3 devoirs ».)
  * - Brouillon PAR ÉLÈVE (idée 4) dans `draft_dinislam_homework` { v: 2, parEleve: { [id]: FormEleve } }.
  * - Sans réseau (idée 9) : la distribution est gardée sur l'appareil et part au retour du réseau.
  */
@@ -17,6 +19,8 @@ export interface FormEleve {
   parMatiere: boolean;
   lignes: Record<string, string>;
   cibles: Record<string, Cible[]>;
+  /** Lignes en plus dans une même matière (la 1ʳᵉ ligne reste `lignes` / `cibles`) */
+  plus: Record<string, { texte: string; cibles: Cible[] }[]>;
   audios: Record<string, boolean>;
   pj: Record<string, PieceJointe[]>;
   consignes: Record<string, string>;
@@ -30,12 +34,13 @@ export interface FormEleve {
 }
 
 export const formVide = (): FormEleve => ({
-  parMatiere: true, lignes: {}, cibles: {}, audios: {}, pj: {}, consignes: {},
+  parMatiere: true, lignes: {}, cibles: {}, plus: {}, audios: {}, pj: {}, consignes: {},
   titre: '', type: 'recitation', description: '', lien_lecon: '', etapes: '', ciblesDetail: [], audio_requis: false, aussi: [],
 });
 
 export const formRempli = (f: FormEleve | undefined | null) => !!f && (
   Object.values(f.lignes || {}).some((v) => v?.trim()) || !!f.titre?.trim()
+  || Object.values(f.plus || {}).some((l) => l?.some((x) => x.texte?.trim()))
   || Object.values(f.pj || {}).some((a) => a?.length) || Object.values(f.consignes || {}).some(Boolean));
 
 // ——— Brouillon par élève ———
@@ -64,26 +69,33 @@ export interface ItemDevoir {
   label: string | null; emoji: string | null; description: string | null; lien_lecon: string | null; etapes: string[];
 }
 
-/** Q2-A : une ligne avec 3 éléments choisis = 3 devoirs (« consigne : élément ») */
+/** Étapes d'une liste de lignes : une étape par ligne, ou une par élément 📍 quand une ligne en a plusieurs */
+export function etapesDe(entrees: { texte: string; cibles: Cible[] }[]): { etapes: string[]; cible: string } {
+  const pleines = entrees.map((e) => ({ texte: e.texte.trim(), cibles: e.cibles || [] })).filter((e) => e.texte);
+  const etapes = pleines.flatMap((e) => (e.cibles.length > 1 ? e.cibles.map((c) => `${e.texte} : ${c.l}`) : [e.texte]));
+  return { etapes, cible: pleines.find((e) => e.cibles.length)?.cibles[0]?.v ?? '' };
+}
+
+/** Un devoir par MATIÈRE remplie (plusieurs lignes ou éléments = un devoir en étapes, donc un seul 💎) */
 export function itemsDuFormulaire(f: FormEleve, lignes: LigneDevoir[]): ItemDevoir[] {
-  const base = { description: null, lien_lecon: null, etapes: [] as string[] };
   if (!f.parMatiere) {
     const titre = f.titre.trim();
     if (!titre) return [];
-    const det = { pj: f.pj.detail || [], consigne: f.consignes.detail || null, label: null, emoji: null, description: f.description.trim() || null,
-      lien_lecon: f.lien_lecon.trim() || null, etapes: f.etapes.split('\n').map((l) => l.trim()).filter(Boolean), audio: f.audio_requis, type: f.type };
-    return f.ciblesDetail.length
-      ? f.ciblesDetail.map((c) => ({ ...det, titre: f.ciblesDetail.length > 1 ? `${titre} : ${c.l}` : titre, cible: c.v }))
-      : [{ ...det, titre, cible: '' }];
+    const etapesEcrites = f.etapes.split('\n').map((l) => l.trim()).filter(Boolean);
+    const parElement = f.ciblesDetail.length > 1 ? f.ciblesDetail.map((c) => `${titre} : ${c.l}`) : [];
+    return [{ titre, type: f.type, cible: f.ciblesDetail[0]?.v ?? '', audio: f.audio_requis, pj: f.pj.detail || [], consigne: f.consignes.detail || null,
+      label: null, emoji: null, description: f.description.trim() || null, lien_lecon: f.lien_lecon.trim() || null, etapes: [...parElement, ...etapesEcrites] }];
   }
-  return lignes.filter((m) => (f.lignes[m.key] || '').trim()).flatMap((m) => {
-    const texte = (f.lignes[m.key] || '').trim();
-    const commun = { ...base, type: m.type, audio: !!f.audios[m.key], pj: f.pj[m.key] || [], consigne: f.consignes[m.key] || null,
-      label: m.perso ? m.label : null, emoji: m.perso ? m.emoji : null };
-    const cibles = m.perso ? [] : (f.cibles[m.key] || []);
-    return cibles.length
-      ? cibles.map((c) => ({ ...commun, titre: cibles.length > 1 ? `${texte} : ${c.l}` : texte, cible: c.v }))
-      : [{ ...commun, titre: texte, cible: '' }];
+  return lignes.flatMap((m): ItemDevoir[] => {
+    const { etapes, cible } = etapesDe([{ texte: f.lignes[m.key] || '', cibles: m.perso ? [] : (f.cibles[m.key] || []) }, ...((f.plus || {})[m.key] || []).map((x) => ({ ...x, cibles: m.perso ? [] : x.cibles }))]);
+    if (!etapes.length) return [];
+    const ensemble = etapes.join(' · ');
+    return [{
+      titre: etapes.length === 1 ? etapes[0] : ensemble.length <= 120 ? ensemble : `${m.label} : ${etapes.length} choses à faire`,
+      type: m.type, cible, audio: !!f.audios[m.key], pj: f.pj[m.key] || [], consigne: f.consignes[m.key] || null,
+      label: m.perso ? m.label : null, emoji: m.perso ? m.emoji : null, description: null, lien_lecon: null,
+      etapes: etapes.length > 1 ? etapes : [],
+    }];
   });
 }
 

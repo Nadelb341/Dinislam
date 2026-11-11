@@ -66,6 +66,8 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
   const setLigne = (k: string, v: string) => setForm((f) => ({ ...f, lignes: { ...f.lignes, [k]: v } }));
   const setPJ = (k: string, n: PieceJointe[]) => setForm((f) => ({ ...f, pj: { ...f.pj, [k]: n } }));
   const setConsigne = (k: string, url: string | null) => setForm((f) => { const c = { ...f.consignes }; if (url) c[k] = url; else delete c[k]; return { ...f, consignes: c }; });
+  const plusDe = (k: string) => (form.plus || {})[k] || [];
+  const setPlus = (k: string, l: { texte: string; cibles: Cible[] }[]) => setForm((f) => ({ ...f, plus: { ...(f.plus || {}), [k]: l } }));
   const ligneDuType = (type: string) => lignesVisibles.find((l) => l.type === type && !l.perso) ?? lignesVisibles.find((l) => l.type === type);
 
   // ⚡ Modèles
@@ -116,14 +118,15 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
 
   // 🔁 Comme la semaine dernière (idée 8)
   const commeSemainePassee = () => {
-    const lignes: Record<string, string> = {}, cibles: Record<string, Cible[]> = {};
+    const lignes: Record<string, string> = {}, cibles: Record<string, Cible[]> = {}, plus: Record<string, { texte: string; cibles: Cible[] }[]> = {};
     for (const d of semainePassee) {
       const ligne = ligneDuType(d.type) ?? ligneDuType('autre');
       if (!ligne) continue;
-      lignes[ligne.key] = lignes[ligne.key] ? `${lignes[ligne.key]} · ${d.titre}` : d.titre;
-      if (d.cible_id) cibles[ligne.key] = [...(cibles[ligne.key] || []), { v: d.cible_id, l: d.titre }];
+      const c = d.cible_id ? [{ v: d.cible_id, l: d.titre }] : [];
+      if (lignes[ligne.key] === undefined) { lignes[ligne.key] = d.titre; cibles[ligne.key] = c; }
+      else plus[ligne.key] = [...(plus[ligne.key] || []), { texte: d.titre, cibles: c }];
     }
-    setForm((f) => ({ ...f, parMatiere: true, lignes: { ...f.lignes, ...lignes }, cibles: { ...f.cibles, ...cibles } }));
+    setForm((f) => ({ ...f, parMatiere: true, lignes: { ...f.lignes, ...lignes }, cibles: { ...f.cibles, ...cibles }, plus: { ...(f.plus || {}), ...plus } }));
     toast.success('🔁 Devoirs de la semaine dernière repris : modifie ce qu\'il faut');
   };
 
@@ -183,7 +186,7 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
 
       {form.parMatiere ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">Un devoir (et un 💎) par ligne remplie. 📍 : coche un ou plusieurs éléments (3 invocations = 3 devoirs).</p>
+          <p className="text-xs text-muted-foreground">Un 💎 par matière. ➕ pour plusieurs choses dans une même matière : l'élève coche chaque ligne, son diamant se remplit, puis brille quand tu valides.</p>
           {modeles.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 px-2 py-1.5">
               <span className="text-xs font-bold">⚡ Modèles :</span>
@@ -228,6 +231,22 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
                     <button type="button" onClick={() => void garderModele(m)} className="rounded-full border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 text-[11px] font-bold">⚡ Garder comme modèle</button>
                   </div>
                 )}
+                {/* ➕ Plusieurs lignes dans la même matière (2026-11-11) : un seul 💎 pour la matière */}
+                {plusDe(m.key).map((x, k) => (
+                  <div key={k} className="mt-1.5 flex flex-wrap items-center gap-2 sm:ps-[7.5rem]">
+                    <span className="text-xs font-bold text-muted-foreground shrink-0">{k + 2}.</span>
+                    <Input id={`devoir-${eleve.user_id}-${m.key}-${k + 2}`} value={x.texte} placeholder="autre chose à faire…" aria-label={`${m.label}, ligne ${k + 2}`}
+                      className="min-w-0 flex-1 basis-40" onChange={(e) => setPlus(m.key, plusDe(m.key).map((y, j) => (j === k ? { ...y, texte: e.target.value } : y)))} />
+                    {!m.perso && <CiblesMulti type={m.type} value={x.cibles} onChange={(v) => setPlus(m.key, plusDe(m.key).map((y, j) => (j === k ? { ...y, cibles: v } : y)))} />}
+                    <button type="button" aria-label={`Retirer la ligne ${k + 2}`} onClick={() => setPlus(m.key, plusDe(m.key).filter((_, j) => j !== k))}
+                      className="h-7 w-7 rounded-full bg-[#EF4444] text-white text-xs font-extrabold grid place-items-center shrink-0">✕</button>
+                  </div>
+                ))}
+                {rempli && (
+                  <button type="button" onClick={() => setPlus(m.key, [...plusDe(m.key), { texte: '', cibles: [] }])}
+                    className="mt-1.5 sm:ms-[7.5rem] rounded-full border border-sky-300 bg-sky-50 dark:bg-sky-950/30 px-2.5 py-0.5 text-[11px] font-bold">➕ Une autre ligne en {m.label}</button>
+                )}
+                {(() => { const n = items.find((it) => it.type === m.type && (!m.perso || it.label === m.label))?.etapes.length ?? 0; return n > 1 ? <p className="mt-1 sm:ps-[7.5rem] text-[11px] font-semibold text-sky-800 dark:text-sky-200">💎 1 diamant « {m.label} » avec {n} étapes à cocher</p> : null; })()}
               </div>
             );
           })}
