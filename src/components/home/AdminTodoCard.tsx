@@ -40,6 +40,8 @@ export function AdminTodoCard() {
     if (q.get('open') !== 'todo') return;
     setCollapsed(false);
     if (q.get('cahier') === '1') { setOpenCahier(true); setOpenId(null); }
+    // 🤖 « Les devoirs de la semaine sont prêts » (mardi soir) : « ✨ Donner au groupe » s'ouvre dans le 1er groupe touché
+    if (q.get('donnerGroupe') === '1') { try { sessionStorage.setItem('dinislam_ouvrir_donner_groupe', '1'); } catch { /* stockage indisponible */ } }
     setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     // Adresse nettoyée PAR LE ROUTEUR (2026-10-30) : avant, window.history.replaceState laissait le routeur croire que
     // « ?open=todo&cahier=1 » était toujours là → au 2e clic du bouclier, rien ne s'ouvrait

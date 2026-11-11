@@ -32,6 +32,8 @@ import {
 import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
 import { asPJ, lundiCourant } from '@/lib/devoirFichiers';
+import { DonnerAuGroupe } from '@/components/cahier/DonnerAuGroupe';
+import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
 import { FormulaireDevoirEleve } from '@/components/cahier/FormulaireDevoirEleve';
 import { CLE_BROUILLON, lireBrouillons } from '@/lib/devoirsEleve';
 import { useDevoirsEnAttente } from '@/hooks/useDevoirsEnAttente';
@@ -172,6 +174,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
     },
   });
   const [now, setNow] = useState(() => new Date());
+  const { data: reglagesGroupe } = useReglagesDevoirsGroupe(groupeId ?? null);
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
 
   const { data: rolesEleves = [] } = useQuery({
@@ -409,7 +412,11 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
             {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
           </span>
         </label>
-        <p className="text-xs text-sky-900 dark:text-sky-100">👇 Touche un élève dans la liste pour lui donner ses devoirs.</p>
+        <p className="text-xs text-sky-900 dark:text-sky-100">👇 Touche un élève dans la liste pour lui donner ses devoirs, ou donne-les à tout le groupe d'un coup :</p>
+        {/* ✨ Idée 1 « gagner du temps » (2026-11-12) : chaque élève reçoit son devoir là où il en est */}
+        <DonnerAuGroupe eleves={elevesVus} nomGroupe={nomGroupe ?? null} dateLimite={quand.date_limite}
+          visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null} maxSemaine={reglagesGroupe?.max_devoirs ?? null}
+          dejaCetteSemaine={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? []).filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length} />
       </div>
 
       {/* 💎 Chemin de la semaine automatique (2026-10-08) — sous le formulaire depuis le 2026-11-05 (demande de Nadia) */}
