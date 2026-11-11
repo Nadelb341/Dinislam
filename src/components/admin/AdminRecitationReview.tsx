@@ -280,72 +280,56 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
                 </div>
               )}
 
-              {/* Response panel */}
-              {responding === r.id ? (
-                <div className="border rounded-lg p-3 space-y-3 bg-muted/20">
-                  <textarea
-                    value={adminComment}
-                    onChange={e => setAdminComment(e.target.value)}
-                    placeholder="Votre commentaire pour l'élève..."
-                    className="w-full text-sm border rounded-lg p-2 resize-none bg-background"
-                    rows={2}
-                  />
-
-                  {/* Admin audio recording */}
-                  <div>
-                    {!adminAudio ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={recording ? stopRecording : startRecording}
-                        className="gap-2"
-                      >
-                        {recording ? <><MicOff className="h-3 w-3" />Arrêter l'enregistrement</> : <><Mic className="h-3 w-3" />Enregistrer une réponse audio</>}
-                      </Button>
-                    ) : (
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Votre réponse audio :</p>
-                        <AudioApercu blob={enreg.blob} dataUrl={enreg.previewUrl} className="w-full h-9" />
-                        <Button size="sm" variant="ghost" className="text-xs h-6" onClick={enreg.reset}>
-                          Supprimer
-                        </Button>
+              {/* ✅ Valider / 🔁 À refaire / Annuler (Nadia, 2026-11-11) : plus de « Répondre à cet élève ».
+                  À refaire ouvre le commentaire écrit + l'audio (facultatifs) ; Annuler referme pour corriger plus tard. */}
+              {r.status !== 'validated' && (
+                <div className="space-y-3">
+                  {responding === r.id && (
+                    <div className="border border-orange-200 dark:border-orange-900 rounded-lg p-3 space-y-3 bg-orange-50/60 dark:bg-orange-950/20">
+                      <p className="text-xs font-bold text-orange-800 dark:text-orange-200">🔁 À refaire : ton conseil (facultatif)</p>
+                      <textarea
+                        value={adminComment}
+                        onChange={e => setAdminComment(e.target.value)}
+                        placeholder="Ton commentaire pour l'élève…"
+                        className="w-full text-sm border rounded-lg p-2 resize-none bg-background"
+                        rows={2}
+                      />
+                      <div>
+                        {!adminAudio ? (
+                          <Button size="sm" variant="outline" onClick={recording ? stopRecording : startRecording} className="gap-2">
+                            {recording ? <><MicOff className="h-3 w-3" />Arrêter l'enregistrement</> : <><Mic className="h-3 w-3" />Enregistrer une réponse audio</>}
+                          </Button>
+                        ) : (
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Ta réponse audio :</p>
+                            <AudioApercu blob={enreg.blob} dataUrl={enreg.previewUrl} className="w-full h-9" />
+                            <Button size="sm" variant="ghost" className="text-xs h-6" onClick={enreg.reset}>Supprimer</Button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => sendResponse(r, 'corrected')}
-                      disabled={saving || (!adminComment && !adminAudio)}
-                      variant="outline"
-                      className="flex-1 gap-1"
-                    >
-                      <Send className="h-3 w-3" />
-                      Envoyer correction
-                    </Button>
-                    <Button
-                      size="sm"
+                      <Button size="sm" onClick={() => sendResponse(r, 'corrected')} disabled={saving || recording}
+                        className="w-full gap-1 bg-orange-500 hover:bg-orange-600 text-white">
+                        <Send className="h-3 w-3" /> Envoyer : à refaire
+                      </Button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button size="sm" disabled={saving}
                       onClick={() => askValidation('Valider cette récitation ?', r.allahName
                         ? `${r.profile?.full_name || 'L\'élève'} : le nom ${r.allahName.transliteration || r.allahName.name_french} sera validé, et le nom suivant s'ouvrira.`
                         : `${r.profile?.full_name || 'L\'élève'} : ${r.sourate?.name_french || 'sourate'} sera validée, et la sourate suivante s'ouvrira.`, () => sendResponse(r, 'validated'))}
-                      disabled={saving}
-                      className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-3 w-3" />
-                      Valider
+                      className="gap-1 bg-green-600 hover:bg-green-700 text-white">
+                      <CheckCircle className="h-3 w-3" /> Valider
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setResponding(null)} disabled={saving}>
+                    <Button size="sm" variant="outline" disabled={saving || responding === r.id} onClick={() => openResponse(r.id)}
+                      className="gap-1 border-orange-300 text-orange-700 dark:text-orange-300">
+                      🔁 À refaire
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled={saving || responding !== r.id} onClick={() => { setResponding(null); enreg.reset(); }}>
                       Annuler
                     </Button>
                   </div>
                 </div>
-              ) : (
-                r.status !== 'validated' && (
-                  <Button size="sm" variant="outline" onClick={() => openResponse(r.id)} className="w-full">
-                    Répondre à cet élève
-                  </Button>
-                )
               )}
             </CardContent>
           </Card>

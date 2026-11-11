@@ -410,15 +410,18 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
   );
 };
 
-/** Pastille posée sur le cadre bleu : chiffre français collé aux lignes, chiffre arabe à sa droite (choix de Nadia, 2026-11-05) */
+/** 🌈 Une couleur douce par ligne (choix B de Nadia, 2026-11-11) : chiffre français puis chiffre arabe, en blanc.
+ *  La ligne allumée (lecture, réglage) garde sa couleur et prend un anneau doré. */
+const COULEURS_LIGNES = ['#ef4444', '#f59e0b', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899'];
 const Pastille = ({ n, hauteur, police, allumee }: { n: number; hauteur: number; police: number; allumee: boolean }) => (
   <span
     dir="ltr"
     className={cn(
-      'absolute top-1/2 -translate-y-1/2 flex items-center whitespace-nowrap rounded-full border-2 font-bold leading-none shadow-sm transition-colors duration-200',
-      allumee ? 'bg-amber-400 border-amber-400 text-white' : 'bg-white border-[#1b5e9c] text-[#1b5e9c]',
+      'absolute top-1/2 -translate-y-1/2 flex items-center whitespace-nowrap rounded-xl font-black leading-none text-white shadow-md transition-transform duration-200',
+      allumee && 'ring-4 ring-amber-300 scale-110',
     )}
-    style={{ left: 'calc(100% + 2px)', height: hauteur, fontSize: police, gap: Math.round(police * 0.35), paddingInline: Math.round(hauteur * 0.25) }}
+    style={{ left: 'calc(100% + 2px)', height: hauteur, fontSize: police, gap: Math.round(police * 0.35), paddingInline: Math.round(hauteur * 0.28),
+      background: COULEURS_LIGNES[(((n - 1) % 6) + 6) % 6] }}
   >
     <span>{n}</span>
     <span className="font-arabic" style={{ fontSize: Math.round(police * 1.08) }}>{enChiffresArabes(n)}</span>

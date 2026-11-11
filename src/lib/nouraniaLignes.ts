@@ -77,8 +77,9 @@ export function ligneEnDessous(l: LigneCours): LigneCours {
 
 /** Taille de la pastille selon la largeur de la page affichée (px) */
 export function taillePastille(largeurPage: number) {
-  const hauteur = Math.round(Math.min(34, Math.max(20, largeurPage * 0.042)));
-  const police = Math.round(hauteur * 0.56);
+  // Plus gros depuis le choix B du 2026-11-11 (Nadia : « en plus gros »)
+  const hauteur = Math.round(Math.min(40, Math.max(24, largeurPage * 0.05)));
+  const police = Math.round(hauteur * 0.6);
   return { hauteur, police };
 }
 
