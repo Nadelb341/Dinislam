@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { messagesCompagnon, questionDuJour } from './jeuxSaisonLogique';
+import { cachetteDuJour, debutCycleFeu, echelleFeu, messagesCompagnon, motArabeDuJour, niveauFeu, questionDuJour } from './jeuxSaisonLogique';
 
 describe('jeux des décors de saison (2026-11-11)', () => {
   it('il parle de ses devoirs et de grandir', () => {
@@ -19,5 +19,27 @@ describe('jeux des décors de saison (2026-11-11)', () => {
       expect(q.options).toContain(q.bonne);
       expect(new Set(q.options).size).toBe(q.options.length);
     }
+  });
+  it('🔥 feu : maximum le mercredi dès 18 h, un cran de moins par jour sans connexion, braises au 7ᵉ jour', () => {
+    const mer18 = new Date(2026, 10, 11, 18, 30); // mercredi 11/11/2026
+    expect(debutCycleFeu(mer18).getDate()).toBe(11);
+    expect(debutCycleFeu(new Date(2026, 10, 11, 17, 0)).getDate()).toBe(4);
+    expect(niveauFeu(mer18, [])).toEqual({ avant: 6, apres: 6 });
+    // jeudi : rien de manqué
+    expect(niveauFeu(new Date(2026, 10, 12, 10), [])).toEqual({ avant: 6, apres: 6 });
+    // samedi sans être venu jeudi ni vendredi : 2 crans de moins, la visite ravive d'un cran
+    expect(niveauFeu(new Date(2026, 10, 14, 10), [])).toEqual({ avant: 4, apres: 5 });
+    expect(niveauFeu(new Date(2026, 10, 14, 10), ['2026-11-12', '2026-11-13'])).toEqual({ avant: 6, apres: 6 });
+    // mercredi suivant avant 18 h, jamais venu : braises
+    expect(niveauFeu(new Date(2026, 10, 18, 9), [])).toEqual({ avant: 0, apres: 1 });
+    expect(echelleFeu(0, false)).toBe(0);
+    expect(echelleFeu(6, false)).toBe(1);
+    expect(echelleFeu(6, true)).toBe(1.3);
+  });
+  it('🙈 cache-cache : la même cachette toute la journée, un mot arabe par jour', () => {
+    expect(cachetteDuJour('2026-11-11', 'u1', 8)).toBe(cachetteDuJour('2026-11-11', 'u1', 8));
+    expect(cachetteDuJour('2026-11-11', 'u1', 8)).toBeGreaterThanOrEqual(0);
+    expect(cachetteDuJour('2026-11-11', 'u1', 0)).toBe(-1);
+    expect(motArabeDuJour('2026-11-11').arabe.length).toBeGreaterThan(1);
   });
 });

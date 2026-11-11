@@ -1,4 +1,4 @@
-import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
+import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -160,6 +160,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
   // 🦔 Compagnon (2026-11-11) : touché → arrêt 10 s + message ; il grandit un peu chaque jour
   const pauseJusqua = useRef(0);
   const echelle = useTailleCompagnon();
+  const habit = useHabitDuJour(userId);
   const echelleRef = useRef(echelle);
   echelleRef.current = echelle;
   const [defile, setDefile] = useState(false);
@@ -516,7 +517,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
                   className="pointer-events-auto fixed left-0 top-0 z-[29] h-[34px] w-10 cursor-pointer overflow-visible"
                   style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1, transformOrigin: '50% 100%' }}
-                  dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg }} />
+                  dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg + (animal === 'dauphin' ? '' : habitSvg(habit, 40, 34)) }} />
               )}
               <svg ref={tasRef} aria-hidden width={W} height={HB} viewBox={`0 0 ${W} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible"
                 style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)', transformOrigin: `${tasX}px ${HB}px` }} dangerouslySetInnerHTML={{ __html: bande.tas }} />

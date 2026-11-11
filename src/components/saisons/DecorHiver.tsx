@@ -1,4 +1,4 @@
-import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
+import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -71,6 +71,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
   // 🦔 Compagnon (2026-11-11) : touché → arrêt 10 s + message ; il grandit un peu chaque jour
   const pauseJusqua = useRef(0);
   const echelle = useTailleCompagnon();
+  const habit = useHabitDuJour(userId);
   const echelleRef = useRef(echelle);
   echelleRef.current = echelle;
   const [defile, setDefile] = useState(false);
@@ -391,7 +392,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, perso === 'pingouin' ? 'Le pingouin' : 'Le bonhomme de neige')) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
                   className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] cursor-pointer overflow-visible"
-                  style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] }} />
+                  style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] + habitSvg(habit, 30, 38) }} />
               )}
               {h.personnage && h.plongeon && (
                 <svg ref={tasRef} aria-hidden viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] overflow-visible" style={{ left: 'calc(42% - 30px)' }}

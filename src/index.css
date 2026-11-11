@@ -751,3 +751,21 @@ html.dark .pe-arc.actif { opacity: .35; }
 
 /* 🦔 Compagnon touché (2026-11-11) : tout son décor s'arrête 10 s, puis repart */
 .jeux-pause, .jeux-pause * { animation-play-state: paused !important; }
+
+/* 🔥 Flamme qui suit la semaine (2026-11-11) : taille de la flamme réglée par --feu-k (0 = braises) */
+html.feu-regle .saison-feu, html.feu-regle .hiver-feu { transform: scale(var(--feu-k, 1)) !important; opacity: 1 !important; transition: transform 1.6s ease, opacity 1.6s; }
+html.feu-eteint .saison-feu, html.feu-eteint .hiver-feu { opacity: 0 !important; }
+.feu-fumee { animation: feu-fumee 2.8s ease-out infinite; opacity: 0; }
+@keyframes feu-fumee { 0% { opacity: 0; transform: translate(0, 0) scale(.6); } 25% { opacity: .55; } 100% { opacity: 0; transform: translate(6px, -34px) scale(1.8); } }
+.feu-crepite { animation: feu-crepite 1.4s ease-out infinite; opacity: 0; }
+@keyframes feu-crepite { 0% { opacity: 0; transform: translate(0, 0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(4px, -26px); } }
+.feu-etincelle { animation: feu-etincelle 1.8s ease-out both; }
+@keyframes feu-etincelle { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx, 0), -70px); } }
+.feu-buche { animation: jeux-pop .5s ease-out both; }
+/* 🙈 Cache-cache : l'animal remue un peu derrière sa carte ; trouvé → pirouette et pluie de la saison */
+.jeux-cache svg { animation: jeux-cache 2.4s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes jeux-cache { 0%, 70%, 100% { transform: translateY(2px); } 80% { transform: translateY(-1px) rotate(-6deg); } 90% { transform: translateY(-1px) rotate(6deg); } }
+.jeux-pirouette { animation: jeux-pirouette 1.1s ease-in-out 2; }
+@keyframes jeux-pirouette { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.15) translateY(-6px); } 100% { transform: rotate(360deg) scale(1); } }
+.jeux-pluie { top: -2rem; animation: jeux-pluie 2.4s ease-in both; }
+@keyframes jeux-pluie { to { transform: translate(18px, 105vh) rotate(260deg); } }

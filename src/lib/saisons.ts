@@ -145,10 +145,23 @@ export interface ReglagesJeux {
   secoue: boolean;
   /** ❓ La question du coin du feu : une question par jour */
   questionFeu: boolean;
+  /** 🔥 La flamme suit la semaine du cours (max mercredi 18 h, baisse chaque jour sans connexion) — automne et hiver */
+  feuSemaine: boolean;
+  /** 🪵 Une bûche par devoir validé de la semaine ; tous faits = grand feu */
+  feuDevoirs: boolean;
+  /** 🐈 Le chat et la théière autour du feu */
+  feuDecor: boolean;
+  /** ✨ Étincelles à la 1ʳᵉ visite du jour */
+  feuEtincelles: boolean;
+  /** 🙈 Cache-cache : l'animal se cache derrière une carte de l'accueil */
+  cacheCache: boolean;
   /** Groupes concernés (vide = tout le monde) */
   groupes: string[];
 }
-export const JEUX_DEFAUT: ReglagesJeux = { compagnon: true, parle: true, arbreSemaine: true, secoue: true, questionFeu: true, groupes: [] };
+export const JEUX_DEFAUT: ReglagesJeux = {
+  compagnon: true, parle: true, arbreSemaine: true, secoue: true, questionFeu: true,
+  feuSemaine: true, feuDevoirs: true, feuDecor: true, feuEtincelles: true, cacheCache: true, groupes: [],
+};
 
 export interface ReglagesSaisons {
   /** « Ambiance neutre » : aucun décor, l'appli comme avant */

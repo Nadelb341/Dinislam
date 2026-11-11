@@ -683,6 +683,7 @@ const handleModuleClick = (mod) => {
                 >
                   <button
                     onClick={() => handleModuleClick(mod)}
+                    data-carte-nom={mod.title}
                     className={cn(
                       'carte-accueil relative bg-card rounded-2xl p-4 shadow-sm border border-border w-full',
                       'flex flex-col items-center justify-center min-h-[160px]',

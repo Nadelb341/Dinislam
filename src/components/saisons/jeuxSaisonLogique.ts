@@ -1,3 +1,5 @@
+import type { Saison } from '@/lib/saisons';
+
 /** 🎠 Logique des petits jeux de saison (pure, testée dans jeuxSaisonLogique.test.ts) */
 
 /** 💬 Ce que dit le compagnon : il encourage à travailler, à faire valider ses devoirs, et à revenir pour qu'il grandisse */
@@ -55,3 +57,86 @@ export function questionDuJour(jour: string, apprises: { letter_arabic: string; 
   const q = BANQUE[g % BANQUE.length];
   return { ...q, options: melanger(q.options, g) };
 }
+
+// ——— 🔥 La flamme de la cheminée (Nadia, 2026-11-11 : idées 1, 2, 4, 5 gardées) ———
+export const FEU_MAX = 6;
+const jourDe = (d: Date) => d.toLocaleDateString('en-CA');
+
+/** Début de la semaine du feu : le dernier mercredi 18 h (le feu y est au maximum) */
+export function debutCycleFeu(maintenant: Date): Date {
+  const d = new Date(maintenant);
+  d.setHours(18, 0, 0, 0);
+  while (d.getDay() !== 3 || d > maintenant) d.setDate(d.getDate() - 1);
+  return d;
+}
+
+/**
+ * Règle de Nadia : mercredi à partir de 18 h, flamme au maximum (6). Chaque jour SANS connexion depuis, un cran de moins ;
+ * au 7ᵉ jour sans connexion, il ne reste que des braises (0). La connexion du jour la ravive d'un cran.
+ * `visites` = jours (AAAA-MM-JJ) où l'élève est venu, sans compter aujourd'hui.
+ */
+export function niveauFeu(maintenant: Date, visites: string[]): { avant: number; apres: number } {
+  const debut = debutCycleFeu(maintenant);
+  const aujourdhui = jourDe(maintenant);
+  const vus = new Set(visites);
+  let absents = 0;
+  const d = new Date(debut);
+  d.setDate(d.getDate() + 1);
+  d.setHours(12, 0, 0, 0);
+  while (jourDe(d) < aujourdhui) { if (!vus.has(jourDe(d))) absents += 1; d.setDate(d.getDate() + 1); }
+  const avant = Math.max(0, FEU_MAX - absents);
+  // Mercredi soir (le cycle commence aujourd'hui) : maximum
+  if (jourDe(debut) === aujourdhui) return { avant: FEU_MAX, apres: FEU_MAX };
+  return { avant, apres: Math.min(FEU_MAX, avant + 1) };
+}
+
+/** Taille de la flamme : 0 = braises (flammes cachées), puis de plus en plus grande ; tous les devoirs faits = grand feu */
+export const echelleFeu = (niveau: number, grandFeu: boolean) => (grandFeu && niveau > 0 ? 1.3 : niveau <= 0 ? 0 : 0.3 + (niveau / FEU_MAX) * 0.7);
+
+// ——— 🙈 Cache-cache (Nadia, 2026-11-11 : les 5 idées gardées) ———
+/** La carte derrière laquelle l'animal se cache aujourd'hui (la même toute la journée, différente d'un élève à l'autre) */
+export const cachetteDuJour = (jour: string, userId: string, n: number) => (n > 0 ? graine(`${jour}|${userId}|cache`) % n : -1);
+
+export interface MotArabe { arabe: string; translit: string; sens: string; image: string }
+export const MOTS_ARABES: MotArabe[] = [
+  { arabe: 'كِتَاب', translit: 'kitâb', sens: 'livre', image: '📖' },
+  { arabe: 'قَلَم', translit: 'qalam', sens: 'stylo', image: '✏️' },
+  { arabe: 'شَمْس', translit: 'chams', sens: 'soleil', image: '☀️' },
+  { arabe: 'قَمَر', translit: 'qamar', sens: 'lune', image: '🌙' },
+  { arabe: 'نَجْمَة', translit: 'najma', sens: 'étoile', image: '⭐' },
+  { arabe: 'بَيْت', translit: 'bayt', sens: 'maison', image: '🏠' },
+  { arabe: 'مَاء', translit: 'mâ\'', sens: 'eau', image: '💧' },
+  { arabe: 'شَجَرَة', translit: 'chajara', sens: 'arbre', image: '🌳' },
+  { arabe: 'وَرْدَة', translit: 'warda', sens: 'rose', image: '🌹' },
+  { arabe: 'قِطّ', translit: 'qitt', sens: 'chat', image: '🐈' },
+  { arabe: 'بَاب', translit: 'bâb', sens: 'porte', image: '🚪' },
+  { arabe: 'تُفَّاحَة', translit: 'touffâha', sens: 'pomme', image: '🍎' },
+  { arabe: 'حَلِيب', translit: 'halîb', sens: 'lait', image: '🥛' },
+  { arabe: 'خُبْز', translit: 'khoubz', sens: 'pain', image: '🍞' },
+  { arabe: 'مَسْجِد', translit: 'masjid', sens: 'mosquée', image: '🕌' },
+  { arabe: 'ثَلْج', translit: 'thalj', sens: 'neige', image: '❄️' },
+  { arabe: 'مَطَر', translit: 'matar', sens: 'pluie', image: '🌧️' },
+  { arabe: 'بَحْر', translit: 'bahr', sens: 'mer', image: '🌊' },
+  { arabe: 'سَمَكَة', translit: 'samaka', sens: 'poisson', image: '🐟' },
+  { arabe: 'عُصْفُور', translit: '\'ousfour', sens: 'oiseau', image: '🐦' },
+];
+
+/** 💬 Un mot gentil, ou une parole du Prophète ﷺ adaptée aux enfants (hadiths authentiques, source indiquée) */
+export const MOTS_GENTILS: { texte: string; source?: string }[] = [
+  { texte: 'Tu m\'as trouvé ! Tu as l\'œil d\'un vrai détective 🔎' },
+  { texte: 'Le Prophète ﷺ a dit : « Ton sourire pour ton frère est une aumône. »', source: 'At-Tirmidhî' },
+  { texte: 'Le Prophète ﷺ a dit : « Les actes les plus aimés d\'Allah sont ceux qu\'on fait régulièrement, même s\'ils sont petits. »', source: 'Al-Bukhârî et Muslim' },
+  { texte: 'Le Prophète ﷺ a dit : « Le meilleur d\'entre vous est celui qui apprend le Coran et l\'enseigne. »', source: 'Al-Bukhârî' },
+  { texte: 'Le Prophète ﷺ a dit : « Facilitez et ne compliquez pas, annoncez de bonnes nouvelles et ne faites pas fuir. »', source: 'Al-Bukhârî' },
+  { texte: 'Bravo ! Chaque jour où tu viens apprendre, c\'est un pas de plus 💚' },
+  { texte: 'Tu es patient et attentif : ce sont de belles qualités, ma shā\' Allah 🌟' },
+];
+
+export const motArabeDuJour = (jour: string) => MOTS_ARABES[graine(`${jour}|mot`) % MOTS_ARABES.length];
+export const motGentilDuJour = (jour: string) => MOTS_GENTILS[graine(`${jour}|gentil`) % MOTS_GENTILS.length];
+
+/** 🧣 Son habit du jour, selon la saison (gardé toute la journée) */
+export const HABIT: Record<Saison, { cle: 'echarpe' | 'bonnet' | 'fleur' | 'lunettes'; nom: string }> = {
+  automne: { cle: 'echarpe', nom: 'son écharpe' }, hiver: { cle: 'bonnet', nom: 'son bonnet' },
+  printemps: { cle: 'fleur', nom: 'sa fleur' }, ete: { cle: 'lunettes', nom: 'ses lunettes de soleil' },
+};

@@ -458,6 +458,11 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
       {ligne('arbreSemaine', '🌳 L\'arbre de la semaine', 'Un fruit par devoir, lettre, leçon ou sourate validé depuis lundi')}
       {ligne('secoue', '🎁 Secoue l\'arbre', 'Toucher l\'arbre (le chalet, le soleil) : un nom d\'Allah à découvrir, une fois par jour')}
       {ligne('questionFeu', '❓ La question du coin du feu', 'Le petit « ? » sur la cheminée : une question par jour')}
+      {ligne('feuSemaine', '🔥 La flamme suit la semaine', 'Automne et hiver : au maximum le mercredi dès 18 h, un cran de moins par jour sans connexion, braises au 7ᵉ jour ; venir la ravive')}
+      {ligne('feuDevoirs', '🪵 Une bûche par devoir validé', 'Chaque devoir validé de la semaine ajoute une bûche ; tous les devoirs faits = grand feu')}
+      {ligne('feuDecor', '🐈 Le chat et la théière', 'Grand feu : la théière fume et le chat dort devant ; feu éteint : le chat attend en regardant l\'élève')}
+      {ligne('feuEtincelles', '✨ Les étincelles du bonjour', 'À la 1ʳᵉ visite du jour, quelques étincelles montent de la cheminée')}
+      {ligne('cacheCache', '🙈 Cache-cache', 'L\'animal se cache chaque jour derrière une carte : le trouver = un mot gentil, le mot arabe du jour, une danse, son habit du jour et l\'album des cachettes')}
       <div className="space-y-1.5">
         <p className="text-xs font-bold">Pour qui ?</p>
         <div className="flex flex-wrap gap-1.5">

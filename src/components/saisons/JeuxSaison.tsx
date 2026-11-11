@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { lundiDeLaSemaine, type ReglagesSaisons, type Saison } from '@/lib/saisons';
 import { annoncerNiveau, EVT_TOUCHE, PAUSE_MS, type DetailTouche } from './compagnonEvenement';
+import { CacheCache, FeuSemaine } from './FeuEtCacheCache';
 import { messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
 
 /**
@@ -30,6 +31,7 @@ export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauc
     queryKey: ['my-group-ids', userId], enabled: !!userId && j.groupes.length > 0 && !isAdmin,
     queryFn: async () => ((await supabase.from('student_group_members').select('group_id').eq('user_id', userId!)).data || []).map((g) => g.group_id),
   });
+  const cheminee = (saison === 'automne' && r.automne.cheminee) || (saison === 'hiver' && r.hiver.cheminee);
   const concerne = isAdmin || !j.groupes.length || mesGroupes.some((g) => j.groupes.includes(g));
   if (!userId || !concerne) return null;
   return (
@@ -37,6 +39,11 @@ export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauc
       {(j.compagnon || j.parle) && <Compagnon userId={userId} prenom={prenom} grandit={j.compagnon} parle={j.parle} />}
       {(j.arbreSemaine || j.secoue) && <ArbreSemaine saison={saison} userId={userId} fruits={j.arbreSemaine} secoue={j.secoue} largeur={largeurHautGauche} />}
       {j.questionFeu && <QuestionFeu saison={saison} userId={userId} />}
+      {/* 🔥 La flamme, ses bûches, le chat et les étincelles : seulement là où il y a une cheminée (automne, hiver) */}
+      {cheminee && (j.feuSemaine || j.feuDevoirs || j.feuDecor || j.feuEtincelles) && (
+        <FeuSemaine userId={userId} regle={j.feuSemaine} buches={j.feuDevoirs} decor={j.feuDecor} etincelles={j.feuEtincelles} />
+      )}
+      {j.cacheCache && <CacheCache saison={saison} userId={userId} />}
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReglagesAutomne } from '@/lib/saisons';
 import { ERABLE, IMAGES_AUTOMNE } from './dessinsAutomne';
-import { PAUSE_MS, toucherCompagnon, useTailleCompagnon } from './compagnonEvenement';
+import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
 
 /**
  * 🍂 Tapis de feuilles en bas de l'accueil, à gauche de la cheminée (demande de Nadia 2026-11-04).
@@ -45,6 +45,7 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
   useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
   const perso = useMemo(() => choisirPersonnage(userId), [userId]);
   const echelle = useTailleCompagnon();
+  const habit = useHabitDuJour(userId);
   const [pause, setPause] = useState(false);
   const minuteur = useRef(0);
   useEffect(() => () => window.clearTimeout(minuteur.current), []);
@@ -92,7 +93,7 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
   if (!a.tapis) return null;
   const montrerPerso = a.personnage;
   const anime = !calme;
-  const img = IMAGES_AUTOMNE[perso].svg;
+  const img = IMAGES_AUTOMNE[perso].svg + habitSvg(habit, 48, 48, perso);
 
   return (
     <div className={`fixed bottom-0 left-0 z-[28] transition-opacity duration-500 ${pause ? 'jeux-pause' : ''}`}
