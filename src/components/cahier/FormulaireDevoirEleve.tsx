@@ -17,7 +17,7 @@ import { CiblesMulti } from '@/components/cahier/CiblesMulti';
 import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
 import { useProchainesEtapes } from '@/hooks/useProchainesEtapes';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
-import { brouillonDe, donnerDevoirs, enregistrerBrouillon, formVide, itemsDuFormulaire, type Cible, type FormEleve } from '@/lib/devoirsEleve';
+import { brouillonDe, donnerDevoirs, lireBrouillons, enregistrerBrouillon, formVide, itemsDuFormulaire, type Cible, type FormEleve } from '@/lib/devoirsEleve';
 
 const TYPE_OPTIONS = [
   { value: 'recitation', label: '🎙️ Récitation' }, { value: 'sourate', label: '📖 Sourate à mémoriser' }, { value: 'nourania', label: '✨ Leçon Nourania' },
@@ -52,10 +52,33 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
   const suggestions = useProchainesEtapes(eleve.user_id);
   const { data: reglages } = useReglagesDevoirsGroupe(groupeId);
 
+  // ✨ Pré-rempli (Nadia, 2026-11-11) : Nourania = la ligne sous la dernière cochée, Sourate / Invocation = celle en cours de validation.
+  // Seulement si l'élève n'a encore rien cette semaine et pas de brouillon ; un formulaire seulement pré-rempli n'est pas un brouillon.
+  const avaitBrouillon = useRef(!!lireBrouillons().parEleve[eleve.user_id]);
+  const prerempli = useRef<string | null>(null);
+  const preremplir = useRef(!avaitBrouillon.current && dejaCetteSemaine === 0);
+  useEffect(() => {
+    if (!preremplir.current || !suggestions.length) return;
+    preremplir.current = false;
+    const choisies = suggestions.filter((s) => ['nourania', 'sourate', 'invocations'].includes(s.type));
+    setForm((f) => {
+      const lignes = { ...f.lignes }; const cibles = { ...f.cibles };
+      for (const s of choisies) {
+        const ligne = (reglages?.lignes ?? lignesHabituelles()).find((l) => l.type === s.type && !l.perso && l.actif);
+        if (!ligne || (lignes[ligne.key] || '').trim()) continue;
+        lignes[ligne.key] = s.texte; cibles[ligne.key] = [s.cible];
+      }
+      const n = { ...f, parMatiere: true, lignes, cibles };
+      prerempli.current = JSON.stringify(n);
+      return n;
+    });
+  }, [suggestions, reglages]);
+
   // Brouillon de CET élève, gardé à chaque changement (idée 4)
   const premier = useRef(true);
   useEffect(() => {
     if (premier.current) { premier.current = false; return; }
+    if (prerempli.current && JSON.stringify(form) === prerempli.current) return;
     enregistrerBrouillon(eleve.user_id, nom, form);
   }, [form, eleve.user_id, nom]);
 

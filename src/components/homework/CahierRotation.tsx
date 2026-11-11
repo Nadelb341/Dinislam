@@ -135,7 +135,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
           <div className="flex flex-wrap items-center gap-2">
             <p className={cn('cahier-main text-lg leading-8 flex-1 min-w-[10rem]', passe && 'text-muted-foreground')}>{titre(c)}</p>
             {reste && (
-              <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-extrabold',
+              <span className={cn('shrink-0 rounded-full px-4 py-1.5 text-[22px] leading-7 font-extrabold',
                 reste.veille ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200')}>{reste.texte}</span>
             )}
           </div>
@@ -187,7 +187,7 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
         onAnimationEnd={() => setTourne(false)}>
         {/* 📢 2026-11-11 (Nadia) : un titre pour annoncer les devoirs de la semaine */}
         {simple && onglet === 'semaine' && (
-          <p className="pt-1 text-center text-lg font-extrabold uppercase tracking-[0.18em] text-red-700 dark:text-red-300">Devoirs à faire</p>
+          <p className="mx-auto w-fit rounded-2xl bg-red-600 px-5 py-2 text-center text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-white shadow-md ring-4 ring-red-200 dark:ring-red-900">📌 Devoirs à faire</p>
         )}
         {onglet === 'semaine' && (
           semaine.length ? parCours(semaine, (c) => `Pour ${jourLong(c)} :`, false) : (

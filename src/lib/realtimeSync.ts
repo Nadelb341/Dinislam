@@ -89,6 +89,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   learning_modules: ['learning-modules', 'admin-learning-modules', 'cartes-visibles', 'cartes-acces', 'module-visibility'],
   notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
+  nourania_lignes_faites: ['nourania-lignes-faites', 'devoir-prochaines-etapes'],
   nourania_lessons: ['admin-dashboard-stats', 'admin-module-progress', 'admin-nourania-lessons', 'admin-nourania-validations', 'admin-stats', 'fully-unlocked-students', 'nourania-lessons', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
   parent_lock_settings: [],
   point_settings: ['alphabet-point-settings'],

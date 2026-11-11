@@ -106,7 +106,7 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
           <div className={anime ? `saison-perso-pas ${perso === 'ecureuil' ? 'saute' : ''}` : ''}>
             <svg viewBox="0 0 48 48" width={Math.round(36 * echelle)} height={Math.round(36 * echelle)} role="button" tabIndex={0}
               aria-label={`${perso === 'ecureuil' ? "L'écureuil" : 'Le hérisson'} : touche-le pour qu'il te parle`}
-              className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); toucher(e.currentTarget); }}
+              className="pointer-events-auto cursor-pointer outline-none [-webkit-tap-highlight-color:transparent]" onClick={(e) => { e.stopPropagation(); toucher(e.currentTarget); }}
               onKeyDown={(e) => { if (e.key === 'Enter') toucher(e.currentTarget); }} style={{ filter: 'drop-shadow(0 1.5px 1px rgba(60,30,10,.25))' }} dangerouslySetInnerHTML={{ __html: img }} />
           </div>
         </div>

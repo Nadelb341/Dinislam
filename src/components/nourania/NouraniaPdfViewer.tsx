@@ -2,7 +2,9 @@ import { Component, useState, useCallback, useEffect, useMemo, useRef, type Reac
 import { Document, Page, pdfjs } from 'react-pdf';
 // Version « anciens appareils » du moteur PDF (vieux iPad/Safari), assortie à celle de la page (voir vite.config.ts)
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
@@ -84,8 +86,38 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
   const numeros = useMemo(() => numeroter(affichees), [affichees]);
   const maxNumero = nombreDeLignes(affichees);
   const marge = margeDroite(containerWidth, edition ? Math.max(maxNumero, 9) : maxNumero);
-  const largeurPage = Math.max(0, containerWidth - marge);
+  // ☑️ Lignes travaillées (2026-11-11, Nadia) : un carré à gauche de chaque ligne de la leçon ; place gardée à gauche de la page
+  const cocher = !edition && !!lessonId && !!user && lignesBase.some((l) => l.s === 'lecon');
+  const margeGauche = cocher ? Math.round(Math.min(40, Math.max(28, containerWidth * 0.06))) : 0;
+  const largeurPage = Math.max(0, containerWidth - marge - margeGauche);
   const modifie = !!edition && !memes(edition, lignesBase);
+
+  const { askValidation, validationDialog } = useConfirmValidation();
+  const cleFaites = ['nourania-lignes-faites', user?.id, lessonId];
+  const { data: faites = [] } = useQuery({
+    queryKey: cleFaites,
+    enabled: !!user && !!lessonId,
+    queryFn: async () => ((await supabase.from('nourania_lignes_faites').select('id, ligne').eq('user_id', user!.id).eq('lesson_id', lessonId!)).data || []),
+  });
+  const basculerLigne = async (n: number) => {
+    if (!user || !lessonId) return;
+    const deja = faites.find((f) => f.ligne === n);
+    try {
+      if (deja) {
+        // Décocher : sans confirmation (règle « valider demande confirmation, dévalider jamais »)
+        queryClient.setQueryData(cleFaites, faites.filter((f) => f.ligne !== n));
+        await ecrireOuGarder({ table: 'nourania_lignes_faites', op: 'delete', id: deja.id });
+      } else {
+        const id = crypto.randomUUID();
+        queryClient.setQueryData(cleFaites, [...faites, { id, ligne: n }]);
+        const r = await ecrireOuGarder({ table: 'nourania_lignes_faites', op: 'insert', rows: [{ id, user_id: user.id, lesson_id: lessonId, content_id: contentId ?? null, ligne: n }] });
+        toast.success(r === 'ok' ? `✅ Ligne ${n} cochée, bravo !` : `📡 Ligne ${n} cochée sur cet appareil : envoyée au retour du réseau`);
+      }
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+    void queryClient.invalidateQueries({ queryKey: ['nourania-lignes-faites'] });
+  };
 
   // Les lignes changent (réglage enregistré par le professeur, en direct) : la ligne allumée s'éteint
   useEffect(() => { setAllumee(null); }, [lignesBase]);
@@ -242,7 +274,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
             {Array.from({ length: numPages }, (_, i) => {
               const page = i + 1;
               return (
-                <div key={page} className="relative" style={{ width: largeurPage }}>
+                <div key={page} className="relative" style={{ width: largeurPage, marginLeft: margeGauche }}>
                   <Page
                     pageNumber={page}
                     width={largeurPage}
@@ -284,9 +316,20 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                           return <div key={idx} className="absolute left-[1.2%] bg-white/55 rounded-sm" style={{ ...zone, right: `${100 - BORD_TABLEAU}%` }} />;
                         }
                         const on = allumee === idx;
+                        const coche = n != null && faites.some((f) => f.ligne === n);
+                        const carre = Math.round(Math.min(30, Math.max(20, margeGauche - 8)));
                         return (
+                          <div key={idx} className="contents">
+                          {cocher && n != null && (
+                            <button type="button" aria-pressed={coche} aria-label={coche ? `Ligne ${n} travaillée : toucher pour décocher` : `Cocher la ligne ${n}`}
+                              onClick={() => (coche ? void basculerLigne(n) : askValidation(`Ligne ${n} travaillée ?`, `La ligne ${n} sera cochée ✅`, () => void basculerLigne(n)))}
+                              className={cn('pointer-events-auto absolute grid place-items-center rounded-md border-2 font-extrabold text-white shadow-sm transition-colors',
+                                coche ? 'bg-emerald-500 border-emerald-600' : 'bg-white/90 border-sky-500')}
+                              style={{ left: -margeGauche + Math.max(2, (margeGauche - carre) / 2), top: `calc(${(l.t + l.b) / 2}% - ${carre / 2}px)`, width: carre, height: carre, fontSize: carre * 0.65 }}>
+                              {coche ? '✓' : ''}
+                            </button>
+                          )}
                           <button
-                            key={idx}
                             type="button"
                             aria-label={`Ligne ${n}`}
                             aria-pressed={on}
@@ -299,6 +342,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                           >
                             {n != null && <Pastille n={n} hauteur={hauteur} police={police} allumee={on} />}
                           </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -310,6 +354,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
         )}
       </div>
 
+      {validationDialog}
       <AlertDialog open={confirmer === 'enregistrer'} onOpenChange={(o) => { if (!o) setConfirmer(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

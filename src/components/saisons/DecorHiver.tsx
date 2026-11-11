@@ -391,7 +391,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
                   aria-label={perso === 'pingouin' ? "Le pingouin : touche-le pour qu'il te parle" : "Le bonhomme de neige : touche-le pour qu'il te parle"}
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, perso === 'pingouin' ? 'Le pingouin' : 'Le bonhomme de neige')) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
-                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] cursor-pointer overflow-visible"
+                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent]"
                   style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] + habitSvg(habit, 30, 38) }} />
               )}
               {h.personnage && h.plongeon && (

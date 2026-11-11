@@ -515,7 +515,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
                 <svg ref={animalRef} viewBox="0 0 40 34" role="button" tabIndex={0} aria-label={`${nomAnimal} : touche-le pour qu'il te parle`}
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem(cleRepos); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, nomAnimal)) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
-                  className="pointer-events-auto fixed left-0 top-0 z-[29] h-[34px] w-10 cursor-pointer overflow-visible"
+                  className="pointer-events-auto fixed left-0 top-0 z-[29] h-[34px] w-10 cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent]"
                   style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1, transformOrigin: '50% 100%' }}
                   dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg + (animal === 'dauphin' ? '' : habitSvg(habit, 40, 34)) }} />
               )}

@@ -2561,6 +2561,12 @@ export type Database = {
           },
         ]
       }
+      nourania_lignes_faites: {
+        Row: { content_id: string | null; created_at: string; id: string; lesson_id: string; ligne: number; user_id: string }
+        Insert: { content_id?: string | null; created_at?: string; id?: string; lesson_id: string; ligne: number; user_id: string }
+        Update: { content_id?: string | null; created_at?: string; id?: string; lesson_id?: string; ligne?: number; user_id?: string }
+        Relationships: []
+      }
       nourania_lessons: {
         Row: {
           audio_url: string | null
