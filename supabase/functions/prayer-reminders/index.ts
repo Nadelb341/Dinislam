@@ -69,7 +69,7 @@ serve(async (req) => {
         instants_utc: h && Object.fromEntries(PRIERES.map((p) => [p.cle, new Date(instant(jour, h[p.cle], fuseau)).toISOString()])), amces });
     }
 
-    let q = supabase.from('notification_preferences')
+    const q = supabase.from('notification_preferences')
       .select('user_id, fajr_reminder, dhuhr_reminder, asr_reminder, maghrib_reminder, isha_reminder, priere_ville, priere_pays, priere_lat, priere_lon, priere_methode, priere_avance')
       .or('fajr_reminder.eq.true,dhuhr_reminder.eq.true,asr_reminder.eq.true,maghrib_reminder.eq.true,isha_reminder.eq.true');
     const { data: prefs, error } = await q;

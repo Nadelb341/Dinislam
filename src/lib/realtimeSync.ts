@@ -77,7 +77,10 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_flashcards: ['admin-flashcards', 'flashcards', 'grammaire-flashcard-counts', 'user-progress'],
   // 👁️ Visites des cartes (« Vu par N élèves cette semaine », 2026-10-27)
   module_visits: ['module-visits'],
-  module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles'],
+  module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
+  cartes_journal: ['cartes-journal'],
+  // 2026-11-11 : manquait → une carte ouverte « à tout le monde » n'apparaissait chez l'élève qu'après rechargement
+  learning_modules: ['learning-modules', 'admin-learning-modules', 'cartes-visibles', 'cartes-acces', 'module-visibility'],
   notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
   nourania_lessons: ['admin-dashboard-stats', 'admin-module-progress', 'admin-nourania-lessons', 'admin-nourania-validations', 'admin-stats', 'fully-unlocked-students', 'nourania-lessons', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
@@ -100,8 +103,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   sourate_admin_unlocks: ['admin-sourate-unlocks'],
   sourate_versets_audio: [],
   sourates: ['admin-dashboard-stats', 'admin-module-progress', 'admin-recitations', 'admin-sourate-validations', 'admin-sourates', 'admin-sourates-list', 'admin-stats', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
-  student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin', 'cartes-visibles'],
-  student_groups: ['admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
+  student_group_members: ['course-ready-info', 'attendance-group-members', 'attendance-groups-overview', 'my-group-ids', 'student-groups', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
+  student_groups: ['cartes-acces', 'admin-devoirs', 'admin-student-groups', 'admin-todo-groups', 'attendance-group-members', 'attendance-groups-overview', 'student-groups', 'student-groups-messaging', 'weekly-program-admin'],
   trash_items: [],
   user_allah_name_progress: ['admin-recitations', 'allah-name-progress', 'user-progress', 'fully-unlocked-students', 'bilans', ...PROGRESS_VIEWS],
   user_alphabet_progress: ['admin-alphabet-grid', 'admin-module-progress', 'alphabet-student-summary', 'alphabet-unlock-student', 'student-progress', 'student-progress-details', 'user-alphabet-progress-page', 'user-progress', ...PROGRESS_VIEWS],

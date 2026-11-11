@@ -1,3 +1,4 @@
+import { useCartesVisibles, slugCarte } from '@/hooks/useCartesVisibles';
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, MoreHorizontal } from 'lucide-react';
@@ -24,7 +25,6 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
       const { data, error } = await supabase
         .from('learning_modules')
         .select('*')
-        .eq('is_active', true)
         .order('display_order');
       if (error) throw error;
       return data || [];
@@ -43,15 +43,17 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
   }, [refetch]);
 
   // Use refetchInterval for near-realtime without complex setup
+  // 2026-11-11 : même règle que l'accueil (avant : « is_active » seul → une carte réservée à un groupe apparaissait chez tout le monde)
+  const visibles = useCartesVisibles();
   const navItems = React.useMemo(() => {
-    if (!modules) return [];
-    return modules.map((mod) => ({
+    if (!modules || !visibles) return [];
+    return modules.filter((mod) => visibles.has(slugCarte(mod))).map((mod) => ({
       icon: ICON_MAP[mod.icon] || BookOpen,
       label: mod.title,
       path: mod.is_builtin && mod.builtin_path ? mod.builtin_path : `/module/${mod.id}`,
       imageUrl: mod.image_url,
     }));
-  }, [modules]);
+  }, [modules, visibles]);
 
   const needsScroll = navItems.length > MAX_VISIBLE;
 

@@ -1,9 +1,12 @@
 import { carteOuverte } from '@/hooks/useCartesVisibles';
+import { accesDe, fermerATous, ouvrirATous, textePeriode } from '@/lib/cartesAcces';
+import { enregistrerAcces } from '@/lib/cartesAccesEnregistrer';
+import { useCartesAcces, useAccesEnAttente, rafraichirCartes } from '@/hooks/useCartesAcces';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +20,6 @@ import { cn, errorMessage } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWebPush } from '@/hooks/useWebPush';
-import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
@@ -345,27 +347,22 @@ const Index = () => {
     });
   }, [modules, saveModuleOrder]);
 
-  const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active, title }: {id: string;is_active: boolean;title?: string;}) => {
-      const { error } = await supabase.from('learning_modules').update({ is_active }).eq('id', id);
-      if (error) throw error;
-      return { is_active, title };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['learning-modules'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-learning-modules'] });
-      toast.success(result.is_active ? 'Module affiché aux élèves' : 'Module masqué aux élèves');
-
-      if (result.is_active && result.title) {
-        sendPushNotification({
-          title: '🌟 {prenom}, une nouvelle activité est disponible !', category: 'act',
-          body: `Salam ! Le module ${result.title} est maintenant disponible sur Dinislam !`,
-          type: 'broadcast'
-        });
-      }
-    },
-    onError: () => toast.error('Erreur lors de la mise à jour')
-  });
+  // 🌍 / 🔒 Ouvrir ou fermer une carte à tout le monde (menu ⋮). 2026-11-11 : passe par « Qui voit quoi »
+  // (avant : seul is_active changeait → sans effet sur une carte ciblée, et notification envoyée à TOUS les élèves)
+  const acces = useCartesAcces(isAdmin);
+  useAccesEnAttente(isAdmin);
+  const basculerTous = async (id: string, ouvrir: boolean) => {
+    const c = acces.cartes.find((x) => x.id === id);
+    if (!c) { toast.error('Cartes pas encore chargées, réessaie dans un instant'); return; }
+    try {
+      const r = await enregistrerAcces({ carte: c, avant: c.acces, apres: ouvrir ? ouvrirATous() : fermerATous(), eleves: acces.eleves, nomGroupe: acces.nomGroupe, nomEleve: acces.nomEleve });
+      rafraichirCartes(queryClient);
+      if (r === 'en_attente') toast.info('📡 Hors connexion : gardé sur cet appareil, envoyé au retour du réseau');
+      else if (r === 'ok') toast.success(ouvrir ? `🌍 « ${c.title} » ouverte à tout le monde` : `🔒 « ${c.title} » fermée à tout le monde`);
+    } catch (e) {
+      toast.error(`Pas enregistré : ${(e as Error).message}`);
+    }
+  };
 
   // Fetch user profile to check if name is set
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -628,7 +625,7 @@ const handleModuleClick = (mod) => {
               '/grammaire': { label: 'Grammaire (leçons faites)', court: 'Grammaire', valeur: progress.grammaire.validated, total: progress.grammaire.total },
               '/allah-names': { label: "99 Noms d'Allah", court: '99 Noms', valeur: progress.allahNames.validated, total: progress.allahNames.total },
             };
-            const source = isAdmin ? modules.filter((m) => m.is_active || visibilityMap[m.id]) : visibleModules;
+            const source = isAdmin ? modules.filter((m) => accesDe(m, visibilityMap[m.id]).mode !== 'personne') : visibleModules;
             const elements = source
               .filter((m) => m.is_builtin && m.builtin_path && PROGRESS_MAP[m.builtin_path] && PROGRESS_MAP[m.builtin_path].total !== 0)
               .sort((a, b) => a.display_order - b.display_order)
@@ -663,22 +660,22 @@ const handleModuleClick = (mod) => {
                       'flex flex-col items-center justify-center min-h-[160px]',
                       'animate-slide-up',
                       `stagger-${index % 6 + 1}`,
-                      !mod.is_active && isAdmin && 'opacity-50 grayscale'
+                      isAdmin && accesDe(mod, visibilityMap[mod.id]).mode === 'personne' && 'opacity-50 grayscale'
                     )}
                     style={{ animationFillMode: 'both' }}>
 
-                    {/* Hidden badge for admin */}
-                    {isAdmin && !mod.is_active &&
-                    <div className="absolute top-2 left-2 z-20 bg-destructive/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
-                        Masqué
-                      </div>
-                    }
-                    {/* Targeted badge for admin */}
-                    {isAdmin && mod.is_active && visibilityMap[mod.id] && visibilityMap[mod.id].visibility_type !== 'all' &&
-                    <div className="absolute top-2 left-2 z-20 bg-blue-500/80 text-white text-[9px] px-1.5 py-0.5 rounded font-medium">
-                        🎯 Ciblé
-                      </div>
-                    }
+                    {/* 🗂️ Qui voit la carte (admin, 2026-11-11) : avant, « Masqué » s'affichait aussi sur une carte ouverte à des groupes */}
+                    {isAdmin && (() => {
+                      const mode = accesDe(mod, visibilityMap[mod.id]).mode;
+                      const dates = textePeriode(mod);
+                      if (mode === 'tous' && !dates) return null;
+                      return (
+                        <div className={cn('absolute top-2 left-2 z-20 text-white text-[9px] px-1.5 py-0.5 rounded font-medium', mode === 'personne' ? 'bg-destructive/80' : mode === 'certains' ? 'bg-blue-500/80' : 'bg-emerald-600/80')}
+                          title={dates ? `Ouverte ${dates}` : undefined}>
+                          {mode === 'personne' ? '🔒 Personne' : mode === 'certains' ? '🎯 Ciblé' : '🌍'}{dates ? ' ⏰' : ''}
+                        </div>
+                      );
+                    })()}
 
                     {/* Icon */}
                     <div className="relative z-10">
@@ -751,20 +748,22 @@ const handleModuleClick = (mod) => {
                           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border mb-1">
                             👁️ Vu par {visitsByModule[mod.id] ?? 0} élève{(visitsByModule[mod.id] ?? 0) > 1 ? 's' : ''} cette semaine
                           </div>
-                          <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleActiveMutation.mutate({ id: mod.id, is_active: !mod.is_active, title: mod.title });
-                          }}>
-                            {mod.is_active ?
-                          <><EyeOff className="h-4 w-4 mr-2 text-destructive" /><span className="text-destructive">Masquer aux élèves</span></> :
-                          <><Eye className="h-4 w-4 mr-2 text-green-600" /><span className="text-green-600">Afficher aux élèves</span></>
-                          }
-                          </DropdownMenuItem>
+                          {accesDe(mod, visibilityMap[mod.id]).mode === 'tous' ? (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); void basculerTous(mod.id, false); }}>
+                              <EyeOff className="h-4 w-4 mr-2 text-destructive" /><span className="text-destructive">Fermer à tout le monde</span>
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); void basculerTous(mod.id, true); }}>
+                              <Eye className="h-4 w-4 mr-2 text-green-600" /><span className="text-green-600">Ouvrir à tout le monde</span>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={(e) => { e.stopPropagation(); setVisibilityTarget({ id: mod.id, title: mod.title }); }}>
                             <Users className="h-4 w-4 mr-2 text-blue-500" />
                             <span className="text-blue-600">Afficher à…</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate('/admin?section=cartes-acces'); }}>
+                            <span className="mr-2">🗂️</span><span className="font-semibold">Qui voit quelles cartes</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -271,6 +271,11 @@ const AdminCommandModal = ({
               </button>
               {/* 📊 Bilan trimestriel (2026-10-28, demande de Nadia : juste sous « Brouillons ») */}
               <BoutonBilanTrimestriel onOpen={() => { onClose(); navigate('/admin?section=bilan-trimestriel'); }} />
+              {/* 🗂️ Qui voit quoi (2026-11-11) : quelles cartes sont ouvertes à quels groupes et élèves */}
+              <button onClick={() => { onClose(); navigate('/admin?section=cartes-acces'); }}
+                className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-sky-100 text-sky-900 dark:bg-sky-950/50 dark:text-sky-100">
+                <span>🗂️ Qui voit quelles cartes</span>
+              </button>
               {/* 🔧 Apparence appli (2026-10-29) : le titre de l'accueil et ses effets */}
               <button onClick={() => { onClose(); navigate('/admin?section=apparence'); }}
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100">

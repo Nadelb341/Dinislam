@@ -64,7 +64,7 @@ const FAMILIES: Family[] = [
     id: 'ann', title: 'Annonces', icon: Megaphone,
     soft: 'bg-violet-50', border: 'border-violet-200', ink: 'text-violet-900', chip: 'bg-violet-600',
     items: [
-      { key: 'notif_act', label: 'Nouvelle activité', hint: 'Un nouveau module est disponible' },
+      { key: 'notif_act', label: 'Nouvelle activité', hint: 'Une nouvelle carte s\'ouvre pour toi' },
       { key: 'notif_sched', label: 'Annonces programmées', hint: "Messages prévus par l'enseignante" },
     ],
   },

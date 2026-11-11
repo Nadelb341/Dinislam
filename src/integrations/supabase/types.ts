@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      cartes_journal: {
+        Row: {
+          carte: string
+          cree_le: string
+          id: string
+          module_id: string | null
+          par: string | null
+          quoi: string
+        }
+        Insert: {
+          carte: string
+          cree_le?: string
+          id?: string
+          module_id?: string | null
+          par?: string | null
+          quoi: string
+        }
+        Update: {
+          carte?: string
+          cree_le?: string
+          id?: string
+          module_id?: string | null
+          par?: string | null
+          quoi?: string
+        }
+        Relationships: []
+      }
       absence_justifications: {
         Row: {
           course_date: string
@@ -1781,6 +1808,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          ouverte_du: string | null
+          ouverte_jusquau: string | null
+          ouverture_annoncee_le: string | null
           is_builtin: boolean | null
           module_type: string
           title: string
@@ -1797,6 +1827,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          ouverte_du?: string | null
+          ouverte_jusquau?: string | null
+          ouverture_annoncee_le?: string | null
           is_builtin?: boolean | null
           module_type: string
           title: string
@@ -1813,6 +1846,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          ouverte_du?: string | null
+          ouverte_jusquau?: string | null
+          ouverture_annoncee_le?: string | null
           is_builtin?: boolean | null
           module_type?: string
           title?: string
