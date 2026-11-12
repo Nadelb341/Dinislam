@@ -20,6 +20,7 @@ import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import OfflineBanner from '@/components/shared/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSaisonActive } from '@/lib/saisons';
+import { DecorPages } from '@/components/saisons/DecorPages';
 
 /** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
 function useCouleursSaison() {
@@ -79,6 +80,7 @@ const AppLayout = ({
         <ErrorBoundary scope="page">{children}</ErrorBoundary>
       </main>
       {showBottomNav && <BottomNav />}
+      <SilentBoundary name="Petit décor des pages"><DecorPages /></SilentBoundary>
       <VersionChangelogModal />
       <StarMascot />
       <AdminMoonAssistant />

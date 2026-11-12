@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useCartesAcces } from '@/hooks/useCartesAcces';
 import { chargerProchainesEtapes, etapeVisible, type Suggestion } from '@/hooks/useProchainesEtapes';
 import { donnerDevoirs, type ItemDevoir } from '@/lib/devoirsEleve';
+import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 /**
@@ -57,6 +58,9 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
     ?? Object.fromEntries(MATIERES_GROUPE.map((m) => [m.type, { on: ['nourania', 'sourate', 'invocations'].includes(m.type), audio: m.audio }])));
   const [exclus, setExclus] = useState<Set<string>>(() => new Set(eleves.filter((e) => dejaCetteSemaine(e.user_id) > 0).map((e) => e.user_id)));
   const [retires, setRetires] = useState<Set<string>>(new Set()); // « élève|matière » retirés à la main
+  // ✏️ Texte modifié à la main pour un élève et une matière (Nadia, 2026-11-12) ; clé « élève|matière »
+  const [textes, setTextes] = useState<Record<string, string>>({});
+  const [enEdition, setEnEdition] = useState<string | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -77,7 +81,9 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
     const items = MATIERES_GROUPE.filter((m) => matieres[m.type]?.on).flatMap((m) => {
       const s = (etapes?.[e.user_id] || []).find((x) => x.type === m.type);
       if (!s || !etapeVisible(acces, e.user_id, m.type) || retires.has(`${e.user_id}|${m.type}`)) return [];
-      return [{ m, item: itemDepuisEtape(s, !!matieres[m.type]?.audio) }];
+      const item = itemDepuisEtape(s, !!matieres[m.type]?.audio);
+      const perso = textes[`${e.user_id}|${m.type}`];
+      return [{ m, item: perso?.trim() ? { ...item, titre: perso.trim() } : item }];
     });
     return { e, items, actif: !exclus.has(e.user_id) && items.length > 0 };
   });
@@ -138,12 +144,25 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                     <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">{p.e.full_name || 'Élève'}</span>
                     {deja > 0 && <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">déjà {deja} cette semaine</span>}
                   </label>
-                  {p.items.map(({ m, item }) => (
-                    <p key={m.type} className="flex items-start gap-1.5 ps-6 text-xs">
-                      <span className="cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]">{m.emoji} {item.titre}</span>
+                  {p.items.map(({ m, item }) => {
+                    const k = `${p.e.user_id}|${m.type}`;
+                    return (
+                    <div key={m.type} className="flex items-start gap-1.5 ps-6 text-xs">
+                      {enEdition === k ? (
+                        <Textarea autoFocus value={textes[k] ?? item.titre} rows={2} aria-label={`Devoir ${m.label} de ${p.e.full_name}`}
+                          onChange={(ev) => setTextes((x) => ({ ...x, [k]: ev.target.value }))}
+                          onBlur={() => setEnEdition(null)}
+                          onKeyDown={(ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); setEnEdition(null); } }}
+                          className="cahier-main text-sm flex-1 min-w-0 min-h-0 py-1" />
+                      ) : (
+                        <span className="cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]">{m.emoji} {item.titre}</span>
+                      )}
+                      <button type="button" aria-label={enEdition === k ? 'Terminer la modification' : `Modifier le devoir ${m.label} de ${p.e.full_name}`}
+                        onMouseDown={(ev) => ev.preventDefault()} onClick={() => setEnEdition(enEdition === k ? null : k)} className="shrink-0 text-sm">{enEdition === k ? '✅' : '✏️'}</button>
                       <button type="button" aria-label={`Retirer ${m.label} pour ${p.e.full_name}`} onClick={() => setRetires((x) => new Set(x).add(`${p.e.user_id}|${m.type}`))} className="text-destructive font-bold">✕</button>
-                    </p>
-                  ))}
+                    </div>
+                    );
+                  })}
                   {!p.items.length && <p className="ps-6 text-[11px] text-muted-foreground">Rien à donner dans ces matières (tout validé, ou carte fermée pour lui).</p>}
                   {trop && p.actif && <p className="ps-6 text-[11px] font-semibold text-amber-700 dark:text-amber-300">⚠️ Plus que le maximum de la semaine ({maxSemaine}).</p>}
                 </div>

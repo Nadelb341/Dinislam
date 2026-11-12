@@ -160,7 +160,7 @@ export default function DecorationsSaisons() {
   const majA = (k: keyof ReglagesAutomne, v: boolean) => setR((x) => ({ ...x, automne: { ...x.automne, [k]: v } }));
   const majH = (k: keyof ReglagesHiver, v: boolean) => setR((x) => ({ ...x, hiver: { ...x.hiver, [k]: v } }));
   const majC = (s: 'printemps' | 'ete', k: keyof ReglagesClair, v: boolean) => setR((x) => ({ ...x, [s]: { ...x[s], [k]: v } }));
-  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles' | 'animerToujours', label: string, aide?: string) => (
+  const ligne = (k: 'auto' | 'annonce' | 'elevesPeuventCouper' | 'ramadanDabord' | 'themeSombre' | 'pluieEtoiles' | 'decorPages' | 'animerToujours', label: string, aide?: string) => (
     <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2 cursor-pointer">
       <span className="min-w-0"><span className="block text-sm font-bold">{label}</span>{aide && <span className="block text-xs text-muted-foreground">{aide}</span>}</span>
       <Switch checked={r[k]} onCheckedChange={(v) => maj(k, v)} />
@@ -198,6 +198,7 @@ export default function DecorationsSaisons() {
           {ligne('ramadanDabord', 'Pendant le Ramadan, pas de décor de saison', 'Les couleurs du Ramadan passent avant')}
           {ligne('themeSombre', 'Décorer aussi le thème sombre', 'Décoché au départ')}
           {ligne('animerToujours', '📱 Animer même si le téléphone demande « Réduire les animations »', reduitAnimations ? "⚠️ CE téléphone a « Réduire les animations » activé (Réglages › Accessibilité › Mouvement) : décoché, tout serait figé ici" : "Ce téléphone ne demande pas moins d'animations")}
+          {ligne('decorPages', '🍂 Petit décor dans les pages', "Quelques feuilles (ou flocons, pétales) qui tombent doucement dans les autres pages que l'accueil")}
           {ligne('pluieEtoiles', "Garder la pluie d'étoiles du titre", "Décoché : pendant une saison, il y a déjà les feuilles ou les flocons qui tombent")}
           <label className="block text-sm font-semibold">Quantité de feuilles : <b>{r.quantite <= 12 ? 'Très discret' : r.quantite <= 24 ? 'Normal' : 'Festif'}</b> ({r.quantite})
             <input type="range" min={5} max={40} value={r.quantite} onChange={(e) => maj('quantite', Number(e.target.value))} className="w-full accent-[#b5562b]" />

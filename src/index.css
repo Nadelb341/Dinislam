@@ -780,3 +780,7 @@ html.feu-eteint .saison-feu, html.feu-eteint .hiver-feu { opacity: 0 !important;
 @keyframes jeux-pirouette { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(180deg) scale(1.15) translateY(-6px); } 100% { transform: rotate(360deg) scale(1); } }
 .jeux-pluie { top: -2rem; animation: jeux-pluie 2.4s ease-in both; }
 @keyframes jeux-pluie { to { transform: translate(18px, 105vh) rotate(260deg); } }
+
+/* 🍂 Petit décor dans les pages (2026-11-12) : chute lente et légère */
+.decor-page { top: -2rem; animation-name: decor-page; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes decor-page { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(24px, 55vh) rotate(160deg); } 100% { transform: translate(-10px, 110vh) rotate(320deg); } }

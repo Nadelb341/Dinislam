@@ -175,6 +175,8 @@ export interface ReglagesSaisons {
   themeSombre: boolean;
   /** Pluie d'étoiles du titre pendant une saison décorée (non par défaut : « ça fait chargé avec les feuilles », Nadia 2026-11-04) */
   pluieEtoiles: boolean;
+  /** 🍂 Petit décor léger dans les pages autres que l'accueil (Nadia, 2026-11-12) */
+  decorPages: boolean;
   /** Animer même si le téléphone a « Réduire les animations » (Nadia 2026-11-04 : tout était figé sur son iPhone) */
   animerToujours: boolean;
   /** Feuilles : 5 à 40 (18 = « Normal ») */
@@ -202,7 +204,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
-  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, animerToujours: true,
+  neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, decorPages: true, animerToujours: true,
   quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT,
   meteo: METEO_DEFAUT, logo: LOGO_DEFAUT, jeux: JEUX_DEFAUT,
 };
