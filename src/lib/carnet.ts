@@ -17,20 +17,6 @@ export function trierCarnet<T extends Pick<MessageCarnet, 'epingle' | 'envoyer_l
   return [...msgs].sort((a, b) => (Number(b.epingle) - Number(a.epingle)) || (b.envoyer_le.localeCompare(a.envoyer_le)));
 }
 
-/** Les messages de plus de 30 jours (non épinglés) passent dans l'archive, rangée par mois (le plus récent d'abord) */
-export function separerArchive<T extends Pick<MessageCarnet, 'epingle' | 'envoyer_le'>>(msgs: T[], now = new Date()) {
-  const limite = now.getTime() - 30 * 86400000;
-  const recents: T[] = [];
-  const parMois = new Map<string, T[]>();
-  for (const m of trierCarnet(msgs)) {
-    if (m.epingle || new Date(m.envoyer_le).getTime() >= limite) { recents.push(m); continue; }
-    const k = m.envoyer_le.slice(0, 7);
-    parMois.set(k, [...(parMois.get(k) || []), m]);
-  }
-  const archive = [...parMois.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([k, items]) => ({ mois: libelleMois(k), cle: k, items }));
-  return { recents, archive };
-}
-
 export const libelleMois = (aaaamm: string) => {
   const [a, m] = aaaamm.split('-').map(Number);
   const t = new Date(a, m - 1, 15).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -94,15 +80,34 @@ export const dateCarnet = (iso: string, heure = false) => {
 
 /**
  * Côté élève / parent (Nadia, 2026-11-12) : tout ce qui reste à lire est affiché DÉPLIÉ ; après « J'ai lu », le message
- * passe dans « Voir l'historique » (le plus récent en tête). Restent en haut : les messages épinglés, et ceux qui attendent
+ * passe dans « Voir l'historique » (le plus récent en tête), gardé 6 mois. Restent en haut : les messages épinglés, et ceux qui attendent
  * encore la signature d'un parent (sinon le parent ne la verrait plus).
  */
-export function separerPourEleve<T extends MessageCarnet>(msgs: T[], lectures: LectureCarnet[], uid: string, estParent: boolean) {
+export function separerPourEleve<T extends MessageCarnet>(msgs: T[], lectures: LectureCarnet[], uid: string, estParent: boolean, maintenant = new Date()) {
   const miennes = (id: string) => lectures.filter((l) => l.message_id === id && l.user_id === uid);
   const lu = (m: T) => miennes(m.id).length > 0;
   const signe = (m: T) => miennes(m.id).some((l) => l.role === 'parent') || (estParent && lu(m));
   const aLire: T[] = [], historique: T[] = [];
   for (const m of trierCarnet(msgs)) (m.epingle || !lu(m) || (m.signature && !signe(m)) ? aLire : historique).push(m);
   historique.sort((a, b) => b.envoyer_le.localeCompare(a.envoyer_le));
-  return { aLire, historique };
+  // 🗂️ Côté élève, l'historique ne garde que 6 mois (Nadia, 2026-11-12)
+  const limite = maintenant.getTime() - MOIS_HISTORIQUE_ELEVE * 30.44 * 86400000;
+  return { aLire, historique: historique.filter((m) => new Date(m.envoyer_le).getTime() >= limite) };
+}
+
+export const MOIS_HISTORIQUE_ELEVE = 6;
+/** Côté enseignante : effacés (→ corbeille de Paramètres) au bout de 14 mois, par la tâche automatique `taches-automatiques` */
+export const MOIS_HISTORIQUE_PROF = 14;
+
+/**
+ * Côté enseignante (Nadia, 2026-11-12 : « l'historique exactement comme pour l'élève ») : en haut, le dernier message envoyé,
+ * les épinglés et les programmés ; tout le reste dans « Voir l'historique », le plus récent en tête.
+ */
+export function separerPourProf<T extends MessageCarnet>(msgs: T[], maintenant = new Date()) {
+  const tries = trierCarnet(msgs);
+  const futur = (m: T) => new Date(m.envoyer_le).getTime() > maintenant.getTime();
+  const dernier = tries.filter((m) => !futur(m)).sort((a, b) => b.envoyer_le.localeCompare(a.envoyer_le))[0];
+  const enHaut = tries.filter((m) => m.epingle || futur(m) || m === dernier);
+  const historique = tries.filter((m) => !enHaut.includes(m)).sort((a, b) => b.envoyer_le.localeCompare(a.envoyer_le));
+  return { enHaut, historique };
 }

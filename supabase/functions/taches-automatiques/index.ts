@@ -59,6 +59,22 @@ serve(async () => {
     }
     bilan.carnet_relances = relances;
 
+    // 🗂️ Historique du carnet : au bout de 14 mois, le message part dans la corbeille de Paramètres de l'enseignante
+    // (copie complète d'abord, jamais d'effacement direct ; la corbeille de l'admin n'est jamais vidée toute seule)
+    const il14mois = new Date(Date.now() - 14 * 30.44 * 86400000).toISOString();
+    const premierAdmin = (admins || [])[0]?.user_id;
+    let ranges = 0;
+    if (premierAdmin) {
+      const { data: vieux } = await supabase.from('carnet_messages').select('*').eq('epingle', false).lt('envoyer_le', il14mois).limit(50);
+      for (const m of vieux || []) {
+        const { error: eT } = await supabase.from('trash_items').insert({ user_id: premierAdmin, item_type: 'carnet_message', original_id: m.id, label: `📒 ${m.emoji} ${m.titre} (plus de 14 mois)`, item_data: m });
+        if (eT) { console.error('carnet corbeille', eT); continue; }
+        const { error: eD } = await supabase.from('carnet_messages').delete().eq('id', m.id);
+        if (eD) console.error('carnet effacement', eD); else ranges++;
+      }
+    }
+    bilan.carnet_corbeille_14_mois = ranges;
+
     // ⏳ Les rendez-vous du mardi (une fois par semaine)
     const p = parisNow();
     const estMardi = new Date(`${p.day}T12:00:00Z`).getUTCDay() === 2;
