@@ -60,3 +60,19 @@ describe('bilan de la semaine', () => {
     expect(bilanAProposer(new Date(2026, 10, 16, 20, 0), null)).toBe(false); // lundi
   });
 });
+
+describe('carnet côté élève', () => {
+  it('à lire déplié ; lu → historique (le plus récent en tête) ; signature attendue reste en haut', async () => {
+    const { separerPourEleve } = await import('./carnet');
+    const l = (id: string, role = 'eleve') => ({ message_id: id, user_id: 'u', role, lu_le: '', reponse: null });
+    const { aLire, historique } = separerPourEleve([
+      msg({ id: 'nouveau', envoyer_le: '2026-11-12T00:00:00Z' }),
+      msg({ id: 'lu1', envoyer_le: '2026-11-01T00:00:00Z' }),
+      msg({ id: 'lu2', envoyer_le: '2026-11-05T00:00:00Z' }),
+      msg({ id: 'signe?', signature: true, envoyer_le: '2026-11-03T00:00:00Z' }),
+      msg({ id: 'signe', signature: true, envoyer_le: '2026-11-02T00:00:00Z' }),
+    ], [l('lu1'), l('lu2'), l('signe?'), l('signe'), l('signe', 'parent')], 'u', false);
+    expect(aLire.map((m) => m.id)).toEqual(['nouveau', 'signe?']);
+    expect(historique.map((m) => m.id)).toEqual(['lu2', 'signe', 'lu1']);
+  });
+});

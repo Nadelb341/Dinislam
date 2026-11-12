@@ -134,19 +134,19 @@ const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printe
 
 /** Mode « décor » : 4 cachettes au bord de l'écran, avec le petit tas qui le cache (Nadia, choix B) */
 const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
-  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁🍂' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'le panier de pommes', tas: '🍎🧺' }, { nom: 'les champignons', tas: '🍄🍂🍄' }],
-  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄❄️' }, { nom: 'le sapin', tas: '🎄' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
-  printemps: [{ nom: 'les fleurs', tas: '🌷🌼🌷' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱🌿' }, { nom: 'les papillons', tas: '🦋🌼' }],
+  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'le panier de pommes', tas: '🍎🧺' }, { nom: 'les champignons', tas: '🍄🍂' }],
+  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'le sapin', tas: '🎄' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
+  printemps: [{ nom: 'les fleurs', tas: '🌷🌼' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱' }, { nom: 'les papillons', tas: '🦋🌼' }],
   ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
 };
 /** Bas à gauche, haut à gauche, bas à droite, milieu à droite : toujours au bord, sans cacher les boutons */
 const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
-  { pos: { left: 0, bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }, cote: 'g' },
-  { pos: { left: 0, top: '38%' }, cote: 'g' },
-  { pos: { right: 0, bottom: 'calc(env(safe-area-inset-bottom) + 170px)' }, cote: 'd' },
-  { pos: { right: 0, top: '30%' }, cote: 'd' },
-];
-export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
+  // À moitié dans le bord de l'écran (Nadia, 12/11 : le tas cachait le bouton du carnet) : il ne couvre aucun bouton
+  { pos: { left: -14, bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }, cote: 'g' },
+  { pos: { left: -14, top: '58%' }, cote: 'g' },
+  { pos: { right: -14, top: '62%' }, cote: 'd' },
+  { pos: { left: -14, top: '42%' }, cote: 'g' },
+];export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
   const cleAlbum = `dinislam_cache_album_${userId}`;
   // 🔁 Nadia, 2026-11-12 : le jeu revient À CHAQUE retour sur l'accueil (nouvelle partie à chaque fois que l'accueil s'affiche)
   const [trouveIci, setTrouveIci] = useState(false);
@@ -182,8 +182,11 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
 
   // 🐾 Les traces partent de sa cachette dans le décor (B) et mènent à la carte où il se cache (A) — les 3 façons en même temps
   const [traces, setTraces] = useState<{ x: number; y: number; r: number }[]>([]);
+  // ⏱️ Les traces n'arrivent qu'au bout de 10 s : l'enfant a d'abord le temps de chercher tout seul (Nadia, 2026-11-12)
+  const [indice, setIndice] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setIndice(true), 10_000); return () => clearTimeout(t); }, []);
   useEffect(() => {
-    if (!hote || trouveIci) { setTraces([]); return; }
+    if (!hote || trouveIci || !indice) { setTraces([]); return; }
     let raf = 0;
     const calculer = () => {
       cancelAnimationFrame(raf);
@@ -204,7 +207,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
     window.addEventListener('scroll', calculer, true);
     window.addEventListener('resize', calculer);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', calculer, true); window.removeEventListener('resize', calculer); };
-  }, [hote, trouveIci]);
+  }, [hote, trouveIci, indice]);
 
   const trouver = () => {
     const nom = hote?.nom || 'une carte';
@@ -217,7 +220,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
     setTrouveIci(true);
     setHote(null);
   };
-  const rate = () => toast(`🍃 Raté ! ${animal.nom} était là… mais il est parti. Suis ses traces 🐾`);
+  const rate = () => toast(indice ? `🍃 Raté ! ${animal.nom} était là… mais il est parti. Suis ses traces 🐾` : `🍃 Raté ! ${animal.nom} était là… mais il est parti. Cherche encore !`);
 
   const mot = motArabeDuJour(jour());
   const gentil = motGentilDuJour(jour());
@@ -251,7 +254,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
         <button ref={decorRef} type="button" onClick={rate} aria-label={`La cachette de ${animal.nom} : ${cachette.nom}`}
           className="fixed z-[30] flex items-end outline-none [-webkit-tap-highlight-color:transparent]" style={coin.pos}>
           <svg viewBox={animal.vb} aria-hidden className={`h-10 w-10 opacity-80 ${coin.cote === 'g' ? '-mr-6 jeux-decor-g' : 'order-2 -ml-6 jeux-decor-d'}`} dangerouslySetInnerHTML={{ __html: animal.svg }} />
-          <span aria-hidden className="relative text-3xl leading-none drop-shadow">{cachette.tas}</span>
+          <span aria-hidden className="relative text-2xl leading-none drop-shadow">{cachette.tas}</span>
         </button>, document.body)}
       {/* C · les empreintes, du décor jusqu'à la carte */}
       {traces.length > 0 && createPortal(

@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useConvocations } from '@/components/convocations/useConvocations';
 import { NOM_DESTINATAIRE, lienSms, lienWhatsApp, numeroPour, type Destinataire } from '@/lib/convocations';
-import { dateCarnet, elevesVises, resumeCible, separerArchive, suiviLecture, texteCarnetPartage, trierCarnet, type LectureCarnet, type MessageCarnet } from '@/lib/carnet';
+import { dateCarnet, elevesVises, libelleMois, resumeCible, separerArchive, separerPourEleve, suiviLecture, texteCarnetPartage, trierCarnet, type LectureCarnet, type MessageCarnet } from '@/lib/carnet';
 import { useCarnet } from './useCarnet';
 import { CarnetEditeur } from './CarnetEditeur';
 
@@ -48,7 +48,7 @@ export function CarnetLiaison({ isAdmin }: { isAdmin: boolean }) {
   // Ouvert depuis une notification ou « Continuer » un brouillon (/?carnet=1) : le carnet se déplie et on y descend
   useEffect(() => {
     if (params.get('carnet') !== '1' || !data) return;
-    setDeplie(true);
+    if (isAdmin) setDeplie(true);
     if (isAdmin && loadDraft('dinislam_carnet')) setEditeur({ message: null });
     setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     const p = new URLSearchParams(params); p.delete('carnet'); setParams(p, { replace: true });
@@ -110,10 +110,12 @@ export function CarnetLiaison({ isAdmin }: { isAdmin: boolean }) {
   const premier = recents[0] ?? archive[0]?.items[0];
   const autres = recents.filter((m) => m !== premier);
   const nbArchive = archive.reduce((n, a) => n + a.items.length, 0);
+  // 👧 Élève / parent : à lire = tout déplié ; déjà lu = « Voir l'historique » (2026-11-12)
+  const { aLire, historique } = separerPourEleve(messages, lectures, user.id, data.estParent);
 
   const note = (m: MessageCarnet) => (
     <Note key={m.id} m={m} isAdmin={isAdmin} userId={user.id} lectures={lectures} miennes={miennes(m.id)} estParent={data.estParent} classe={classe}
-      onLu={() => askValidation('Tu as bien lu ce message ?', `« ${m.emoji} ${m.titre} » sera marqué comme lu ✅`, () => void ecrireLecture(m, 'eleve').catch((e) => toast.error((e as Error).message)))}
+      onLu={() => askValidation('Tu as bien lu ce message ?', `« ${m.emoji} ${m.titre} » sera marqué comme lu ✅ et rangé dans « Voir l'historique ».`, () => void ecrireLecture(m, 'eleve').catch((e) => toast.error((e as Error).message)))}
       onRepondre={(r) => void repondre(m, r)}
       onSigner={() => (data.estParent ? askValidation('Signer ce message ?', `« ${m.titre} » : « Vu par un parent » ✍️`, () => void ecrireLecture(m, 'parent').then(() => toast.success('✍️ Signé : ton professeur le voit'))) : setSigner(m))}
       onModifier={() => setEditeur({ message: m })} onSupprimer={() => setASupprimer(m)} onEpingler={() => void epingler(m)} />
@@ -121,36 +123,59 @@ export function CarnetLiaison({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <section ref={ref} aria-label="Carnet de liaison" className="rounded-2xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/20 shadow-sm overflow-hidden">
-      {/* C · le bandeau compact : touche pour déplier */}
+      {/* Le bandeau : titre, pastille des nouveaux, « + Nouveau » (enseignante) */}
       <div className="flex items-center gap-2 px-3 py-2.5">
-        <button type="button" aria-expanded={deplie} onClick={() => setDeplie(!deplie)} className="flex flex-1 min-w-0 items-center gap-2 text-start">
+        <button type="button" aria-expanded={deplie} onClick={() => setDeplie(!deplie)} disabled={!isAdmin} className="flex flex-1 min-w-0 items-center gap-2 text-start">
           <span className="text-xl" aria-hidden>📒</span>
           <span className="flex-1 min-w-0 font-extrabold text-amber-900 dark:text-amber-100">Carnet de liaison</span>
-          {nouveaux > 0 && <span className="rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold px-2 py-0.5">{nouveaux} nouveau{nouveaux > 1 ? 'x' : ''}</span>}
-          {(autres.length + nbArchive) > 0 && <span className="text-xs font-bold text-amber-800 dark:text-amber-200">{deplie ? '▲' : `▼ ${autres.length + nbArchive} autre${autres.length + nbArchive > 1 ? 's' : ''}`}</span>}
+          {nouveaux > 0 && <span className="rounded-full border border-rose-300 dark:border-rose-800 bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-200 text-sm font-extrabold px-2.5 py-0.5">{nouveaux} nouveau{nouveaux > 1 ? 'x' : ''}</span>}
+          {isAdmin && (autres.length + nbArchive) > 0 && <span className="text-sm font-extrabold text-amber-800 dark:text-amber-200">{deplie ? '▲ Replier' : `▼ ${autres.length + nbArchive} autre${autres.length + nbArchive > 1 ? 's' : ''}`}</span>}
         </button>
         {isAdmin && (
-          <button type="button" onClick={() => setEditeur({ message: null })} className="shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 text-xs font-extrabold">✏️ Écrire</button>
+          <button type="button" onClick={() => setEditeur({ message: null })} className="shrink-0 rounded-full bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 text-sm font-extrabold">+ Nouveau</button>
         )}
       </div>
-      <div className="space-y-3 px-3 pb-3">
-        {premier ? note(premier) : <p className="text-sm text-muted-foreground px-1">Aucun message pour l'instant. Touche « ✏️ Écrire » pour informer tes élèves.</p>}
-        {deplie && autres.map(note)}
-        {deplie && archive.length > 0 && (
-          <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-card/60">
-            <p className="px-3 pt-2 text-xs font-extrabold text-amber-900 dark:text-amber-100">🗂️ Archive</p>
-            {archive.map((a) => (
-              <div key={a.cle} className="border-t border-amber-100 dark:border-amber-900/60 first:border-t-0">
-                <button type="button" aria-expanded={archiveOuverte === a.cle} onClick={() => setArchiveOuverte(archiveOuverte === a.cle ? null : a.cle)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-start text-sm font-bold">
-                  <span className="flex-1">{a.mois}</span><span className="text-xs text-muted-foreground">{a.items.length} message{a.items.length > 1 ? 's' : ''} {archiveOuverte === a.cle ? '▲' : '▼'}</span>
-                </button>
-                {archiveOuverte === a.cle && <div className="space-y-3 px-3 pb-3">{a.items.filter((m) => m !== premier).map(note)}</div>}
+      {isAdmin ? (
+        <div className="space-y-3 px-3 pb-3">
+          {premier ? note(premier) : <p className="text-sm text-muted-foreground px-1">Aucun message pour l'instant. Touche « + Nouveau » pour informer tes élèves.</p>}
+          {deplie && autres.map(note)}
+          {deplie && archive.length > 0 && (
+            <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-card/60">
+              <p className="px-3 pt-2 text-xs font-extrabold text-amber-900 dark:text-amber-100">🗂️ Archive</p>
+              {archive.map((a) => (
+                <div key={a.cle} className="border-t border-amber-100 dark:border-amber-900/60 first:border-t-0">
+                  <button type="button" aria-expanded={archiveOuverte === a.cle} onClick={() => setArchiveOuverte(archiveOuverte === a.cle ? null : a.cle)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-start text-sm font-bold">
+                    <span className="flex-1">{a.mois}</span><span className="text-xs text-muted-foreground">{a.items.length} message{a.items.length > 1 ? 's' : ''} {archiveOuverte === a.cle ? '▲' : '▼'}</span>
+                  </button>
+                  {archiveOuverte === a.cle && <div className="space-y-3 px-3 pb-3">{a.items.filter((m) => m !== premier).map(note)}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 px-3 pb-3">
+          {aLire.map(note)}
+          {!aLire.length && <p className="text-sm text-amber-900 dark:text-amber-100 px-1">✅ Tu as tout lu. Bravo !</p>}
+          {historique.length > 0 && (
+            <button type="button" aria-expanded={deplie} onClick={() => setDeplie(!deplie)}
+              className="w-full rounded-xl border border-amber-300 dark:border-amber-800 bg-card/70 px-3 py-2 text-sm font-extrabold text-amber-900 dark:text-amber-100">
+              {deplie ? '▲ Cacher l\'historique' : `🗂️ Voir l'historique (${historique.length})`}
+            </button>
+          )}
+          {deplie && historique.map((m, i) => {
+            const mois = m.envoyer_le.slice(0, 7);
+            const nouveauMois = i === 0 || historique[i - 1].envoyer_le.slice(0, 7) !== mois;
+            return (
+              <div key={m.id} className="space-y-1.5">
+                {nouveauMois && <p className="px-1 text-xs font-extrabold text-amber-800 dark:text-amber-200">{libelleMois(mois)}</p>}
+                {note(m)}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {isAdmin && editeur && <CarnetEditeur message={editeur.message} modeles={data.modeles} classe={classe} onClose={() => { setEditeur(null); rafraichir(); }} />}
       <AlertDialog open={!!aSupprimer} onOpenChange={(o) => { if (!o) setASupprimer(null); }}>

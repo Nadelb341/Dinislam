@@ -91,3 +91,18 @@ export const dateCarnet = (iso: string, heure = false) => {
   const j = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   return heure ? `${j} à ${d.getHours()} h${d.getMinutes() ? String(d.getMinutes()).padStart(2, '0') : ''}` : j;
 };
+
+/**
+ * Côté élève / parent (Nadia, 2026-11-12) : tout ce qui reste à lire est affiché DÉPLIÉ ; après « J'ai lu », le message
+ * passe dans « Voir l'historique » (le plus récent en tête). Restent en haut : les messages épinglés, et ceux qui attendent
+ * encore la signature d'un parent (sinon le parent ne la verrait plus).
+ */
+export function separerPourEleve<T extends MessageCarnet>(msgs: T[], lectures: LectureCarnet[], uid: string, estParent: boolean) {
+  const miennes = (id: string) => lectures.filter((l) => l.message_id === id && l.user_id === uid);
+  const lu = (m: T) => miennes(m.id).length > 0;
+  const signe = (m: T) => miennes(m.id).some((l) => l.role === 'parent') || (estParent && lu(m));
+  const aLire: T[] = [], historique: T[] = [];
+  for (const m of trierCarnet(msgs)) (m.epingle || !lu(m) || (m.signature && !signe(m)) ? aLire : historique).push(m);
+  historique.sort((a, b) => b.envoyer_le.localeCompare(a.envoyer_le));
+  return { aLire, historique };
+}

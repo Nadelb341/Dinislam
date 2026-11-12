@@ -56,8 +56,6 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = nul
 
   return (
     <div className="relative text-center py-6 animate-fade-in overflow-hidden">
-      {/* 🙈 Place de la bulle « Essaie de me trouver ! » du cache-cache (remplie par CacheCache, 2026-11-12) */}
-      <div id="bulle-cache-cache" className="absolute left-1 top-1 z-[3]" />
       {r.pluie && (
         <div key={rejouer} aria-hidden className="absolute inset-0 pointer-events-none">
           {ETOILES.map((e, i) => (

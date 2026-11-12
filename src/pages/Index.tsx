@@ -525,6 +525,9 @@ const handleModuleClick = (mod) => {
             </TitreAccueil>
           </SilentBoundary>
 
+          {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
+              Vide (et cachée) tant que le jeu ne la remplit pas */}
+          <div id="bulle-cache-cache" className="flex justify-start ps-1 empty:hidden" />
           {/* 📒 Carnet de liaison (2026-11-12) : juste sous le message de bienvenue, élèves ET enseignante */}
           <SilentBoundary name="Carnet de liaison">
             <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>
