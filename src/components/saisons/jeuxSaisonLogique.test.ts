@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cachetteDuJour, debutCycleFeu, echelleFeu, messagesCompagnon, motArabeDuJour, niveauFeu, questionDuJour } from './jeuxSaisonLogique';
+import { debutCycleFeu, echelleFeu, messagesCompagnon, motArabeDuJour, niveauFeu, questionDuJour } from './jeuxSaisonLogique';
 
 describe('jeux des décors de saison (2026-11-11)', () => {
   it('il parle de ses devoirs et de grandir', () => {
@@ -36,21 +36,8 @@ describe('jeux des décors de saison (2026-11-11)', () => {
     expect(echelleFeu(6, false)).toBe(1);
     expect(echelleFeu(6, true)).toBe(1.3);
   });
-  it('🙈 cache-cache : la même cachette toute la journée, un mot arabe par jour', () => {
-    expect(cachetteDuJour('2026-11-11', 'u1', 8)).toBe(cachetteDuJour('2026-11-11', 'u1', 8));
-    expect(cachetteDuJour('2026-11-11', 'u1', 8)).toBeGreaterThanOrEqual(0);
-    expect(cachetteDuJour('2026-11-11', 'u1', 0)).toBe(-1);
+  it('🙈 cache-cache : un mot arabe par jour', () => {
     expect(motArabeDuJour('2026-11-11').arabe.length).toBeGreaterThan(1);
   });
 });
 
-describe('cache-cache : 3 façons de jouer', () => {
-  it('change de façon chaque jour, puis recommence', async () => {
-    const { modeCacheDuJour, coinDecorDuJour } = await import('./jeuxSaisonLogique');
-    const m = ['2026-11-11', '2026-11-12', '2026-11-13'].map(modeCacheDuJour);
-    expect(new Set(m).size).toBe(3);
-    expect(modeCacheDuJour('2026-11-14')).toBe(m[0]);
-    const c = coinDecorDuJour('2026-11-11', 'u1');
-    expect(c).toBeGreaterThanOrEqual(0); expect(c).toBeLessThan(4);
-  });
-});
