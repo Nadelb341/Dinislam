@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -124,29 +124,36 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
 }
 
 // ——— 🙈 Cache-cache ———
-const ANIMAL_CACHE: Record<Saison, { vb: string; svg: string; nom: string }> = {
-  automne: { vb: '0 0 48 48', svg: IMAGES_AUTOMNE.ecureuil?.svg ?? '', nom: 'L\'écureuil' },
-  hiver: { vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' },
-  printemps: { vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin' },
-  ete: { vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe' },
+/** 🔁 Un personnage différent à chaque partie (Nadia, 2026-11-12) ; c'est LUI qui dit « Essaie de me trouver ! » */
+type AnimalCache = { vb: string; svg: string; nom: string };
+const A48 = (k: string, nom: string): AnimalCache => ({ vb: '0 0 48 48', svg: IMAGES_AUTOMNE[k]?.svg ?? '', nom });
+const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
+  automne: [A48('ecureuil', 'L\'écureuil'), A48('herisson', 'Le hérisson'), A48('hibou', 'Le hibou'), A48('renard', 'Le renard')],
+  hiver: [{ vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' }, { vb: '0 0 30 38', svg: PERSOS.bonhomme, nom: 'Le bonhomme de neige' }, A48('hibou', 'Le hibou')],
+  printemps: [{ vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin' }, { vb: '0 0 40 34', svg: ANIMAUX.escargot.svg, nom: 'L\'escargot' }, { vb: '0 0 40 34', svg: ANIMAUX.biche.svg, nom: 'La biche' }],
+  ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin' }],
 };
+/** Tire un personnage, jamais le même que la partie d'avant */
+function tirerAnimal(saison: Saison): number {
+  const n = ANIMAUX_CACHE[saison].length;
+  let avant = -1;
+  try { avant = Number(sessionStorage.getItem('dinislam_cache_animal') ?? -1); } catch { /* stockage indisponible */ }
+  let i = Math.floor(Math.random() * n);
+  if (n > 1 && i === avant) i = (i + 1) % n;
+  try { sessionStorage.setItem('dinislam_cache_animal', String(i)); } catch { /* stockage indisponible */ }
+  return i;
+}
 const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '🐚' };
 
-/** Mode « décor » : 4 cachettes au bord de l'écran, avec le petit tas qui le cache (Nadia, choix B) */
+/** B · la cachette dans le décor (un petit tas d'où dépasse sa queue), dans la rangée de la bulle */
 const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
   automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'le panier de pommes', tas: '🍎🧺' }, { nom: 'les champignons', tas: '🍄🍂' }],
   hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'le sapin', tas: '🎄' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
   printemps: [{ nom: 'les fleurs', tas: '🌷🌼' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱' }, { nom: 'les papillons', tas: '🦋🌼' }],
   ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
 };
-/** Bas à gauche, haut à gauche, bas à droite, milieu à droite : toujours au bord, sans cacher les boutons */
-const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
-  // À moitié dans le bord de l'écran (Nadia, 12/11 : le tas cachait le bouton du carnet) : il ne couvre aucun bouton
-  { pos: { left: -14, bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }, cote: 'g' },
-  { pos: { left: -14, top: '58%' }, cote: 'g' },
-  { pos: { right: -14, top: '62%' }, cote: 'd' },
-  { pos: { left: -14, top: '42%' }, cote: 'g' },
-];export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
+
+export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
   const cleAlbum = `dinislam_cache_album_${userId}`;
   // 🔁 Nadia, 2026-11-12 : le jeu revient À CHAQUE retour sur l'accueil (nouvelle partie à chaque fois que l'accueil s'affiche)
   const [trouveIci, setTrouveIci] = useState(false);
@@ -154,11 +161,10 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
   const [bulle, setBulle] = useState<HTMLElement | null>(null);
   const [trouve, setTrouve] = useState<null | { cachette: string; album: string[] }>(null);
   const [danse, setDanse] = useState(false);
-  const animal = ANIMAL_CACHE[saison];
   // Une cachette différente à chaque partie
-  const [tirage] = useState(() => ({ carte: Math.random(), coin: Math.floor(Math.random() * 4) }));
+  const [tirage] = useState(() => ({ carte: Math.random(), coin: Math.floor(Math.random() * 4), animal: tirerAnimal(saison) }));
+  const animal = ANIMAUX_CACHE[saison][tirage.animal] ?? ANIMAUX_CACHE[saison][0];
   const cachette = CACHETTES_DECOR[saison][tirage.coin];
-  const coin = COINS[tirage.coin];
   const decorRef = useRef<HTMLButtonElement>(null);
 
   // La carte de la partie (cherchée dans l'accueil ; retrouvée si l'accueil se redessine) + la place de la bulle
@@ -182,9 +188,9 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
 
   // 🐾 Les traces partent de sa cachette dans le décor (B) et mènent à la carte où il se cache (A) — les 3 façons en même temps
   const [traces, setTraces] = useState<{ x: number; y: number; r: number }[]>([]);
-  // ⏱️ Les traces n'arrivent qu'au bout de 10 s : l'enfant a d'abord le temps de chercher tout seul (Nadia, 2026-11-12)
+  // ⏱️ Les traces n'arrivent qu'au bout de 20 s : l'enfant a d'abord le temps de chercher tout seul (Nadia, 2026-11-12)
   const [indice, setIndice] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setIndice(true), 10_000); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setIndice(true), 20_000); return () => clearTimeout(t); }, []);
   useEffect(() => {
     if (!hote || trouveIci || !indice) { setTraces([]); return; }
     let raf = 0;
@@ -220,7 +226,7 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
     setTrouveIci(true);
     setHote(null);
   };
-  const rate = () => toast(indice ? `🍃 Raté ! ${animal.nom} était là… mais il est parti. Suis ses traces 🐾` : `🍃 Raté ! ${animal.nom} était là… mais il est parti. Cherche encore !`);
+  const rate = () => toast(indice ? `🍃 Raté ! Plus personne ici… Suis les traces 🐾` : `🍃 Raté ! Plus personne ici… Cherche encore !`);
 
   const mot = motArabeDuJour(jour());
   const gentil = motGentilDuJour(jour());
@@ -235,11 +241,19 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
 
   return (
     <>
-      {/* 💬 La bulle « Essaie de me trouver ! » en haut à gauche du message de bienvenue ; partie dès qu'il est trouvé */}
+      {/* 💬 La bulle « Essaie de me trouver ! » (dite par le personnage de la partie) et, à droite, B · sa cachette dans le décor
+          (un petit tas d'où dépasse sa queue). Dans la rangée entre l'arbre et le carnet : plus rien de collé à l'écran (Nadia, 12/11) */}
       {bulle && !trouveIci && createPortal(
-        <div className="jeux-bulle-cache flex items-end gap-1 pointer-events-none">
-          <svg viewBox={animal.vb} aria-hidden className="h-10 w-10 shrink-0" dangerouslySetInnerHTML={{ __html: animal.svg }} />
-          <span className="relative mb-5 rounded-2xl rounded-bl-none border-2 border-amber-300 bg-white dark:bg-card px-2.5 py-1 text-[11px] sm:text-xs font-extrabold text-amber-800 dark:text-amber-200 shadow-md max-w-[6.5rem] sm:max-w-none leading-tight">Essaie de me trouver !</span>
+        <div className="flex w-full items-end justify-between gap-2">
+          <div className="jeux-bulle-cache flex items-end gap-1 pointer-events-none">
+            <svg viewBox={animal.vb} aria-hidden className="h-10 w-10 shrink-0" dangerouslySetInnerHTML={{ __html: animal.svg }} />
+            <span className="relative mb-5 rounded-2xl rounded-bl-none border-2 border-amber-300 bg-white dark:bg-card px-2.5 py-1 text-[11px] sm:text-xs font-extrabold text-amber-800 dark:text-amber-200 shadow-md max-w-[6.5rem] sm:max-w-none leading-tight">Essaie de me trouver !</span>
+          </div>
+          <button ref={decorRef} type="button" onClick={rate} aria-label={`Une cachette : ${cachette.nom}`}
+            className="flex items-end pe-1 outline-none [-webkit-tap-highlight-color:transparent]">
+            <svg viewBox={animal.vb} aria-hidden className="order-2 -ml-5 h-8 w-8 opacity-70 jeux-decor-d" dangerouslySetInnerHTML={{ __html: animal.svg }} />
+            <span aria-hidden className="relative text-2xl leading-none drop-shadow">{cachette.tas}</span>
+          </button>
         </div>, bulle)}
       {/* A · sa tête sort de derrière la carte (les oreilles restent visibles) */}
       {hote && !trouveIci && createPortal(
@@ -249,13 +263,6 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
         </button>,
         hote.el,
       )}
-      {/* B · sa cachette dans le décor : sa queue dépasse encore du tas… mais il est parti */}
-      {!trouveIci && createPortal(
-        <button ref={decorRef} type="button" onClick={rate} aria-label={`La cachette de ${animal.nom} : ${cachette.nom}`}
-          className="fixed z-[30] flex items-end outline-none [-webkit-tap-highlight-color:transparent]" style={coin.pos}>
-          <svg viewBox={animal.vb} aria-hidden className={`h-10 w-10 opacity-80 ${coin.cote === 'g' ? '-mr-6 jeux-decor-g' : 'order-2 -ml-6 jeux-decor-d'}`} dangerouslySetInnerHTML={{ __html: animal.svg }} />
-          <span aria-hidden className="relative text-2xl leading-none drop-shadow">{cachette.tas}</span>
-        </button>, document.body)}
       {/* C · les empreintes, du décor jusqu'à la carte */}
       {traces.length > 0 && createPortal(
         <div aria-hidden className="pointer-events-none fixed inset-0 z-[25]">
@@ -284,7 +291,7 @@ const COINS: { pos: CSSProperties; cote: 'g' | 'd' }[] = [
               <p className="text-sm"><b>{mot.translit}</b> = {mot.sens}</p>
               {voix && <button type="button" onClick={parler} className="rounded-full bg-amber-500 text-white px-3 py-1 text-xs font-bold">🔊 Écouter</button>}
             </div>
-            <p className="text-xs">{animal.nom} met {HABIT[saison].nom} pour toute la journée : regarde-le se promener en bas !</p>
+            <p className="text-xs">Le personnage qui se promène en bas met {HABIT[saison].nom} pour toute la journée : regarde !</p>
             <div className="rounded-2xl bg-muted/50 p-2.5 text-start">
               <p className="text-[11px] font-bold">📒 Mon album des cachettes ({trouve.album.length})</p>
               <p className="mt-1 flex flex-wrap gap-1">{trouve.album.map((c) => <span key={c} className="rounded-full bg-card border px-2 py-0.5 text-[11px] font-semibold">{c}</span>)}</p>
