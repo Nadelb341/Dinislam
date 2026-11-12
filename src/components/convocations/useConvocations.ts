@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { trierGroupesParNumero } from '@/lib/studentGroups';
 import { EVT_FILE, nbEnFile, rejouerFile } from '@/lib/fileHorsLigne';
+import { depuisJour } from '@/lib/depuisJour';
 
 /** 📨 Données de la carte Convocations (enseignante) — en direct, lisibles hors ligne (copie du service worker) */
 export interface EleveConv {
@@ -16,7 +17,7 @@ export function useConvocations(enabled: boolean) {
     queryKey: ['convocations', 'classe'],
     enabled,
     queryFn: async () => {
-      const depuis = new Date(Date.now() - 60 * 86400000).toISOString();
+      const depuis = depuisJour(60);
       const [grps, mbrs, roles, profs, horaires, liens, modeles, progs, convs] = await Promise.all([
         supabase.from('student_groups').select('id, name, color, position'),
         supabase.from('student_group_members').select('user_id, group_id'),

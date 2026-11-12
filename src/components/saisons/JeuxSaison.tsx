@@ -6,6 +6,7 @@ import { lundiDeLaSemaine, type ReglagesSaisons, type Saison } from '@/lib/saiso
 import { annoncerNiveau, EVT_TOUCHE, PAUSE_MS, type DetailTouche } from './compagnonEvenement';
 import { CacheCache, FeuSemaine } from './FeuEtCacheCache';
 import { messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
+import { depuisJour } from '@/lib/depuisJour';
 
 /**
  * 🎠 Petits jeux des décors de saison (Nadia, 2026-11-11 : idées 2, 4, 6, 7, 9, 10). RIEN À GAGNER : juste des animations.
@@ -76,7 +77,7 @@ function Compagnon({ userId, prenom, grandit, parle }: { userId: string; prenom:
     queryKey: ['compagnon-devoirs', userId],
     enabled: parle,
     queryFn: async () => {
-      const depuis = new Date(Date.now() - 21 * 86400000).toISOString();
+      const depuis = depuisJour(21);
       const [{ data: d }, { data: rendus }] = await Promise.all([
         supabase.from('devoirs').select('id').gte('created_at', depuis),
         supabase.from('devoirs_rendus').select('devoir_id, statut').eq('student_id', userId),

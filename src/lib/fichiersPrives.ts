@@ -101,7 +101,21 @@ export async function urlLisible(url: string): Promise<string> {
   if (pret) return pret;
   const p = cheminPrive(url);
   if (!p) return url;
-  return (await signer(p.espace, p.chemin)) ?? url;
+  // Signature ratée (réseau lent, hors ligne…) : adresse « signée » SANS jeton → le service worker rend la copie
+  // déjà vue sur cet appareil (2026-11-12 ; avant : l'adresse publique, qui échoue toujours pour un espace privé → « ? »)
+  return (await signer(p.espace, p.chemin)) ?? sansJeton(url, p);
+}
+
+/** Adresse de secours d'un fichier privé : chemin signé sans jeton (clé de la copie gardée par le service worker) */
+function sansJeton(url: string, p: { espace: EspacePrive; chemin: string }): string {
+  const base = url.split('/storage/v1/')[0];
+  return `${base}/storage/v1/object/sign/${p.espace}/${p.chemin.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+/** Oublie le lien signé gardé (l'image n'a pas pu se charger) : le prochain appel en redemande un neuf */
+export function oublierLien(url: string | null | undefined) {
+  const p = cheminPrive(url);
+  if (p) memoire.delete(cle(p.espace, p.chemin));
 }
 
 /** Plusieurs adresses d'un coup (les signatures partent groupées par espace) */

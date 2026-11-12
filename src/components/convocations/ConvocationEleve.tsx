@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { depuisJour } from '@/lib/depuisJour';
 
 /**
  * 📨 Convocation sur l'accueil de l'élève (Nadia, 2026-11-11, idée 6) : la dernière convocation pour un cours à venir,
@@ -21,7 +22,7 @@ export function ConvocationEleve() {
     queryKey: ['convocations-eleve', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const depuis = new Date(Date.now() - 3 * 3600000).toISOString();
+      const depuis = depuisJour(0); // depuis minuit : adresse stable (copie hors ligne retrouvée)
       const { data } = await supabase.from('convocations').select('id, texte, cours_le, reponse, canal')
         .eq('student_id', user!.id).in('canal', ['appli', 'rappel']).gte('cours_le', depuis).order('envoye_le', { ascending: false }).limit(1);
       return data?.[0] ?? null;

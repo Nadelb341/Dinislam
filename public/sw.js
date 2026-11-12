@@ -277,8 +277,38 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(imageResponse(event, request));
     return;
   }
+  // 🔒🖼️ Images PRIVÉES (lien signé ?token=…, pièces jointes du carnet, photos des devoirs) — 2026-11-12 :
+  // le jeton change toutes les heures, donc on les garde sous leur chemin SANS le jeton. Réseau d'abord (4 s) ;
+  // si le lien a expiré, si la signature a échoué (adresse sans jeton) ou sans réseau : la copie déjà vue sur cet appareil.
+  if (request.destination === 'image' && url.hostname.indexOf('.supabase.co') !== -1 &&
+      url.pathname.indexOf('/storage/v1/object/sign/') === 0) {
+    event.respondWith(imagePriveeResponse(event, request, url));
+    return;
+  }
   // Autres adresses (YouTube…) : le navigateur s'en occupe normalement.
 });
+
+var IMAGE_PRIVEE_CACHE = 'dinislam-images-privees';
+function imagePriveeResponse(event, request, url) {
+  var cle = url.origin + url.pathname;
+  return caches.open(IMAGE_PRIVEE_CACHE).then(function(cache) {
+    var secours = function() {
+      return cache.match(cle).then(function(c) { return c || fetch(request).catch(function() { return Response.error(); }); });
+    };
+    if (!url.search) return secours(); // pas de jeton : seulement la copie gardée
+    // « cors » : on voit le vrai statut (une erreur n'est jamais gardée à la place de l'image)
+    return withTimeout(fetch(url.href, { mode: 'cors', credentials: 'omit' }), DATA_TIMEOUT_MS).then(function(response) {
+      if (!response || !response.ok) return secours();
+      var copy = response.clone();
+      event.waitUntil(cache.put(cle, copy).then(function() {
+        return cache.keys().then(function(keys) {
+          return Promise.all(keys.slice(0, Math.max(0, keys.length - IMAGE_MAX)).map(function(k) { return cache.delete(k); }));
+        });
+      }).catch(function() {}));
+      return response;
+    }).catch(secours);
+  });
+}
 
 var IMAGE_CACHE = 'dinislam-images';
 var IMAGE_MAX = 300;

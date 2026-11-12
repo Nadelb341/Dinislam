@@ -9,6 +9,7 @@ import { NOM_DESTINATAIRE, lienSms, lienWhatsApp, numeroPour, type Destinataire 
 import { CLE_BILAN_ENVOYE, cleSemaine, texteBilanSemaine, type ChiffresSemaine } from '@/lib/bilanSemaine';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { depuisJour } from '@/lib/depuisJour';
 
 
 /**
@@ -27,7 +28,7 @@ export function BilanSemaineDialog({ open, onOpenChange }: { open: boolean; onOp
     queryKey: ['bilan-semaine', ids.join(',')],
     enabled: open && ids.length > 0,
     queryFn: async () => {
-      const depuis = new Date(Date.now() - 7 * 86400000).toISOString();
+      const depuis = depuisJour(7);
       const [donnes, checks, rendus, lignes, lecons, sour, inv, nomsL, nomsS, nomsI] = await Promise.all([
         supabase.from('devoirs').select('id, student_id').in('student_id', ids).gte('created_at', depuis),
         supabase.from('devoir_checks').select('devoir_id, student_id').in('student_id', ids).gte('checked_at', depuis),

@@ -4,6 +4,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { depuisJour } from '@/lib/depuisJour';
 
 type Serie = 'connexions' | 'actifs' | 'validations' | 'messages' | 'inscriptions';
 const SERIES: { k: Serie; label: string; emoji: string; couleur: string; aide: string }[] = [
@@ -37,7 +38,7 @@ export default function SanteAppli() {
   const { data: totaux } = useQuery({
     queryKey: ['monitoring', 'totaux'],
     queryFn: async () => {
-      const semaine = new Date(Date.now() - 7 * 86400000).toISOString();
+      const semaine = depuisJour(7);
       const tables = Object.keys(NOMS_TABLES);
       const [{ count: comptes }, { count: actifsSemaine }, ...lignes] = await Promise.all([
         supabase.from('profiles').select('user_id', { count: 'exact', head: true }),

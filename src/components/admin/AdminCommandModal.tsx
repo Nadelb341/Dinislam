@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { periodeBilan } from '@/lib/bilanTrimestriel';
 import { ChoixFantomeDialog } from '@/components/fantome/ChoixFantomeDialog';
+import { depuisJour } from '@/lib/depuisJour';
 
 interface AdminCommandModalProps {
   open: boolean;
@@ -450,7 +451,7 @@ function BoutonBilanTrimestriel({ onOpen }: { onOpen: () => void }) {
     queryFn: async () => {
       let vu = '1970-01-01';
       try { vu = localStorage.getItem('dinislam_bilans_lus_vus') || vu; } catch { /* stockage indisponible */ }
-      const il3j = new Date(Date.now() - 3 * 86400000).toISOString();
+      const il3j = depuisJour(3);
       const [{ count: nouveauxLus }, { data: envoyes }, { data: lus }] = await Promise.all([
         supabase.from('bilan_reads').select('report_id', { count: 'exact', head: true }).gt('read_at', vu),
         supabase.from('student_reports').select('id').not('sent_at', 'is', null).not('snapshot', 'is', null).lt('sent_at', il3j),
