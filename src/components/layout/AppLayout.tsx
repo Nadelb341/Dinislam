@@ -21,6 +21,7 @@ import OfflineBanner from '@/components/shared/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSaisonActive } from '@/lib/saisons';
 import { DecorPages } from '@/components/saisons/DecorPages';
+import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
 
 /** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
 function useCouleursSaison() {
@@ -74,6 +75,8 @@ const AppLayout = ({
           <AttendanceMessage />
           {/* 🎂 Date de naissance et 👨‍👩‍👧 enfants élèves (2026-10-28) */}
           <SilentBoundary name="Messages du profil"><MessagesProfil /></SilentBoundary>
+          {/* 📱 Numéro d'un parent (moins de 20 ans) ou le sien, demandé tant qu'il manque (2026-11-15) */}
+          <SilentBoundary name="Numéro de téléphone"><NumeroPremiereConnexion /></SilentBoundary>
           <ComebackCelebration />
         </div>
         {/* Filet par page : si une page plante, l'en-tête et le menu du bas restent utilisables */}

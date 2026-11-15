@@ -10,6 +10,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { moveToTrash } from '@/lib/trash';
 import { useAuth } from '@/contexts/AuthContext';
 import { errorMessage } from '@/lib/utils';
+import { ListeFichesAttente, PropositionFiche } from '@/components/admin/FichesAttente';
 
 interface RegistrationUser {
   user_id: string;
@@ -228,6 +229,8 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
               </Button>
             </div>
           </div>
+          {/* 🔗 Fiche en attente qui lui ressemble (2026-11-15) : Nadia valide ou refuse */}
+          <PropositionFiche userId={user.user_id} nom={user.full_name} />
         </CardContent>
       </Card>
     );
@@ -279,6 +282,7 @@ const AdminRegistrationValidations = ({ onBack }: { onBack: () => void }) => {
                 </CardContent>
               </Card>
             )}
+            <ListeFichesAttente />
           </div>
         )}
       </div>

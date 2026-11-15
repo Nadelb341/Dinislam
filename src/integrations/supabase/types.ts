@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      fiches_attente: {
+        Row: {
+          created_at: string
+          enfants: string | null
+          group_ids: string[]
+          id: string
+          nom: string | null
+          notes: string | null
+          parent_nom: string | null
+          parent_telephone: string | null
+          parent_user_id: string | null
+          parent2_nom: string | null
+          parent2_telephone: string | null
+          prenom: string
+          refus: string[]
+          relie_a: string | null
+          relie_le: string | null
+          role: string
+          statut: string
+          telephone: string | null
+        }
+        Insert: {
+          created_at?: string
+          enfants?: string | null
+          group_ids?: string[]
+          id?: string
+          nom?: string | null
+          notes?: string | null
+          parent_nom?: string | null
+          parent_telephone?: string | null
+          parent_user_id?: string | null
+          parent2_nom?: string | null
+          parent2_telephone?: string | null
+          prenom: string
+          refus?: string[]
+          relie_a?: string | null
+          relie_le?: string | null
+          role?: string
+          statut?: string
+          telephone?: string | null
+        }
+        Update: {
+          created_at?: string
+          enfants?: string | null
+          group_ids?: string[]
+          id?: string
+          nom?: string | null
+          notes?: string | null
+          parent_nom?: string | null
+          parent_telephone?: string | null
+          parent_user_id?: string | null
+          parent2_nom?: string | null
+          parent2_telephone?: string | null
+          prenom?: string
+          refus?: string[]
+          relie_a?: string | null
+          relie_le?: string | null
+          role?: string
+          statut?: string
+          telephone?: string | null
+        }
+        Relationships: []
+      }
       carnet_lectures: {
         Row: {
           id: string

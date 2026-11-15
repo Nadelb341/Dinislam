@@ -170,6 +170,14 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
+    // 📝 Tous les champs sont obligatoires (Nadia, 2026-11-15)
+    const manque = [!signupName.trim() && 'ton nom complet', !signupGender && 'garçon ou fille', !signupDob && 'ta date de naissance'].filter(Boolean);
+    if (manque.length) {
+      toast({ title: 'Il manque des informations', description: `Remplis : ${manque.join(', ')}.`, variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
     if (signupPassword !== signupPasswordConfirm) {
       setPasswordError('Les mots de passe ne correspondent pas');
       setLoading(false);
@@ -497,7 +505,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nom complet</Label>
+                    <Label htmlFor="signup-name">Nom complet *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -511,7 +519,7 @@ const Auth = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-gender">Genre</Label>
+                    <Label htmlFor="signup-gender">Genre *</Label>
                     <div className="flex gap-3">
                       <Button
                         type="button"
@@ -532,7 +540,7 @@ const Auth = () => {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-dob">Date de naissance</Label>
+                    <Label htmlFor="signup-dob">Date de naissance *</Label>
                     <div className="relative">
                       <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input

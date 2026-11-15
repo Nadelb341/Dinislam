@@ -107,6 +107,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   convocation_programmation: 'Convocation programmée',
   carnet_message: 'Message du carnet de liaison',
   carnet_modele: 'Modèle du carnet de liaison',
+  fiche_attente: 'Fiche en attente d\'inscription',
   parent_code: 'Code parents',
   parent_link: 'Lien parent ↔ enfant',
   absence_justification: 'Absence justifiée',
