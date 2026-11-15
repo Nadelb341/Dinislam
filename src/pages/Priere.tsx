@@ -1,3 +1,4 @@
+import { useVillePriere } from '@/hooks/useVillePriere';
 import { enregistrerVillePriere } from '@/lib/rappelsPriere';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,21 +9,8 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CITIES, CityOption, PRAYER_METHODS, PRAYER_METHOD_KEY, getSavedMethod, PrayerMethod } from '@/hooks/usePrayerTimesCity';
+import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CityOption, PRAYER_METHODS, PRAYER_METHOD_KEY, getSavedMethod, PrayerMethod } from '@/hooks/usePrayerTimesCity';
 
-const MONTPELLIER: CityOption = { label: 'Montpellier (34)', country: 'FR', lat: 43.61, lon: 3.88 };
-const CITY_STORAGE_KEY = 'dinislam_prayer_city';
-
-function getSavedCity(): CityOption {
-  try {
-    const saved = localStorage.getItem(CITY_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed?.label && typeof parsed.lat === 'number' && typeof parsed.lon === 'number') return parsed;
-    }
-  } catch { /* stockage indisponible : ignoré */ }
-  return MONTPELLIER;
-}
 import SunArcDisplay from '@/components/prayer/SunArcDisplay';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
@@ -40,12 +28,15 @@ const Priere = () => {
   const [showQibla, setShowQibla] = useState(false);
   const [showCitySelector, setShowCitySelector] = useState(false);
   const [showMethodSelector, setShowMethodSelector] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<CityOption>(getSavedCity);
+  // 📍 2026-11-15 : la ville du PROFIL commande les horaires (l'élève n'a rien à régler ici) ; sans ville de profil, le choix de l'appareil
+  const { ville: villeProfilOuAppareil, duProfil } = useVillePriere();
+  const [villeManuelle, setVilleManuelle] = useState<CityOption | null>(null);
+  const selectedCity = duProfil ? villeProfilOuAppareil : (villeManuelle ?? villeProfilOuAppareil);
   const [selectedMethod, setSelectedMethod] = useState<PrayerMethod>(getSavedMethod);
 
   const handleSelectCity = (city: CityOption) => {
-    setSelectedCity(city);
-    localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(city));
+    setVilleManuelle(city);
+    try { localStorage.setItem('dinislam_prayer_city', JSON.stringify(city)); } catch { /* stockage indisponible */ }
     // Rappels de prière envoyés par le serveur : il suit la ville choisie (2026-11-09)
     if (user) void enregistrerVillePriere(user.id, city, selectedMethod.id);
     setShowCitySelector(false);
@@ -138,6 +129,13 @@ const Priere = () => {
         <div className="space-y-3 animate-fade-in">
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
+              {duProfil ? (
+                <div className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground">
+                  <MapPin className="h-4 w-4 text-green-600 shrink-0" />
+                  <span className="flex-1 text-left font-medium [overflow-wrap:anywhere]">{selectedCity.label}</span>
+                  <span className="text-[11px] text-muted-foreground text-right">se change dans ⚙️ › Paramètres du profil</span>
+                </div>
+              ) : (
               <button
                 onClick={() => setShowCitySelector(!showCitySelector)}
                 className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-colors"
@@ -146,7 +144,8 @@ const Priere = () => {
                 <span className="flex-1 text-left font-medium">{selectedCity.label}</span>
                 <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showCitySelector && 'rotate-180')} />
               </button>
-              {showCitySelector && (
+              )}
+              {showCitySelector && !duProfil && (
                 <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated max-h-56 overflow-y-auto">
                   <div className="px-4 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30 sticky top-0">── Votre région ──</div>
                   {PRIORITY_CITIES.map((city) => (

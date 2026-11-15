@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AMCES_CALENDAR_2026 } from '@/data/amcesCalendar2026';
+import { calculerHoraires } from '@/lib/horairesCalcul';
 
 export interface PrayerTimesData {
   fajr: string;
@@ -115,23 +116,13 @@ export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
       let fajr: string, sunrise: string, dhuhr: string, asr: string, maghrib: string, isha: string;
 
       if (isAmcesCity) {
-        const times = AMCES_CALENDAR_2026[monthIndex]?.[String(day)];
-        if (!times) throw new Error('Horaires AMCES introuvables pour cette date');
-        [fajr, sunrise, dhuhr, asr, maghrib, isha] = times;
+        const times = today.getFullYear() === 2026 ? AMCES_CALENDAR_2026[monthIndex]?.[String(day)] : undefined;
+        // Calendrier AMCES de 2026 seulement : les autres années, calcul MWL (comme AMCES) en attendant le calendrier suivant
+        if (times) [fajr, sunrise, dhuhr, asr, maghrib, isha] = times;
+        else ({ fajr, sunrise, dhuhr, asr, maghrib, isha } = calculerHoraires(city.lat, city.lon, 3, today));
       } else {
-        const month = monthIndex + 1;
-        const year = today.getFullYear();
-        const url = `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${city.lat}&longitude=${city.lon}&method=${methodId}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Erreur API');
-        const json = await res.json();
-        const t = json.data.timings;
-        fajr = t.Fajr;
-        sunrise = t.Sunrise;
-        dhuhr = t.Dhuhr;
-        asr = t.Asr;
-        maghrib = t.Maghrib;
-        isha = t.Isha;
+        // 2026-11-15 (Nadia, solution B) : calculé dans l'appli → marche SANS Internet, pour toute ville (avant : service aladhan en ligne)
+        ({ fajr, sunrise, dhuhr, asr, maghrib, isha } = calculerHoraires(city.lat, city.lon, methodId, today));
       }
 
       setPrayerTimes({

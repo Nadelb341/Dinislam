@@ -1,3 +1,4 @@
+import { useVillePriere } from '@/hooks/useVillePriere';
 import { carteOuverte } from '@/hooks/useCartesVisibles';
 import { accesDe, fermerATous, ouvrirATous, textePeriode } from '@/lib/cartesAcces';
 import { enregistrerAcces } from '@/lib/cartesAccesEnregistrer';
@@ -15,7 +16,7 @@ import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { ProgressionCompacte } from '@/components/home/ProgressionCompacte';
-import { usePrayerTimesCity, CITIES, CityOption, getSavedMethod } from '@/hooks/usePrayerTimesCity';
+import { usePrayerTimesCity, getSavedMethod } from '@/hooks/usePrayerTimesCity';
 import { cn, errorMessage } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,6 +48,7 @@ const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m)
 const MaJournee = lazy(() => import('@/components/home/MaJournee').then((m) => ({ default: m.MaJournee })));
 const AnniversaireEleve = lazy(() => import('@/components/anniversaire/AnniversaireEleve').then((m) => ({ default: m.AnniversaireEleve })));
 const AnniversairesCamarades = lazy(() => import('@/components/anniversaire/AnniversairesDuJour').then((m) => ({ default: m.AnniversairesCamarades })));
+const VilleAVerifier = lazy(() => import('@/components/ville/VilleAVerifier').then((m) => ({ default: m.VilleAVerifier })));
 const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').then((m) => ({ default: m.CarnetLiaison })));
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 
@@ -168,17 +170,6 @@ function getHijriDate(): string {
   return '';
 }
 
-function getSavedCity(): CityOption {
-  try {
-    const saved = localStorage.getItem('dinislam_prayer_city');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.lat && parsed.lon) return parsed;
-    }
-  } catch { /* stockage indisponible : ignoré */ }
-  return CITIES.find(c => c.label.includes('Montpellier')) ?? CITIES[0];
-}
-
 function getDayHadith() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
@@ -223,7 +214,8 @@ const Index = () => {
   const [activatingNotif, setActivatingNotif] = useState(false);
   const { data: progress } = useUserProgress();
 
-  const [prayerCity] = useState<CityOption>(getSavedCity);
+  // 📍 2026-11-15 : la ville du profil de l'élève (sinon celle choisie sur l'appareil)
+  const { ville: prayerCity } = useVillePriere();
   const { prayerTimes, getNextPrayer } = usePrayerTimesCity(prayerCity, getSavedMethod());
   const nextPrayer = getNextPrayer();
   const todayHadith = getDayHadith();
@@ -509,6 +501,8 @@ const handleModuleClick = (mod) => {
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
               Vide (et cachée) tant que le jeu ne la remplit pas */}
           <div id="bulle-cache-cache" className="flex justify-start ps-1 empty:hidden" />
+          {/* 📍 Ville manquante ou introuvable (2026-11-15) : à corriger, à chaque connexion */}
+          {!isAdmin && user && <SilentBoundary name="Ma ville"><Suspense fallback={null}><VilleAVerifier /></Suspense></SilentBoundary>}
           {/* 🎉 Un an de plus (2026-11-15) : son message + 24 h de fête ; ses camarades de groupe qui ont un an de plus aujourd'hui */}
           {!isAdmin && user && (
             <SilentBoundary name="Un an de plus">

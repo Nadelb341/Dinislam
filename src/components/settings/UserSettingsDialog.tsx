@@ -18,6 +18,7 @@ import { errorMessage } from '@/lib/utils';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { EspaceParentsCarte } from '@/components/parents/EspaceParents';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
+import { MaVilleProfil } from '@/components/ville/MaVilleProfil';
 import { useBilansNonLus } from '@/hooks/useBilansNonLus';
 import { EVENT_ESPACE_PARENTS } from '@/lib/espaceParents';
 import { PASSWORD_HINT, PASSWORD_MAX, passwordError } from '@/lib/passwordRules';
@@ -321,6 +322,9 @@ const UserSettingsDialog = () => {
                 Enregistrer le mot de passe
               </Button>
             </div>
+
+            {/* 📍 Ma ville (Nadia, 2026-11-15) : entre le mot de passe et l'Espace parents ; les horaires de prière la suivent */}
+            <SilentBoundary name="Ma ville"><MaVilleProfil /></SilentBoundary>
 
             {/* 👨‍👩‍👧 Espace parents, déplacé ici depuis la page Paramètres (demande de Nadia, 2026-11-02), contenu inchangé */}
             <SilentBoundary name="Espace parents"><EspaceParentsCarte /></SilentBoundary>

@@ -1,3 +1,4 @@
+import type { VilleTrouvee } from '@/lib/ville';
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { estEnModeFantome } from '@/lib/modeFantome';
 import { User, Session } from '@supabase/supabase-js';
@@ -51,7 +52,7 @@ interface AuthContextType {
   approvalCheckFailed: boolean;
   /** Relance la vérification « compte validé ? » */
   recheckApproval: () => Promise<void>;
-  signUp: (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string, ville?: VilleTrouvee | null) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -272,13 +273,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [applyApproval, recheckApproval]);
 
-  const signUp = async (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, gender?: string, dateOfBirth?: string, ville?: VilleTrouvee | null) => {
     try {
       const { error } = await supabase.auth.signUp({
         email, password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: fullName, gender, date_of_birth: dateOfBirth },
+          // 📍 2026-11-15 : la ville part avec l'inscription (copiée dans le profil par handle_new_user, comme le genre et la date)
+          data: { full_name: fullName, gender, date_of_birth: dateOfBirth, ...(ville ? { ville: ville.label, ville_lat: String(ville.lat), ville_lon: String(ville.lon), ville_pays: ville.pays, ville_fuseau: ville.fuseau } : {}) },
         },
       });
       if (error) throw error;

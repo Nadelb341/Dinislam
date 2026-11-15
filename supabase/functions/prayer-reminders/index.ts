@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { sendPushInternal } from "../_shared/parisTime.ts";
 import { AMCES_CALENDAR_2026 } from "../_shared/amcesCalendar2026.ts";
+import { CalculationMethod, Coordinates, HighLatitudeRule, PrayerTimes } from "npm:adhan@4.4.3";
 
 /**
  * 🕌 Rappels de prière (idée 11 de l'audit, choix de Nadia du 2026-11-09) :
@@ -37,23 +38,22 @@ function instant(jour: string, hm: string, fuseau: string): number {
 }
 
 type Horaires = Record<string, string>;
-async function horairesDuJour(supabase: ReturnType<typeof createClient>, ville: string, lat: number, lon: number, methode: number, jour: string): Promise<Horaires | null> {
+async function horairesDuJour(_supabase: ReturnType<typeof createClient>, ville: string, lat: number, lon: number, methode: number, jour: string, pays: string | null = 'FR'): Promise<Horaires | null> {
   if (ville.includes("Clermont-l'Hérault") && jour.startsWith('2026-')) {
     const [, m, d] = jour.split('-').map(Number);
     const t = AMCES_CALENDAR_2026[m - 1]?.[String(d)];
     if (t) return Object.fromEntries(PRIERES.map((p) => [p.cle, t[p.idx]]));
   }
-  const cle = `${lat},${lon},${methode},${jour}`;
-  const { data: dejaLa } = await supabase.from('horaires_priere_jour').select('horaires').eq('cle', cle).maybeSingle();
-  if (dejaLa?.horaires) return dejaLa.horaires as Horaires;
-  const [y, m, d] = jour.split('-');
-  const res = await fetch(`https://api.aladhan.com/v1/timings/${d}-${m}-${y}?latitude=${lat}&longitude=${lon}&method=${methode}`);
-  if (!res.ok) return null;
-  const t = (await res.json())?.data?.timings;
-  if (!t) return null;
-  const h: Horaires = { fajr: t.Fajr, dhuhr: t.Dhuhr, asr: t.Asr, maghrib: t.Maghrib, isha: t.Isha };
-  await supabase.from('horaires_priere_jour').upsert({ cle, horaires: h });
-  return h;
+  // 2026-11-15 (Nadia, solution B) : calculé ICI avec la même bibliothèque que l'appli (src/lib/horairesCalcul.ts) → mêmes heures
+  // partout, et plus de service extérieur (aladhan). La table `horaires_priere_jour` (copies d'aladhan) ne sert plus.
+  const [y, m, d] = jour.split('-').map(Number);
+  const p = methode === 12 ? CalculationMethod.Other() : methode === 2 ? CalculationMethod.NorthAmerica() : CalculationMethod.MuslimWorldLeague();
+  if (methode === 12) { p.fajrAngle = 12; p.ishaAngle = 12; }
+  p.highLatitudeRule = HighLatitudeRule.TwilightAngle;
+  const t = new PrayerTimes(new Coordinates(lat, lon), new Date(y, m - 1, d), p);
+  const fuseau = fuseauDe(pays);
+  const hm = (x: Date) => x.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: fuseau });
+  return { fajr: hm(t.fajr), dhuhr: hm(t.dhuhr), asr: hm(t.asr), maghrib: hm(t.maghrib), isha: hm(t.isha) };
 }
 
 serve(async (req) => {
@@ -84,7 +84,7 @@ serve(async (req) => {
       const avance = p.priere_avance ?? 0;
       // Aujourd'hui, et demain pour un rappel du Fajr « 15 min avant » qui tomberait juste après minuit (rare)
       for (const jour of [jourLocal(fuseau), jourLocal(fuseau, new Date(maintenant + 86400000))]) {
-        const h = await horairesDuJour(supabase, ville, lat, lon, methode, jour);
+        const h = await horairesDuJour(supabase, ville, lat, lon, methode, jour, p.priere_pays ?? DEFAUT.pays);
         if (!h) continue;
         for (const pr of PRIERES) {
           if ((p as Record<string, unknown>)[pr.col] !== true || !h[pr.cle]) continue;

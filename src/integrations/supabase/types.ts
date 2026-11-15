@@ -3147,6 +3147,10 @@ export type Database = {
           presence_tous_groupes: boolean
           updated_at: string | null
           user_id: string
+          ville_fuseau: string | null
+          ville_lat: number | null
+          ville_lon: number | null
+          ville_pays: string | null
         }
         Insert: {
           age?: number | null
@@ -3180,6 +3184,10 @@ export type Database = {
           presence_tous_groupes?: boolean
           updated_at?: string | null
           user_id: string
+          ville_fuseau?: string | null
+          ville_lat?: number | null
+          ville_lon?: number | null
+          ville_pays?: string | null
         }
         Update: {
           age?: number | null
@@ -3213,6 +3221,10 @@ export type Database = {
           presence_tous_groupes?: boolean
           updated_at?: string | null
           user_id?: string
+          ville_fuseau?: string | null
+          ville_lat?: number | null
+          ville_lon?: number | null
+          ville_pays?: string | null
         }
         Relationships: []
       }

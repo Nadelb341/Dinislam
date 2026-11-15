@@ -1,3 +1,5 @@
+import { ChoixVille } from '@/components/ville/ChoixVille';
+import type { VilleTrouvee } from '@/lib/ville';
 import { useState, useEffect, useRef } from 'react';
 import { authErrorFr } from '@/lib/rememberPassword';
 import { Navigate } from 'react-router-dom';
@@ -73,6 +75,8 @@ const Auth = () => {
   const [signupName, setSignupName] = useState('');
   const [signupGender, setSignupGender] = useState('');
   const [signupDob, setSignupDob] = useState(''); // JJ/MM/AAAA
+  // 📍 Ville obligatoire (Nadia, 2026-11-15) : les horaires de prière seront ceux de sa ville
+  const [signupVille, setSignupVille] = useState<VilleTrouvee | null>(null);
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -171,7 +175,7 @@ const Auth = () => {
     setLoading(true);
 
     // 📝 Tous les champs sont obligatoires (Nadia, 2026-11-15)
-    const manque = [!signupName.trim() && 'ton nom complet', !signupGender && 'garçon ou fille', !signupDob && 'ta date de naissance'].filter(Boolean);
+    const manque = [!signupName.trim() && 'ton nom complet', !signupGender && 'garçon ou fille', !signupDob && 'ta date de naissance', !signupVille && 'ta ville (touche-la dans la liste)'].filter(Boolean);
     if (manque.length) {
       toast({ title: 'Il manque des informations', description: `Remplis : ${manque.join(', ')}.`, variant: 'destructive' });
       setLoading(false);
@@ -206,7 +210,7 @@ const Auth = () => {
       dobISO = parsed;
     }
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupGender, dobISO);
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupGender, dobISO, signupVille);
 
     if (error) {
       toast({
@@ -517,6 +521,10 @@ const Auth = () => {
                         className="pl-10"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-ville">Ta ville *</Label>
+                    <ChoixVille id="signup-ville" choisie={signupVille} onChoix={setSignupVille} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-gender">Genre *</Label>
