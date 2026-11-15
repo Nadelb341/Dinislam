@@ -8,6 +8,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
+import { jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
 /**
@@ -86,6 +87,7 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
   const nbBuches = buches ? Math.min(devoirs.valides, 5) : 0;
   const chatDort = k > 0 && niveau >= 4;
   return createPortal(
+    <>
     <div aria-hidden className="pointer-events-none fixed bottom-0 z-[31] transition-opacity duration-500"
       style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', aspectRatio: '200 / 172', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
       <svg viewBox="0 0 200 172" className="absolute inset-0 h-full w-full overflow-visible">
@@ -118,7 +120,14 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
             style={{ animationDelay: `${i * 0.18}s`, ['--dx' as string]: `${((i * 13) % 30) - 15}px` }} />
         ))}
       </svg>
-    </div>,
+    </div>
+    {/* 🔥 Toucher le foyer = écouter le feu (son choisi dans Paramètres ; jamais tout seul). Sous la bulle « ? » du coin du feu, sans la toucher. */}
+    {k > 0 && lireSonFeu() !== 'aucun' && (
+      <button type="button" aria-label="Écouter le feu" onClick={() => void jouerSonFeu()}
+        className="fixed bottom-0 z-[32] rounded-full"
+        style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }} />
+    )}
+    </>,
     document.body,
   );
 }

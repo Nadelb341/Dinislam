@@ -41,6 +41,7 @@ import {
 import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
+import { choisirSonFeu, jouerSonFeu, lireSonFeu, SONS_FEU, type ChoixSonFeu } from '@/lib/sonFeu';
 import { couperDecor, decorCoupe, saisonDuJour, useReglagesSaisons, NOM_SAISON, SAISONS_PRETES } from '@/lib/saisons';
 
 function CarteDecorSaison() {
@@ -56,6 +57,32 @@ function CarteDecorSaison() {
           <span className="block text-xs text-muted-foreground">Arbre, feuilles qui tombent, cheminée et images sur les cartes de l'accueil</span>
         </Label>
         <Switch id="deco-saison" checked={!coupe} onCheckedChange={(v) => { couperDecor(!v); setCoupe(!v); }} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** 🔥 Son du feu de la cheminée (Nadia, 2026-11-12) : 2 vrais enregistrements au choix, ou sans son. Choix gardé sur cet appareil. */
+function CarteSonFeu() {
+  const { data: r } = useReglagesSaisons();
+  const [choix, setChoix] = useState<ChoixSonFeu>(lireSonFeu());
+  const saison = r && !r.auto ? r.saisonChoisie : saisonDuJour();
+  const cheminee = !!r && ((saison === 'automne' && r.automne.cheminee) || (saison === 'hiver' && r.hiver.cheminee));
+  if (!r || r.neutre || !cheminee || !SAISONS_PRETES.includes(saison) || (r.elevesPeuventCouper && decorCoupe())) return null;
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-2">
+        <p className="font-bold">🔥 Son du feu de la cheminée</p>
+        <p className="text-xs text-muted-foreground">Touche le feu, en bas à droite de l'accueil, pour l'écouter. Marche aussi sans Internet.</p>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Son du feu">
+          {SONS_FEU.map((s) => (
+            <button key={s.id} type="button" role="radio" aria-checked={choix === s.id}
+              onClick={() => { choisirSonFeu(s.id); setChoix(s.id); void jouerSonFeu(s.id); }}
+              className={`rounded-xl border-2 px-2 py-2 text-xs font-bold leading-tight ${choix === s.id ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-border bg-card'}`}>
+              {s.label}{s.detail && <span className="block font-normal text-[11px] text-muted-foreground">{s.detail}</span>}
+            </button>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -362,6 +389,9 @@ const Settings = () => {
         {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
         <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
         </>)}
+
+        {/* 🔥 Son du feu : pour tout le monde, l'enseignante aussi (2026-11-15) */}
+        <SilentBoundary name="Son du feu"><CarteSonFeu /></SilentBoundary>
 
         {/* 🕌 Rappels de prière de l'enseignante (2026-11-09) : ses autres alertes restent dans le bouclier › Notifs */}
         {isAdmin && seule !== 'corbeille' && (

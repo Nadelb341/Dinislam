@@ -1,0 +1,4 @@
+Sons du feu de la cheminée (licence CC0, domaine public, aucune attribution obligatoire) :
+- feu-crepite.m4a  : « fire crackling » (fire-1.ogg), https://opengameart.org/content/fire-crackling
+- feu-cheminee.m4a : « fireplace sound loop » (fire.wav), https://opengameart.org/content/fireplace-sound-loop
+Convertis en AAC mono (afconvert) le 2026-11-15.

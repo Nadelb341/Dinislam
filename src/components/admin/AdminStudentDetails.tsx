@@ -703,7 +703,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       <Dialog open={!!parentsEleve} onOpenChange={(o) => { if (!o) setParentsEleve(null); }}>
         <DialogContent className="max-w-md rounded-2xl max-h-[88vh] overflow-y-auto" level="nested">
           <DialogHeader>
-            <DialogTitle className="[overflow-wrap:anywhere]">👨‍👩‍👧 Parents de {parentsEleve?.full_name || 'l\'élève'}</DialogTitle>
+            <DialogTitle className="[overflow-wrap:anywhere]">👨‍👩‍👧 Parents et téléphones de {parentsEleve?.full_name || 'l\'élève'}</DialogTitle>
           </DialogHeader>
           {parentsEleve && <FicheEspaceParents userId={parentsEleve.id} />}
         </DialogContent>

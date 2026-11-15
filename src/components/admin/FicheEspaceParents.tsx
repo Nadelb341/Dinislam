@@ -27,7 +27,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
     queryKey: cle,
     queryFn: async () => {
       const [{ data: profil }, { data: codes }, { data: parents }, { data: enfants }] = await Promise.all([
-        supabase.from('profiles').select('date_of_birth, age, espace_parents, ask_birth_date, children_question, parent_phone, parent_phone_nom, parent2_phone, parent2_phone_nom').eq('user_id', userId).maybeSingle(),
+        supabase.from('profiles').select('date_of_birth, age, espace_parents, ask_birth_date, children_question, phone, parent_phone, parent_phone_nom, parent2_phone, parent2_phone_nom').eq('user_id', userId).maybeSingle(),
         supabase.from('parent_codes').select('*').eq('child_id', userId).order('created_at'),
         supabase.from('parent_links').select('*').eq('child_id', userId),
         supabase.from('parent_links').select('*').eq('parent_id', userId),
@@ -40,7 +40,7 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
   });
   const rafraichir = () => queryClient.invalidateQueries({ queryKey: cle });
 
-  const majProfil = async (champs: { espace_parents?: ModeEspace; ask_birth_date?: boolean; parent_phone?: string | null; parent_phone_nom?: string | null; parent2_phone?: string | null; parent2_phone_nom?: string | null }) => {
+  const majProfil = async (champs: { espace_parents?: ModeEspace; ask_birth_date?: boolean; phone?: string | null; parent_phone?: string | null; parent_phone_nom?: string | null; parent2_phone?: string | null; parent2_phone_nom?: string | null }) => {
     const { error } = await supabase.from('profiles').update(champs).eq('user_id', userId);
     if (error) toast.error('Réglage non enregistré'); else { toast.success('Réglage enregistré'); void rafraichir(); }
   };
@@ -79,7 +79,12 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
     <div className="space-y-3">
       {/* 📱 Idée 5 (2026-10-30) : le bilan s'envoie directement au bon numéro (WhatsApp ou SMS) */}
       <div className="space-y-1.5 text-sm">
-        <p className="font-medium">📱 Téléphones des parents (pour envoyer le bilan)</p>
+        {/* 📱 Son numéro à lui, AU-DESSUS de ceux des parents (Nadia, 2026-11-15 : une maman sans compte → son numéro dans la fiche de l'enfant, en plus de celui de l'enfant) */}
+        <p className="font-medium">📱 Numéro de l'élève</p>
+        <Input defaultValue={p?.phone ?? ''} inputMode="tel" aria-label="Téléphone de l'élève" placeholder="06 12 34 56 78"
+          onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (p?.phone ?? null)) void majProfil({ phone: v }); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }} />
+        <p className="font-medium pt-1">📱 Téléphones des parents (même sans compte dans l'appli ; pour envoyer le bilan)</p>
         {([['parent_phone_nom', 'parent_phone', 'Maman'], ['parent2_phone_nom', 'parent2_phone', 'Papa']] as const).map(([kNom, kNum, defaut]) => (
           <div key={kNum} className="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)] gap-2">
             <Input defaultValue={(p?.[kNom] as string | null) ?? defaut} aria-label="Qui" placeholder={defaut}
