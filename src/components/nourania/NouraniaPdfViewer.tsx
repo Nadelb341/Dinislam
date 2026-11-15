@@ -97,12 +97,23 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
   const { data: faites = [] } = useQuery({
     queryKey: cleFaites,
     enabled: !!user && !!lessonId,
-    queryFn: async () => ((await supabase.from('nourania_lignes_faites').select('id, ligne').eq('user_id', user!.id).eq('lesson_id', lessonId!)).data || []),
+    queryFn: async () => ((await supabase.from('nourania_lignes_faites').select('id, ligne, valide_le').eq('user_id', user!.id).eq('lesson_id', lessonId!)).data || []) as { id: string; ligne: number; valide_le?: string | null }[],
+  });
+  // ✅ Leçon déjà validée (Nadia, 2026-11-15) : toutes ses lignes sont « éclaircies », même jamais cochées. Rien n'est verrouillé.
+  const { data: leconValidee = false } = useQuery({
+    queryKey: ['nourania-lecon-validee', user?.id, lessonId],
+    enabled: !!user && !!lessonId,
+    queryFn: async () => !!(await supabase.from('user_nourania_progress').select('is_validated').eq('user_id', user!.id).eq('lesson_id', lessonId!).maybeSingle()).data?.is_validated,
   });
   const basculerLigne = async (n: number) => {
     if (!user || !lessonId) return;
     const deja = faites.find((f) => f.ligne === n);
     try {
+      if (deja && (deja.valide_le || leconValidee)) {
+        // Validée par le professeur : on ne la décoche plus (elle reste lisible, rien n'est verrouillé)
+        toast.success(`✅ Ligne ${n} validée par ton professeur`);
+        return;
+      }
       if (deja) {
         // Décocher : sans confirmation (règle « valider demande confirmation, dévalider jamais »)
         queryClient.setQueryData(cleFaites, faites.filter((f) => f.ligne !== n));
@@ -111,7 +122,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
         const id = crypto.randomUUID();
         queryClient.setQueryData(cleFaites, [...faites, { id, ligne: n }]);
         const r = await ecrireOuGarder({ table: 'nourania_lignes_faites', op: 'insert', rows: [{ id, user_id: user.id, lesson_id: lessonId, content_id: contentId ?? null, ligne: n }] });
-        toast.success(r === 'ok' ? `✅ Ligne ${n} cochée, bravo !` : `📡 Ligne ${n} cochée sur cet appareil : envoyée au retour du réseau`);
+        toast.success(r === 'ok' ? `✅ Ligne ${n} cochée, bravo ! Ton professeur va la valider ⏳` : `📡 Ligne ${n} cochée sur cet appareil : envoyée au retour du réseau`);
       }
     } catch (e) {
       toast.error(errorMessage(e));
@@ -316,17 +327,23 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                           return <div key={idx} className="absolute left-[1.2%] bg-white/55 rounded-sm" style={{ ...zone, right: `${100 - BORD_TABLEAU}%` }} />;
                         }
                         const on = allumee === idx;
-                        const coche = n != null && faites.some((f) => f.ligne === n);
+                        const faite = n != null ? faites.find((f) => f.ligne === n) : undefined;
+                        // ⏳ cochée par l'élève, en attente ; ✅ validée par le professeur (ou leçon validée) = ligne éclaircie
+                        const validee = n != null && (leconValidee || !!faite?.valide_le);
+                        const coche = validee || !!faite;
+                        const attente = coche && !validee;
                         const carre = Math.round(Math.min(30, Math.max(20, margeGauche - 8)));
                         return (
                           <div key={idx} className="contents">
                           {cocher && n != null && (
-                            <button type="button" aria-pressed={coche} aria-label={coche ? `Ligne ${n} travaillée : toucher pour décocher` : `Cocher la ligne ${n}`}
-                              onClick={() => (coche ? void basculerLigne(n) : askValidation(`Ligne ${n} travaillée ?`, `La ligne ${n} sera cochée ✅`, () => void basculerLigne(n)))}
+                            <button type="button" aria-pressed={coche}
+                              aria-label={validee ? `Ligne ${n} validée par ton professeur` : attente ? `Ligne ${n} cochée, en attente de validation : toucher pour décocher` : `Cocher la ligne ${n}`}
+                              title={validee ? 'Validée par ton professeur' : attente ? 'En attente de validation' : undefined}
+                              onClick={() => (coche ? void basculerLigne(n) : askValidation(`Ligne ${n} travaillée ?`, `La ligne ${n} sera cochée ✅ et envoyée à ton professeur pour validation.`, () => void basculerLigne(n)))}
                               className={cn('pointer-events-auto absolute grid place-items-center rounded-md border-2 font-extrabold text-white shadow-sm transition-colors',
-                                coche ? 'bg-emerald-500 border-emerald-600' : 'bg-white/90 border-sky-500')}
-                              style={{ left: -margeGauche + Math.max(2, (margeGauche - carre) / 2), top: `calc(${(l.t + l.b) / 2}% - ${carre / 2}px)`, width: carre, height: carre, fontSize: carre * 0.65 }}>
-                              {coche ? '✓' : ''}
+                                validee ? 'bg-emerald-500 border-emerald-600' : attente ? 'bg-amber-400 border-amber-500' : 'bg-white/90 border-sky-500')}
+                              style={{ left: -margeGauche + Math.max(2, (margeGauche - carre) / 2), top: `calc(${(l.t + l.b) / 2}% - ${carre / 2}px)`, width: carre, height: carre, fontSize: carre * (attente ? 0.5 : 0.65) }}>
+                              {validee ? '✓' : attente ? '⏳' : ''}
                             </button>
                           )}
                           <button
@@ -336,11 +353,11 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                             onClick={() => setAllumee(on ? null : idx)}
                             className={cn(
                               'pointer-events-auto absolute left-[1.2%] rounded-[4px] transition-colors duration-200',
-                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : coche ? 'bg-white/50' : 'bg-transparent',
+                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : validee ? 'bg-white/50' : 'bg-transparent',
                             )}
                             style={{ ...zone, right: `${100 - BORD_TABLEAU}%` }}
                           >
-                            {n != null && <Pastille n={n} hauteur={hauteur} police={police} allumee={on} faite={coche && !on} />}
+                            {n != null && <Pastille n={n} hauteur={hauteur} police={police} allumee={on} faite={validee && !on} />}
                           </button>
                           </div>
                         );

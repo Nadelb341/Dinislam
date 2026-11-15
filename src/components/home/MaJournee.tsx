@@ -53,6 +53,8 @@ export function MaJournee() {
     { n: audios, texte: `🎙️ ${audios} audio${audios > 1 ? 's' : ''} à écouter et valider`, aller: () => navigate('/admin?section=recitations') },
     { n: c.sourates, texte: `📖 ${c.sourates} sourate${c.sourates > 1 ? 's' : ''} à valider`, aller: () => navigate('/admin?section=sourates-validations') },
     { n: c.nourania, texte: `✨ ${c.nourania} leçon${c.nourania > 1 ? 's' : ''} Nourania à valider`, aller: () => navigate('/admin?section=nourania-validations') },
+    { n: c.nouraniaLignes, texte: `☑️ ${c.nouraniaLignes} ligne${c.nouraniaLignes > 1 ? 's' : ''} Nourania à valider`, aller: () => navigate('/admin?section=nourania-validations') },
+    { n: c.invocations, texte: `🤲 ${c.invocations} invocation${c.invocations > 1 ? 's' : ''} à valider`, aller: () => navigate('/admin?section=invocations-validations') },
     { n: c.alphabet, texte: `🔤 ${c.alphabet} lettre${c.alphabet > 1 ? 's' : ''} de l'Alphabet à valider`, aller: () => navigate('/alphabet') },
     { n: c.homework, texte: `📚 ${c.homework} devoir${c.homework > 1 ? 's' : ''} rendu${c.homework > 1 ? 's' : ''} à corriger`, aller: () => navigate('/?open=todo&cahier=1') },
     { n: extra?.sansDevoirs ?? 0, texte: `📭 ${extra?.sansDevoirs ?? 0} élève${(extra?.sansDevoirs ?? 0) > 1 ? 's' : ''} sans devoirs cette semaine`, aller: () => navigate('/?open=todo&cahier=1') },

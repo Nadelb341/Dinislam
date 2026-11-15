@@ -38,6 +38,7 @@ import { ConvocationEleve } from '@/components/convocations/ConvocationEleve';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
 import { imageDeCarteHiver } from '@/components/saisons/dessinsHiver';
+import { MODULE_EMOJI_FALLBACK } from '@/lib/emojiCartes';
 import { imageDeCarteClair } from '@/components/saisons/dessinsPrintempsEte';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
@@ -188,28 +189,6 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText
 };
 
-const MODULE_EMOJI_FALLBACK: Record<string, { emoji: string; bgColor: string }> = {
-  "ramadan": { emoji: "🌙", bgColor: "#fff7ed" },
-  "alphabet": { emoji: "أ", bgColor: "#eff6ff" },
-  "invocations": { emoji: "🤲", bgColor: "#f5f3ff" },
-  "priere": { emoji: "🕌", bgColor: "#ecfeff" },
-  "grammaire": { emoji: "📖", bgColor: "#f0fdf4" },
-  "99-noms": { emoji: "✨", bgColor: "#fffbeb" },
-  // 2026-11-03 : la carte s'appelle /allah-names (slug « allah-names ») → elle affichait 📚 (emoji de secours)
-  "allah-names": { emoji: "✨", bgColor: "#fffbeb" },
-  "sourates": { emoji: "📿", bgColor: "#eef2ff" },
-  "nourania": { emoji: "🌟", bgColor: "#fefce8" },
-  "vocabulaire": { emoji: "💬", bgColor: "#fdf2f8" },
-  "lecture-coran": { emoji: "📖", bgColor: "#f0fdfa" },
-  "darija": { emoji: "🗣️", bgColor: "#fff7ed" },
-  "dictionnaire": { emoji: "📚", bgColor: "#f5f3ff" },
-  "dhikr": { emoji: "📿", bgColor: "#f0fdf4" },
-  "hadiths": { emoji: "🕊️", bgColor: "#eef2ff" },
-  "histoires-prophetes": { emoji: "⭐", bgColor: "#fffbeb" },
-  "coran": { emoji: "📗", bgColor: "#f0fdf4" },
-  "cahier-texte": { emoji: "📝", bgColor: "#eff6ff" },
-  "registre-presence": { emoji: "✅", bgColor: "#f0fdf4" },
-};
 
 const getModuleSlug = (mod): string => {
   if (mod.builtin_path) return mod.builtin_path.replace(/^\//, '');

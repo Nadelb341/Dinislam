@@ -188,15 +188,14 @@ const Header = ({
           pendingRegistrations={pendingCounts.registrations}
           pendingSourates={pendingCounts.sourates}
           pendingNourania={pendingCounts.nourania}
+          pendingNouraniaLignes={pendingCounts.nouraniaLignes}
           pendingInvocations={pendingCounts.invocations}
-          pendingMessages={pendingCounts.messages}
           pendingHomework={pendingCounts.homework}
           pendingRecitations={pendingCounts.recitations}
           pendingAllahNames={pendingCounts.allahNames}
           pendingAlphabet={pendingCounts.alphabet}
           pendingLoginTrouble={pendingCounts.loginTrouble}
           total={pendingCounts.total}
-          onOpenMessages={handleOpenMessaging}
         />
         </Suspense></SilentBoundary>
       )}

@@ -5,7 +5,8 @@ import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { LoginTroubleBanner } from '@/components/admin/LoginTroubleBanner';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { SortableCardList } from '@/components/shared/SortableCardList';
+import { CorrectionsGrille, RienACorriger, totalCorrections, useTuilesCorrections } from '@/components/admin/CorrectionsGrille';
+import AdminInvocationValidations from '@/components/admin/AdminInvocationValidations';
 import AdminRegistrationValidations from '@/components/admin/AdminRegistrationValidations';
 import AdminSourateValidations from '@/components/admin/AdminSourateValidations';
 import AdminNouraniaValidations from '@/components/admin/AdminNouraniaValidations';
@@ -33,14 +34,14 @@ interface AdminCommandModalProps {
   pendingSourates: number;
   pendingNourania: number;
   pendingInvocations: number;
-  pendingMessages: number;
+  /** ☑️ Lignes Nourania cochées à valider (2026-11-15) */
+  pendingNouraniaLignes?: number;
   pendingHomework: number;
   pendingRecitations: number;
   pendingAllahNames?: number;
   /** Exercices et demandes de validation d'Alphabet en attente */
   pendingAlphabet?: number;
   total: number;
-  onOpenMessages: () => void;
   /** Élèves qui n'arrivent pas à se connecter (pastille sur « Élèves ») */
   pendingLoginTrouble?: number;
   /** Écran à ouvrir directement (ex. depuis la carte « À FAIRE ») */
@@ -49,16 +50,10 @@ interface AdminCommandModalProps {
   initialSearch?: string;
 }
 
-const BOUTONS_ACTIONS = [
-  { id: 'devoirs', label: 'Devoirs à corriger', section: 'cahier-texte', emoji: '📚' },
-  { id: 'alphabet', label: 'Alphabet à valider', section: 'alphabet-validations', emoji: '🔤' },
-  { id: 'recitations', label: 'Sourates à corriger', section: 'recitations-audio', emoji: '🎙️' },
-  // « Sourates à valider » retiré le 2026-10-19 : une sourate se valide par sa récitation (« Récitations à corriger »)
-  { id: 'nourania', label: 'Nourania à valider', section: 'nourania-validations', emoji: '🔤' },
-  // Audios des 99 noms : ligne à part, sous Nourania (2026-10-23)
-  { id: 'noms', label: '99 noms d\'Allah à valider', section: 'allah-names-audio', emoji: '✨' },
-  { id: 'messages', label: 'Messages non lus', section: null, emoji: '✉️' },
-];
+/* ✅ 2026-11-15 (Nadia) : les lignes « Devoirs à corriger, Alphabet à valider, Sourates à corriger, Nourania à valider,
+ * 99 noms à valider » sont rangées dans la carte « ✅ Corrections » (une tuile par carte de l'accueil, en grille) ;
+ * la ligne « ✉️ Messages non lus » est retirée (l'enveloppe ✉️ de l'en-tête suffit). */
+const BOUTON_CORRECTIONS = { id: 'corrections', label: 'Corrections', section: 'corrections', emoji: '✅' };
 
 const BOUTONS_MODULES = [
   { id: 'eleves', label: 'Élèves', section: 'eleves', emoji: '👨‍🎓' },
@@ -76,13 +71,13 @@ const AdminCommandModal = ({
   pendingRegistrations,
   pendingSourates,
   pendingNourania,
+  pendingInvocations,
+  pendingNouraniaLignes = 0,
   pendingHomework,
   pendingRecitations,
   pendingAllahNames = 0,
   pendingAlphabet = 0,
-  pendingMessages,
   pendingLoginTrouble = 0,
-  onOpenMessages,
   initialSection,
   initialSearch,
 }: AdminCommandModalProps) => {
@@ -91,8 +86,9 @@ const AdminCommandModal = ({
   const drafts = usePendingDrafts(user?.id, isAdmin);
   // Erreurs et plantages « chat qui pleure » pas encore réglés (rouge + pastille)
   const monitoringErrors = useMonitoringErrorCount();
-  const [boutons, setBoutons] = useState(BOUTONS_ACTIONS);
   const [modalSection, setModalSection] = useState<string | null>(null);
+  // Écran ouvert depuis une tuile de « Corrections » : « Retour » / ✕ y ramène
+  const [depuisCorrections, setDepuisCorrections] = useState(false);
   const [fantomeOuvert, setFantomeOuvert] = useState(false);
   // Panneau principal : il défile quand il dépasse l'écran (bandeau ouvert…), le titre et la croix restent visibles
   const {
@@ -112,44 +108,17 @@ const AdminCommandModal = ({
     return () => ro.disconnect();
   }, [open, panelScrollRef, handlePanelScroll]);
 
+  const comptesCorrections = {
+    homework: pendingHomework, alphabet: pendingAlphabet, nourania: pendingNourania, nouraniaLignes: pendingNouraniaLignes,
+    recitations: pendingRecitations, sourates: pendingSourates, invocations: pendingInvocations, allahNames: pendingAllahNames,
+  };
+  const tuiles = useTuilesCorrections(comptesCorrections);
   const compteurs: Record<string, number> = {
-    sourates: pendingSourates,
-    nourania: pendingNourania,
-    devoirs: pendingHomework,
-    alphabet: pendingAlphabet,
-    recitations: pendingRecitations,
-    noms: pendingAllahNames,
+    corrections: totalCorrections(comptesCorrections),
     inscriptions: pendingRegistrations,
-    messages: pendingMessages,
     eleves: pendingLoginTrouble,
     // Brouillons pas terminés : comptés dans le chiffre rouge du bouclier (demande de Nadia, 2026-10-19)
     brouillons: drafts.length,
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('admin_boutons_order_v4');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // On garde l'ordre choisi ; un bouton ajouté depuis (ex. « Alphabet à valider ») est inséré à sa place par défaut
-          const known = (parsed as typeof BOUTONS_ACTIONS).map((b) => BOUTONS_ACTIONS.find((d) => d.id === b.id)).filter((b): b is (typeof BOUTONS_ACTIONS)[number] => !!b);
-          const merged = [...known];
-          BOUTONS_ACTIONS.forEach((b, i) => {
-            if (merged.some((m) => m.id === b.id)) return;
-            const prev = BOUTONS_ACTIONS[i - 1];
-            const at = prev ? merged.findIndex((m) => m.id === prev.id) + 1 : 0;
-            merged.splice(at, 0, b);
-          });
-          setBoutons(merged);
-        }
-      } catch { /* ignore */ }
-    }
-  }, []);
-
-  const reorderBoutons = (newBoutons: typeof BOUTONS_ACTIONS) => {
-    setBoutons(newBoutons);
-    localStorage.setItem('admin_boutons_order_v4', JSON.stringify(newBoutons));
   };
 
   const onClose = () => onOpenChange(false);
@@ -158,7 +127,14 @@ const AdminCommandModal = ({
 
   const totalBadge = Object.values(compteurs).reduce((a, b) => a + b, 0);
 
-  const allBoutons = [...BOUTONS_ACTIONS, ...BOUTONS_MODULES, BOUTON_BROUILLONS];
+  const allBoutons = [BOUTON_CORRECTIONS, ...BOUTONS_MODULES, BOUTON_BROUILLONS,
+    ...tuiles.map((t) => ({ id: t.id, label: t.label, section: t.section, emoji: t.emoji })),
+    { id: 'invocations', label: 'Invocations', section: 'invocations-validations', emoji: '🤲' }];
+  const fermerSection = () => {
+    if (depuisCorrections && modalSection !== 'corrections') { setModalSection('corrections'); setDepuisCorrections(false); return; }
+    setDepuisCorrections(false);
+    setModalSection(null);
+  };
 
   // « Continuer » un brouillon : on ferme le bouclier et on ouvre la fiche, déjà remplie
   const continueDraft = (d: PendingDraft) => {
@@ -201,39 +177,15 @@ const AdminCommandModal = ({
 
           <div ref={panelScrollRef} onScroll={handlePanelScroll} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-5 space-y-3">
             <LoginTroubleBanner onOpenStudents={() => setModalSection('eleves')} />
-            {/* Boutons actions — 1 par ligne, maintenir puis glisser pour réordonner */}
-            <SortableCardList
-              items={boutons}
-              onReorder={reorderBoutons}
-              renderItem={(btn, { ref, style, isDragging, ...dragAttrs }) => {
-                const count = compteurs[btn.id] || 0;
-                const hasAction = count > 0;
-                return (
-                  <button
-                    key={btn.id}
-                    ref={ref as React.Ref<HTMLButtonElement>}
-                    style={style}
-                    {...dragAttrs}
-                    onClick={() => { if (btn.section) { setModalSection(btn.section); } else { onClose(); onOpenMessages(); } }}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl font-semibold text-white transition-all active:scale-95 ${
-                      hasAction ? 'bg-destructive' : 'bg-emerald-500'
-                    } ${isDragging ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{btn.emoji} {btn.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {hasAction && (
-                        <span className="bg-white text-destructive text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                          {count}
-                        </span>
-                      )}
-                      <span className="opacity-70 text-sm">→</span>
-                    </div>
-                  </button>
-                );
-              }}
-            />
+            {/* ✅ Corrections (2026-11-15) : toutes les cartes à corriger, en grille, dans une seule carte */}
+            {(() => { const n = compteurs.corrections; return (
+              <button type="button" onClick={() => setModalSection('corrections')}
+                className={`relative w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-95 ${n > 0 ? 'bg-destructive' : 'bg-emerald-500'}`}>
+                <span className="text-2xl">✅</span>
+                <span>Corrections</span>
+                {n > 0 && <span className="bg-white text-destructive text-xs font-bold min-w-6 h-6 px-1.5 rounded-full flex items-center justify-center">{n}</span>}
+              </button>
+            ); })()}
 
             {/* Séparateur */}
             <div className="border-t border-border pt-1" />
@@ -329,7 +281,7 @@ const AdminCommandModal = ({
       {modalSection && (
         <div
           className="fixed inset-0 bg-black/60 z-[500] flex items-end justify-center"
-          onClick={() => setModalSection(null)}
+          onClick={fermerSection}
         >
           <div
             className="bg-background rounded-t-3xl w-full max-w-lg"
@@ -342,7 +294,7 @@ const AdminCommandModal = ({
                 {allBoutons.find((b) => b.section === modalSection)?.label || modalSection}
               </h3>
               <button
-                onClick={() => setModalSection(null)}
+                onClick={fermerSection}
                 className="bg-[#EF4444] text-white shadow-md hover:bg-[#DC2626] rounded-full w-8 h-8 flex items-center justify-center"
                 aria-label="Fermer"
               >
@@ -350,10 +302,16 @@ const AdminCommandModal = ({
               </button>
             </div>
             <div className="p-4" style={{ overflowY: 'auto', overflowX: 'visible', minHeight: '100%' }}>
+              {modalSection === 'corrections' ? (
+                <CorrectionsGrille tuiles={tuiles} onOuvrir={(t) => { setDepuisCorrections(true); setModalSection(t.section); }} />
+              ) : modalSection.startsWith('rien:') ? (
+                <RienACorriger tuile={tuiles.find((t) => t.section === modalSection)}
+                  onOuvrirCarte={(() => { const c = tuiles.find((t) => t.section === modalSection)?.chemin; return c ? () => { setModalSection(null); setDepuisCorrections(false); onClose(); navigate(c); } : undefined; })()} />
+              ) : (
               <AdminSectionRenderer
                 section={modalSection}
                 initialSearch={initialSearch}
-                onClose={() => setModalSection(null)}
+                onClose={fermerSection}
                 onContinueDraft={continueDraft}
                 onNavigate={(path) => {
                   setModalSection(null);
@@ -361,6 +319,7 @@ const AdminCommandModal = ({
                   navigate(path);
                 }}
               />
+              )}
             </div>
           </div>
         </div>
@@ -391,6 +350,8 @@ function AdminSectionRenderer({
       return <AdminSourateValidations onBack={onClose} />;
     case 'nourania-validations':
       return <AdminNouraniaValidations onBack={onClose} />;
+    case 'invocations-validations':
+      return <AdminInvocationValidations onBack={onClose} />;
     case 'alphabet-validations':
       return <AdminAlphabetValidations onBack={onClose} />;
     case 'cahier-texte':

@@ -9,6 +9,8 @@ interface AdminPendingCounts {
   registrations: number;
   sourates: number;
   nourania: number;
+  /** ☑️ Lignes Nourania cochées par les élèves, à valider (2026-11-15) */
+  nouraniaLignes: number;
   invocations: number;
   messages: number;
   homework: number;
@@ -22,6 +24,8 @@ interface AdminPendingCounts {
   total: number;
 }
 
+const VIDE = { registrations: 0, sourates: 0, nourania: 0, nouraniaLignes: 0, invocations: 0, homework: 0, recitations: 0, allahNames: 0, alphabet: 0 };
+
 export const useAdminPendingCounts = (): AdminPendingCounts => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -32,9 +36,9 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
   const { data } = useQuery({
     queryKey: ['admin-pending-breakdown'],
     queryFn: async (): Promise<Omit<AdminPendingCounts, 'messages' | 'total' | 'loginTrouble'>> => {
-      if (!user) return { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0, allahNames: 0, alphabet: 0 };
+      if (!user) return { ...VIDE };
 
-      const [reg, sou, nou, hw, rec, names, alpha] = await Promise.all([
+      const [reg, sou, nou, hw, rec, names, alpha, inv, lignes] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_approved', false),
         supabase.from('sourate_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('nourania_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -42,10 +46,13 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
         supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending').not('sourate_id', 'is', null),
         supabase.from('sourate_recitations').select('*', { count: 'exact', head: true }).eq('status', 'pending').not('allah_name_id', 'is', null),
         supabase.from('alphabet_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        // 2026-11-15 : les invocations envoyées n'étaient jamais comptées (0 écrit en dur) alors que 2 attendaient
+        supabase.from('invocation_validation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('nourania_lignes_faites').select('*', { count: 'exact', head: true }).is('valide_le', null),
       ]);
 
       const r = reg.count || 0, s = sou.count || 0, n = nou.count || 0, h = hw.count || 0, rc = rec.count || 0;
-      return { registrations: r, sourates: s, nourania: n, invocations: 0, homework: h, recitations: rc, allahNames: names.count || 0, alphabet: alpha.count || 0 };
+      return { registrations: r, sourates: s, nourania: n, nouraniaLignes: lignes.count || 0, invocations: inv.count || 0, homework: h, recitations: rc, allahNames: names.count || 0, alphabet: alpha.count || 0 };
     },
     enabled: !!user && isAdmin,
     refetchInterval: 30000,
@@ -80,11 +87,12 @@ export const useAdminPendingCounts = (): AdminPendingCounts => {
   });
   const loginTrouble = loginTroubleData?.length ?? 0;
 
-  const base = data || { registrations: 0, sourates: 0, nourania: 0, invocations: 0, homework: 0, recitations: 0, allahNames: 0, alphabet: 0 };
+  const base = data || VIDE;
   return {
     ...base,
     messages: messagesCount,
     loginTrouble,
-    total: base.registrations + base.sourates + base.nourania + base.homework + base.recitations + base.allahNames + base.alphabet + messagesCount + loginTrouble,
+    // Chiffre rouge du bouclier. Les messages non lus n'y sont plus (2026-11-15, Nadia : « j'ai déjà l'enveloppe dans le header »)
+    total: base.registrations + base.sourates + base.nourania + base.nouraniaLignes + base.invocations + base.homework + base.recitations + base.allahNames + base.alphabet + loginTrouble,
   };
 };

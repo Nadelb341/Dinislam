@@ -2756,9 +2756,9 @@ export type Database = {
         ]
       }
       nourania_lignes_faites: {
-        Row: { content_id: string | null; created_at: string; id: string; lesson_id: string; ligne: number; user_id: string }
-        Insert: { content_id?: string | null; created_at?: string; id?: string; lesson_id: string; ligne: number; user_id: string }
-        Update: { content_id?: string | null; created_at?: string; id?: string; lesson_id?: string; ligne?: number; user_id?: string }
+        Row: { content_id: string | null; created_at: string; id: string; lesson_id: string; ligne: number; user_id: string; valide_le: string | null; valide_par: string | null }
+        Insert: { content_id?: string | null; created_at?: string; id?: string; lesson_id: string; ligne: number; user_id: string; valide_le?: string | null; valide_par?: string | null }
+        Update: { content_id?: string | null; created_at?: string; id?: string; lesson_id?: string; ligne?: number; user_id?: string; valide_le?: string | null; valide_par?: string | null }
         Relationships: []
       }
       nourania_lessons: {

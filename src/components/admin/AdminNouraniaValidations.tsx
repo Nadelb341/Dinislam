@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 interface AdminNouraniaValidationsProps {
   onBack: () => void;
@@ -18,6 +19,8 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  // Valider demande confirmation (règle de Nadia) ; « À refaire » non
+  const { askValidation, validationDialog } = useConfirmValidation();
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['admin-nourania-validations'],
@@ -184,9 +187,12 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
         </Button>
         <div>
           <h2 className="text-xl font-bold text-foreground">Validation Nourania</h2>
-          <p className="text-sm text-muted-foreground">{requests?.length || 0} demande(s)</p>
+          <p className="text-sm text-muted-foreground">{requests?.length || 0} leçon(s) · lignes en dessous</p>
         </div>
       </div>
+      {validationDialog}
+      <LignesAValider />
+      <p className="text-sm font-bold text-foreground pt-2">📘 Leçons entières</p>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -197,9 +203,9 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
           ))}
         </div>
       ) : requests?.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-6 text-muted-foreground">
           <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-400" />
-          <p>Aucune validation en attente</p>
+          <p>Aucune leçon en attente</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -237,7 +243,7 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
                     <Button
                       size="sm"
                       className="bg-green-500 hover:bg-green-600 text-white"
-                      onClick={() => approveMutation.mutate(req)}
+                      onClick={() => askValidation(`Valider la leçon ${req.lesson?.lesson_number ?? ''} ?`, `${req.profile?.full_name || 'L\'élève'} : leçon ${req.lesson?.lesson_number ?? ''}${req.lesson?.title_french ? ` (${req.lesson.title_french})` : ''} validée, la suivante s'ouvre et toutes ses lignes s'éclaircissent.`, () => approveMutation.mutate(req))}
                       disabled={processingId === req.id}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
@@ -255,3 +261,94 @@ const AdminNouraniaValidations = ({ onBack }: AdminNouraniaValidationsProps) => 
 };
 
 export default AdminNouraniaValidations;
+
+/**
+ * ☑️ Lignes Nourania cochées par les élèves (Nadia, 2026-11-15) : chaque ligne = une demande de validation.
+ * Pas de correction, pas de « À refaire » : juste ✅ Valider (avec confirmation). Validée → éclaircie chez l'élève.
+ * Rangées par élève et par leçon ; « Valider les N lignes » pour aller vite.
+ */
+type LigneAttente = { id: string; user_id: string; lesson_id: string; ligne: number; created_at: string };
+function LignesAValider() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { askValidation, validationDialog } = useConfirmValidation();
+  const [envoi, setEnvoi] = useState(false);
+  const { toast } = useToast();
+  const { data: groupes = [], isLoading } = useQuery({
+    queryKey: ['admin-nourania-lignes'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('nourania_lignes_faites').select('id, user_id, lesson_id, ligne, created_at').is('valide_le', null).order('created_at');
+      if (error) throw error;
+      const lignes = (data || []) as LigneAttente[];
+      const uids = [...new Set(lignes.map((l) => l.user_id))], lids = [...new Set(lignes.map((l) => l.lesson_id))];
+      const [{ data: profils }, { data: lecons }] = await Promise.all([
+        supabase.from('profiles').select('user_id, full_name').in('user_id', uids.length ? uids : ['00000000-0000-0000-0000-000000000000']),
+        supabase.from('nourania_lessons').select('id, lesson_number, title_french').in('id', lids.length ? lids : ['00000000-0000-0000-0000-000000000000']),
+      ]);
+      const parCle = new Map<string, { cle: string; user_id: string; lesson_id: string; nom: string; lecon: { id: string; lesson_number: number; title_french: string | null } | undefined; lignes: LigneAttente[] }>();
+      for (const l of lignes) {
+        const cle = `${l.user_id}|${l.lesson_id}`;
+        if (!parCle.has(cle)) parCle.set(cle, { cle, user_id: l.user_id, lesson_id: l.lesson_id, nom: profils?.find((p) => p.user_id === l.user_id)?.full_name || 'Élève', lecon: lecons?.find((x) => x.id === l.lesson_id), lignes: [] });
+        parCle.get(cle)!.lignes.push(l);
+      }
+      return [...parCle.values()].map((g) => ({ ...g, lignes: g.lignes.sort((a, b) => a.ligne - b.ligne) }));
+    },
+  });
+  const valider = async (ids: string[], qui: string, quoi: string, eleveId: string, lessonId: string) => {
+    setEnvoi(true);
+    try {
+      const { error } = await supabase.from('nourania_lignes_faites').update({ valide_le: new Date().toISOString(), valide_par: user?.id ?? null }).in('id', ids);
+      if (error) throw error;
+      toast({ title: `✅ ${quoi} validée${ids.length > 1 ? 's' : ''}`, description: qui });
+      sendPushNotification({ title: '⭐ Bravo {prenom} !', category: 'rec', body: `Ton professeur a validé ${quoi} de Nourania.`, type: 'user', data: { url: `/nourania?item=${lessonId}` }, userId: eleveId });
+    } catch (e) {
+      toast({ title: /fetch|network/i.test((e as Error).message) ? '📡 Nécessite Internet' : 'Erreur : pas validé', description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      setEnvoi(false);
+      void queryClient.invalidateQueries({ queryKey: ['admin-nourania-lignes'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] });
+    }
+  };
+  const total = groupes.reduce((n, g) => n + g.lignes.length, 0);
+  return (
+    <div className="space-y-2">
+      {validationDialog}
+      <p className="text-sm font-bold text-foreground">☑️ Lignes cochées par les élèves {total > 0 && <span className="ms-1 rounded-full bg-destructive text-destructive-foreground px-2 text-xs">{total}</span>}</p>
+      {isLoading ? <div className="h-16 rounded-xl bg-muted/50 animate-pulse" />
+        : !groupes.length ? <p className="text-sm text-muted-foreground py-2">Aucune ligne à valider.</p>
+        : groupes.map((g) => {
+          const lecon = `Leçon ${g.lecon?.lesson_number ?? '?'}${g.lecon?.title_french ? ` – ${g.lecon.title_french}` : ''}`;
+          return (
+            <Card key={g.cle}>
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 shrink-0 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center"><User className="h-4 w-4 text-sky-600 dark:text-sky-400" /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground [overflow-wrap:anywhere]">{g.nom}</p>
+                    <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{lecon}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {g.lignes.map((l) => (
+                    <button key={l.id} type="button" disabled={envoi}
+                      onClick={() => askValidation(`Valider la ligne ${l.ligne} ?`, `${g.nom} : ${lecon}, ligne ${l.ligne}. Elle s'éclaircira chez l'élève.`, () => void valider([l.id], g.nom, `la ligne ${l.ligne} (leçon ${g.lecon?.lesson_number ?? ''})`, g.user_id, g.lesson_id))}
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 text-sm font-bold text-emerald-800 dark:text-emerald-200 disabled:opacity-60">
+                      <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[#10b981] px-1 text-xs text-white">{l.ligne}</span>
+                      ✅ Valider
+                    </button>
+                  ))}
+                </div>
+                {g.lignes.length > 1 && (
+                  <Button size="sm" disabled={envoi} className="w-full bg-green-500 hover:bg-green-600 text-white"
+                    onClick={() => askValidation(`Valider les ${g.lignes.length} lignes ?`, `${g.nom} : ${lecon}, lignes ${g.lignes.map((l) => l.ligne).join(', ')}.`, () => void valider(g.lignes.map((l) => l.id), g.nom, `les lignes ${g.lignes.map((l) => l.ligne).join(', ')} (leçon ${g.lecon?.lesson_number ?? ''})`, g.user_id, g.lesson_id))}>
+                    <CheckCircle className="h-4 w-4 mr-1" /> Valider les {g.lignes.length} lignes
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+    </div>
+  );
+}
+

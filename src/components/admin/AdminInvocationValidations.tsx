@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
 import { useEffect } from 'react';
+import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
 interface AdminInvocationValidationsProps {
   onBack: () => void;
@@ -17,6 +18,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { askValidation, validationDialog } = useConfirmValidation();
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['admin-invocation-validations'],
@@ -152,6 +154,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
 
   return (
     <div className="space-y-4">
+      {validationDialog}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -212,7 +215,7 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
                     <Button
                       size="sm"
                       className="bg-green-500 hover:bg-green-600 text-white"
-                      onClick={() => approveMutation.mutate(req)}
+                      onClick={() => askValidation('Valider cette invocation ?', `${req.profile?.full_name || 'L\'élève'} : ${req.invocation?.title_french || 'invocation'} validée.`, () => approveMutation.mutate(req))}
                       disabled={approveMutation.isPending || refuseMutation.isPending}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
