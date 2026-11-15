@@ -1,3 +1,4 @@
+import { useAnniversairesDuJour } from '@/components/anniversaire/AnniversairesDuJour';
 import { useEffect, useState } from 'react';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { groupColorProps } from '@/lib/studentGroups';
@@ -54,6 +55,9 @@ function getDenseRanks<T extends { total: number }>(sortedArr: T[]): number[] {
 const Classement = () => {
   const { user, isAdmin } = useAuth();
   const cartesVisibles = useCartesVisibles();
+  // 🎉 Confettis à côté du prénom de qui a un an de plus aujourd'hui (2026-11-15) ; un élève ne le voit que pour lui (les autres noms sont cachés)
+  const { data: annivJour = [] } = useAnniversairesDuJour();
+  const annivIds = new Set(annivJour.map((a) => a.user_id));
   const [editBareme, setEditBareme] = useState(false);
   const [bareme, setBareme] = useState<BaremeItem[]>([]);
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
@@ -281,6 +285,7 @@ const Classement = () => {
                     <div className="flex-1">
                       <p className="font-semibold text-sm" style={{ color: m.textColor }}>
                         {eleve.full_name || 'Élève'}
+                        {(isAdmin || isMe) && annivIds.has(eleve.user_id) && <span aria-label=" (un an de plus aujourd'hui)"> 🎊</span>}
                         {isMe && <span className="ml-1 text-xs opacity-70">(Moi)</span>}
                       </p>
                     </div>

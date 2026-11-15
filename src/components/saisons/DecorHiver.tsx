@@ -24,7 +24,7 @@ import {
 
 interface Flocon { z: number; devant: boolean; rare: boolean; x: number; y: number; vx: number; rot: number; vr: number; bal: number; fb: number; ph: number; xAff: number; r: number }
 interface Eclat { x: number; y: number; vx: number; vy: number; s: number; c: string; v: number; vie: number }
-interface Dore { x: number; y: number; vy: number; r: number; rot: number; vr: number; ph: number; v: number }
+interface Dore { x: number; y: number; vy: number; r: number; rot: number; vr: number; ph: number; v: number; blanc?: boolean }
 type Perso = 'pingouin' | 'bonhomme';
 
 const NEIGE_DEPART = 14, NEIGE_MAX = 22;
@@ -209,7 +209,8 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
     const pluie = () => {
       if (!h.pluieDoree) return;
       if (h.son) sonCristal();
-      for (let i = 0; i < 46; i++) dores.push({ x: Math.random() * W, y: -10 - Math.random() * H * 0.5, vy: 70 + Math.random() * 80, r: 3 + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 3, ph: Math.random() * 6, v: 0 });
+      // 2026-11-15 (Nadia : « pour l'hiver, une pluie de flocons de neige ») : flocons BLANCS en plus des dorés
+      for (let i = 0; i < 46; i++) { const blanc = i % 2 === 0; dores.push({ x: Math.random() * W, y: -10 - Math.random() * H * 0.5, vy: 70 + Math.random() * 80, r: (blanc ? 4 : 3) + Math.random() * 5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 3, ph: Math.random() * 6, v: 0, blanc }); }
     };
     window.addEventListener(EVT_VALIDATION, pluie);
 
@@ -231,8 +232,8 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
       for (let i = dores.length - 1; i >= 0; i--) {
         const d = dores[i]; d.v += dt; d.y += d.vy * dt; d.x += Math.sin(d.v * 2 + d.ph) * 20 * dt; d.rot += d.vr * dt;
         if (d.y > H + 20) { dores.splice(i, 1); continue; }
-        ctxV.save(); ctxV.translate(d.x, d.y); ctxV.rotate(d.rot); ctxV.lineCap = 'round'; ctxV.shadowColor = 'rgba(250,204,21,.8)'; ctxV.shadowBlur = 8;
-        trace(ctxV, d.r); ctxV.strokeStyle = '#facc15'; ctxV.lineWidth = 1.8; ctxV.stroke(); ctxV.restore();
+        ctxV.save(); ctxV.translate(d.x, d.y); ctxV.rotate(d.rot); ctxV.lineCap = 'round'; ctxV.shadowColor = d.blanc ? 'rgba(96,165,250,.7)' : 'rgba(250,204,21,.8)'; ctxV.shadowBlur = 8;
+        trace(ctxV, d.r); ctxV.strokeStyle = d.blanc ? '#ffffff' : '#facc15'; ctxV.lineWidth = 1.8; ctxV.stroke(); ctxV.restore();
       }
       for (let i = eclats.length - 1; i >= 0; i--) {
         const e = eclats[i]; e.v += dt;

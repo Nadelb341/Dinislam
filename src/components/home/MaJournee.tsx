@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 import { lundiCourant } from '@/lib/devoirFichiers';
+import { useAnniversairesDuJour, type AnnivJour } from '@/components/anniversaire/AnniversairesDuJour';
+import { MotAnniversaire } from '@/components/anniversaire/MotAnniversaire';
 
 /**
  * 📋 « Ma journée » (Nadia, 2026-11-11, idée 4 « gagner du temps ») : un seul résumé en haut de l'accueil de l'enseignante.
@@ -17,6 +19,9 @@ export function MaJournee() {
   const c = useAdminPendingCounts();
   const { unreadCount } = useUnreadMessages();
   const [bilanOuvert, setBilanOuvert] = useState(false);
+  // 🎊 Idée 5 (2026-11-15) : les élèves qui ont un an de plus aujourd'hui, avec « Lui envoyer un mot »
+  const { data: annivs = [] } = useAnniversairesDuJour();
+  const [motPour, setMotPour] = useState<AnnivJour | null>(null);
   const [dejaFait, setDejaFait] = useState<string | null>(() => { try { return localStorage.getItem(CLE_BILAN_ENVOYE); } catch { return null; } });
   const [params, setParams] = useSearchParams();
   // Notification du mardi 16 h (/?bilanSemaine=1) : le bilan s'ouvre
@@ -62,6 +67,7 @@ export function MaJournee() {
     { n: extra?.absences ?? 0, texte: `🙋 ${extra?.absences ?? 0} absence${(extra?.absences ?? 0) > 1 ? 's' : ''} signalée${(extra?.absences ?? 0) > 1 ? 's' : ''} aujourd'hui`, aller: () => document.getElementById('absences-signalees')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) },
     { n: bilanAProposer(new Date(), dejaFait) ? 1 : 0, texte: '📊 Le bilan de la semaine est prêt : le relire et décider de l\'envoyer', aller: () => setBilanOuvert(true) },
     { n: c.registrations, texte: `👤 ${c.registrations} inscription${c.registrations > 1 ? 's' : ''} à valider`, aller: () => navigate('/admin?section=registration-validations') },
+    ...annivs.map((a) => ({ n: 1, texte: `🎊 ${a.prenom} a un an de plus aujourd'hui${a.age ? ` (${a.age} ans)` : ''} : lui envoyer un mot ✉️`, aller: () => setMotPour(a) })),
   ].filter((l) => l.n > 0);
 
   return (
@@ -80,6 +86,7 @@ export function MaJournee() {
       ) : <p className="mt-1 text-sm text-teal-900 dark:text-teal-100">✨ Rien qui t'attend : tout est à jour, bravo !</p>}
       <button type="button" onClick={() => setBilanOuvert(true)} className="mt-2 text-xs font-bold text-teal-800 dark:text-teal-200 underline underline-offset-2">📊 Bilan de la semaine</button>
       {bilanOuvert && <BilanSemaineDialog open onOpenChange={fermerBilan} />}
+      {motPour && <MotAnniversaire eleve={motPour} onClose={() => setMotPour(null)} />}
     </section>
   );
 }

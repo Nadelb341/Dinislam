@@ -37,7 +37,7 @@ interface Feuille {
   /** 🍁 grande feuille devant les cartes, plus lente : facile à attraper pour les enfants (2026-11-04) */
   grande: boolean;
 }
-interface Goutte { type: 'gland' | 'pin' | 'feuille'; c: string; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number }
+interface Goutte { type: 'gland' | 'pin' | 'feuille' | 'noisette'; c: string; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number }
 interface Eclat { x: number; y: number; vx: number; vy: number; r: number; vr: number; s: number; c: string; v: number; vie: number }
 
 export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: boolean; userId: string | null }) {
@@ -147,12 +147,19 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
         ctx.beginPath(); ctx.arc(x, y, s * 0.075, 0, Math.PI); ctx.fill(); ctx.stroke();
       }
     };
+    // 🌰 Noisette (Nadia, 2026-11-15 : « une pluie de noisettes, feuilles… »)
+    const dessinerNoisette = (ctx: CanvasRenderingContext2D, s: number) => {
+      ctx.lineWidth = 1.1; ctx.strokeStyle = '#4a2c1a';
+      ctx.beginPath(); ctx.arc(0, s * 0.06, s * 0.3, 0, Math.PI * 2); ctx.fillStyle = '#a0612e'; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, -s * 0.2, s * 0.24, s * 0.1, 0, 0, Math.PI * 2); ctx.fillStyle = '#d9b27c'; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(-s * 0.1, s * 0.02, s * 0.06, s * 0.12, -0.4, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,225,180,.5)'; ctx.fill();
+    };
     const pluie: Goutte[] = [];
     const pleuvoir = () => {
       if (!a.pluieValidation) return;
       for (let i = 0; i < 38; i++) {
         const k = Math.random();
-        pluie.push({ type: k < 0.4 ? 'gland' : k < 0.7 ? 'pin' : 'feuille', c: COUL[Math.floor(Math.random() * COUL.length)], x: Math.random() * W, y: -30 - Math.random() * H * 0.6,
+        pluie.push({ type: k < 0.28 ? 'gland' : k < 0.52 ? 'noisette' : k < 0.72 ? 'pin' : 'feuille', c: COUL[Math.floor(Math.random() * COUL.length)], x: Math.random() * W, y: -30 - Math.random() * H * 0.6,
           vy: 150 + Math.random() * 120, rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 4, s: 20 + Math.random() * 10, ph: Math.random() * 6.3 });
       }
     };
@@ -181,6 +188,7 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
         ctxV.save(); ctxV.translate(g.x, g.y); ctxV.rotate(g.rot);
         if (g.type === 'gland') dessinerGland(ctxV, g.s);
         else if (g.type === 'pin') dessinerPin(ctxV, g.s);
+        else if (g.type === 'noisette') dessinerNoisette(ctxV, g.s);
         else { const sc = g.s / 40; ctxV.scale(sc, sc); ctxV.translate(-20, -20); ctxV.fillStyle = g.c; ctxV.fill(FORMES.erable!); ctxV.strokeStyle = 'rgba(60,25,8,.45)'; ctxV.lineWidth = 1.4; ctxV.stroke(nervure); }
         ctxV.restore();
       }

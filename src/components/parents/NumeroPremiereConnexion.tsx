@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
  * moins de 20 ans : le prénom ET le numéro d'un parent ; 20 ans et plus : son propre numéro.
  * Revient à chaque ouverture tant que ce n'est pas rempli. Hors connexion : gardé sur l'appareil, envoyé au retour du réseau.
  * Jamais pour l'enseignante, ni en mode fantôme.
+ * 📅 2026-11-15 (anniversaire, idée 9) : la date de naissance manquante est demandée dans la MÊME fenêtre (1 seule fois :
+ * ensuite seul le professeur la change). Sans elle, l'élève n'aurait jamais son « un an de plus ».
  */
 const ageDe = (dob: string | null, age: number | null) => {
   if (dob) {
@@ -35,21 +37,30 @@ export function NumeroPremiereConnexion() {
   const [choixAge, setChoixAge] = useState<'moins' | 'plus' | null>(null);
   const [prenomParent, setPrenomParent] = useState('');
   const [tel, setTel] = useState('');
+  const [naissance, setNaissance] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [fait, setFait] = useState(false);
   if (!actif || !p || fait) return null;
-  const age = ageDe(p.date_of_birth, p.age);
+  const manqueNaissance = !p.date_of_birth;
+  const naissanceOk = /^\d{4}-\d{2}-\d{2}$/.test(naissance) && (ageDe(naissance, null) ?? -1) >= 3 && (ageDe(naissance, null) ?? 200) <= 100;
+  const age = ageDe(p.date_of_birth || (naissanceOk ? naissance : null), p.age);
   const mineur = age !== null ? age < 20 : choixAge === 'moins';
   const majeur = age !== null ? age >= 20 : choixAge === 'plus';
-  const manque = age === null && !p.phone && !p.parent_phone ? true : mineur ? !(p.parent_phone && p.parent_phone_nom) : majeur ? !p.phone : false;
-  if (!manque) return null;
+  // Numéro manquant : jugé avec l'âge connu enregistré (pas celui qu'on est en train de taper)
+  const ageBase = ageDe(p.date_of_birth, p.age);
+  const manqueTel = ageBase === null ? !p.phone && !p.parent_phone : ageBase < 20 ? !(p.parent_phone && p.parent_phone_nom) : !p.phone;
+  if (!manqueTel && !manqueNaissance) return null;
 
   const enregistrer = async () => {
-    if (mineur && !prenomParent.trim()) { toast.error('Écris le prénom de ton parent'); return; }
-    if (!numeroValide(tel)) { toast.error('Écris un numéro de téléphone complet'); return; }
+    if (manqueNaissance && !naissanceOk) { toast.error('Choisis ta date de naissance'); return; }
+    if (manqueTel && mineur && !prenomParent.trim()) { toast.error('Écris le prénom de ton parent'); return; }
+    if (manqueTel && !numeroValide(tel)) { toast.error('Écris un numéro de téléphone complet'); return; }
     setEnvoi(true);
     try {
-      const values = mineur ? { parent_phone: tel.trim(), parent_phone_nom: prenomParent.trim() } : { phone: tel.trim() };
+      const values = {
+        ...(manqueNaissance ? { date_of_birth: naissance } : {}),
+        ...(!manqueTel ? {} : mineur ? { parent_phone: tel.trim(), parent_phone_nom: prenomParent.trim() } : { phone: tel.trim() }),
+      };
       const r = await ecrireOuGarder({ table: 'profiles', op: 'update', id: user!.id, col: 'user_id', values });
       queryClient.invalidateQueries({ queryKey: ['mon-numero'] });
       toast.success(r === 'en_attente' ? '📡 Gardé sur ton appareil : envoyé dès le retour du réseau' : '✅ Merci ! Ton professeur pourra te prévenir en cas de besoin.');
@@ -62,13 +73,25 @@ export function NumeroPremiereConnexion() {
   return (
     <Dialog open onOpenChange={() => { /* obligatoire : se ferme seulement une fois rempli */ }}>
       <DialogContent className="max-w-sm rounded-2xl [&>button:last-child]:hidden" onEscapeKeyDown={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogTitle>📱 {prenom ? `${prenom}, un` : 'Un'} numéro pour te prévenir</DialogTitle>
+        <DialogTitle>{manqueTel ? `📱 ${prenom ? `${prenom}, un` : 'Un'} numéro pour te prévenir` : `📅 ${prenom ? `${prenom}, ta` : 'Ta'} date de naissance`}</DialogTitle>
         <DialogDescription>
-          {mineur ? 'Ton professeur a besoin du prénom et du numéro de téléphone d\'un de tes parents (sortie, absence, cours annulé…).'
+          {!manqueTel ? 'Ton professeur a besoin de ta date de naissance (une seule fois).' : mineur ? 'Ton professeur a besoin du prénom et du numéro de téléphone d\'un de tes parents (sortie, absence, cours annulé…).'
             : majeur ? 'Ton professeur a besoin de ton numéro de téléphone (sortie, absence, cours annulé…).'
             : 'Pour que ton professeur puisse te prévenir (sortie, absence, cours annulé…).'}
         </DialogDescription>
-        {age === null && !choixAge ? (
+        {manqueNaissance && (
+          <label className="block text-sm font-semibold">📅 Ta date de naissance
+            <Input type="date" value={naissance} onChange={(e) => setNaissance(e.target.value)} max={new Date().toISOString().slice(0, 10)} className="mt-1" />
+          </label>
+        )}
+        {!manqueTel ? (
+          <div className="space-y-2">
+            <button type="button" disabled={envoi} onClick={() => void enregistrer()} className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-extrabold disabled:opacity-60">
+              {envoi ? '⏳ …' : '✅ Enregistrer'}
+            </button>
+            <p className="text-[11px] text-muted-foreground">🔒 Seul ton professeur la voit.</p>
+          </div>
+        ) : age === null && !choixAge ? (
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => setChoixAge('moins')} className="rounded-xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 py-3 text-sm font-bold">J'ai moins de 20 ans</button>
             <button type="button" onClick={() => setChoixAge('plus')} className="rounded-xl border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 py-3 text-sm font-bold">J'ai 20 ans ou plus</button>

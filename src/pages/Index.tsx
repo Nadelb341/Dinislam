@@ -45,6 +45,8 @@ const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m)
 const MeteoSaison = lazy(() => import('@/components/saisons/MeteoSaison').then((m) => ({ default: m.MeteoSaison })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
 const MaJournee = lazy(() => import('@/components/home/MaJournee').then((m) => ({ default: m.MaJournee })));
+const AnniversaireEleve = lazy(() => import('@/components/anniversaire/AnniversaireEleve').then((m) => ({ default: m.AnniversaireEleve })));
+const AnniversairesCamarades = lazy(() => import('@/components/anniversaire/AnniversairesDuJour').then((m) => ({ default: m.AnniversairesCamarades })));
 const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').then((m) => ({ default: m.CarnetLiaison })));
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 
@@ -363,7 +365,7 @@ const Index = () => {
       if (!user) return null;
       const { data, error } = await supabase.
       from('profiles').
-      select('full_name, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at').
+      select('full_name, date_of_birth, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at').
       eq('user_id', user.id).
       maybeSingle();
       if (error) throw error;
@@ -507,6 +509,15 @@ const handleModuleClick = (mod) => {
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
               Vide (et cachée) tant que le jeu ne la remplit pas */}
           <div id="bulle-cache-cache" className="flex justify-start ps-1 empty:hidden" />
+          {/* 🎉 Un an de plus (2026-11-15) : son message + 24 h de fête ; ses camarades de groupe qui ont un an de plus aujourd'hui */}
+          {!isAdmin && user && (
+            <SilentBoundary name="Un an de plus">
+              <Suspense fallback={null}>
+                <AnniversaireEleve userId={user.id} naissance={profile?.date_of_birth ?? null} />
+                <AnniversairesCamarades />
+              </Suspense>
+            </SilentBoundary>
+          )}
           {/* 📒 Carnet de liaison (2026-11-12) : juste sous le message de bienvenue, élèves ET enseignante */}
           <SilentBoundary name="Carnet de liaison">
             <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>

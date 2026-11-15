@@ -26,11 +26,12 @@ import {
 type Kind = 'papillon' | 'abeille' | 'feuille' | 'petale' | 'bulle' | 'mouette';
 interface Volant { k: Kind; devant: boolean; z: number; x: number; y: number; ang: number; ph: number; rot: number; vr: number; c1: string; c2: string; rare: boolean; fuite: number; xAff: number; yAff: number; r: number }
 interface Eclat { x: number; y: number; vx: number; vy: number; s: number; c: string; v: number; vie: number }
-interface Goutte { k: 'petale' | 'marguerite' | 'coccinelle' | 'etoile' | 'coquillage' | 'bulle'; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number; c: string }
+interface Goutte { k: 'petale' | 'marguerite' | 'coccinelle' | 'etoile' | 'coquillage' | 'bulle' | 'papillon' | 'soleil' | 'dauphin'; x: number; y: number; vy: number; rot: number; vr: number; s: number; ph: number; c: string }
 
 const AILES: [string, string][] = [['#f26b38', '#f7b733'], ['#5aa9e6', '#a7d8f5'], ['#f48fb1', '#fce4ec'], ['#f9d54a', '#fff1a8'], ['#9b7fe0', '#d9cdf7']];
 const VERTS = ['#8cc63f', '#7cb342', '#9fd14a', '#5cae38'];
 const PETALES = ['#ffffff', '#ffd1dc', '#ffe8ef', '#fff4c2'];
+const COULEURS_PAPILLON = ['#fbbf24', '#a78bfa', '#60a5fa', '#f472b6', '#fb923c'];
 const ANIMAUX_SAISON: Record<Clair, AnimalClair[]> = { printemps: ['lapin', 'escargot', 'biche'], ete: ['crabe', 'dauphin'] };
 
 /** L'animal change à chaque nouvelle connexion (gardé le temps de la session) */
@@ -135,6 +136,26 @@ function dessinerGoutte(ctx: CanvasRenderingContext2D, g: Goutte) {
     ctx.beginPath(); ctx.moveTo(0, s * 0.45); ctx.lineTo(-s * 0.45, -s * 0.05); ctx.quadraticCurveTo(0, -s * 0.7, s * 0.45, -s * 0.05); ctx.closePath();
     ctx.fillStyle = '#fde2d4'; ctx.fill(); ctx.strokeStyle = '#d99a80'; ctx.stroke();
     ctx.beginPath(); for (const x of [-0.25, 0, 0.25]) { ctx.moveTo(0, s * 0.45); ctx.lineTo(x * s, -s * 0.3); } ctx.stroke(); return;
+  }
+  // 🦋☀️🐬 2026-11-15 (Nadia : printemps « fleurs, papillons » ; été « soleil, coquillage, dauphin »)
+  if (g.k === 'papillon') {
+    const b = Math.abs(Math.sin(g.ph * 3 + g.y * 0.05));
+    for (const sx of [-1, 1]) { ctx.save(); ctx.scale(sx * (0.35 + 0.65 * b), 1);
+      ctx.beginPath(); ctx.ellipse(s * 0.24, -s * 0.12, s * 0.26, s * 0.2, -0.3, 0, Math.PI * 2); ctx.fillStyle = g.c; ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(s * 0.18, s * 0.17, s * 0.16, s * 0.13, 0.4, 0, Math.PI * 2); ctx.fillStyle = '#f9a8d4'; ctx.fill(); ctx.stroke(); ctx.restore(); }
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 0.05, s * 0.28, 0, 0, Math.PI * 2); ctx.fillStyle = '#3a2a20'; ctx.fill(); return;
+  }
+  if (g.k === 'soleil') {
+    ctx.fillStyle = '#fbbf24'; ctx.strokeStyle = '#d97706';
+    for (let i = 0; i < 8; i++) { ctx.save(); ctx.rotate(i * Math.PI / 4); ctx.beginPath(); ctx.moveTo(s * 0.3, -s * 0.07); ctx.lineTo(s * 0.5, 0); ctx.lineTo(s * 0.3, s * 0.07); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    ctx.beginPath(); ctx.arc(0, 0, s * 0.27, 0, Math.PI * 2); ctx.fillStyle = '#fde047'; ctx.fill(); ctx.stroke(); return;
+  }
+  if (g.k === 'dauphin') {
+    ctx.beginPath(); ctx.moveTo(-s * 0.5, s * 0.05); ctx.quadraticCurveTo(-s * 0.1, -s * 0.4, s * 0.38, -s * 0.05); ctx.lineTo(s * 0.52, -s * 0.02); ctx.lineTo(s * 0.38, s * 0.05);
+    ctx.quadraticCurveTo(0, s * 0.22, -s * 0.38, s * 0.12); ctx.lineTo(-s * 0.55, s * 0.28); ctx.lineTo(-s * 0.46, s * 0.06); ctx.closePath();
+    ctx.fillStyle = '#60a5fa'; ctx.fill(); ctx.strokeStyle = '#1d4ed8'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-s * 0.02, -s * 0.2); ctx.lineTo(-s * 0.14, -s * 0.38); ctx.lineTo(s * 0.1, -s * 0.2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(s * 0.27, -s * 0.07, s * 0.035, 0, Math.PI * 2); ctx.fillStyle = '#0f172a'; ctx.fill(); return;
   }
   dessinerBulle(ctx, s * 0.4, false);
 }
@@ -283,10 +304,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
     // Pluie à chaque validation
     const pleuvoir = () => {
       if (!c.pluieValidation) return;
-      const kinds: Goutte['k'][] = ete ? ['etoile', 'coquillage', 'bulle'] : ['petale', 'petale', 'marguerite', 'coccinelle'];
+      const kinds: Goutte['k'][] = ete ? ['soleil', 'coquillage', 'coquillage', 'dauphin', 'etoile', 'bulle'] : ['petale', 'marguerite', 'marguerite', 'papillon', 'papillon', 'coccinelle'];
       for (let i = 0; i < 40; i++) {
-        pluie.push({ k: kinds[Math.floor(Math.random() * kinds.length)], x: Math.random() * LW, y: -30 - Math.random() * LH * 0.6, vy: 140 + Math.random() * 110,
-          rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 4, s: 16 + Math.random() * 10, ph: Math.random() * 6.3, c: PETALES[Math.floor(Math.random() * PETALES.length)] });
+        const k = kinds[Math.floor(Math.random() * kinds.length)];
+        pluie.push({ k, x: Math.random() * LW, y: -30 - Math.random() * LH * 0.6, vy: 140 + Math.random() * 110,
+          rot: Math.random() * 6.3, vr: (Math.random() - 0.5) * 4, s: 16 + Math.random() * 10, ph: Math.random() * 6.3, c: k === 'papillon' ? COULEURS_PAPILLON[Math.floor(Math.random() * COULEURS_PAPILLON.length)] : PETALES[Math.floor(Math.random() * PETALES.length)] });
       }
       if (c.son) (ete ? sonPlop : sonTintement)();
     };

@@ -784,3 +784,16 @@ html.feu-eteint .saison-feu, html.feu-eteint .hiver-feu { opacity: 0 !important;
 /* 🍂 Petit décor dans les pages (2026-11-12) : chute lente et légère */
 .decor-page { top: -2rem; animation-name: decor-page; animation-timing-function: linear; animation-iteration-count: infinite; }
 @keyframes decor-page { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(24px, 55vh) rotate(160deg); } 100% { transform: translate(-10px, 110vh) rotate(320deg); } }
+
+/* 🎉 Un an de plus (anniversaire de l'élève, 2026-11-15) : ballons lents pendant 24 h, confettis du message, chapeau sur le logo */
+.anniv-ballon { bottom: -60px; animation: anniv-monte 24s linear infinite; opacity: .85; }
+@keyframes anniv-monte { 0% { transform: translate(0, 0) rotate(-4deg); } 50% { transform: translate(14px, -60vh) rotate(4deg); } 100% { transform: translate(-6px, -125vh) rotate(-3deg); } }
+.anniv-confetti { top: -12px; border-radius: 2px; animation: anniv-tombe 2.6s ease-in forwards; }
+@keyframes anniv-tombe { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+.anniv-message { animation: anniv-pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes anniv-pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+html.anniv-fete .titre-logo::before { content: ""; position: absolute; z-index: 2; left: 50%; top: -22px; width: 26px; height: 30px; transform: translateX(-50%) rotate(-12deg);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M3 22L10 3l7 19z' fill='%23a855f7' stroke='%236b21a8'/%3E%3Cpath d='M6 15l8-1.6M4.6 19l10.8-1.8' stroke='%23fde047' stroke-width='1.6'/%3E%3Ccircle cx='10' cy='3' r='2.4' fill='%23f472b6'/%3E%3C/svg%3E") center / contain no-repeat; }
+html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: -14px; top: -6px; font-size: 16px; animation: anniv-brille 1.8s ease-in-out infinite; }
+@keyframes anniv-brille { 50% { opacity: .25; transform: scale(.8); } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .anniv-ballon { animation: none; display: none; } html:not(.anime-toujours) .anniv-confetti { animation: none; display: none; } }

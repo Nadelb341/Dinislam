@@ -1,3 +1,4 @@
+import { useFeteAnniversaire } from '@/components/anniversaire/AnniversaireEleve';
 import { useMemo } from 'react';
 import { POLICES, TITRE_DEFAUT, estRamadan, useReglagesTitre, type ReglagesTitre } from '@/lib/apparence';
 import { useSaisonActive } from '@/lib/saisons';
@@ -33,8 +34,10 @@ const SCINTILLES = [{ l: 4, t: 18 }, { l: 92, t: 22 }, { l: 18, t: 70 }, { l: 80
  * (proposition 8), la pluie d'étoiles permanente, puis « Assalamou Alaykoum », « Bienvenue » (en bleu du logo) et le Bismillah.
  * Tout vient des réglages du bouclier › 🔧 Apparence appli › Le titre. `rejouer` relance la pluie dans l'aperçu.
  */
-export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = null }: {
+export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = null, confettis = false }: {
   r: ReglagesTitre; nom: string | null; apercu?: boolean; rejouer?: number; forcerRamadan?: boolean;
+  /** 🎉 24 h de « un an de plus » : confettis à côté du prénom (2026-11-15) */
+  confettis?: boolean;
   /** 🌼 Petit objet de la saison posé en haut à droite du logo (2026-11-04) */
   objetLogo?: ObjetLogo | null;
 }) {
@@ -90,7 +93,7 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = nul
 
       {ramadan && <p className="mt-1 text-xs font-bold" style={{ color: traits }}>🌙 Ramadan Moubarak</p>}
       {r.salutation && <p className="text-muted-foreground mt-3 mb-1">{r.salutation}</p>}
-      {r.bienvenue && <h2 className="text-2xl font-bold [overflow-wrap:anywhere]" style={{ color: sombre && tropSombre(r.couleurBienvenue) ? '#9db4ff' : r.couleurBienvenue }}>{bienvenue}</h2>}
+      {r.bienvenue && <h2 className="text-2xl font-bold [overflow-wrap:anywhere]" style={{ color: sombre && tropSombre(r.couleurBienvenue) ? '#9db4ff' : r.couleurBienvenue }}>{bienvenue}{confettis && <span aria-label=" (un an de plus aujourd'hui)"> 🎊</span>}</h2>}
       {r.bismillah && <p className={`font-arabic mt-2 text-3xl ${r.couleurBismillah ? '' : 'text-gold'}`} style={r.couleurBismillah ? { color: r.couleurBismillah } : undefined}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>}
     </div>
   );
@@ -99,6 +102,7 @@ export function TitreAppli({ r, nom, rejouer = 0, forcerRamadan, objetLogo = nul
 /** Sur l'accueil : les réglages enregistrés (les réglages d'origine pendant le chargement) */
 export function TitreAccueil({ nom, children }: { nom: string | null; children?: React.ReactNode }) {
   const { data: r = TITRE_DEFAUT } = useReglagesTitre();
+  const fete = useFeteAnniversaire();
   // 🍂 Pendant une saison décorée, pas de pluie d'étoiles (déjà les feuilles / flocons qui tombent), sauf si Nadia la remet
   const { saison, r: rs } = useSaisonActive();
   const titre = saison && !rs.pluieEtoiles ? { ...r, pluie: false } : r;
@@ -106,7 +110,7 @@ export function TitreAccueil({ nom, children }: { nom: string | null; children?:
   const objetLogo = useMemo(() => (saison && logo ? objetDuMoment(saison, logo.objets, logo.rythme) : null), [saison, logo]);
   return (
     <div>
-      <TitreAppli r={titre} nom={nom} objetLogo={objetLogo} />
+      <TitreAppli r={titre} nom={nom} objetLogo={objetLogo} confettis={fete} />
       {children}
     </div>
   );
