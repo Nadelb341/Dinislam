@@ -14,4 +14,9 @@ describe('🕌 Horaires calculés sans Internet', () => {
     const h = calculerHoraires(35.767, -5.8, 3, new Date(2026, 10, 15, 12), 'Africa/Casablanca');
     expect(h.maghrib).toMatch(/^1[78]:\d\d$/);
   });
+  it('AMCES : la règle redonne son calendrier 2026 (ex. 15/11 : 06:17 · 12:31 · 15:01 · 17:21 · 18:41)', () => {
+    const h = calculerHoraires(43.62756, 3.4318, 99, new Date(2026, 10, 15, 12), 'Europe/Paris');
+    expect([h.fajr, h.dhuhr, h.maghrib, h.isha]).toEqual(['06:17', '12:31', '17:21', '18:41']);
+    expect(['14:59', '15:00', '15:01', '15:02', '15:03']).toContain(h.asr);
+  });
 });

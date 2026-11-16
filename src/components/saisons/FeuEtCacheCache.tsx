@@ -156,8 +156,8 @@ const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printe
 
 /** B · la cachette dans le décor (un petit tas d'où dépasse sa queue), dans la rangée de la bulle */
 const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
-  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'le panier de pommes', tas: '🍎🧺' }, { nom: 'les champignons', tas: '🍄🍂' }],
-  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'le sapin', tas: '🎄' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
+  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'les pommes tombées', tas: '🍎🍂🍎' }, { nom: 'les champignons', tas: '🍄🍂' }],
+  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'la luge', tas: '🛷❄️' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
   printemps: [{ nom: 'les fleurs', tas: '🌷🌼' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱' }, { nom: 'les papillons', tas: '🦋🌼' }],
   ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
 };

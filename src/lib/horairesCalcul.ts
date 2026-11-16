@@ -3,11 +3,15 @@ import { CalculationMethod, CalculationParameters, Coordinates, HighLatitudeRule
 /**
  * 🕌 Horaires de prière calculés DANS l'appli (Nadia, 2026-11-15, solution B) : gratuit, sans Internet, pour n'importe quelle ville.
  * Remplace le service en ligne aladhan. Même calcul côté serveur (fonction `prayer-reminders`, npm:adhan@4.4.3) : mêmes heures partout.
- * Méthodes : 3 = MWL (Fajr 18°, Icha 17°, celle des mosquées AMCES), 12 = UOIF (12° / 12°), 2 = ISNA (15° / 15°).
+ * Méthodes : 3 = MWL (Fajr 18°, Icha 17°), 12 = UOIF (12° / 12°), 2 = ISNA (15° / 15°),
+ * 99 = AMCES (mosquée de Clermont-l'Hérault) : Fajr 15°, Icha = Maghrib + 80 min. Règle retrouvée le 2026-11-16 sur son calendrier 2026
+ * (366 jours : écart ≤ 1 min, Asr ≤ 2 min) → son calendrier se refait tout seul chaque année (Nadia : « fais-le automatiquement »).
  */
+export const METHODE_AMCES = 99;
 export function parametres(methode: number): CalculationParameters {
-  const p = methode === 12 ? CalculationMethod.Other() : methode === 2 ? CalculationMethod.NorthAmerica() : CalculationMethod.MuslimWorldLeague();
+  const p = methode === 12 || methode === METHODE_AMCES ? CalculationMethod.Other() : methode === 2 ? CalculationMethod.NorthAmerica() : CalculationMethod.MuslimWorldLeague();
   if (methode === 12) { p.fajrAngle = 12; p.ishaAngle = 12; }
+  if (methode === METHODE_AMCES) { p.fajrAngle = 15; p.ishaInterval = 80; }
   // Été en France : le Fajr à 18° n'existe pas certaines nuits → règle « selon l'angle » (comme aladhan)
   p.highLatitudeRule = HighLatitudeRule.TwilightAngle;
   return p;

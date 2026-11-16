@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AMCES_CALENDAR_2026 } from '@/data/amcesCalendar2026';
-import { calculerHoraires } from '@/lib/horairesCalcul';
+import { calculerHoraires, METHODE_AMCES } from '@/lib/horairesCalcul';
 
 export interface PrayerTimesData {
   fajr: string;
@@ -117,9 +117,9 @@ export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
 
       if (isAmcesCity) {
         const times = today.getFullYear() === 2026 ? AMCES_CALENDAR_2026[monthIndex]?.[String(day)] : undefined;
-        // Calendrier AMCES de 2026 seulement : les autres années, calcul MWL (comme AMCES) en attendant le calendrier suivant
+        // Calendrier AMCES 2026 recopié ; les autres années, SA règle (Fajr 15°, Icha = Maghrib + 80 min) recalcule le calendrier tout seul
         if (times) [fajr, sunrise, dhuhr, asr, maghrib, isha] = times;
-        else ({ fajr, sunrise, dhuhr, asr, maghrib, isha } = calculerHoraires(city.lat, city.lon, 3, today));
+        else ({ fajr, sunrise, dhuhr, asr, maghrib, isha } = calculerHoraires(city.lat, city.lon, METHODE_AMCES, today));
       } else {
         // 2026-11-15 (Nadia, solution B) : calculé dans l'appli → marche SANS Internet, pour toute ville (avant : service aladhan en ligne)
         ({ fajr, sunrise, dhuhr, asr, maghrib, isha } = calculerHoraires(city.lat, city.lon, methodId, today));

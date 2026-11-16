@@ -39,16 +39,18 @@ function instant(jour: string, hm: string, fuseau: string): number {
 
 type Horaires = Record<string, string>;
 async function horairesDuJour(_supabase: ReturnType<typeof createClient>, ville: string, lat: number, lon: number, methode: number, jour: string, pays: string | null = 'FR'): Promise<Horaires | null> {
-  if (ville.includes("Clermont-l'Hérault") && jour.startsWith('2026-')) {
+  if (ville.includes("Clermont-l'Hérault")) {
     const [, m, d] = jour.split('-').map(Number);
-    const t = AMCES_CALENDAR_2026[m - 1]?.[String(d)];
+    const t = jour.startsWith('2026-') ? AMCES_CALENDAR_2026[m - 1]?.[String(d)] : undefined;
     if (t) return Object.fromEntries(PRIERES.map((p) => [p.cle, t[p.idx]]));
+    methode = 99; // AMCES les autres années : sa règle (Fajr 15°, Icha = Maghrib + 80 min), comme l'appli
   }
   // 2026-11-15 (Nadia, solution B) : calculé ICI avec la même bibliothèque que l'appli (src/lib/horairesCalcul.ts) → mêmes heures
   // partout, et plus de service extérieur (aladhan). La table `horaires_priere_jour` (copies d'aladhan) ne sert plus.
   const [y, m, d] = jour.split('-').map(Number);
-  const p = methode === 12 ? CalculationMethod.Other() : methode === 2 ? CalculationMethod.NorthAmerica() : CalculationMethod.MuslimWorldLeague();
+  const p = methode === 12 || methode === 99 ? CalculationMethod.Other() : methode === 2 ? CalculationMethod.NorthAmerica() : CalculationMethod.MuslimWorldLeague();
   if (methode === 12) { p.fajrAngle = 12; p.ishaAngle = 12; }
+  if (methode === 99) { p.fajrAngle = 15; p.ishaInterval = 80; }
   p.highLatitudeRule = HighLatitudeRule.TwilightAngle;
   const t = new PrayerTimes(new Coordinates(lat, lon), new Date(y, m - 1, d), p);
   const fuseau = fuseauDe(pays);
