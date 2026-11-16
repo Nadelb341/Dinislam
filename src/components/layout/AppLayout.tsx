@@ -30,13 +30,15 @@ function useCouleursSaison() {
   const hiver = saison === 'hiver' && r.hiver.couleurs;
   const printemps = saison === 'printemps' && r.printemps.couleurs;
   const ete = saison === 'ete' && r.ete.couleurs;
+  const ramadan = saison === 'ramadan' && r.ramadan.couleurs;
   useEffect(() => {
     const html = document.documentElement;
     html.classList.toggle('saison-automne', actif);
     html.classList.toggle('saison-hiver', hiver);
     html.classList.toggle('saison-printemps', printemps);
     html.classList.toggle('saison-ete', ete);
-  }, [actif, hiver, printemps, ete]);
+    html.classList.toggle('saison-ramadan', ramadan);
+  }, [actif, hiver, printemps, ete, ramadan]);
   // 📱 Les animations restent vivantes même si le téléphone a « Réduire les animations » (réglable dans la carte admin)
   useEffect(() => { document.documentElement.classList.toggle('anime-toujours', r.animerToujours); }, [r.animerToujours]);
 }

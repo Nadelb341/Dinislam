@@ -9,9 +9,9 @@ export const VARIABLES = ['{prénom}', '{groupe}', '{jour}', '{heure}', '{frise}
 
 /** 🎨 Frise de saison (Nadia, 2026-11-11) : en haut et en bas du message, avec les images du décor de l'appli, sans surcharger */
 export const MOTIF_SAISON: Record<Saison, [string, string]> = {
-  automne: ['🪵', '🍂'], hiver: ['❄️', '⛄'], printemps: ['🌸', '🐰'], ete: ['☀️', '🐚'],
+  automne: ['🪵', '🍂'], hiver: ['❄️', '⛄'], printemps: ['🌸', '🐰'], ete: ['☀️', '🐚'], ramadan: ['🏮', '🌙'],
 };
-export const EMOJI_SAISON: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '☀️' };
+export const EMOJI_SAISON: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '☀️', ramadan: '🌙' };
 export const friseDe = (s: Saison) => { const [a, b] = MOTIF_SAISON[s]; return Array.from({ length: 11 }, (_, i) => (i % 2 ? b : a)).join(''); };
 
 export function rendreConvocation(texte: string, v: { prenom: string; groupe: string; jour: string; heure: string }, date = new Date()) {

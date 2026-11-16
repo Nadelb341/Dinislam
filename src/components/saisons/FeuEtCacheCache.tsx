@@ -8,6 +8,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
+import { COMPAGNONS } from './dessinsRamadan';
 import { dureeDuToucher, jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
@@ -140,6 +141,8 @@ const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
   automne: [A48('ecureuil', 'L\'écureuil'), A48('herisson', 'Le hérisson'), A48('hibou', 'Le hibou'), A48('renard', 'Le renard')],
   hiver: [{ vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' }, { vb: '0 0 30 38', svg: PERSOS.bonhomme, nom: 'Le bonhomme de neige' }, A48('hibou', 'Le hibou')],
   printemps: [{ vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin' }, { vb: '0 0 40 34', svg: ANIMAUX.escargot.svg, nom: 'L\'escargot' }, { vb: '0 0 40 34', svg: ANIMAUX.biche.svg, nom: 'La biche' }],
+  // 🌙 Ramadan (2026-11-16) : personnages du désert
+  ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: COMPAGNONS[k].svg, nom: COMPAGNONS[k].nom })),
   ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin' }],
 };
 /** Tire un personnage, jamais le même que la partie d'avant */
@@ -152,13 +155,14 @@ function tirerAnimal(saison: Saison): number {
   try { sessionStorage.setItem('dinislam_cache_animal', String(i)); } catch { /* stockage indisponible */ }
   return i;
 }
-const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '🐚' };
+const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '🐚', ramadan: '⭐' };
 
 /** B · la cachette dans le décor (un petit tas d'où dépasse sa queue), dans la rangée de la bulle */
 const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
   automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'les pommes tombées', tas: '🍎🍂🍎' }, { nom: 'les champignons', tas: '🍄🍂' }],
   hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'la luge', tas: '🛷❄️' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
   printemps: [{ nom: 'les fleurs', tas: '🌷🌼' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱' }, { nom: 'les papillons', tas: '🦋🌼' }],
+  ramadan: [{ nom: 'la dune', tas: '🏜️' }, { nom: 'les lanternes', tas: '🏮🏮' }, { nom: 'le palmier', tas: '🌴' }, { nom: 'les étoiles', tas: '⭐🌙' }],
   ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
 };
 
@@ -237,7 +241,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
   };
   const rate = () => toast(indice ? `🍃 Raté ! Plus personne ici… Suis les traces 🐾` : `🍃 Raté ! Plus personne ici… Cherche encore !`);
 
-  const mot = motArabeDuJour(jour());
+  const mot = motArabeDuJour(jour(), saison === 'ramadan');
   const gentil = motGentilDuJour(jour());
   const parler = () => {
     try {

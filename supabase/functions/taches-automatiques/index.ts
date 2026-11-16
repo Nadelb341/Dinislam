@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
+import { datesRetenues } from "../_shared/ramadanDates.ts";
 
 /**
  * ⏰ Tâches automatiques (2026-11-12), toutes les 15 min (pg_cron « dinislam-taches-automatiques ») :
@@ -90,6 +91,23 @@ serve(async () => {
     if (estMardi && p.hour >= 18 && adminIds.length && await uneFois(`devoirs-prets-${p.day}`)) {
       await sendPushInternal({ userIds: adminIds, title: '🤖 Les devoirs de la semaine sont prêts', body: 'Pré-remplis pour chaque élève, selon où il en est. Relis, puis donne-les au groupe en 1 appui.', data: { url: '/?open=todo&cahier=1&donnerGroupe=1' } }).catch((e) => console.error(e));
       bilan.devoirs_prets = 'proposé';
+    }
+    // 🎉 Aïd el-Fitr / Aïd el-Adha (Nadia, 2026-11-15) : le matin de l'Aïd (dès 8 h), une notification à tous les élèves, une seule fois.
+    // Dates : celles écrites par Nadia (bouclier › Décorations saisons › 🌙 Ramadan), sinon le calcul (même règle que l'appli).
+    if (p.hour >= 8) {
+      const { data: ap } = await supabase.from('app_appearance').select('value').eq('key', 'saisons').maybeSingle();
+      const reglages = (ap?.value ?? {}) as { neutre?: boolean; ramadanDabord?: boolean; ramadan?: { notifAid?: boolean; aidFitr?: boolean; aidAdha?: boolean }; ramadanDates?: Record<string, string> };
+      const ram = reglages.ramadan ?? {};
+      const d = datesRetenues(reglages.ramadanDates, new Date(`${p.day}T12:00:00`));
+      const aid = p.day === d.aidFitr && ram.aidFitr !== false ? 'fitr' : p.day === d.aidAdha && ram.aidAdha !== false ? 'adha' : null;
+      if (aid && ram.notifAid !== false && reglages.neutre !== true && await uneFois(`aid-${aid}-${p.day}`)) {
+        const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'student');
+        const { data: ok } = await supabase.from('profiles').select('user_id').eq('is_approved', true);
+        const approuves = new Set((ok || []).map((x) => x.user_id));
+        const eleves = (roles || []).map((x) => x.user_id).filter((id) => approuves.has(id));
+        if (eleves.length) await sendPushInternal({ userIds: eleves, category: 'act', title: '🎉 Aïd Moubarak Saïd !', body: 'Connecte-toi à l\'application, car Dinislam aussi est en fête !', data: { url: '/' } }).catch((e) => console.error('aid', e));
+        bilan.aid = `${aid} : ${eleves.length} élèves`;
+      }
     }
     return Response.json({ success: true, bilan });
   } catch (e) {

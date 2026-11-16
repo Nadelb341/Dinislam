@@ -12,6 +12,12 @@ const marguerite = (petale: string, bord: string, coeur: string, bordCoeur: stri
   `<g fill="${petale}" stroke="${bord}" stroke-width=".6"><ellipse cx="12" cy="5" rx="2.6" ry="4.6"/><ellipse cx="12" cy="19" rx="2.6" ry="4.6"/><ellipse cx="5" cy="12" rx="4.6" ry="2.6"/><ellipse cx="19" cy="12" rx="4.6" ry="2.6"/><ellipse cx="7" cy="7" rx="2.4" ry="4.4" transform="rotate(-45 7 7)"/><ellipse cx="17" cy="17" rx="2.4" ry="4.4" transform="rotate(-45 17 17)"/><ellipse cx="17" cy="7" rx="2.4" ry="4.4" transform="rotate(45 17 7)"/><ellipse cx="7" cy="17" rx="2.4" ry="4.4" transform="rotate(45 7 17)"/></g><circle cx="12" cy="12" r="3.6" fill="${coeur}" stroke="${bordCoeur}" stroke-width=".6"/>`;
 
 export const OBJETS_LOGO: Record<Saison, Record<string, ObjetLogo>> = {
+  // 🌙 Ramadan (2026-11-16)
+  ramadan: {
+    croissant: { nom: '🌙 Croissant', t: 24, rot: -12, svg: '<path d="M14 2a10 10 0 1 0 8 15A8 8 0 1 1 14 2z" fill="#f5c542" stroke="#c99a1a" stroke-width=".9"/>' },
+    lanterne: { nom: '🏮 Lanterne', t: 26, rot: 8, svg: '<path d="M12 0v3" stroke="#b06a1f" stroke-width="1.2"/><path d="M8 5h8l-1.2-2h-5.6z" fill="#b06a1f"/><ellipse cx="12" cy="13" rx="5.4" ry="7" fill="#ffcf6b" stroke="#b06a1f" stroke-width="1"/><path d="M6.6 13h10.8M12 6v14" stroke="#b06a1f" stroke-width=".7"/><path d="M9.6 20h4.8l-.8 2.4h-3.2z" fill="#b06a1f"/>' },
+    etoile: { nom: '⭐ Étoile dorée', t: 22, rot: 10, svg: '<path d="M12 1.5l2.8 6.6 7.2.6-5.5 4.7 1.7 7-6.2-3.8-6.2 3.8 1.7-7L2 8.7l7.2-.6z" fill="#ffd54a" stroke="#c99a1a" stroke-width=".9" stroke-linejoin="round"/>' },
+  },
   printemps: {
     marguerite: { nom: '🌼 Marguerite', t: 24, rot: 12, svg: marguerite('#fff', '#d9d2c0', '#f7c22e', '#e0a21a') },
     fleurVerte: { nom: '💚 Fleur verte', t: 24, rot: 12, svg: marguerite('#bfe58f', '#6aa83a', '#f7e27a', '#c9a926') },

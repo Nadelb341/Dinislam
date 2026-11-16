@@ -17,8 +17,8 @@ import { depuisJour } from '@/lib/depuisJour';
  * - ❓ Question du coin du feu (toucher la cheminée / le décor en bas à droite) : une question par jour.
  * - Réglages (Décorations des saisons) : chaque jeu allumé/éteint, pour tout le monde ou certains groupes. Hors ligne : copies gardées.
  */
-const FRUIT: Record<Saison, string> = { automne: '🍎', hiver: '✨', printemps: '🌸', ete: '🍊' };
-const COIN: Record<Saison, string> = { automne: '🔥 La question du coin du feu', hiver: '🔥 La question du coin du feu', printemps: '🌳 La question de l\'arbre', ete: '⛱️ La question du parasol' };
+const FRUIT: Record<Saison, string> = { automne: '🍎', hiver: '✨', printemps: '🌸', ete: '🍊', ramadan: '⭐' };
+const COIN: Record<Saison, string> = { automne: '🔥 La question du coin du feu', hiver: '🔥 La question du coin du feu', printemps: '🌳 La question de l\'arbre', ete: '⛱️ La question du parasol' , ramadan: '🕌 La question de la mosquée' };
 const jourLocal = () => new Date().toLocaleDateString('en-CA');
 const lire = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const ecrire = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* stockage indisponible */ } };

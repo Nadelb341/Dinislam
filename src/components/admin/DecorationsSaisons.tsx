@@ -1,3 +1,6 @@
+import { Input } from '@/components/ui/input';
+import { datesAutomatiques, datesRetenues, type DatesRamadan } from '@/lib/ramadanDates';
+import { IMAGE_RAMADAN } from '@/components/saisons/dessinsRamadan';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -12,7 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   DATES_SAISON, NOM_SAISON, SAISONS_DEFAUT, SAISONS_PRETES, apercuSaison, choisirApercu, saisonDuJour, useReglagesSaisons,
-  type ReglagesAutomne, type ReglagesClair, type ReglagesHiver, type ReglagesSaisons, type Saison,
+  type ReglagesAutomne, type ReglagesClair, type ReglagesHiver, type ReglagesSaisons, type Saison, type ReglagesRamadan,
 } from '@/lib/saisons';
 import { IMAGES_AUTOMNE } from '@/components/saisons/dessinsAutomne';
 import { IMAGES_HIVER } from '@/components/saisons/dessinsHiver';
@@ -26,7 +29,7 @@ import { cn, errorMessage } from '@/lib/utils';
  * « Ambiance neutre » en haut à droite = l'appli comme avant. Réglages généraux, puis un onglet par saison
  * (seul l'automne est prêt ; les autres arrivent avec leurs maquettes). Enregistré pour tout le monde (en direct chez les élèves).
  */
-const ORDRE: Saison[] = ['hiver', 'printemps', 'ete', 'automne'];
+const ORDRE: Saison[] = ['hiver', 'printemps', 'ete', 'automne', 'ramadan'];
 
 const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label: string }[] }[] = [
   { titre: "L'arbre et les feuilles", items: [
@@ -110,6 +113,7 @@ const groupesClair = (ete: boolean): { titre: string; items: { k: keyof Reglages
 ];
 
 const IDEES_A_VENIR: Record<Exclude<Saison, 'automne' | 'hiver'>, string> = {
+  ramadan: 'Kaaba, mosquée, dunes, lanternes : décor prêt (dates dans l\'onglet 🌙 Ramadan).',
   printemps: 'Pétales de cerisier, papillons, arbre en fleurs, pâquerettes… Maquette avant le 1er mars.',
   ete: 'Soleil, palmier et dattes, lucioles le soir, étoiles filantes… Maquette avant le 1er juin.',
 };
@@ -195,7 +199,7 @@ export default function DecorationsSaisons() {
             </div>
           )}
           {ligne('elevesPeuventCouper', 'Les élèves peuvent couper les décorations pour eux', 'Dans leurs ⚙️ Paramètres')}
-          {ligne('ramadanDabord', 'Pendant le Ramadan, pas de décor de saison', 'Les couleurs du Ramadan passent avant')}
+          {ligne('ramadanDabord', '🌙 Pendant le Ramadan et les Aïds : le décor du Ramadan', 'Il remplace la saison aux dates de l\'onglet 🌙 Ramadan')}
           {ligne('themeSombre', 'Décorer aussi le thème sombre', 'Décoché au départ')}
           {ligne('animerToujours', '📱 Animer même si le téléphone demande « Réduire les animations »', reduitAnimations ? "⚠️ CE téléphone a « Réduire les animations » activé (Réglages › Accessibilité › Mouvement) : décoché, tout serait figé ici" : "Ce téléphone ne demande pas moins d'animations")}
           {ligne('decorPages', '🍂 Petit décor dans les pages', "Quelques feuilles (ou flocons, pétales) qui tombent doucement dans les autres pages que l'accueil")}
@@ -211,7 +215,7 @@ export default function DecorationsSaisons() {
           </label>
         </section>
 
-        <div className="grid grid-cols-4 gap-1.5" role="tablist">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5" role="tablist">
           {ORDRE.map((s) => (
             <button key={s} type="button" role="tab" aria-selected={onglet === s} onClick={() => setOnglet(s)}
               className={cn('rounded-xl border-2 px-1 py-1.5 text-xs', onglet === s ? 'border-[#b5562b] bg-[#b5562b]/10 font-bold' : 'border-transparent bg-muted/60')}>
@@ -286,6 +290,8 @@ export default function DecorationsSaisons() {
             </div>
             <p className="text-xs text-muted-foreground">{onglet === 'ete' ? '☀️ L\'été s\'affiche tout seul du 1er juin à fin août.' : '🌸 Le printemps s\'affiche tout seul du 1er mars à fin mai.'} Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous.</p>
           </div>
+        ) : onglet === 'ramadan' ? (
+          <ReglagesRamadanOnglet r={r} setR={setR} />
         ) : (
           <p className="rounded-xl bg-muted px-3 py-2 text-sm">{NOM_SAISON[onglet]} : {IDEES_A_VENIR[onglet]} En attendant, cette saison reste en ambiance neutre.</p>
         )}
@@ -330,7 +336,7 @@ export default function DecorationsSaisons() {
   );
 }
 
-const COULEUR: Record<Saison, string> = { hiver: '#3f6fb5', printemps: '#5a9e2f', ete: '#2e8fd0', automne: '#b5562b' };
+const COULEUR: Record<Saison, string> = { hiver: '#3f6fb5', printemps: '#5a9e2f', ete: '#2e8fd0', automne: '#b5562b', ramadan: '#b07a1f' };
 const MODES: { v: ModeMeteo; label: string; aide: string }[] = [
   { v: 'parfois', label: '🌦️ De temps en temps', aide: 'Une averse de temps en temps, puis l’arc-en-ciel' },
   { v: 'periode', label: '📅 Pendant une période', aide: 'Il pleut tout le temps entre deux dates' },
@@ -478,3 +484,66 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
     </section>
   );
 }
+
+/* ---------- 🌙 Onglet Ramadan (2026-11-16) : interrupteurs + les 3 dates, modifiables si la lune donne un autre jour ---------- */
+const GROUPES_RAMADAN: { titre: string; items: { k: keyof ReglagesRamadan; label: string }[] }[] = [
+  { titre: 'Le décor', items: [
+    { k: 'guirlande', label: '🏮 Guirlande de lanternes qui défilent' }, { k: 'kaaba', label: '🕋 Kaaba en haut à gauche' }, { k: 'mosquee', label: '🕌 Mosquée en bas à droite' },
+    { k: 'dunes', label: '🏜️ Dunes en bas' }, { k: 'compagnon', label: '🐪 Compagnon (change à chaque connexion)' }, { k: 'etoiles', label: '⭐ Étoiles et croissants qui tombent' },
+    { k: 'images', label: '🖼️ Images sur les cartes' }, { k: 'couleurs', label: '🎨 Couleurs sable doré' }, { k: 'son', label: '🔔 Petits sons' },
+  ] },
+  { titre: 'Pendant le mois', items: [
+    { k: 'lanternesMois', label: '🏮 30 lanternes (une par jour passé)' }, { k: 'compteRebours', label: '⏳ Compte à rebours de l\'iftar' }, { k: 'iftar', label: '🍽️ Moment de l\'iftar (invocation)' },
+    { k: 'dernieresNuits', label: '✨ 10 dernières nuits + étoile filante' }, { k: 'pluieValidation', label: '🎊 Pluie de dattes à chaque validation' }, { k: 'message', label: '📢 « Ramadan Moubarak » / « Aïd Moubarak »' },
+    { k: 'veille', label: '🌇 Décor dès la veille au soir (Maghrib)' },
+  ] },
+  { titre: 'Les Aïds', items: [
+    { k: 'aidFitr', label: '🎉 Aïd el-Fitr (1 jour, plus festif)' }, { k: 'aidAdha', label: '🐑 Aïd el-Adha (3 jours, moutons)' }, { k: 'notifAid', label: '🔔 Notification « Aïd Moubarak Saïd »' },
+  ] },
+];
+const fr = (s: string) => (s ? new Date(`${s}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—');
+
+function ReglagesRamadanOnglet({ r, setR }: { r: ReglagesSaisons; setR: React.Dispatch<React.SetStateAction<ReglagesSaisons>> }) {
+  const auto = datesAutomatiques();
+  const retenues = datesRetenues(r.ramadanDates);
+  const majDate = (k: keyof DatesRamadan, v: string) => setR((x) => ({ ...x, ramadanDates: { ...x.ramadanDates, [k]: v || undefined } }));
+  const DATES: { k: keyof DatesRamadan; label: string }[] = [
+    { k: 'debut', label: '🌙 1ᵉʳ jour du Ramadan' }, { k: 'aidFitr', label: '🎉 Jour de l\'Aïd el-Fitr (Aïd Sghir)' }, { k: 'aidAdha', label: '🐑 1ᵉʳ jour de l\'Aïd el-Adha (Aïd Kebir)' },
+  ];
+  return (
+    <div className="space-y-3">
+      <section className="space-y-2 rounded-xl border-2 border-[#e2c08f] bg-[#fffaf0] dark:bg-card p-3">
+        <p className="text-sm font-extrabold">📅 Les dates</p>
+        <p className="text-xs text-muted-foreground">Calculées toutes seules. Si l'annonce de la lune donne un autre jour, écris le bon : le décor partira ce jour-là, ni avant ni après.</p>
+        {DATES.map(({ k, label }) => (
+          <label key={k} className="block space-y-1">
+            <span className="text-sm font-semibold">{label}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input type="date" value={r.ramadanDates[k] ?? ''} onChange={(e) => majDate(k, e.target.value)} className="h-9 w-auto" />
+              {r.ramadanDates[k] && <button type="button" onClick={() => majDate(k, '')} className="text-xs font-bold text-muted-foreground underline">↩️ Revenir au calcul</button>}
+            </div>
+            <span className="block text-xs text-muted-foreground">Calcul : {fr(auto[k])} · <b>Retenu : {fr(retenues[k])}</b></span>
+          </label>
+        ))}
+      </section>
+      {GROUPES_RAMADAN.map((g) => (
+        <section key={g.titre} className="space-y-1.5">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">{g.titre}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {g.items.map((it) => (
+              <button key={String(it.k)} type="button" aria-pressed={r.ramadan[it.k]} onClick={() => setR((x) => ({ ...x, ramadan: { ...x.ramadan, [it.k]: !x.ramadan[it.k] } }))}
+                className={cn('rounded-full border px-3 py-1 text-sm text-start', r.ramadan[it.k] ? 'bg-[#b07a1f] text-white border-[#b07a1f]' : 'bg-card')}>{it.label}</button>
+            ))}
+          </div>
+        </section>
+      ))}
+      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-card/70 p-2">
+        {Object.entries(IMAGE_RAMADAN).map(([k, svg]) => (
+          <svg key={k} viewBox="0 0 48 48" aria-hidden className="h-10 w-10" dangerouslySetInnerHTML={{ __html: svg }} />
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous (10ᵉ jour du Ramadan).</p>
+    </div>
+  );
+}
+

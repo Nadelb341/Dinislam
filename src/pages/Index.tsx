@@ -39,11 +39,14 @@ import { ConvocationEleve } from '@/components/convocations/ConvocationEleve';
 import { useSaisonActive } from '@/lib/saisons';
 import { imageDeCarte } from '@/components/saisons/dessinsAutomne';
 import { imageDeCarteHiver } from '@/components/saisons/dessinsHiver';
+import { imageDeCarteRamadan } from '@/components/saisons/dessinsRamadan';
 import { MODULE_EMOJI_FALLBACK } from '@/lib/emojiCartes';
 import { imageDeCarteClair } from '@/components/saisons/dessinsPrintempsEte';
 const DecorAutomne = lazy(() => import('@/components/saisons/DecorAutomne').then((m) => ({ default: m.DecorAutomne })));
 const DecorClair = lazy(() => import('@/components/saisons/DecorClair').then((m) => ({ default: m.DecorClair })));
 const MeteoSaison = lazy(() => import('@/components/saisons/MeteoSaison').then((m) => ({ default: m.MeteoSaison })));
+const DecorRamadan = lazy(() => import('@/components/saisons/DecorRamadan').then((m) => ({ default: m.DecorRamadan })));
+const LanternesRamadan = lazy(() => import('@/components/saisons/LanternesRamadan').then((m) => ({ default: m.LanternesRamadan })));
 const DecorHiver = lazy(() => import('@/components/saisons/DecorHiver').then((m) => ({ default: m.DecorHiver })));
 const MaJournee = lazy(() => import('@/components/home/MaJournee').then((m) => ({ default: m.MaJournee })));
 const AnniversaireEleve = lazy(() => import('@/components/anniversaire/AnniversaireEleve').then((m) => ({ default: m.AnniversaireEleve })));
@@ -231,8 +234,9 @@ const Index = () => {
   });
 
   // 🍂 Décor de saison (bouclier › Apparence appli › Décorations saisons). Soir = du Maghrib jusqu'au Fajr ; journée = du Fajr au Maghrib
-  const { saison, r: reglagesSaison } = useSaisonActive();
+  const { saison, r: reglagesSaison, fete } = useSaisonActive();
   const automne = saison === 'automne';
+  const ramadan = saison === 'ramadan';
   const hiver = saison === 'hiver';
   const clair = saison === 'printemps' || saison === 'ete' ? saison : null;
   const [maintenant, setMaintenant] = useState(() => Date.now());
@@ -441,7 +445,7 @@ const handleModuleClick = (mod) => {
   return (
     <>
 <AppLayout showBottomNav={false}>
-        <div className={cn('p-4 space-y-6', (automne || hiver || clair) && 'relative isolate pb-32')}>
+        <div className={cn('p-4 space-y-6', (automne || hiver || clair || ramadan) && 'relative isolate pb-32')}>
           {automne && (
             <SilentBoundary name="Décor de saison">
               <Suspense fallback={null}><DecorAutomne r={reglagesSaison} soir={soir} userId={user?.id ?? null} /></Suspense>
@@ -455,6 +459,11 @@ const handleModuleClick = (mod) => {
           {clair && (
             <SilentBoundary name="Décor de saison (printemps / été)">
               <Suspense fallback={null}><DecorClair saison={clair} r={reglagesSaison} soir={soir} matin={matin} userId={user?.id ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
+          {ramadan && (
+            <SilentBoundary name="Décor du Ramadan">
+              <Suspense fallback={null}><DecorRamadan r={reglagesSaison} soir={soir} fete={fete} userId={user?.id ?? null} /></Suspense>
             </SilentBoundary>
           )}
           {/* 🎠 Petits jeux des décors (2026-11-11) : compagnon qui grandit et parle, arbre de la semaine, surprise, question du coin du feu */}
@@ -501,6 +510,12 @@ const handleModuleClick = (mod) => {
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
               Vide (et cachée) tant que le jeu ne la remplit pas */}
           <div id="bulle-cache-cache" className="flex justify-start ps-1 empty:hidden" />
+          {/* 🏮 Ramadan (2026-11-16) : 30 lanternes (une s'allume par jour passé), compte à rebours et moment de l'iftar */}
+          {ramadan && fete?.mode === 'ramadan' && (reglagesSaison.ramadan.lanternesMois || reglagesSaison.ramadan.compteRebours || reglagesSaison.ramadan.iftar) && (
+            <SilentBoundary name="Lanternes du Ramadan">
+              <Suspense fallback={null}><LanternesRamadan jour={fete.jour} r={reglagesSaison.ramadan} maghrib={prayerTimes?.maghribDate ?? null} /></Suspense>
+            </SilentBoundary>
+          )}
           {/* 📍 Ville manquante ou introuvable (2026-11-15) : à corriger, à chaque connexion */}
           {!isAdmin && user && <SilentBoundary name="Ma ville"><Suspense fallback={null}><VilleAVerifier /></Suspense></SilentBoundary>}
           {/* 🎉 Un an de plus (2026-11-15) : son message + 24 h de fête ; ses camarades de groupe qui ont un an de plus aujourd'hui */}
@@ -727,9 +742,9 @@ const handleModuleClick = (mod) => {
                   </button>
 
                   {/* 🍂 Image de saison en haut à droite de la carte (à gauche du menu ⋮ pour l'enseignante, pour ne rien cacher) */}
-                  {((automne && reglagesSaison.automne.images) || (hiver && reglagesSaison.hiver.images) || (clair && reglagesSaison[clair].images)) && (
+                  {((automne && reglagesSaison.automne.images) || (hiver && reglagesSaison.hiver.images) || (clair && reglagesSaison[clair].images) || (ramadan && reglagesSaison.ramadan.images)) && (
                     <svg aria-hidden viewBox="0 0 48 48" className="saison-sticker" style={{ right: isAdmin ? 34 : -8 }}
-                      dangerouslySetInnerHTML={{ __html: clair ? imageDeCarteClair(clair, slug, index) : hiver ? imageDeCarteHiver(slug, index) : imageDeCarte(slug, index) }} />
+                      dangerouslySetInnerHTML={{ __html: ramadan ? imageDeCarteRamadan(slug, index) : clair ? imageDeCarteClair(clair, slug, index) : hiver ? imageDeCarteHiver(slug, index) : imageDeCarte(slug, index) }} />
                   )}
 
                   {/* Admin 3-dot menu */}

@@ -131,11 +131,30 @@ export const MOTS_GENTILS: { texte: string; source?: string }[] = [
   { texte: 'Tu es patient et attentif : ce sont de belles qualités, ma shā\' Allah 🌟' },
 ];
 
-export const motArabeDuJour = (jour: string) => MOTS_ARABES[graine(`${jour}|mot`) % MOTS_ARABES.length];
+/** 🌙 Mots du Ramadan (Nadia, 2026-11-15, idée 18) */
+export const MOTS_RAMADAN: MotArabe[] = [
+  { arabe: 'صِيَام', translit: 'siyâm', sens: 'le jeûne', image: '🌙' },
+  { arabe: 'سُحُور', translit: 'souhoûr', sens: 'le repas avant l\'aube', image: '🌅' },
+  { arabe: 'إِفْطَار', translit: 'iftâr', sens: 'la rupture du jeûne', image: '🍲' },
+  { arabe: 'تَرَاوِيح', translit: 'tarâwîh', sens: 'les prières des nuits du Ramadan', image: '🕌' },
+  { arabe: 'هِلَال', translit: 'hilâl', sens: 'le croissant de lune', image: '🌙' },
+  { arabe: 'فَانُوس', translit: 'fânoûs', sens: 'la lanterne', image: '🏮' },
+  { arabe: 'تَمْر', translit: 'tamr', sens: 'les dattes', image: '🌴' },
+  { arabe: 'دُعَاء', translit: 'dou\'â\'', sens: 'l\'invocation', image: '🤲' },
+  { arabe: 'صَدَقَة', translit: 'sadaqa', sens: 'le don, l\'aumône', image: '💝' },
+  { arabe: 'عِيد', translit: '\'îd', sens: 'la fête', image: '🎉' },
+  { arabe: 'قُرْآن', translit: 'qour\'ân', sens: 'le Coran', image: '📖' },
+  { arabe: 'صَبْر', translit: 'sabr', sens: 'la patience', image: '🌿' },
+];
+export const motArabeDuJour = (jour: string, ramadan = false) => {
+  const liste = ramadan ? MOTS_RAMADAN : MOTS_ARABES;
+  return liste[graine(`${jour}|mot`) % liste.length];
+};
 export const motGentilDuJour = (jour: string) => MOTS_GENTILS[graine(`${jour}|gentil`) % MOTS_GENTILS.length];
 
 /** 🧣 Son habit du jour, selon la saison (gardé toute la journée) */
 export const HABIT: Record<Saison, { cle: 'echarpe' | 'bonnet' | 'fleur' | 'lunettes'; nom: string }> = {
   automne: { cle: 'echarpe', nom: 'son écharpe' }, hiver: { cle: 'bonnet', nom: 'son bonnet' },
   printemps: { cle: 'fleur', nom: 'sa fleur' }, ete: { cle: 'lunettes', nom: 'ses lunettes de soleil' },
+  ramadan: { cle: 'echarpe', nom: 'son foulard' },
 };

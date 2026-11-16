@@ -11,8 +11,9 @@ const ELEMENTS: Record<Saison, string[]> = {
   hiver: ['❄️', '❄️', '❄️', '❄️', '❄️'],
   printemps: ['🌸', '🌼', '🌸', '🌸', '🌼'],
   ete: ['☀️', '🐚', '🫧', '🐚', '🫧'],
+  ramadan: ['⭐', '🌙', '✨', '⭐', '🌙'],
 };
-const BRIN: Record<Saison, string> = { automne: '🍁🍂', hiver: '❄️⛄', printemps: '🌸🌿', ete: '🐚🌊' };
+const BRIN: Record<Saison, string> = { automne: '🍁🍂', hiver: '❄️⛄', printemps: '🌸🌿', ete: '🐚🌊', ramadan: '🏮🌙' };
 
 export function DecorPages() {
   const { pathname } = useLocation();

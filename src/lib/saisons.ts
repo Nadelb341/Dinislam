@@ -8,13 +8,16 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { estRamadan } from '@/lib/apparence';
+import { datesRetenues, periodeRamadan, type DatesRamadan, type PeriodeRamadan } from '@/lib/ramadanDates';
+import { villePriereDeLAppareil } from '@/lib/rappelsPriere';
+import { calculerHoraires } from '@/lib/horairesCalcul';
 
-export type Saison = 'hiver' | 'printemps' | 'ete' | 'automne';
-export const SAISONS_PRETES: Saison[] = ['automne', 'hiver', 'printemps', 'ete'];
+/** 🌙 'ramadan' = 5ᵉ saison (Nadia, 2026-11-15) : ne dépend pas du mois mais des dates du Ramadan et des Aïds (src/lib/ramadanDates.ts) */
+export type Saison = 'hiver' | 'printemps' | 'ete' | 'automne' | 'ramadan';
+export const SAISONS_PRETES: Saison[] = ['automne', 'hiver', 'printemps', 'ete', 'ramadan'];
 
-export const NOM_SAISON: Record<Saison, string> = { hiver: '❄️ Hiver', printemps: '🌸 Printemps', ete: '☀️ Été', automne: '🍂 Automne' };
-export const DATES_SAISON: Record<Saison, string> = { hiver: '1/12 → fin février', printemps: '1/03 → 31/05', ete: '1/06 → 31/08', automne: '1/09 → 30/11' };
+export const NOM_SAISON: Record<Saison, string> = { hiver: '❄️ Hiver', printemps: '🌸 Printemps', ete: '☀️ Été', automne: '🍂 Automne', ramadan: '🌙 Ramadan' };
+export const DATES_SAISON: Record<Saison, string> = { hiver: '1/12 → fin février', printemps: '1/03 → 31/05', ete: '1/06 → 31/08', automne: '1/09 → 30/11', ramadan: 'Ramadan + Aïd el-Fitr + Aïd el-Adha (dates réglables)' };
 
 export interface ReglagesAutomne {
   arbre: boolean; oiseaux: boolean; feuilles: boolean; devantDerriere: boolean;
@@ -30,6 +33,18 @@ export interface ReglagesAutomne {
   /** 🍁 7 grandes feuilles devant les cartes, lentes, faciles à attraper (2026-11-04) */
   grandesFeuilles: boolean;
 }
+
+/** 🌙 Ramadan (choix de Nadia du 2026-11-15, page https://claude.ai/artifact/8423oTGgpm8VcaW5r67wvh, ambiance B) */
+export interface ReglagesRamadan {
+  guirlande: boolean; kaaba: boolean; mosquee: boolean; dunes: boolean; compagnon: boolean; etoiles: boolean;
+  images: boolean; couleurs: boolean; son: boolean; pluieValidation: boolean; message: boolean; lanternesMois: boolean;
+  iftar: boolean; compteRebours: boolean; dernieresNuits: boolean; veille: boolean; aidFitr: boolean; aidAdha: boolean; notifAid: boolean;
+}
+export const RAMADAN_DEFAUT: ReglagesRamadan = {
+  guirlande: true, kaaba: true, mosquee: true, dunes: true, compagnon: true, etoiles: true,
+  images: true, couleurs: true, son: true, pluieValidation: true, message: true, lanternesMois: true,
+  iftar: true, compteRebours: true, dernieresNuits: true, veille: true, aidFitr: true, aidAdha: true, notifAid: true,
+};
 
 /** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */
 export interface ReglagesHiver {
@@ -112,6 +127,8 @@ export interface ReglagesMeteo {
 const METEO_BASE: ReglagesMeteo = { averse: true, arcEnCiel: true, mode: 'parfois', frequence: 1, intensite: 2, duree: 35, du: '', au: '', dureeArc: 25, neige: false, ciel: true, gouttes: 2, vitesseGouttes: 2 };
 export const METEO_DEFAUT: Record<Saison, ReglagesMeteo> = {
   printemps: METEO_BASE, automne: METEO_BASE, hiver: METEO_BASE,
+  // 🌙 Ramadan : pas de pluie (rien demandé)
+  ramadan: { ...METEO_BASE, averse: false, arcEnCiel: false },
   // L'été : pas demandé par Nadia, prêt mais éteint
   ete: { ...METEO_BASE, averse: false },
 };
@@ -128,6 +145,7 @@ export const LOGO_DEFAUT: Record<Saison, ReglagesLogo> = {
   ete: { objets: ['lunettes'], rythme: 'jour' },
   automne: { objets: ['erable'], rythme: 'jour' },
   hiver: { objets: ['flocon'], rythme: 'jour' },
+  ramadan: { objets: ['croissant', 'lanterne', 'etoile'], rythme: 'semaine' },
 };
 
 /**
@@ -189,6 +207,9 @@ export interface ReglagesSaisons {
   hiver: ReglagesHiver;
   printemps: ReglagesClair;
   ete: ReglagesClair;
+  ramadan: ReglagesRamadan;
+  /** Dates écrites par Nadia (vide = calcul) */
+  ramadanDates: Partial<DatesRamadan>;
   meteo: Record<Saison, ReglagesMeteo>;
   logo: Record<Saison, ReglagesLogo>;
   jeux: ReglagesJeux;
@@ -205,11 +226,11 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {
   neutre: false, auto: true, saisonChoisie: 'automne', annonce: true, elevesPeuventCouper: true, ramadanDabord: true, themeSombre: false, pluieEtoiles: false, decorPages: true, animerToujours: true,
-  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT,
+  quantite: 18, vitesse: 3, tailleArbre: 2, automne: AUTOMNE_DEFAUT, hiver: HIVER_DEFAUT, printemps: CLAIR_DEFAUT, ete: CLAIR_DEFAUT, ramadan: RAMADAN_DEFAUT, ramadanDates: {},
   meteo: METEO_DEFAUT, logo: LOGO_DEFAUT, jeux: JEUX_DEFAUT,
 };
 
-const TOUTES: Saison[] = ['hiver', 'printemps', 'ete', 'automne'];
+const TOUTES: Saison[] = ['hiver', 'printemps', 'ete', 'automne', 'ramadan'];
 function fusionParSaison<T extends object>(defaut: Record<Saison, T>, v: Partial<Record<Saison, Partial<T>>> | undefined): Record<Saison, T> {
   return Object.fromEntries(TOUTES.map((s) => [s, { ...defaut[s], ...(v?.[s] ?? {}) }])) as Record<Saison, T>;
 }
@@ -217,6 +238,7 @@ function fusionParSaison<T extends object>(defaut: Record<Saison, T>, v: Partial
 export function fusionner(v: Partial<ReglagesSaisons> | null | undefined): ReglagesSaisons {
   return { ...SAISONS_DEFAUT, ...(v ?? {}), automne: { ...AUTOMNE_DEFAUT, ...(v?.automne ?? {}) }, hiver: { ...HIVER_DEFAUT, ...(v?.hiver ?? {}) },
     printemps: { ...CLAIR_DEFAUT, ...(v?.printemps ?? {}) }, ete: { ...CLAIR_DEFAUT, ...(v?.ete ?? {}) },
+    ramadan: { ...RAMADAN_DEFAUT, ...(v?.ramadan ?? {}) }, ramadanDates: { ...(v?.ramadanDates ?? {}) },
     meteo: fusionParSaison(METEO_DEFAUT, v?.meteo),
     jeux: { ...JEUX_DEFAUT, ...(v?.jeux ?? {}) },
     // Ancien réglage : si la marguerite / les lunettes avaient été décochées, on garde « rien sur le logo »
@@ -274,21 +296,40 @@ function usePrefsLocales() {
   return n;
 }
 
-/** La saison à afficher maintenant (null = ambiance neutre) */
-export function useSaisonActive(): { saison: Saison | null; r: ReglagesSaisons } {
+/** 🌙 Ramadan / Aïd en cours (dates de Nadia ou calcul) ; « dès la veille au soir » = au Maghrib de la ville de l'appareil */
+export function periodeActuelle(r: ReglagesSaisons, maintenant = new Date()): PeriodeRamadan {
+  const d = datesRetenues(r.ramadanDates, maintenant);
+  let veille: string | null = null;
+  if (r.ramadan.veille) {
+    try { const v = villePriereDeLAppareil(); veille = calculerHoraires(v.lat, v.lon, 3, maintenant).maghrib; } catch { veille = '18:00'; }
+  }
+  const p = periodeRamadan(d, maintenant, veille);
+  if (p?.mode === 'fitr' && !r.ramadan.aidFitr) return null;
+  if (p?.mode === 'adha' && !r.ramadan.aidAdha) return null;
+  return p;
+}
+
+/** La saison à afficher maintenant (null = ambiance neutre) ; `fete` = Ramadan, Aïd el-Fitr ou Aïd el-Adha en cours */
+export function useSaisonActive(): { saison: Saison | null; r: ReglagesSaisons; fete: PeriodeRamadan } {
   const { data: r = SAISONS_DEFAUT } = useReglagesSaisons();
   usePrefsLocales();
+  // Recalculé chaque minute : le décor du Ramadan s'allume au Maghrib de la veille, ou à minuit, sans recharger
+  const [minute, setMinute] = useState(() => Math.floor(Date.now() / 60000));
+  useEffect(() => { const t = setInterval(() => setMinute(Math.floor(Date.now() / 60000)), 60000); return () => clearInterval(t); }, []);
   const apercu = apercuSaison();
-  let saison: Saison | null = apercu ?? (r.auto ? saisonDuJour() : r.saisonChoisie);
+  // 🌙 Aperçu « Ramadan » de l'enseignante : 10ᵉ jour du Ramadan (pour tout voir) ; sinon les vraies dates
+  let fete: PeriodeRamadan = apercu === 'ramadan' ? { mode: 'ramadan', jour: 10, ...datesRetenues(r.ramadanDates) } : apercu ? null : periodeActuelle(r, new Date(minute * 60000));
+  let saison: Saison | null = apercu ?? (fete && r.ramadanDabord ? 'ramadan' : r.auto ? saisonDuJour() : r.saisonChoisie);
+  if (saison !== 'ramadan') fete = null;
   if (!apercu) {
     if (r.neutre) saison = null;
-    else if (r.ramadanDabord && estRamadan()) saison = null;
     else if (r.elevesPeuventCouper && decorCoupe()) saison = null;
   }
   const sombre = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   if (sombre && !r.themeSombre) saison = null;
   if (saison && !SAISONS_PRETES.includes(saison)) saison = null;
-  return { saison, r };
+  if (saison !== 'ramadan') fete = null;
+  return { saison, r, fete };
 }
 
 /** Lundi (00:00) de la semaine d'une date : sert au message « attrape les feuilles », une fois par semaine */

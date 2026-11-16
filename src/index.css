@@ -797,3 +797,63 @@ html.anniv-fete .titre-logo::before { content: ""; position: absolute; z-index: 
 html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: -14px; top: -6px; font-size: 16px; animation: anniv-brille 1.8s ease-in-out infinite; }
 @keyframes anniv-brille { 50% { opacity: .25; transform: scale(.8); } }
 @media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .anniv-ballon { animation: none; display: none; } html:not(.anime-toujours) .anniv-confetti { animation: none; display: none; } }
+
+/* 🌙 5ᵉ saison « Ramadan » (2026-11-16, ambiance B « sable doré et lanternes » choisie par Nadia, sans surcharger) */
+:root.saison-ramadan:not(.dark) {
+  --background: 38 72% 93%;
+  --card: 40 100% 98%;
+  --popover: 40 100% 98%;
+  --muted: 36 55% 88%;
+  --muted-foreground: 30 22% 36%;
+  --border: 36 60% 80%;
+  --input: 36 60% 80%;
+}
+:root.saison-ramadan.ramadan-soir:not(.dark) { --background: 32 55% 88%; --border: 30 50% 76%; }
+:root.saison-ramadan:not(.dark) .carte-accueil { border-color: #e2c08f; box-shadow: 0 2px 0 #9fd8d1; }
+:root.saison-ramadan:not(.dark) .prog-carte { background-image: linear-gradient(90deg, #fbebc8, #fff6e0, #e3f4f1); border-color: #e2c08f; }
+/* Lanternes : légèrement allumées le jour, au maximum dès le Maghrib (Nadia) */
+.ram-lueur { opacity: .18; transition: opacity 1.5s; }
+.ramadan-soir .ram-lueur { opacity: .7; animation: ram-respire 3s ease-in-out infinite; }
+@keyframes ram-respire { 50% { opacity: .45; } }
+.ram-halo { opacity: .12; transition: opacity 1.5s; }
+.ramadan-soir .ram-halo { opacity: .45; }
+.ram-fenetre { filter: brightness(.9); transition: filter 1.5s; }
+.ramadan-soir .ram-fenetre { filter: brightness(1.15) drop-shadow(0 0 3px #ffcf6b); }
+.ramadan-lanterne { transform-origin: 50% 0; animation: ram-balance 4.2s ease-in-out infinite; filter: drop-shadow(0 1px 1px rgba(80, 40, 10, .25)); }
+.ramadan-soir .ramadan-lanterne { filter: drop-shadow(0 0 6px rgba(255, 207, 107, .9)); }
+@keyframes ram-balance { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+/* Les lanternes défilent le long de la guirlande (la rangée est doublée : boucle sans à-coup) */
+.ramadan-defile.anime { animation: ram-defile 70s linear infinite; }
+@keyframes ram-defile { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ram-scintille { animation: ram-scint 2.4s ease-in-out infinite; }
+@keyframes ram-scint { 50% { opacity: .25; } }
+.ramadan-ciel { background: linear-gradient(180deg, rgba(60, 40, 90, .22), transparent); }
+.ramadan-ciel-etoile { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff6c9; box-shadow: 0 0 4px #ffe08a; animation: ram-scint 2.6s ease-in-out infinite; }
+.ramadan-chute { animation-name: ram-tombe; animation-timing-function: linear; animation-iteration-count: infinite; opacity: .9; }
+@keyframes ram-tombe { 0% { transform: translate(0, -40px) rotate(0); } 50% { transform: translate(var(--balance, 14px), 50vh) rotate(160deg); } 100% { transform: translate(0, 105vh) rotate(320deg); } }
+.ramadan-eclat { position: fixed; width: 40px; height: 40px; pointer-events: none; }
+.ramadan-eclat i { position: absolute; left: 18px; top: 18px; width: 5px; height: 5px; border-radius: 50%; background: #ffd54a; animation: ram-eclat .8s ease-out forwards; }
+@keyframes ram-eclat { to { opacity: 0; margin-top: -10px; } }
+.ramadan-pluie { animation-name: ram-pluie; animation-timing-function: ease-in; animation-fill-mode: both; }
+@keyframes ram-pluie { from { transform: translateY(-40px) rotate(0); opacity: 1; } to { transform: translateY(105vh) rotate(260deg); opacity: .9; } }
+.ramadan-feu { position: absolute; width: 4px; height: 4px; }
+.ramadan-feu i { position: absolute; left: 0; top: 0; width: 4px; height: 14px; border-radius: 2px; background: var(--c); transform-origin: 2px 0; opacity: 0; animation: ram-feu-rayon 3.6s ease-out infinite; animation-delay: inherit; }
+@keyframes ram-feu-rayon { 0% { opacity: 0; height: 2px; } 15% { opacity: 1; } 45% { opacity: .9; height: 22px; } 70%, 100% { opacity: 0; height: 26px; } }
+.ramadan-mouton { animation: ram-broute 6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes ram-broute { 0%, 60%, 100% { translate: 0 0; } 70% { translate: 0 2px; } 80% { translate: 0 0; } }
+/* Compagnon : se promène sur les dunes (va-et-vient), ceux qui volent flottent ; s'arrête quand on le touche */
+.ramadan-perso { animation: ram-promene 46s ease-in-out infinite; }
+.ramadan-perso.vole { animation: ram-promene 46s ease-in-out infinite, ram-flotte 3.2s ease-in-out infinite; }
+.ramadan-perso.pause { animation-play-state: paused; }
+@keyframes ram-promene { 0% { transform: translateX(8px) scaleX(1); } 48% { transform: translateX(calc(60vw - 40px)) scaleX(1); } 52% { transform: translateX(calc(60vw - 40px)) scaleX(-1); } 100% { transform: translateX(8px) scaleX(-1); } }
+@keyframes ram-flotte { 50% { margin-bottom: 8px; } }
+.ramadan-lune { filter: drop-shadow(0 0 8px rgba(255, 213, 74, .8)); }
+.ramadan-filante { top: 12%; left: -40px; animation: ram-filante 2.6s linear forwards; }
+@keyframes ram-filante { to { transform: translate(110vw, 18vh) rotate(10deg); } }
+@media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .ramadan-defile, html:not(.anime-toujours) .ramadan-lanterne, html:not(.anime-toujours) .ramadan-perso, html:not(.anime-toujours) .ramadan-chute { animation: none; } }
+/* 🏮 Les 30 lanternes du mois */
+.ramadan-mois { filter: grayscale(.85) opacity(.45); transition: filter .8s; }
+.ramadan-mois .ram-lueur { opacity: 0; }
+.ramadan-mois.allumee { filter: none; }
+.ramadan-mois.allumee .ram-lueur { opacity: .45; }
+.ramadan-mois.aujourdhui { filter: none; animation: ram-scint 2.4s ease-in-out infinite; }
