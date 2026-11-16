@@ -8,7 +8,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
-import { jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
+import { dureeDuToucher, jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
 /**
@@ -123,7 +123,7 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
     </div>
     {/* 🔥 Toucher le foyer = écouter le feu (son choisi dans Paramètres ; jamais tout seul). Sous la bulle « ? » du coin du feu, sans la toucher. */}
     {k > 0 && lireSonFeu() !== 'aucun' && (
-      <button type="button" aria-label="Écouter le feu" onClick={() => void jouerSonFeu()}
+      <button type="button" aria-label="Écouter le feu" onClick={() => void jouerSonFeu(undefined, dureeDuToucher())}
         className="fixed bottom-0 z-[32] rounded-full"
         style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }} />
     )}
