@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReglagesRamadan } from '@/lib/saisons';
-import { LANTERNES } from './dessinsRamadan';
+import { LANTERNE_VB, NB_LANTERNES, lanterneSvg } from './dessinsRamadan';
 
 /**
  * 🏮 Sous le message de bienvenue, pendant le Ramadan (Nadia, 2026-11-15/16) :
@@ -28,6 +28,8 @@ export function LanternesRamadan({ jour, r, maghrib }: { jour: number; r: Reglag
     return () => clearTimeout(t);
   }, [avant, r.iftar]);
   const allumees = Math.max(0, Math.min(30, jour - 1));
+  // Les 4 nouvelles lanternes (2026-11-17), chacune avec ses propres dégradés
+  const dessins = useMemo(() => Array.from({ length: 30 }, (_, i) => lanterneSvg(i % NB_LANTERNES, `m${i}`)), []);
 
   return (
     <section aria-label="Les lanternes du Ramadan" className="rounded-2xl border-2 border-[#e2c08f] bg-[#fffaf0]/90 dark:bg-card px-3 py-2 space-y-1.5">
@@ -44,8 +46,8 @@ export function LanternesRamadan({ jour, r, maghrib }: { jour: number; r: Reglag
           {Array.from({ length: 30 }, (_, i) => {
             const etat = i < allumees ? 'allumee' : i === allumees ? 'aujourdhui' : 'eteinte';
             return (
-              <svg key={i} viewBox="0 0 20 34" aria-hidden className={`ramadan-mois w-full max-w-[20px] mx-auto overflow-visible ${etat}`}
-                style={anim ? { animationDelay: `${i * 0.25}s` } : undefined} dangerouslySetInnerHTML={{ __html: LANTERNES[i % LANTERNES.length] }} />
+              <svg key={i} viewBox={`0 0 ${LANTERNE_VB.w} ${LANTERNE_VB.h}`} aria-hidden className={`ramadan-mois w-full max-w-[20px] mx-auto overflow-visible ${etat}`}
+                style={anim ? { animationDelay: `${i * 0.25}s` } : undefined} dangerouslySetInnerHTML={{ __html: dessins[i] }} />
             );
           })}
         </div>

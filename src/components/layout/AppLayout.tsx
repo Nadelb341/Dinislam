@@ -21,6 +21,7 @@ import OfflineBanner from '@/components/shared/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSaisonActive } from '@/lib/saisons';
 import { DecorPages } from '@/components/saisons/DecorPages';
+import { TapisPromeneur } from '@/components/saisons/TapisPromeneur';
 import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
 
 /** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
@@ -86,6 +87,7 @@ const AppLayout = ({
       </main>
       {showBottomNav && <BottomNav />}
       <SilentBoundary name="Petit décor des pages"><DecorPages /></SilentBoundary>
+      <SilentBoundary name="Tapis volant"><TapisPromeneur /></SilentBoundary>
       <VersionChangelogModal />
       <StarMascot />
       <AdminMoonAssistant />

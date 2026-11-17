@@ -39,11 +39,14 @@ export interface ReglagesRamadan {
   guirlande: boolean; kaaba: boolean; mosquee: boolean; dunes: boolean; compagnon: boolean; etoiles: boolean;
   images: boolean; couleurs: boolean; son: boolean; pluieValidation: boolean; message: boolean; lanternesMois: boolean;
   iftar: boolean; compteRebours: boolean; dernieresNuits: boolean; veille: boolean; aidFitr: boolean; aidAdha: boolean; notifAid: boolean;
+  /** 🧞 2026-11-17 : le tapis volant traverse l'écran de temps en temps, sur toutes les pages */
+  tapisPromeneur: boolean;
 }
 export const RAMADAN_DEFAUT: ReglagesRamadan = {
   guirlande: true, kaaba: true, mosquee: true, dunes: true, compagnon: true, etoiles: true,
   images: true, couleurs: true, son: true, pluieValidation: true, message: true, lanternesMois: true,
   iftar: true, compteRebours: true, dernieresNuits: true, veille: true, aidFitr: true, aidAdha: true, notifAid: true,
+  tapisPromeneur: true,
 };
 
 /** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */

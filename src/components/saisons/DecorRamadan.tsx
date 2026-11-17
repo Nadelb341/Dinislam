@@ -5,7 +5,8 @@ import type { ReglagesSaisons } from '@/lib/saisons';
 import type { PeriodeRamadan } from '@/lib/ramadanDates';
 import { EVT_VALIDATION, preparerSon, sonTintement } from '@/lib/sonSaison';
 import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
-import { COMPAGNONS, KAABA, KAABA_VB, LANTERNES, MOSQUEE, MOUTON, ORDRE_COMPAGNONS, type CompagnonRamadan } from './dessinsRamadan';
+import { jourHijriDe } from '@/lib/phaseLune';
+import { COMPAGNONS, KAABA_VB, LANTERNE_VB, MOSQUEE_VB, MOUTON_VB, NB_LANTERNES, ORDRE_COMPAGNONS, compagnonSvg, etoilePendue, kaabaSvg, lanterneSvg, mosqueeSvg, moutonSvg, type CompagnonRamadan } from './dessinsRamadan';
 
 /**
  * 🌙 Décor de la 5ᵉ saison « Ramadan » (choix de Nadia du 2026-11-15 : ambiance B « sable doré et lanternes », un peu des
@@ -13,6 +14,9 @@ import { COMPAGNONS, KAABA, KAABA_VB, LANTERNES, MOSQUEE, MOUTON, ORDRE_COMPAGNO
  * - guirlande sur toute la largeur en haut : des lanternes DIFFÉRENTES et lumineuses qui DÉFILENT doucement le long du fil ;
  * - Kaaba en haut à gauche (à la place de l'arbre), mosquée en bas à droite (à la place de la cheminée), dunes en bas ;
  * - compagnon DIFFÉRENT à chaque connexion : dromadaire, tapis volant, lune lumineuse, colombe (il grandit et parle comme les autres) ;
+ * - 2026-11-17 (Nadia, finition C éclaircie) : dessins refaits ; la lune suit la VRAIE phase du mois (croissant éclairé à droite
+ *   au début, pleine lune au milieu, croissant éclairé à gauche à la fin) ; au Maghrib les lanternes s'allument UNE PAR UNE ;
+ *   petites étoiles pendues entre les lanternes ; le dromadaire cligne des yeux et remue la queue en marchant ; le tapis ondule.
  * - quelques étoiles et croissants qui tombent (on les attrape : paillettes + tintement) ;
  * - lanternes légèrement allumées le jour, au MAXIMUM dès le Maghrib (classe `ramadan-soir`) ; ciel plus étoilé les 10 dernières nuits
  *   + étoile filante rare à attraper ;
@@ -47,6 +51,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
   const taille = useTailleCompagnon();
   const habit = useHabitDuJour(userId);
   const dernieresNuits = c.dernieresNuits && mode === 'ramadan' && (fete?.jour ?? 0) >= 21;
+  const jourHijri = jourHijriDe(fete);
 
   // Couleurs + soir sur toute la page
   useEffect(() => {
@@ -113,26 +118,34 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
     if (persoRef.current && toucherCompagnon(persoRef.current, COMPAGNONS[perso].nom)) { setPause(true); setTimeout(() => setPause(false), PAUSE_MS); }
   };
   const p = COMPAGNONS[perso];
-  const hauteurPerso = Math.round((p.vole ? 30 : 36) * taille);
-  const lanternes = useMemo(() => Array.from({ length: 16 }, (_, i) => LANTERNES[(i * 3 + 1) % LANTERNES.length]), []);
+  const hauteurPerso = Math.round(({ dromadaire: 46, tapis: 30, lune: 40, colombe: 34 } as const)[perso] * taille);
+  // 16 lanternes (deux fois, pour un défilement sans à-coup), chacune avec ses propres dégradés, et une étoile pendue après chacune
+  const guirlande = useMemo(() => Array.from({ length: 32 }, (_, i) => ({ lanterne: lanterneSvg(((i % 16) * 3 + 1) % NB_LANTERNES, `g${i}`), etoile: etoilePendue(`g${i}`) })), []);
+  const kaaba = useMemo(() => kaabaSvg('kaaba', jourHijri), [jourHijri]);
+  const mosquee = useMemo(() => mosqueeSvg('mosquee'), []);
+  const persoSvg = useMemo(() => compagnonSvg(perso, 'perso', jourHijri), [perso, jourHijri]);
 
   return (
     <>
       {/* Derrière les cartes : guirlande (tout en haut, toute la largeur) et Kaaba (en haut à gauche) ; elles défilent avec l'accueil */}
       <div aria-hidden className="contents pointer-events-none">
         {c.guirlande && (
-          <div className="ramadan-guirlande pointer-events-none absolute inset-x-0 top-0 -z-[4] h-[54px] overflow-hidden">
+          <div className="ramadan-guirlande pointer-events-none absolute inset-x-0 top-0 -z-[4] h-[66px] overflow-hidden">
             <svg viewBox="0 0 100 10" preserveAspectRatio="none" className="absolute inset-x-0 top-0 h-[12px] w-full"><path d="M0 2Q25 7 50 3T100 2" stroke="#b07a1f" strokeWidth=".5" fill="none" vectorEffect="non-scaling-stroke" /></svg>
-            <div className={`ramadan-defile absolute left-0 top-[4px] flex w-max ${calme ? '' : 'anime'}`}>
-              {[...lanternes, ...lanternes].map((l, i) => (
-                <svg key={i} viewBox="0 0 20 34" className="ramadan-lanterne mx-[22px] h-[42px] w-[25px] overflow-visible" style={{ animationDelay: `${-(i % 5) * 0.7}s` }} dangerouslySetInnerHTML={{ __html: l }} />
+            <div className={`ramadan-defile absolute left-0 top-[4px] flex w-max items-start ${calme ? '' : 'anime'}`}>
+              {guirlande.map((g, i) => (
+                <div key={i} className="flex items-start">
+                  <svg viewBox={`0 0 ${LANTERNE_VB.w} ${LANTERNE_VB.h}`} className="ramadan-lanterne mx-[10px] h-[54px] w-[26px] overflow-visible"
+                    style={{ animationDelay: `${-(i % 5) * 0.7}s`, ['--d' as string]: `${(i % 16) * 0.35}s` }} dangerouslySetInnerHTML={{ __html: g.lanterne }} />
+                  <svg viewBox="0 0 14 30" className="ramadan-etoile-pendue mx-[10px] h-[24px] w-[11px] overflow-visible" style={{ animationDelay: `${-(i % 3) * 0.9}s` }} dangerouslySetInnerHTML={{ __html: g.etoile }} />
+                </div>
               ))}
             </div>
           </div>
         )}
         {c.kaaba && (
           <svg viewBox={`0 0 ${KAABA_VB.w} ${KAABA_VB.h}`} className="ramadan-kaaba pointer-events-none absolute -z-[5] overflow-visible"
-            style={{ top: c.guirlande ? 50 : 10, left: -4, width: [0, 78, 94, 112][r.tailleArbre] ?? 94 }} dangerouslySetInnerHTML={{ __html: KAABA }} />
+            style={{ top: c.guirlande ? 58 : 10, left: -4, width: [0, 78, 94, 112][r.tailleArbre] ?? 94 }} dangerouslySetInnerHTML={{ __html: kaaba }} />
         )}
       </div>
 
@@ -172,7 +185,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           {pluie.map((g) => (
             <span key={g.id} aria-hidden className="ramadan-pluie fixed top-0 z-[43] text-xl" style={{ left: `${g.x}%`, animationDelay: `${g.d}s`, animationDuration: `${g.v}s` }}>
               {g.k === 'datte' ? <svg viewBox="0 0 12 20" className="h-6 w-4"><ellipse cx="6" cy="10" rx="5" ry="9" fill="#7a3b1c" stroke="#3a1a08" strokeWidth=".8" /><ellipse cx="4.4" cy="7" rx="1.2" ry="3" fill="#b0603a" /></svg>
-                : g.k === 'lanterne' ? <svg viewBox="0 0 20 34" className="h-8 w-5" dangerouslySetInnerHTML={{ __html: LANTERNES[g.id % LANTERNES.length] }} />
+                : g.k === 'lanterne' ? <svg viewBox={`0 0 ${LANTERNE_VB.w} ${LANTERNE_VB.h}`} className="h-9 w-[18px]" dangerouslySetInnerHTML={{ __html: lanterneSvg(g.id % NB_LANTERNES, `p${g.id}`) }} />
                 : '⭐'}
             </span>
           ))}
@@ -203,8 +216,8 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
               <span className="absolute bottom-[26px] left-[58%] text-lg">🎁</span>
               {mode === 'adha' && (
                 <>
-                  <svg viewBox="0 0 48 36" className="ramadan-mouton absolute bottom-[16px] h-[30px] w-[40px]" style={{ left: '12%' }} dangerouslySetInnerHTML={{ __html: MOUTON }} />
-                  <svg viewBox="0 0 48 36" className="ramadan-mouton absolute bottom-[12px] h-[26px] w-[35px]" style={{ left: '46%', animationDelay: '-3s', transform: 'scaleX(-1)' }} dangerouslySetInnerHTML={{ __html: MOUTON }} />
+                  <svg viewBox={`0 0 ${MOUTON_VB.w} ${MOUTON_VB.h}`} className="ramadan-mouton absolute bottom-[16px] h-[32px] w-[44px]" style={{ left: '12%' }} dangerouslySetInnerHTML={{ __html: moutonSvg('m1') }} />
+                  <svg viewBox={`0 0 ${MOUTON_VB.w} ${MOUTON_VB.h}`} className="ramadan-mouton absolute bottom-[12px] h-[28px] w-[38px]" style={{ left: '46%', animationDelay: '-3s', transform: 'scaleX(-1)' }} dangerouslySetInnerHTML={{ __html: moutonSvg('m2') }} />
                 </>
               )}
             </div>
@@ -215,16 +228,16 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
             <button ref={persoRef} type="button" onClick={toucherPerso} aria-label={`${p.nom} : touche-le pour qu'il te parle`}
               className={`ramadan-perso pointer-events-auto fixed left-0 z-[29] outline-none [-webkit-tap-highlight-color:transparent] ${p.vole ? 'vole' : ''} ${pause || calme ? 'pause' : ''}`}
               style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${p.vole ? 46 : 8}px)`, height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
-              <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className={`h-full w-full overflow-visible ${perso === 'lune' ? 'ramadan-lune' : ''}`} aria-hidden
-                dangerouslySetInnerHTML={{ __html: p.svg + (perso === 'dromadaire' ? habitSvg(habit, p.vb[0], p.vb[1]) : '') }} />
+              <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className={`ramadan-${perso} h-full w-full overflow-visible ${perso === 'lune' ? 'ramadan-lune' : ''}`} aria-hidden
+                dangerouslySetInnerHTML={{ __html: persoSvg + (perso === 'dromadaire' ? habitSvg(habit, p.vb[0], p.vb[1], 'dromadaire') : '') }} />
             </button>
           )}
 
           {/* 🕌 Mosquée en bas à droite */}
           {c.mosquee && (
-            <svg aria-hidden viewBox="0 0 200 172" className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
+            <svg aria-hidden viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
               style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
-              dangerouslySetInnerHTML={{ __html: MOSQUEE }} />
+              dangerouslySetInnerHTML={{ __html: mosquee }} />
           )}
         </div>,
         document.body,

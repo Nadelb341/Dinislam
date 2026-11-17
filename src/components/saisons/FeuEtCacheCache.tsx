@@ -8,7 +8,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
-import { COMPAGNONS } from './dessinsRamadan';
+import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
 import { dureeDuToucher, jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
@@ -142,7 +142,7 @@ const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
   hiver: [{ vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' }, { vb: '0 0 30 38', svg: PERSOS.bonhomme, nom: 'Le bonhomme de neige' }, A48('hibou', 'Le hibou')],
   printemps: [{ vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin' }, { vb: '0 0 40 34', svg: ANIMAUX.escargot.svg, nom: 'L\'escargot' }, { vb: '0 0 40 34', svg: ANIMAUX.biche.svg, nom: 'La biche' }],
   // 🌙 Ramadan (2026-11-16) : personnages du désert
-  ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: COMPAGNONS[k].svg, nom: COMPAGNONS[k].nom })),
+  ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: compagnonSvg(k, `cache-${k}`), nom: COMPAGNONS[k].nom })),
   ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin' }],
 };
 /** Tire un personnage, jamais le même que la partie d'avant */

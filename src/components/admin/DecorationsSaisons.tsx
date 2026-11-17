@@ -490,7 +490,8 @@ const GROUPES_RAMADAN: { titre: string; items: { k: keyof ReglagesRamadan; label
   { titre: 'Le décor', items: [
     { k: 'guirlande', label: '🏮 Guirlande de lanternes qui défilent' }, { k: 'kaaba', label: '🕋 Kaaba en haut à gauche' }, { k: 'mosquee', label: '🕌 Mosquée en bas à droite' },
     { k: 'dunes', label: '🏜️ Dunes en bas' }, { k: 'compagnon', label: '🐪 Compagnon (change à chaque connexion)' }, { k: 'etoiles', label: '⭐ Étoiles et croissants qui tombent' },
-    { k: 'images', label: '🖼️ Images sur les cartes' }, { k: 'couleurs', label: '🎨 Couleurs sable doré' }, { k: 'son', label: '🔔 Petits sons' },
+    { k: 'images', label: '🖼️ Images sur les cartes' }, { k: 'couleurs', label: '🎨 Couleurs or et bleu clair' }, { k: 'son', label: '🔔 Petits sons' },
+    { k: 'tapisPromeneur', label: '🧞 Tapis volant qui se promène dans l\'appli' },
   ] },
   { titre: 'Pendant le mois', items: [
     { k: 'lanternesMois', label: '🏮 30 lanternes (une par jour passé)' }, { k: 'compteRebours', label: '⏳ Compte à rebours de l\'iftar' }, { k: 'iftar', label: '🍽️ Moment de l\'iftar (invocation)' },
