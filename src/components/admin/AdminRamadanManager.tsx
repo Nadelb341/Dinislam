@@ -637,7 +637,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           start_enabled: newValue,
           updated_at: new Date().toISOString(),
         };
-        if (newValue && !settings?.started_at) {
+        // Nouveau lancement (aucun, ou l'ancien date d'un Ramadan passé, plus de 40 jours) : le jour 1 = aujourd'hui.
+        // Le décor du Ramadan de l'appli suit ce lancement (useSaisonActive › jourDuTopDepart, 2026-11-17).
+        if (newValue && (!settings?.started_at || Date.now() - new Date(settings.started_at).getTime() > 40 * 86400000)) {
           updateData.started_at = new Date().toISOString();
         }
         const { error } = await supabase.from('ramadan_settings').update(updateData).eq('id', settings.id);

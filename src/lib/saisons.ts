@@ -317,8 +317,32 @@ export function periodeActuelle(r: ReglagesSaisons, maintenant = new Date()): Pe
 }
 
 /** La saison à afficher maintenant (null = ambiance neutre) ; `fete` = Ramadan, Aïd el-Fitr ou Aïd el-Adha en cours */
+/**
+ * 🚀 Lien avec la carte « Ramadan » de l'accueil (Nadia, 2026-11-17 : « lorsque je lance le feu vert, le décor doit apparaître ») :
+ * « Top Départ » allumé (ramadan_settings.start_enabled) = décor du Ramadan, jour N = jours depuis le lancement (started_at) + 1,
+ * pendant 30 jours au plus. Un « Top Départ » resté allumé depuis un ancien Ramadan (lancement de plus de 30 jours) ne compte pas.
+ * Les dates du Ramadan (calcul ou dates réglées) marchent toujours en plus, ainsi que les Aïds.
+ */
+export function jourDuTopDepart(t: { start_enabled: boolean | null; started_at: string | null } | null | undefined, maintenant = new Date()): number | null {
+  if (!t?.start_enabled || !t.started_at) return null;
+  const debut = new Date(t.started_at);
+  const j = Math.floor((new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate()).getTime() - new Date(debut.getFullYear(), debut.getMonth(), debut.getDate()).getTime()) / 86400000) + 1;
+  return j >= 1 && j <= 30 ? j : null;
+}
+function useTopDepartRamadan() {
+  return useQuery({
+    queryKey: ['ramadan-settings', 'top-depart'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ramadan_settings').select('start_enabled, started_at').limit(1).maybeSingle();
+      return data ?? null;
+    },
+    staleTime: 5 * 60_000,
+  }).data;
+}
+
 export function useSaisonActive(): { saison: Saison | null; r: ReglagesSaisons; fete: PeriodeRamadan } {
   const { data: r = SAISONS_DEFAUT } = useReglagesSaisons();
+  const topDepart = useTopDepartRamadan();
   usePrefsLocales();
   // Recalculé chaque minute : le décor du Ramadan s'allume au Maghrib de la veille, ou à minuit, sans recharger
   const [minute, setMinute] = useState(() => Math.floor(Date.now() / 60000));
@@ -326,6 +350,9 @@ export function useSaisonActive(): { saison: Saison | null; r: ReglagesSaisons; 
   const apercu = apercuSaison();
   // 🌙 Aperçu « Ramadan » de l'enseignante : 10ᵉ jour du Ramadan (pour tout voir) ; sinon les vraies dates
   let fete: PeriodeRamadan = apercu === 'ramadan' ? { mode: 'ramadan', jour: 10, ...datesRetenues(r.ramadanDates) } : apercu ? null : periodeActuelle(r, new Date(minute * 60000));
+  // 🚀 « Top Départ » de la carte Ramadan allumé : décor du Ramadan même hors des dates
+  const jourTop = apercu ? null : jourDuTopDepart(topDepart, new Date(minute * 60000));
+  if (!fete && jourTop) fete = { mode: 'ramadan', jour: jourTop, ...datesRetenues(r.ramadanDates) };
   let saison: Saison | null = apercu ?? (fete && r.ramadanDabord ? 'ramadan' : r.auto ? saisonDuJour() : r.saisonChoisie);
   if (saison !== 'ramadan') fete = null;
   if (!apercu) {

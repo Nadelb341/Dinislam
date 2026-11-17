@@ -118,13 +118,27 @@ const IDEES_A_VENIR: Record<Exclude<Saison, 'automne' | 'hiver'>, string> = {
   ete: 'Soleil, palmier et dattes, lucioles le soir, étoiles filantes… Maquette avant le 1er juin.',
 };
 
+/** 👀 Aperçu d'une saison sur CE téléphone seulement. Placé tout en haut d'« Apparence appli », sous le titre (Nadia, 2026-11-17) */
+export function ApercuSaisonTelephone() {
+  const [apercu, setApercu] = useState<Saison | null>(apercuSaison());
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-border bg-card px-3 py-2">
+      <span className="min-w-0"><span className="block text-sm font-bold">👀 Voir une saison sur mon téléphone seulement</span><span className="block text-xs text-muted-foreground">Les élèves ne voient pas la différence</span></span>
+      <select value={apercu ?? ''} onChange={(e) => { const v = (e.target.value || null) as Saison | null; setApercu(v); choisirApercu(v); }}
+        className="rounded-lg border bg-background px-2 py-1 text-sm" aria-label="Aperçu d'une saison">
+        <option value="">Comme les élèves</option>
+        {SAISONS_PRETES.map((s) => <option key={s} value={s}>{NOM_SAISON[s]}</option>)}
+      </select>
+    </label>
+  );
+}
+
 export default function DecorationsSaisons() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: enregistre, isLoading, isError, refetch } = useReglagesSaisons();
   const [r, setR] = useState<ReglagesSaisons>(SAISONS_DEFAUT);
   const [onglet, setOnglet] = useState<Saison>(saisonDuJour());
-  const [apercu, setApercu] = useState<Saison | null>(apercuSaison());
   const [busy, setBusy] = useState(false);
   const [confirmeOrigine, setConfirmeOrigine] = useState(false);
   useEffect(() => { if (enregistre) setR(enregistre); }, [enregistre]);
@@ -266,7 +280,7 @@ export default function DecorationsSaisons() {
                 </figure>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">❄️ L'hiver s'affiche tout seul du 1er décembre à fin février. Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous.</p>
+            <p className="text-xs text-muted-foreground">❄️ L'hiver s'affiche tout seul du 1er décembre à fin février. Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » tout en haut.</p>
           </div>
         ) : onglet === 'printemps' || onglet === 'ete' ? (
           <div className="space-y-3">
@@ -288,7 +302,7 @@ export default function DecorationsSaisons() {
                 </figure>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">{onglet === 'ete' ? '☀️ L\'été s\'affiche tout seul du 1er juin à fin août.' : '🌸 Le printemps s\'affiche tout seul du 1er mars à fin mai.'} Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous.</p>
+            <p className="text-xs text-muted-foreground">{onglet === 'ete' ? '☀️ L\'été s\'affiche tout seul du 1er juin à fin août.' : '🌸 Le printemps s\'affiche tout seul du 1er mars à fin mai.'} Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » tout en haut.</p>
           </div>
         ) : onglet === 'ramadan' ? (
           <ReglagesRamadanOnglet r={r} setR={setR} />
@@ -303,14 +317,6 @@ export default function DecorationsSaisons() {
           setMeteo={(v) => setR((x) => ({ ...x, meteo: { ...x.meteo, [onglet]: { ...x.meteo[onglet], ...v } } }))}
           setLogo={(v) => setR((x) => ({ ...x, logo: { ...x.logo, [onglet]: { ...x.logo[onglet], ...v } } }))} />
 
-        <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-dashed border-border bg-card px-3 py-2">
-          <span className="min-w-0"><span className="block text-sm font-bold">👀 Voir une saison sur mon téléphone seulement</span><span className="block text-xs text-muted-foreground">Les élèves ne voient pas la différence</span></span>
-          <select value={apercu ?? ''} onChange={(e) => { const v = (e.target.value || null) as Saison | null; setApercu(v); choisirApercu(v); }}
-            className="rounded-lg border bg-background px-2 py-1 text-sm" aria-label="Aperçu d'une saison">
-            <option value="">Comme les élèves</option>
-            {SAISONS_PRETES.map((s) => <option key={s} value={s}>{NOM_SAISON[s]}</option>)}
-          </select>
-        </label>
       </div>
 
       <div className="sticky bottom-0 grid gap-2 bg-background/95 py-2 sm:grid-cols-2">
@@ -517,6 +523,7 @@ function ReglagesRamadanOnglet({ r, setR }: { r: ReglagesSaisons; setR: React.Di
       <section className="space-y-2 rounded-xl border-2 border-[#e2c08f] bg-[#fffaf0] dark:bg-card p-3">
         <p className="text-sm font-extrabold">📅 Les dates</p>
         <p className="text-xs text-muted-foreground">Calculées toutes seules. Si l'annonce de la lune donne un autre jour, écris le bon : le décor partira ce jour-là, ni avant ni après.</p>
+        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">🚀 Le décor apparaît aussi dès que tu appuies sur « Lancer ! » (Top Départ) dans la carte Ramadan de l'accueil, pendant 30 jours, et s'en va quand tu appuies sur « Désactiver ».</p>
         {DATES.map(({ k, label }) => (
           <label key={k} className="block space-y-1">
             <span className="text-sm font-semibold">{label}</span>
@@ -564,7 +571,7 @@ function ReglagesRamadanOnglet({ r, setR }: { r: ReglagesSaisons; setR: React.Di
           <svg key={k} viewBox="0 0 48 48" aria-hidden className="h-10 w-10" dangerouslySetInnerHTML={{ __html: svg }} />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » ci-dessous (10ᵉ jour du Ramadan).</p>
+      <p className="text-xs text-muted-foreground">Pour le voir avant : « 👀 Voir une saison sur mon téléphone seulement » tout en haut (10ᵉ jour du Ramadan).</p>
     </div>
   );
 }

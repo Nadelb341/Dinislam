@@ -14,7 +14,7 @@ import {
 import { POLICES, TITRE_DEFAUT, useReglagesTitre, type Police, type ReglagesTitre } from '@/lib/apparence';
 import { TitreAppli } from '@/components/home/TitreAppli';
 import { cn, errorMessage } from '@/lib/utils';
-import DecorationsSaisons from '@/components/admin/DecorationsSaisons';
+import DecorationsSaisons, { ApercuSaisonTelephone } from '@/components/admin/DecorationsSaisons';
 
 const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } };
 
@@ -29,6 +29,7 @@ export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
     <div className="space-y-4">
       <Button variant="ghost" onClick={sousCarte ? () => setSousCarte(null) : onBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button>
       <h2 className="text-xl font-extrabold">🔧 Apparence appli</h2>
+      <ApercuSaisonTelephone />
       {sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : (
         <div className="grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={() => setSousCarte('titre')}
