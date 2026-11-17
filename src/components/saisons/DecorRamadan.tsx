@@ -6,14 +6,16 @@ import type { PeriodeRamadan } from '@/lib/ramadanDates';
 import { EVT_VALIDATION, preparerSon, sonTintement } from '@/lib/sonSaison';
 import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
 import { jourHijriDe } from '@/lib/phaseLune';
-import { COMPAGNONS, KAABA_VB, LANTERNE_VB, MOSQUEE_VB, MOUTON_VB, NB_LANTERNES, ORDRE_COMPAGNONS, compagnonSvg, etoilePendue, kaabaSvg, lanterneSvg, mosqueeSvg, moutonSvg, type CompagnonRamadan } from './dessinsRamadan';
+import { CACTUS_VB, COMPAGNONS, KAABA_VB, LANTERNE_VB, MESA_VB, MOSQUEE_VB, MOUTON_VB, NB_LANTERNES, PALMIER_VB, TOUFFE, cactusSvg, compagnonSvg, etoilePendue, kaabaSvg, lanterneSvg, mesaSvg, mosqueeSvg, moutonSvg, palmierSvg, rocherSvg } from './dessinsRamadan';
 
 /**
  * 🌙 Décor de la 5ᵉ saison « Ramadan » (choix de Nadia du 2026-11-15 : ambiance B « sable doré et lanternes », un peu des
  * autres SANS surcharger — « ça étouffe »). Même base que les 4 saisons :
  * - guirlande sur toute la largeur en haut : des lanternes DIFFÉRENTES et lumineuses qui DÉFILENT doucement le long du fil ;
  * - Kaaba en haut à gauche (à la place de l'arbre), mosquée en bas à droite (à la place de la cheminée), dunes en bas ;
- * - compagnon DIFFÉRENT à chaque connexion : dromadaire, tapis volant, lune lumineuse, colombe (il grandit et parle comme les autres) ;
+ * - 2026-11-17 (Nadia) : en bas, un vrai petit DÉSERT (rochers orangés au loin, palmiers, cactus, rochers, touffes) où MARCHE
+ *   le dromadaire (il grandit, parle et porte son habit du jour comme les autres compagnons). Le tapis volant, lui, se promène
+ *   dans toute l'appli (TapisPromeneur) ;
  * - 2026-11-17 (Nadia, finition C éclaircie) : dessins refaits ; la lune suit la VRAIE phase du mois (croissant éclairé à droite
  *   au début, pleine lune au milieu, croissant éclairé à gauche à la fin) ; au Maghrib les lanternes s'allument UNE PAR UNE ;
  *   petites étoiles pendues entre les lanternes ; le dromadaire cligne des yeux et remue la queue en marchant ; le tapis ondule.
@@ -24,20 +26,6 @@ import { COMPAGNONS, KAABA_VB, LANTERNE_VB, MOSQUEE_VB, MOUTON_VB, NB_LANTERNES,
  * - Aïd el-Fitr : même décor, plus festif (ballons, feux d'artifice, cadeaux) ; Aïd el-Adha (3 jours) : en plus, des moutons.
  * Rien ne bloque les cartes (seuls le compagnon et les petites étoiles se touchent).
  */
-const CLE_COMPAGNON = 'dinislam_ramadan_compagnon';
-function compagnonDeLaConnexion(): CompagnonRamadan {
-  // Un personnage différent à CHAQUE connexion (Nadia) : on avance d'un cran au début de chaque visite
-  try {
-    const deja = sessionStorage.getItem(CLE_COMPAGNON);
-    if (deja && (ORDRE_COMPAGNONS as string[]).includes(deja)) return deja as CompagnonRamadan;
-    const avant = Number(localStorage.getItem(CLE_COMPAGNON) ?? -1);
-    const i = (avant + 1) % ORDRE_COMPAGNONS.length;
-    localStorage.setItem(CLE_COMPAGNON, String(i));
-    sessionStorage.setItem(CLE_COMPAGNON, ORDRE_COMPAGNONS[i]);
-    return ORDRE_COMPAGNONS[i];
-  } catch { return 'dromadaire'; }
-}
-
 type Chute = { id: number; x: number; d: number; v: number; t: number; k: 'etoile' | 'croissant' };
 type Goutte = { id: number; x: number; d: number; v: number; k: 'datte' | 'etoile' | 'lanterne' };
 let compteur = 0;
@@ -47,7 +35,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
   const mode = fete?.mode ?? 'ramadan';
   const reduit = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const calme = reduit && !r.animerToujours;
-  const perso = useMemo(compagnonDeLaConnexion, []);
+  const perso = 'dromadaire' as const;
   const taille = useTailleCompagnon();
   const habit = useHabitDuJour(userId);
   const dernieresNuits = c.dernieresNuits && mode === 'ramadan' && (fete?.jour ?? 0) >= 21;
@@ -118,12 +106,13 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
     if (persoRef.current && toucherCompagnon(persoRef.current, COMPAGNONS[perso].nom)) { setPause(true); setTimeout(() => setPause(false), PAUSE_MS); }
   };
   const p = COMPAGNONS[perso];
-  const hauteurPerso = Math.round(({ dromadaire: 46, tapis: 30, lune: 40, colombe: 34 } as const)[perso] * taille);
+  const hauteurPerso = Math.round(46 * taille);
   // 16 lanternes (deux fois, pour un défilement sans à-coup), chacune avec ses propres dégradés, et une étoile pendue après chacune
   const guirlande = useMemo(() => Array.from({ length: 32 }, (_, i) => ({ lanterne: lanterneSvg(((i % 16) * 3 + 1) % NB_LANTERNES, `g${i}`), etoile: etoilePendue(`g${i}`) })), []);
   const kaaba = useMemo(() => kaabaSvg('kaaba', jourHijri), [jourHijri]);
   const mosquee = useMemo(() => mosqueeSvg('mosquee'), []);
-  const persoSvg = useMemo(() => compagnonSvg(perso, 'perso', jourHijri), [perso, jourHijri]);
+  const persoSvg = useMemo(() => compagnonSvg(perso, 'perso'), []);
+  const desert = useMemo(desertSvgs, []);
 
   return (
     <>
@@ -190,13 +179,13 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
             </span>
           ))}
 
-          {/* 🏜️ Dunes */}
+          {/* 🏜️ Le désert en bas : rochers au loin, dune, palmiers, cactus, rochers, touffes, dune devant */}
           {c.dunes && (
-            <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[54px] w-full" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-              <path d="M0 34Q50 14 110 30T230 24T340 30V60H0z" fill="#e7b979" />
-              <path d="M0 46Q70 30 150 44T340 40V60H0z" fill="#d79c56" />
-              <path d="M40 44q4-3 8 0M190 50q4-3 8 0M280 47q4-3 8 0" stroke="#b97d3d" strokeWidth="1" fill="none" />
-            </svg>
+            <div aria-hidden className="ramadan-desert pointer-events-none fixed inset-x-0 bottom-0 z-[27] h-[96px] overflow-hidden" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+              {desert.map((o, i) => o.fond
+                ? <svg key={i} viewBox="0 0 340 60" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full" style={{ height: o.h }} dangerouslySetInnerHTML={{ __html: o.svg }} />
+                : <svg key={i} viewBox={o.vb} className="absolute overflow-visible" style={{ left: o.left, bottom: o.bas, height: o.h, opacity: o.opacite, transform: o.miroir ? 'scaleX(-1)' : undefined }} dangerouslySetInnerHTML={{ __html: o.svg }} />)}
+            </div>
           )}
 
           {/* 🎉 Aïd : ballons, feux d'artifice, cadeaux ; Aïd el-Adha : moutons */}
@@ -223,13 +212,13 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
             </div>
           )}
 
-          {/* 🐪 Le compagnon de la connexion */}
+          {/* 🐪 Le dromadaire marche dans le désert */}
           {c.compagnon && (
             <button ref={persoRef} type="button" onClick={toucherPerso} aria-label={`${p.nom} : touche-le pour qu'il te parle`}
-              className={`ramadan-perso pointer-events-auto fixed left-0 z-[29] outline-none [-webkit-tap-highlight-color:transparent] ${p.vole ? 'vole' : ''} ${pause || calme ? 'pause' : ''}`}
-              style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${p.vole ? 46 : 8}px)`, height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
-              <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className={`ramadan-${perso} h-full w-full overflow-visible ${perso === 'lune' ? 'ramadan-lune' : ''}`} aria-hidden
-                dangerouslySetInnerHTML={{ __html: persoSvg + (perso === 'dromadaire' ? habitSvg(habit, p.vb[0], p.vb[1], 'dromadaire') : '') }} />
+              className={`ramadan-perso pointer-events-auto fixed left-0 z-[29] outline-none [-webkit-tap-highlight-color:transparent] ${pause || calme ? 'pause' : ''}`}
+              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)', height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
+              <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className="ramadan-dromadaire h-full w-full overflow-visible" aria-hidden
+                dangerouslySetInnerHTML={{ __html: persoSvg + habitSvg(habit, p.vb[0], p.vb[1], 'dromadaire') }} />
             </button>
           )}
 
@@ -245,6 +234,28 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
       {c.message && <MessageFete mode={mode} annee={fete?.debut?.slice(0, 4) ?? ''} userId={userId} />}
     </>
   );
+}
+
+/** 🏜️ Les éléments du désert (positions en % de la largeur : rien sous la mosquée, à droite) */
+type ObjetDesert = { svg: string; h: number; fond?: boolean; vb?: string; left?: string; bas?: number; opacite?: number; miroir?: boolean };
+function desertSvgs(): ObjetDesert[] {
+  const vb = (o: { w: number; h: number }) => `0 0 ${o.w} ${o.h}`;
+  return [
+    { vb: vb(MESA_VB), svg: mesaSvg('d1'), left: '-2%', bas: 26, h: 52, opacite: .8 },
+    { vb: vb(MESA_VB), svg: mesaSvg('d2'), left: '42%', bas: 28, h: 40, opacite: .7, miroir: true },
+    { fond: true, h: 46, svg: '<path d="M0 22Q60 6 130 18T260 14T340 18V60H0z" fill="#f1d7a3"/>' },
+    { vb: vb(PALMIER_VB), svg: palmierSvg('d3'), left: '25%', bas: 12, h: 74 },
+    { vb: vb(PALMIER_VB), svg: palmierSvg('d4'), left: '33%', bas: 18, h: 50 },
+    { vb: vb(CACTUS_VB), svg: cactusSvg(0, 'd5'), left: '5%', bas: 6, h: 42 },
+    { vb: vb(CACTUS_VB), svg: cactusSvg(1, 'd6'), left: '52%', bas: 4, h: 28 },
+    { vb: vb(CACTUS_VB), svg: cactusSvg(0, 'd7'), left: '64%', bas: 10, h: 30 },
+    { vb: '0 0 40 22', svg: rocherSvg('d8'), left: '16%', bas: 4, h: 12 },
+    { vb: '0 0 40 22', svg: rocherSvg('d9'), left: '45%', bas: 2, h: 10 },
+    { fond: true, h: 24, svg: '<path d="M0 30Q80 14 170 26T340 24V60H0z" fill="#e9c58c"/><path d="M40 40q5-3 10 0M200 44q5-3 10 0M290 42q5-3 10 0" stroke="#d4a76a" stroke-width="1" fill="none"/>' },
+    { vb: '0 0 20 10', svg: TOUFFE, left: '2%', bas: 2, h: 10 },
+    { vb: '0 0 20 10', svg: TOUFFE, left: '38%', bas: 3, h: 9 },
+    { vb: '0 0 20 10', svg: TOUFFE, left: '58%', bas: 1, h: 10 },
+  ];
 }
 
 /** 📢 « Ramadan Moubarak » à la 1ʳᵉ connexion du Ramadan, « Aïd Moubarak Saïd » le jour de chaque Aïd (éphémère, 12 s) */

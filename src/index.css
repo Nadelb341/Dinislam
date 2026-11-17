@@ -765,7 +765,8 @@ html.feu-eteint .saison-feu, html.feu-eteint .hiver-feu { opacity: 0 !important;
 /* 🙈 Cache-cache : l'animal remue un peu derrière sa carte ; trouvé → pirouette et pluie de la saison */
 /* 🙈 Cache-cache (2026-11-11, 3 façons) : A la tête sort toutes les 15 s pendant 2 s (les oreilles restent visibles) */
 .jeux-tete { animation: jeux-tete 15s ease-in-out infinite; }
-@keyframes jeux-tete { 0%, 84%, 100% { transform: translateY(62%); } 87%, 96% { transform: translateY(4%); } 90% { transform: translateY(4%) rotate(-8deg); } 93% { transform: translateY(4%) rotate(8deg); } }
+/* --repos : il ne se cache jamais entièrement (un bout dépasse toujours), réglé par personnage */
+@keyframes jeux-tete { 0%, 84%, 100% { transform: translateY(var(--repos, 62%)); } 87%, 96% { transform: translateY(4%); } 90% { transform: translateY(4%) rotate(-8deg); } 93% { transform: translateY(4%) rotate(8deg); } }
 /* 💬 Bulle « Essaie de me trouver ! » (2026-11-12) : se balance doucement */
 .jeux-bulle-cache { animation: jeux-bulle-cache 2.8s ease-in-out infinite; transform-origin: 0 100%; }
 @keyframes jeux-bulle-cache { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg) translateY(-2px); } }
@@ -847,11 +848,8 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 @keyframes ram-ondule { 50% { transform: skewY(-3deg) scaleY(.93); } }
 .ram-aile { transform-origin: 30% 100%; animation: ram-aile .9s ease-in-out infinite alternate; }
 @keyframes ram-aile { from { transform: rotate(-12deg); } to { transform: rotate(10deg); } }
-/* 🧞 Tapis qui se promène dans toute l'appli (TapisPromeneur) */
-.tapis-promeneur { left: 0; animation-name: tapis-traverse; animation-timing-function: linear; animation-fill-mode: both; filter: drop-shadow(0 4px 4px rgba(60, 70, 140, .2)); }
-.tapis-promeneur.vers-gauche { animation-name: tapis-traverse-gauche; }
-@keyframes tapis-traverse { 0% { transform: translate(-90px, 0); } 25% { transform: translate(25vw, -14px); } 50% { transform: translate(50vw, 6px); } 75% { transform: translate(75vw, -10px); } 100% { transform: translate(calc(100vw + 20px), 0); } }
-@keyframes tapis-traverse-gauche { 0% { transform: translate(calc(100vw + 20px), 0); } 25% { transform: translate(75vw, -12px); } 50% { transform: translate(50vw, 6px); } 75% { transform: translate(25vw, -14px); } 100% { transform: translate(-90px, 0); } }
+/* 🧞 Tapis qui se promène dans les pages (TapisPromeneur : sa place est calculée image par image) */
+.tapis-promeneur { will-change: transform; filter: drop-shadow(0 5px 4px rgba(60, 70, 140, .22)); }
 .ramadan-lanterne { transform-origin: 50% 0; animation: ram-balance 4.2s ease-in-out infinite; filter: drop-shadow(0 1px 1px rgba(80, 40, 10, .25)); }
 .ramadan-soir .ramadan-lanterne { filter: drop-shadow(0 0 6px rgba(255, 207, 107, .9)); }
 @keyframes ram-balance { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
@@ -876,10 +874,8 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 @keyframes ram-broute { 0%, 60%, 100% { translate: 0 0; } 70% { translate: 0 2px; } 80% { translate: 0 0; } }
 /* Compagnon : se promène sur les dunes (va-et-vient), ceux qui volent flottent ; s'arrête quand on le touche */
 .ramadan-perso { animation: ram-promene 46s ease-in-out infinite; }
-.ramadan-perso.vole { animation: ram-promene 46s ease-in-out infinite, ram-flotte 3.2s ease-in-out infinite; }
 .ramadan-perso.pause { animation-play-state: paused; }
 @keyframes ram-promene { 0% { transform: translateX(8px) scaleX(1); } 48% { transform: translateX(calc(60vw - 40px)) scaleX(1); } 52% { transform: translateX(calc(60vw - 40px)) scaleX(-1); } 100% { transform: translateX(8px) scaleX(-1); } }
-@keyframes ram-flotte { 50% { margin-bottom: 8px; } }
 .ramadan-lune { filter: drop-shadow(0 0 8px rgba(255, 213, 74, .8)); }
 .ramadan-filante { top: 12%; left: -40px; animation: ram-filante 2.6s linear forwards; }
 @keyframes ram-filante { to { transform: translate(110vw, 18vh) rotate(10deg); } }

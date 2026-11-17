@@ -39,14 +39,16 @@ export interface ReglagesRamadan {
   guirlande: boolean; kaaba: boolean; mosquee: boolean; dunes: boolean; compagnon: boolean; etoiles: boolean;
   images: boolean; couleurs: boolean; son: boolean; pluieValidation: boolean; message: boolean; lanternesMois: boolean;
   iftar: boolean; compteRebours: boolean; dernieresNuits: boolean; veille: boolean; aidFitr: boolean; aidAdha: boolean; notifAid: boolean;
-  /** 🧞 2026-11-17 : le tapis volant traverse l'écran de temps en temps, sur toutes les pages */
+  /** 🧞 2026-11-17 : le tapis volant se promène dans les pages (on le croise en faisant défiler) ; le toucher = feu d'artifice doré */
   tapisPromeneur: boolean;
+  /** 🎆 Durée du feu d'artifice doré du tapis, en secondes (5 par défaut ; 10, 20 ou 30) */
+  dureeFeuArtifice: number;
 }
 export const RAMADAN_DEFAUT: ReglagesRamadan = {
   guirlande: true, kaaba: true, mosquee: true, dunes: true, compagnon: true, etoiles: true,
   images: true, couleurs: true, son: true, pluieValidation: true, message: true, lanternesMois: true,
   iftar: true, compteRebours: true, dernieresNuits: true, veille: true, aidFitr: true, aidAdha: true, notifAid: true,
-  tapisPromeneur: true,
+  tapisPromeneur: true, dureeFeuArtifice: 5,
 };
 
 /** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */

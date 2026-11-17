@@ -486,10 +486,11 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
 }
 
 /* ---------- 🌙 Onglet Ramadan (2026-11-16) : interrupteurs + les 3 dates, modifiables si la lune donne un autre jour ---------- */
-const GROUPES_RAMADAN: { titre: string; items: { k: keyof ReglagesRamadan; label: string }[] }[] = [
+type CleOuiNon = Exclude<keyof ReglagesRamadan, 'dureeFeuArtifice'>;
+const GROUPES_RAMADAN: { titre: string; items: { k: CleOuiNon; label: string }[] }[] = [
   { titre: 'Le décor', items: [
     { k: 'guirlande', label: '🏮 Guirlande de lanternes qui défilent' }, { k: 'kaaba', label: '🕋 Kaaba en haut à gauche' }, { k: 'mosquee', label: '🕌 Mosquée en bas à droite' },
-    { k: 'dunes', label: '🏜️ Dunes en bas' }, { k: 'compagnon', label: '🐪 Compagnon (change à chaque connexion)' }, { k: 'etoiles', label: '⭐ Étoiles et croissants qui tombent' },
+    { k: 'dunes', label: '🏜️ Désert en bas (palmiers, cactus, rochers)' }, { k: 'compagnon', label: '🐪 Dromadaire qui marche dans le désert' }, { k: 'etoiles', label: '⭐ Étoiles et croissants qui tombent' },
     { k: 'images', label: '🖼️ Images sur les cartes' }, { k: 'couleurs', label: '🎨 Couleurs or et bleu clair' }, { k: 'son', label: '🔔 Petits sons' },
     { k: 'tapisPromeneur', label: '🧞 Tapis volant qui se promène dans l\'appli' },
   ] },
@@ -538,6 +539,18 @@ function ReglagesRamadanOnglet({ r, setR }: { r: ReglagesSaisons; setR: React.Di
           </div>
         </section>
       ))}
+      {r.ramadan.tapisPromeneur && (
+        <section className="space-y-1.5">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">🎆 Feu d'artifice du tapis volant</p>
+          <p className="text-xs text-muted-foreground">Quand un élève touche le tapis, des étoiles, des lunes et des paillettes dorées remplissent l'écran pendant :</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[5, 10, 20, 30].map((s) => (
+              <button key={s} type="button" aria-pressed={r.ramadan.dureeFeuArtifice === s} onClick={() => setR((x) => ({ ...x, ramadan: { ...x.ramadan, dureeFeuArtifice: s } }))}
+                className={cn('rounded-full border px-3 py-1 text-sm font-bold', r.ramadan.dureeFeuArtifice === s ? 'bg-[#b07a1f] text-white border-[#b07a1f]' : 'bg-card')}>{s} secondes</button>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="flex flex-wrap items-end gap-2 rounded-xl bg-card/70 p-2">
         {Object.entries(IMAGE_RAMADAN).map(([k, svg]) => (
           <svg key={k} viewBox="0 0 48 48" aria-hidden className="h-10 w-10" dangerouslySetInnerHTML={{ __html: svg }} />

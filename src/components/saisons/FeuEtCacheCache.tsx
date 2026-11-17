@@ -135,15 +135,16 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
 
 // ——— 🙈 Cache-cache ———
 /** 🔁 Un personnage différent à chaque partie (Nadia, 2026-11-12) ; c'est LUI qui dit « Essaie de me trouver ! » */
-type AnimalCache = { vb: string; svg: string; nom: string };
+/** `repos` : de combien il redescend derrière la carte (plus petit = on en voit plus) ; il doit TOUJOURS dépasser un peu (Nadia, 17/11 : le tapis caché ne se voyait plus du tout) */
+type AnimalCache = { vb: string; svg: string; nom: string; repos?: string };
 const A48 = (k: string, nom: string): AnimalCache => ({ vb: '0 0 48 48', svg: IMAGES_AUTOMNE[k]?.svg ?? '', nom });
 const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
   automne: [A48('ecureuil', 'L\'écureuil'), A48('herisson', 'Le hérisson'), A48('hibou', 'Le hibou'), A48('renard', 'Le renard')],
   hiver: [{ vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' }, { vb: '0 0 30 38', svg: PERSOS.bonhomme, nom: 'Le bonhomme de neige' }, A48('hibou', 'Le hibou')],
-  printemps: [{ vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin' }, { vb: '0 0 40 34', svg: ANIMAUX.escargot.svg, nom: 'L\'escargot' }, { vb: '0 0 40 34', svg: ANIMAUX.biche.svg, nom: 'La biche' }],
+  printemps: [{ vb: '0 0 40 34', svg: ANIMAUX.lapin.svg, nom: 'Le lapin', repos: '54%' }, { vb: '0 0 40 34', svg: ANIMAUX.escargot.svg, nom: 'L\'escargot', repos: '54%' }, { vb: '0 0 40 34', svg: ANIMAUX.biche.svg, nom: 'La biche', repos: '54%' }],
   // 🌙 Ramadan (2026-11-16) : personnages du désert
-  ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: compagnonSvg(k, `cache-${k}`), nom: COMPAGNONS[k].nom })),
-  ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin' }],
+  ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: compagnonSvg(k, `cache-${k}`), nom: COMPAGNONS[k].nom, repos: ({ dromadaire: '50%', colombe: '46%', tapis: '38%' } as const)[k] })),
+  ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe', repos: '54%' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin', repos: '54%' }],
 };
 /** Tire un personnage, jamais le même que la partie d'avant */
 function tirerAnimal(saison: Saison): number {
@@ -272,7 +273,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
       {hote && !trouveIci && createPortal(
         <button type="button" onClick={(e) => { e.stopPropagation(); trouver(); }} aria-label={`${animal.nom} se cache ici : touche-le !`}
           className="pointer-events-none absolute -top-11 right-3 z-[2] h-11 w-12 overflow-hidden outline-none [-webkit-tap-highlight-color:transparent]">
-          <svg viewBox={animal.vb} className="pointer-events-auto cursor-pointer jeux-tete h-12 w-12" dangerouslySetInnerHTML={{ __html: animal.svg }} />
+          <svg viewBox={animal.vb} className="pointer-events-auto cursor-pointer jeux-tete h-12 w-12" style={animal.repos ? { ['--repos' as string]: animal.repos } : undefined} dangerouslySetInnerHTML={{ __html: animal.svg }} />
         </button>,
         hote.el,
       )}

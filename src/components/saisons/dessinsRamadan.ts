@@ -212,7 +212,7 @@ export function moutonSvg(uid: string): string {
   <ellipse cx="53" cy="22" rx="1.8" ry="1" fill="#f4a3a3" opacity=".6"/>`;
 }
 
-/* ---------- Compagnons des dunes (un différent à chaque connexion) ---------- */
+/* ---------- Compagnons : le dromadaire (désert de l'accueil), le tapis (se promène partout), la colombe (cache-cache), la lune ---------- */
 export type CompagnonRamadan = 'dromadaire' | 'tapis' | 'lune' | 'colombe';
 export const COMPAGNONS: Record<CompagnonRamadan, { nom: string; vb: [number, number]; vole: boolean }> = {
   dromadaire: { nom: 'Le dromadaire', vb: [120, 100], vole: false },
@@ -220,7 +220,6 @@ export const COMPAGNONS: Record<CompagnonRamadan, { nom: string; vb: [number, nu
   lune: { nom: 'La lune', vb: [80, 80], vole: true },
   colombe: { nom: 'La colombe', vb: [60, 46], vole: true },
 };
-export const ORDRE_COMPAGNONS: CompagnonRamadan[] = ['dromadaire', 'tapis', 'lune', 'colombe'];
 /** Le dessin d'un compagnon ; la lune prend la phase du jour du mois hégirien */
 export function compagnonSvg(k: CompagnonRamadan, uid: string, jourHijri = 10): string {
   if (k === 'dromadaire') return dromadaireSvg(uid);
@@ -294,3 +293,67 @@ export function imageDeCarteRamadan(slug: string, index: number): string {
 }
 /** Aperçu de toutes les images (réglages de l'enseignante) */
 export const IMAGE_RAMADAN: Record<string, string> = Object.fromEntries(ROTATION.map((k, i) => [k, imageSvg(k, `a${i}`)]));
+
+/* ---------- 🏜️ Le désert en bas de l'accueil (Nadia, 2026-11-17 : « le dromadaire qui marche sur le désert, avec des palmiers,
+   des cactus… », d'après son image d'exemple — sable clair, rochers orangés au loin, cactus ronds, petites touffes). ---------- */
+const VERT = ['#9fd67a', '#5ea24c', '#3f7a3a'] as const;
+/** 🌴 Palmier (viewBox 0 0 60 90) : tronc courbe à anneaux, palmes découpées, régime de dattes */
+export const PALMIER_VB = { w: 60, h: 90 } as const;
+export function palmierSvg(uid: string): string {
+  const t = `pt${uid}`, f = `pf${uid}`, g = `pg${uid}`;
+  const palme = (ang: number, sx: number, l: number, fill: string) =>
+    `<g transform="translate(31 22) scale(${sx} 1) rotate(${ang}) scale(${l})"><path d="M0 0C9-8 22-8 31 4C24-1 12-1 0 3Z" fill="${fill}" ${st(.7, VERT[2])}/>
+    <path d="M1 1.5C11-3.5 22-3 31 4" fill="none" stroke="${VERT[2]}" stroke-width=".7"/>
+    <path d="M7-2.4l1.6 3.4M12.5-3.6l1.6 3.9M18-3.6l1.5 4.2M23.5-2l1.4 4" stroke="${VERT[2]}" stroke-width=".55" stroke-linecap="round"/></g>`;
+  const anneaux = Array.from({ length: 10 }, (_, i) => { const y = 30 + i * 5.8, x = 29.3 - i * .25; return `<path d="M${x.toFixed(1)} ${y.toFixed(1)}q2.8 1.8 5.6 0" fill="none" stroke="#8a5a2a" stroke-width=".8" stroke-linecap="round"/>`; }).join('');
+  return `<defs>${lin(t, '#d9a467', '#9c6a35', 1, 0)}${lin(f, VERT[0], VERT[1], 1, 1)}${lin(g, '#b6e294', VERT[1], 1, 1)}</defs>
+  <ellipse cx="30" cy="88" rx="12" ry="2" fill="#000" opacity=".1"/>
+  <path d="M26 88C29 70 31 48 29 24h5c3 24 1 46-2 64z" fill="url(#${t})" ${st(.9, '#7a5530')}/>${anneaux}
+  ${palme(22, 1, 1, `url(#${f})`)}${palme(22, -1, 1, `url(#${f})`)}${palme(-12, 1, .95, `url(#${g})`)}${palme(-12, -1, .95, `url(#${g})`)}
+  ${palme(-48, 1, .85, `url(#${f})`)}${palme(-48, -1, .85, `url(#${f})`)}${palme(-84, 1, .7, `url(#${g})`)}
+  <g fill="#a0522d" ${st(.5, '#5a2410')}><circle cx="28.5" cy="26" r="2.1"/><circle cx="32" cy="26.6" r="2.1"/><circle cx="30.2" cy="29" r="2.1"/><circle cx="34" cy="29.4" r="1.8"/></g>`;
+}
+/** 🌵 Cactus (viewBox 0 0 40 60) : modèle 0 = grand cactus à bras, 1 = raquettes avec une fleur */
+export const CACTUS_VB = { w: 40, h: 60 } as const;
+export function cactusSvg(modele: number, uid: string): string {
+  const c = `cg${uid}`;
+  const epines = (pts: number[][]) => pts.map(([x, y]) => `<path d="M${x} ${y}l-1.6-.8M${x} ${y}l1.6-.8" stroke="#fff8d8" stroke-width=".6" stroke-linecap="round"/>`).join('');
+  if (modele % 2 === 0) {
+    return `<defs>${lin(c, VERT[0], VERT[1], 1, 0)}</defs><ellipse cx="20" cy="58.5" rx="13" ry="1.6" fill="#000" opacity=".1"/>
+    <g fill="url(#${c})" ${st(1, VERT[2])}>
+      <path d="M16 46H10.5Q6 46 6 41.5V29Q6 25 9.5 25T13 29V39H16Z"/><path d="M24 38H29.5Q34 38 34 33.5V21Q34 17 30.5 17T27 21V31H24Z"/>
+      <path d="M15 58.5V15Q15 8.5 20 8.5T25 15V58.5Z"/></g>
+    <path d="M18 13v44M22 13v44M8.5 29v12M31.5 21v12" stroke="${VERT[2]}" stroke-width=".7" opacity=".55"/>
+    <path d="M17 14c0-2 1-3 2.4-3.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" stroke-linecap="round"/>
+    ${epines([[16.5, 20], [23.5, 26], [16.5, 34], [23.5, 44], [7, 33], [33, 25], [16.5, 50]])}
+    <path d="M20 8.6c-1.6-2.8 0-4.6 0-4.6s1.6 1.8 0 4.6z" fill="#f59ab5"/><circle cx="20" cy="6.6" r="1.2" fill="#fde047"/>`;
+  }
+  const raquette = (cx: number, cy: number, rx: number, ry: number, rot: number) =>
+    `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" transform="rotate(${rot} ${cx} ${cy})" fill="url(#${c})" ${st(1, VERT[2])}/>`;
+  return `<defs>${lin(c, VERT[0], VERT[1], 1, 1)}</defs><ellipse cx="20" cy="58.5" rx="14" ry="1.6" fill="#000" opacity=".1"/>
+  ${raquette(20, 47, 8, 11, 0)}${raquette(11, 34, 6, 8.5, -25)}${raquette(29, 33, 6, 8.5, 22)}${raquette(21, 26, 5, 7, 4)}
+  ${[[18, 44], [22, 51], [10, 32], [30, 31], [21, 24]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r=".7" fill="#fff8d8"/>`).join('')}
+  <path d="M21 19.6c-2.2-1.2-3.4-3-2.4-4.4 1 .4 1.8 1.2 2.4 2.4.6-1.2 1.4-2 2.4-2.4 1 1.4-.2 3.2-2.4 4.4z" fill="#f59ab5" ${st(.5, '#c2557a')}/>
+  <circle cx="21" cy="18.4" r=".9" fill="#fde047"/><circle cx="7" cy="26.6" r="1.6" fill="#f472b6"/><circle cx="33.6" cy="25.6" r="1.6" fill="#f472b6"/>`;
+}
+/** 🪨 Rocher (viewBox 0 0 40 22) */
+export function rocherSvg(uid: string): string {
+  const r = `ro${uid}`;
+  return `<defs>${lin(r, '#efe0c6', '#c4a983', 1, 1)}</defs><path d="M2 20Q3 11 11 8Q17 3 25 6Q34 6 38 20Z" fill="url(#${r})" ${st(1, '#9c8463')}/>
+  <path d="M10 11q5-4 10-3" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2" stroke-linecap="round"/><path d="M24 12q3 3 3 7" fill="none" stroke="#a88e6a" stroke-width=".8"/>`;
+}
+/** 🌱 Touffe d'herbe sèche (viewBox 0 0 20 10) */
+export const TOUFFE = `<path d="M10 10C9 6 6 3 2 2c3 3 5 5 6 8M10 10c0-4 1-7 3-9-1 4-1 6-1 9M10 10c1-3 4-5 8-5-3 2-5 3-6 5" fill="${VERT[0]}" stroke="${VERT[1]}" stroke-width=".7" stroke-linejoin="round"/>`;
+/** ⛰️ Rochers orangés au loin (viewBox 0 0 120 60), couleurs claires (« pas trop foncé ») */
+export const MESA_VB = { w: 120, h: 60 } as const;
+export function mesaSvg(uid: string): string {
+  const a = `ma${uid}`, b = `mb${uid}`;
+  return `<defs>${lin(a, '#f6d2a8', '#e6aa78', 1, 0)}${lin(b, '#f3c79a', '#dc9e6c', 1, 0)}</defs>
+  <path d="M2 60L8 34Q9 27 15 25L20 9Q22 4 28 4H40Q46 4 48 10L52 24Q57 27 58 34L64 60Z" fill="url(#${a})" ${st(1, '#c98a5a')}/>
+  <path d="M28 4h12M20 12q7 2 14 0M15 27q8 2 14 0" fill="none" stroke="#fde4c4" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M34 8v50M44 12l4 46M24 14l-3 44" stroke="#d99a68" stroke-width=".9" opacity=".7"/>
+  <path d="M60 60L66 40Q68 34 73 33L78 20Q80 16 85 16H95Q100 16 102 21L106 34Q111 36 112 42L118 60Z" fill="url(#${b})" ${st(1, '#c98a5a')}/>
+  <path d="M85 16h10M78 23q8 2 15 0" fill="none" stroke="#fde4c4" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M90 20v38M100 24l4 34M80 26l-4 32" stroke="#d99a68" stroke-width=".9" opacity=".7"/>
+  <path d="M30 0q2-2 4 0q2-2 4 0M50 6q1.5-1.5 3 0q1.5-1.5 3 0" fill="none" stroke="#a37a55" stroke-width=".8" stroke-linecap="round"/>`;
+}
