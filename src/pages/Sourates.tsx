@@ -1,5 +1,5 @@
 import { rangParcours } from '@/lib/souratesPrecedentes';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { withName } from '@/lib/encouragements';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,8 +160,9 @@ const SouratesPage = () => {
   const { scrollRef: methodsScrollRef, handleScroll: methodsHandleScroll, showTop: methodsShowTop, showBottom: methodsShowBottom, scrollToTop: methodsScrollToTop, scrollToBottom: methodsScrollToBottom } = useScrollToTop();
   const [selectedSourate, setSelectedSourate] = useState<typeof SOURATES_DATA[0] | null>(null);
   const [sourateProgress, setSourateProgress] = useState<Map<string, { is_validated: boolean; is_memorized: boolean; progress_percentage: number }>>(new Map());
+  const sourateProgressRef = useRef(sourateProgress);
+  sourateProgressRef.current = sourateProgress;
   const [verseProgress, setVerseProgress] = useState<Map<string, boolean>>(new Map());
-  const [adminUnlocks, setAdminUnlocks] = useState<Set<string>>(new Set());
   const [sourateContents, setSourateContents] = useState<Tables<'sourate_content'>[]>([]);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; sourateName: string; sourateNumber: number }>({ open: false, sourateName: '', sourateNumber: 0 });
   const [dbSourates, setDbSourates] = useState<Map<number, string>>(new Map());
@@ -174,13 +175,11 @@ const SouratesPage = () => {
       const [
         { data: progressData },
         { data: verseData },
-        { data: unlockData },
         { data: contentData },
         { data: souratesDb },
       ] = await Promise.all([
         supabase.from('user_sourate_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
         supabase.from('user_sourate_verse_progress').select('*').eq('user_id', user.id).eq('context', 'sourates'),
-        supabase.from('sourate_admin_unlocks').select('*').eq('user_id', user.id),
         supabase.from('sourate_content').select('*').order('display_order'),
         supabase.from('sourates').select('id, number'),
       ]);
@@ -204,10 +203,6 @@ const SouratesPage = () => {
         vMap.set(`${v.sourate_id}-${v.verse_number}`, v.is_memorized);
       });
       setVerseProgress(vMap);
-
-      const uSet = new Set<string>();
-      unlockData?.forEach(u => uSet.add(u.sourate_id));
-      setAdminUnlocks(uSet);
 
       setSourateContents(contentData || []);
     } catch (error) {
@@ -286,10 +281,13 @@ const SouratesPage = () => {
             } else {
               fireSuccess();
             }
-            // Find next sourate in ordered list
+            // La sourate qui s'OUVRE vraiment : la 1ʳᵉ pas encore validée du parcours, seulement si celle-ci était la sourate
+            // en cours (toutes celles d'avant validées) — une sourate validée « en avance » n'ouvre rien (règle du 2026-11-17)
+            const valide = (n: number) => { const id = dbSourates.get(n); return !id || id === approvedSourateId || !!sourateProgressRef.current.get(id)?.is_validated; };
             const currentIdx = SOURATES_ORDERED.findIndex(s => s.number === validatedNumber);
-            if (currentIdx >= 0 && currentIdx < SOURATES_ORDERED.length - 1) {
-              const nextSourate = SOURATES_ORDERED[currentIdx + 1];
+            const etaitEnCours = currentIdx >= 0 && SOURATES_ORDERED.slice(0, currentIdx).every((x) => valide(x.number));
+            const nextSourate = etaitEnCours ? SOURATES_ORDERED.find((x) => !valide(x.number)) : undefined;
+            if (nextSourate) {
               setTimeout(() => {
                 setUnlockDialog({
                   open: true,
@@ -306,20 +304,20 @@ const SouratesPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, dbSourates, fireSuccess, fireConfetti, toast]);
 
+  // 🔒 Règle de Nadia (2026-11-17, TOUS les élèves) : une sourate validée reste ouverte (étoile verte) ; une sourate PAS encore
+  // validée ne s'ouvre que si TOUTES celles d'avant dans le parcours sont validées. Valider la 109 alors que la 111 et la 112 ne le
+  // sont pas n'ouvre donc PAS la 108 (avant : il suffisait que la précédente soit validée).
   const isSourateAccessible = (sourateNumber: number): boolean => {
     if (isOver20 || isAdmin) return true;
     const dbId = dbSourates.get(sourateNumber);
     if (!dbId) return sourateNumber === 114;
-    if (sourateNumber === 114) return true;
-    if (adminUnlocks.has(dbId)) return true;
-    // Use ordered array position to find previous sourate
+    if (sourateProgress.get(dbId)?.is_validated) return true;
     const idx = SOURATES_ORDERED.findIndex(s => s.number === sourateNumber);
-    if (idx <= 0) return true;
-    const prevNumber = SOURATES_ORDERED[idx - 1].number;
-    const prevDbId = dbSourates.get(prevNumber);
-    if (!prevDbId) return true;
-    const prevProgress = sourateProgress.get(prevDbId);
-    return prevProgress?.is_validated === true;
+    for (let i = 0; i < idx; i++) {
+      const id = dbSourates.get(SOURATES_ORDERED[i].number);
+      if (id && !sourateProgress.get(id)?.is_validated) return false;
+    }
+    return true;
   };
 
   // Pourcentage + fin de sourate (+20 ans : validée seule ; moins de 20 ans : il reste la récitation)
