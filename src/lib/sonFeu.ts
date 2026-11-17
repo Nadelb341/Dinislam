@@ -50,6 +50,23 @@ function charger(c: AudioContext, url: string) {
   return t;
 }
 
+/** 🔁 Toucher le feu = le son démarre ; toucher de nouveau = il s'arrête (Nadia, 2026-11-17 : « certains élèves ne voudront pas
+ *  que le bruit soit aussi long, ils doivent pouvoir l'arrêter »). Événement EVT_SON_FEU à chaque début / fin pour l'affichage. */
+export const EVT_SON_FEU = 'dinislam:son-feu';
+export const sonFeuEnCours = () => enCours !== null;
+export function arreterSonFeu() {
+  if (!enCours) return;
+  enCours.stop();
+  enCours = null;
+  window.dispatchEvent(new Event(EVT_SON_FEU));
+}
+/** Démarre le son, ou l'arrête s'il joue déjà. Rend true si le son démarre. */
+export function basculerSonFeu(): boolean {
+  if (enCours) { arreterSonFeu(); return false; }
+  void jouerSonFeu(undefined, dureeDuToucher());
+  return true;
+}
+
 /** Joue le son choisi (ou celui donné) pendant `duree` secondes, en boucle. Un seul à la fois : toucher de nouveau relance. */
 export async function jouerSonFeu(choix: ChoixSonFeu = lireSonFeu(), duree = 5) {
   if (choix === 'aucun') return;
@@ -69,6 +86,7 @@ export async function jouerSonFeu(choix: ChoixSonFeu = lireSonFeu(), duree = 5) 
     src.start(t0); src.stop(t0 + d + 0.05);
     const moi = { stop: () => { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setTargetAtTime(0.0001, c.currentTime, 0.08); src.stop(c.currentTime + 0.3); } catch { /* déjà fini */ } } };
     enCours = moi;
-    src.onended = () => { if (enCours === moi) enCours = null; };
+    window.dispatchEvent(new Event(EVT_SON_FEU));
+    src.onended = () => { if (enCours === moi) { enCours = null; window.dispatchEvent(new Event(EVT_SON_FEU)); } };
   } catch { /* pas de son possible (appareil, fichier) : rien ne casse */ }
 }

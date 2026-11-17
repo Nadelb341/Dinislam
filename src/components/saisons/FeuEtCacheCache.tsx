@@ -9,7 +9,7 @@ import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
 import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
-import { dureeDuToucher, jouerSonFeu, lireSonFeu } from '@/lib/sonFeu';
+import { EVT_SON_FEU, arreterSonFeu, basculerSonFeu, lireSonFeu, sonFeuEnCours } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 
 /**
@@ -85,6 +85,14 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
     return () => { window.removeEventListener('scroll', f); clearTimeout(t); };
   }, []);
 
+  // 🔁 Son du feu : un toucher le lance, un autre l'arrête ; il s'arrête aussi en quittant l'accueil
+  const [sonJoue, setSonJoue] = useState(sonFeuEnCours());
+  useEffect(() => {
+    const f = () => setSonJoue(sonFeuEnCours());
+    window.addEventListener(EVT_SON_FEU, f);
+    return () => { window.removeEventListener(EVT_SON_FEU, f); arreterSonFeu(); };
+  }, []);
+
   const nbBuches = buches ? Math.min(devoirs.valides, 5) : 0;
   const chatDort = k > 0 && niveau >= 4;
   return createPortal(
@@ -122,11 +130,14 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
         ))}
       </svg>
     </div>
-    {/* 🔥 Toucher le foyer = écouter le feu (son choisi dans Paramètres ; jamais tout seul). Sous la bulle « ? » du coin du feu, sans la toucher. */}
+    {/* 🔥 Toucher le foyer = écouter le feu, toucher encore = l'arrêter (2026-11-17) ; son choisi dans Paramètres ; jamais tout seul. Sous la bulle « ? » du coin du feu, sans la toucher. */}
     {k > 0 && lireSonFeu() !== 'aucun' && (
-      <button type="button" aria-label="Écouter le feu" onClick={() => void jouerSonFeu(undefined, dureeDuToucher())}
+      <button type="button" aria-label={sonJoue ? 'Arrêter le bruit du feu' : 'Écouter le feu'} aria-pressed={sonJoue} onClick={() => setSonJoue(basculerSonFeu())}
         className="fixed bottom-0 z-[32] rounded-full"
-        style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }} />
+        style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }}>
+        {/* 🔊 pendant que le son joue : on comprend qu'un nouveau toucher l'arrête */}
+        {sonJoue && <span aria-hidden className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-pulse rounded-full bg-white/90 px-1.5 text-xs shadow">🔊</span>}
+      </button>
     )}
     </>,
     document.body,

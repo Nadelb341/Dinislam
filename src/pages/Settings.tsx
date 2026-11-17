@@ -73,7 +73,7 @@ function CarteSonFeu() {
     <Card>
       <CardContent className="p-4 space-y-2">
         <p className="font-bold">🔥 Son du feu de la cheminée</p>
-        <p className="text-xs text-muted-foreground">Touche le feu, en bas à droite de l'accueil, pour l'écouter. Marche aussi sans Internet.</p>
+        <p className="text-xs text-muted-foreground">Touche le feu, en bas à droite de l'accueil, pour l'écouter ; touche-le encore pour l'arrêter. Marche aussi sans Internet.</p>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Son du feu">
           {SONS_FEU.map((s) => (
             <button key={s.id} type="button" role="radio" aria-checked={choix === s.id}
