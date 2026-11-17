@@ -1,4 +1,4 @@
-Sons du feu de la cheminée (licence CC0, domaine public, aucune attribution obligatoire) :
-- feu-crepite.m4a  : « fire crackling » (fire-1.ogg), https://opengameart.org/content/fire-crackling
-- feu-cheminee.m4a : « fireplace sound loop » (fire.wav), https://opengameart.org/content/fireplace-sound-loop
-Convertis en AAC mono (afconvert) le 2026-11-15.
+Son du feu de la cheminée (choisi par Nadia le 2026-11-17, n° 7 « Feu qui pète beaucoup ») :
+- feu-bois.m4a : « soundcamp2015 crackling fire » de TonyW, radio aporee, marqué « domaine public » (Public Domain Mark 1.0),
+  https://archive.org/details/aporee_27776_32009 — extrait de 30 s (21 à 51 s), AAC mono 96 kbps, volume égalisé.
+Les 2 anciens sons (OpenGameArt, CC0) ont été retirés le 2026-11-17 à la demande de Nadia.

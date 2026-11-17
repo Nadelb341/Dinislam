@@ -175,6 +175,17 @@ const Classement = () => {
   useRealtimeRefresh(['point_settings'], () => { void chargerBareme(); });
   useRealtimeRefresh(['student_groups', 'student_group_members'], () => { void chargerClassement(); });
 
+  // ✏️ Titre d'une ligne du barème modifiable par l'enseignante (Nadia, 2026-11-17) ; vide = on garde l'ancien
+  const updateBaremeTitre = async (id: string, titre: string) => {
+    const t = titre.trim();
+    const avant = bareme.find((b) => b.id === id)?.label;
+    if (!t || t === avant) return;
+    const { error } = await supabase.from('point_settings').update({ label: t }).eq('id', id);
+    if (error) { toast.error('📡 Titre non enregistré : il faut Internet'); return; }
+    toast.success('Titre enregistré ✅');
+    chargerBareme();
+  };
+
   const updateBaremePoints = async (id: string, newPoints: number) => {
     await supabase
       .from('point_settings')
@@ -407,7 +418,10 @@ const Classement = () => {
               className="bg-background rounded-t-3xl w-full max-w-lg p-5 pb-8 max-h-[80vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg text-foreground">⚙️ Barème des points</h3>
+                <div>
+                  <h3 className="font-bold text-lg text-foreground">⚙️ Barème des points</h3>
+                  <p className="text-xs text-muted-foreground">Touche un titre pour le modifier (Entrée pour valider) ; − et + pour les points. Les points de tous les élèves se recalculent tout seuls.</p>
+                </div>
                 <button
                   onClick={() => setEditBareme(false)}
                   className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-bold">
@@ -416,7 +430,10 @@ const Classement = () => {
               </div>
               {bareme.map(b => (
                 <div key={b.id} className="flex items-center justify-between py-3 border-b border-border">
-                  <p className="text-sm font-semibold flex-1 text-foreground">{b.label}</p>
+                  <input key={b.label} defaultValue={b.label} aria-label="Titre de la ligne du barème"
+                    onBlur={(e) => void updateBaremeTitre(b.id, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+                    className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-foreground [overflow-wrap:anywhere] hover:border-border focus:border-primary focus:bg-card focus:outline-none" />
                   <div className="flex items-center gap-2 ml-3">
                     <button
                       onClick={() => updateBaremePoints(b.id, b.points - 1)}

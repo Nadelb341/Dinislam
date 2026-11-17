@@ -113,6 +113,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
   const mosquee = useMemo(() => mosqueeSvg('mosquee'), []);
   const persoSvg = useMemo(() => compagnonSvg(perso, 'perso'), []);
   const desert = useMemo(desertSvgs, []);
+  const colombe = useMemo(() => compagnonSvg('colombe', 'vol'), []);
 
   return (
     <>
@@ -186,6 +187,12 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
                 ? <svg key={i} viewBox="0 0 340 60" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full" style={{ height: o.h }} dangerouslySetInnerHTML={{ __html: o.svg }} />
                 : <svg key={i} viewBox={o.vb} className="absolute overflow-visible" style={{ left: o.left, bottom: o.bas, height: o.h, opacity: o.opacite, transform: o.miroir ? 'scaleX(-1)' : undefined }} dangerouslySetInnerHTML={{ __html: o.svg }} />)}
             </div>
+          )}
+
+          {/* 🕊️ La colombe vole de temps en temps au-dessus du désert (Nadia, 2026-11-17), en battant des ailes */}
+          {c.dunes && !calme && (
+            <svg aria-hidden viewBox={`0 0 ${COMPAGNONS.colombe.vb[0]} ${COMPAGNONS.colombe.vb[1]}`} className="ramadan-colombe-vol pointer-events-none fixed left-0 z-[28] h-[26px] w-[34px] overflow-visible"
+              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 74px)' }} dangerouslySetInnerHTML={{ __html: colombe }} />
           )}
 
           {/* 🎉 Aïd : ballons, feux d'artifice, cadeaux ; Aïd el-Adha : moutons */}

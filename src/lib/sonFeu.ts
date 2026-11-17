@@ -1,36 +1,31 @@
 import { lecteurSon } from '@/lib/sonSaison';
 
 /**
- * 🔥 Son du feu de la cheminée (Nadia, 2026-11-12 : « avoir le choix entre 2 sons dans les paramètres, un vrai bois qui crépite,
- * propre, pas trop faux » ; téléchargement accepté le 2026-11-15).
- * 2 vrais enregistrements LIBRES (licence CC0, OpenGameArt), rangés dans l'appli (public/sons/) :
- *  - 🪵 « crepite »  : « fire crackling » (fire-1.ogg), 3,5 s, bois qui crépite et qui pète ;
- *  - 🏡 « cheminee » : « fireplace sound loop » (fire.wav), cheminée douce en boucle (29 s, rejouée en boucle, en fondu).
- * Convertis en AAC (.m4a, lu par l'iPhone, Android et les ordinateurs), 250 Ko en tout : gardés dans la mémoire hors ligne
- * dès l'installation (liste PRECACHE de vite.config.ts) → le son marche sans Internet.
- * Joué quand on touche le foyer de la cheminée (jamais tout seul : pas de bruit surprise en classe). Choix gardé sur l'appareil.
- * ⏱️ 2026-11-16 (Nadia) : 20 s au 1ᵉʳ toucher, 1 min à partir du 2ᵉ toucher dans la même visite. Le son tourne EN BOUCLE :
- * aucun fichier en plus, rien à payer.
+ * 🔥 Son du feu de la cheminée.
+ * - 2026-11-12 (Nadia) : « un vrai bois qui crépite, propre, pas trop faux » ; téléchargement accepté le 2026-11-15.
+ * - 2026-11-17 (Nadia, après avoir écouté 10 sons sur https://claude.ai/artifact/Rw1Gcs28KdWj6sjN2Vk6mW) : elle ne garde QUE le n° 7,
+ *   « Feu qui pète beaucoup » (TonyW, radio aporee, domaine public) → `public/sons/feu-bois.m4a` (30 s, AAC, 375 Ko), gardé dans la
+ *   mémoire hors ligne dès l'installation (plugin offlinePrecache de vite.config.ts) → marche sans Internet. Les 2 anciens sons sont retirés.
+ * Joué quand on touche le foyer de la cheminée (jamais tout seul : pas de bruit surprise en classe), en BOUCLE.
+ * Choix gardé sur l'appareil : 🔥 Feu de bois / 🔇 Sans son (un ancien choix « crepite » ou « cheminee » devient « feu »).
+ * ⏱️ 2026-11-16 (Nadia) : 20 s au 1ᵉʳ toucher, 1 min à partir du 2ᵉ toucher dans la même visite.
  */
-export type ChoixSonFeu = 'crepite' | 'cheminee' | 'aucun';
+export type ChoixSonFeu = 'feu' | 'aucun';
 const CLE = 'dinislam_son_feu';
 export const SONS_FEU: { id: ChoixSonFeu; label: string; detail: string }[] = [
-  { id: 'crepite', label: '🪵 Bois qui crépite', detail: 'Le bois qui pète' },
-  { id: 'cheminee', label: '🏡 Cheminée douce', detail: 'Un feu calme' },
+  { id: 'feu', label: '🔥 Feu de bois', detail: 'Le bois qui crépite et qui pète' },
   { id: 'aucun', label: '🔇 Sans son', detail: '' },
 ];
 
 export function lireSonFeu(): ChoixSonFeu {
-  try { const v = localStorage.getItem(CLE); return v === 'cheminee' || v === 'aucun' ? v : 'crepite'; } catch { return 'crepite'; }
+  try { return localStorage.getItem(CLE) === 'aucun' ? 'aucun' : 'feu'; } catch { return 'feu'; }
 }
 export function choisirSonFeu(v: ChoixSonFeu) {
   try { localStorage.setItem(CLE, v); } catch { /* stockage bloqué : le choix vaut pour cette visite */ }
 }
 
 const REGLAGE: Record<Exclude<ChoixSonFeu, 'aucun'>, { url: string; volume: number }> = {
-  crepite: { url: '/sons/feu-crepite.m4a', volume: 0.55 },
-  // Enregistrement plus doux (≈ 4 fois moins fort) : remonté pour qu'on l'entende autant que l'autre
-  cheminee: { url: '/sons/feu-cheminee.m4a', volume: 1.6 },
+  feu: { url: '/sons/feu-bois.m4a', volume: 1 },
 };
 export const DUREE_PREMIER = 20;
 export const DUREE_SUIVANT = 60;

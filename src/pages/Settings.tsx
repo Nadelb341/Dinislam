@@ -62,7 +62,7 @@ function CarteDecorSaison() {
   );
 }
 
-/** 🔥 Son du feu de la cheminée (Nadia, 2026-11-12) : 2 vrais enregistrements au choix, ou sans son. Choix gardé sur cet appareil. */
+/** 🔥 Son du feu de la cheminée (Nadia, 2026-11-12 ; un seul son depuis le 2026-11-17) : avec ou sans son. Choix gardé sur cet appareil. */
 function CarteSonFeu() {
   const { data: r } = useReglagesSaisons();
   const [choix, setChoix] = useState<ChoixSonFeu>(lireSonFeu());
@@ -74,7 +74,7 @@ function CarteSonFeu() {
       <CardContent className="p-4 space-y-2">
         <p className="font-bold">🔥 Son du feu de la cheminée</p>
         <p className="text-xs text-muted-foreground">Touche le feu, en bas à droite de l'accueil, pour l'écouter. Marche aussi sans Internet.</p>
-        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Son du feu">
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Son du feu">
           {SONS_FEU.map((s) => (
             <button key={s.id} type="button" role="radio" aria-checked={choix === s.id}
               onClick={() => { choisirSonFeu(s.id); setChoix(s.id); void jouerSonFeu(s.id); }}

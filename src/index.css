@@ -877,11 +877,14 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 .ramadan-perso.pause { animation-play-state: paused; }
 @keyframes ram-promene { 0% { transform: translateX(8px) scaleX(1); } 48% { transform: translateX(calc(60vw - 40px)) scaleX(1); } 52% { transform: translateX(calc(60vw - 40px)) scaleX(-1); } 100% { transform: translateX(8px) scaleX(-1); } }
 .ramadan-lune { filter: drop-shadow(0 0 8px rgba(255, 213, 74, .8)); }
+/* 🕊️ Colombe au-dessus du désert : traverse en 14 s, ondule, puis reste partie 16 s avant de repasser */
+.ramadan-colombe-vol { opacity: 0; animation: ram-colombe 30s linear 4s infinite; }
+@keyframes ram-colombe { 0% { opacity: 1; transform: translate(-50px, 0); } 12% { transform: translate(25vw, -14px); } 24% { transform: translate(50vw, 4px); } 36% { transform: translate(75vw, -12px); } 46% { opacity: 1; transform: translate(calc(100vw + 20px), -4px); } 47%, 100% { opacity: 0; transform: translate(calc(100vw + 20px), -4px); } }
 .ramadan-filante { top: 12%; left: -40px; animation: ram-filante 2.6s linear forwards; }
 @keyframes ram-filante { to { transform: translate(110vw, 18vh) rotate(10deg); } }
 @media (prefers-reduced-motion: reduce) { html:not(.anime-toujours) .ramadan-defile, html:not(.anime-toujours) .ramadan-lanterne, html:not(.anime-toujours) .ramadan-perso, html:not(.anime-toujours) .ramadan-chute,
   html:not(.anime-toujours) .ramadan-etoile-pendue, html:not(.anime-toujours) .ram-patte-a, html:not(.anime-toujours) .ram-patte-b, html:not(.anime-toujours) .ram-queue,
-  html:not(.anime-toujours) .ram-oeil, html:not(.anime-toujours) .ram-ondule, html:not(.anime-toujours) .ram-aile, html:not(.anime-toujours) .ramadan-lanterne .ram-lueur { animation: none; } }
+  html:not(.anime-toujours) .ram-oeil, html:not(.anime-toujours) .ramadan-colombe-vol, html:not(.anime-toujours) .ram-ondule, html:not(.anime-toujours) .ram-aile, html:not(.anime-toujours) .ramadan-lanterne .ram-lueur { animation: none; } }
 /* 🏮 Les 30 lanternes du mois */
 .ramadan-mois { filter: grayscale(.85) opacity(.45); transition: filter .8s; }
 .ramadan-mois .ram-lueur { opacity: 0; }

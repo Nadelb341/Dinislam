@@ -486,7 +486,7 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
 }
 
 /* ---------- 🌙 Onglet Ramadan (2026-11-16) : interrupteurs + les 3 dates, modifiables si la lune donne un autre jour ---------- */
-type CleOuiNon = Exclude<keyof ReglagesRamadan, 'dureeFeuArtifice'>;
+type CleOuiNon = Exclude<keyof ReglagesRamadan, 'dureeFeuArtifice' | 'tapisRetour'>;
 const GROUPES_RAMADAN: { titre: string; items: { k: CleOuiNon; label: string }[] }[] = [
   { titre: 'Le décor', items: [
     { k: 'guirlande', label: '🏮 Guirlande de lanternes qui défilent' }, { k: 'kaaba', label: '🕋 Kaaba en haut à gauche' }, { k: 'mosquee', label: '🕌 Mosquée en bas à droite' },
@@ -541,7 +541,15 @@ function ReglagesRamadanOnglet({ r, setR }: { r: ReglagesSaisons; setR: React.Di
       ))}
       {r.ramadan.tapisPromeneur && (
         <section className="space-y-1.5">
-          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">🎆 Feu d'artifice du tapis volant</p>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">🧞 Le tapis revient toutes les…</p>
+          <p className="text-xs text-muted-foreground">Après être sorti de l'écran, il revient au bout de ce temps (et toujours dès qu'on revient sur l'accueil) :</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[15, 30, 60, 120, 300].map((s) => (
+              <button key={s} type="button" aria-pressed={r.ramadan.tapisRetour === s} onClick={() => setR((x) => ({ ...x, ramadan: { ...x.ramadan, tapisRetour: s } }))}
+                className={cn('rounded-full border px-3 py-1 text-sm font-bold', r.ramadan.tapisRetour === s ? 'bg-[#b07a1f] text-white border-[#b07a1f]' : 'bg-card')}>{s < 60 ? `${s} secondes` : s === 60 ? '1 minute' : `${s / 60} minutes`}</button>
+            ))}
+          </div>
+          <p className="pt-2 text-xs font-extrabold uppercase tracking-wide text-muted-foreground">🎆 Feu d'artifice du tapis volant</p>
           <p className="text-xs text-muted-foreground">Quand un élève touche le tapis, des étoiles, des lunes et des paillettes dorées remplissent l'écran pendant :</p>
           <div className="flex flex-wrap gap-1.5">
             {[5, 10, 20, 30].map((s) => (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useSaisonActive } from '@/lib/saisons';
 import { sonTintement } from '@/lib/sonSaison';
@@ -13,7 +14,8 @@ import { FeuArtificeDore } from './FeuArtificeDore';
  * les allers-retours gauche-droite, c'est monotone ».
  * → Il vole DANS la page (il défile avec elle, il n'est pas collé à l'écran), lentement, en courbes, d'un point au hasard à
  *   un autre sur toute la hauteur de la page. Après quelques points, il sort par un côté et part se promener ailleurs
- *   (absent 20 à 60 s), puis revient par un autre endroit. Sa place est gardée quand on change de page.
+ *   puis revient par un autre endroit au bout de `tapisRetour` secondes (15 par défaut, réglable). Sa place est gardée quand on
+ *   change de page, et il RÉAPPARAÎT à chaque retour sur l'accueil (Nadia, 2026-11-17).
  * Seul le tapis se touche (le reste de l'écran reste cliquable). Réglages : Décorations des saisons › Ramadan.
  */
 type Etat = { x: number; y: number; ang: number; cx: number; cy: number; reste: number; sortie: boolean; retour: number; vite: number };
@@ -42,6 +44,20 @@ export function TapisPromeneur() {
   const [feu, setFeu] = useState(0);
   const son = r.ramadan.son;
   const duree = r.ramadan.dureeFeuArtifice || 5;
+  const retour = Math.max(5, r.ramadan.tapisRetour || 15) * 1000;
+  const retourRef = useRef(retour);
+  retourRef.current = retour;
+  const { pathname } = useLocation();
+
+  // 🏠 Retour sur l'accueil : il réapparaît tout de suite, à la hauteur de l'écran, en entrant par un côté
+  useEffect(() => {
+    if (!actif || pathname !== '/' || !etat) return;
+    const { W } = dimensions();
+    const gauche = Math.random() < 0.5;
+    Object.assign(etat, { x: gauche ? -LARG - 10 : W + 10, y: window.scrollY + window.innerHeight * (0.25 + Math.random() * 0.4), ang: gauche ? 0 : Math.PI, sortie: false, vite: 1, reste: 3 + Math.floor(Math.random() * 3), retour: performance.now() + 1500 });
+    cibleAuHasard(etat);
+    etat.cy = window.scrollY + window.innerHeight * (0.2 + Math.random() * 0.5);
+  }, [pathname, actif]);
 
   useEffect(() => {
     if (!actif) return;
@@ -51,7 +67,7 @@ export function TapisPromeneur() {
       // 1ʳᵉ apparition : il arrive par un côté, un peu plus bas que le haut de l'écran
       const { W } = dimensions();
       const gauche = Math.random() < 0.5;
-      etat = { x: gauche ? -LARG - 10 : W + 10, y: window.scrollY + window.innerHeight * (0.3 + Math.random() * 0.4), ang: gauche ? 0 : Math.PI, cx: 0, cy: 0, reste: 3 + Math.floor(Math.random() * 4), sortie: false, retour: performance.now() + 4000 + Math.random() * 8000, vite: 1 };
+      etat = { x: gauche ? -LARG - 10 : W + 10, y: window.scrollY + window.innerHeight * (0.3 + Math.random() * 0.4), ang: gauche ? 0 : Math.PI, cx: 0, cy: 0, reste: 3 + Math.floor(Math.random() * 4), sortie: false, retour: performance.now() + 1500, vite: 1 };
       cibleAuHasard(etat);
     }
     let raf = 0;
@@ -82,7 +98,7 @@ export function TapisPromeneur() {
         if (e.x < -LARG - 5 || e.x > W + 5) {
           // Sorti de l'écran : il revient dans 20 à 60 s, par un côté au hasard, à une autre hauteur de la page
           const gauche = Math.random() < 0.5;
-          e.retour = now + 20000 + Math.random() * 40000;
+          e.retour = now + retourRef.current;
           e.x = gauche ? -LARG - 10 : W + 10;
           e.ang = gauche ? 0 : Math.PI;
           e.y = 70 + Math.random() * Math.max(20, H - 200);

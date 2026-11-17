@@ -43,12 +43,14 @@ export interface ReglagesRamadan {
   tapisPromeneur: boolean;
   /** 🎆 Durée du feu d'artifice doré du tapis, en secondes (5 par défaut ; 10, 20 ou 30) */
   dureeFeuArtifice: number;
+  /** 🧞 Temps (en secondes) avant que le tapis revienne après être sorti de l'écran (15 par défaut, Nadia 2026-11-17) */
+  tapisRetour: number;
 }
 export const RAMADAN_DEFAUT: ReglagesRamadan = {
   guirlande: true, kaaba: true, mosquee: true, dunes: true, compagnon: true, etoiles: true,
   images: true, couleurs: true, son: true, pluieValidation: true, message: true, lanternesMois: true,
   iftar: true, compteRebours: true, dernieresNuits: true, veille: true, aidFitr: true, aidAdha: true, notifAid: true,
-  tapisPromeneur: true, dureeFeuArtifice: 5,
+  tapisPromeneur: true, dureeFeuArtifice: 5, tapisRetour: 15,
 };
 
 /** ❄️ Hiver (maquette validée par Nadia le 2026-11-04 + effets 14 à 20) */
