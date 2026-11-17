@@ -11,6 +11,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminCommentaireLecon from './AdminCommentaireLecon';
+import ValiderLeconsNourania from './ValiderLeconsNourania';
 import { compressDocument } from '@/lib/compressImage';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
@@ -302,8 +303,11 @@ const AdminNouraniaContent = () => {
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-foreground">Gestion du contenu Nourania</h3>
       <p className="text-sm text-muted-foreground">
-        Ajoutez des fichiers, vidéos YouTube ou audio pour chaque leçon.
+        Ajoutez des fichiers, vidéos YouTube ou audio pour chaque leçon. Validez des leçons pour vos élèves.
       </p>
+
+      {/* ✅ Valider des leçons pour un élève (comme pour les sourates, 2026-11-17) : comptées dans le classement */}
+      <ValiderLeconsNourania lessons={lessons} profiles={profiles} />
 
       {/* Import en lot */}
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-2">
