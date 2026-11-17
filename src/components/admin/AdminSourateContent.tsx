@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -305,13 +306,23 @@ const AdminSourateContent = () => {
   // Reverrouiller : confirmation, puis le déblocage part dans la corbeille (restaurable), jamais effacé directement
   const [toRelock, setToRelock] = useState<{ unlock: (typeof unlocks)[number]; label: string } | null>(null);
 
+  // ✅ Valider une sourate pour un élève (Nadia, 2026-11-17) : la base l'écrit aussi dans SON avancement (déclencheur
+  // sync_sourate_deblocage) → verte chez lui, comptée dans ses points. Confirmation avant de valider (règle), pas pour annuler.
+  const [toValidate, setToValidate] = useState<{ userId: string; sourateId: string; label: string } | null>(null);
   const toggleUnlock = async (userId: string, sourateId: string, label: string) => {
     const existing = unlocks.find(u => u.user_id === userId && u.sourate_id === sourateId);
     if (existing) { setToRelock({ unlock: existing, label }); return; }
-    const { error } = await supabase.from('sourate_admin_unlocks').insert({ user_id: userId, sourate_id: sourateId, unlocked_by: user?.id });
-    if (error) { toast.error('Erreur : la sourate n\'a pas été débloquée'); return; }
+    setToValidate({ userId, sourateId, label });
+  };
+  const confirmValidate = async () => {
+    const v = toValidate;
+    setToValidate(null);
+    if (!v) return;
+    const { error } = await supabase.from('sourate_admin_unlocks').insert({ user_id: v.userId, sourate_id: v.sourateId, unlocked_by: user?.id });
+    if (error) { toast.error('📡 La sourate n\'a pas été validée : vérifie ta connexion'); return; }
     refetchUnlocks();
-    toast.success('Sourate déverrouillée');
+    void refetchValidees();
+    toast.success('✅ Sourate validée pour l\'élève (verte chez lui, points ajoutés)');
   };
 
   const confirmRelock = async () => {
@@ -323,10 +334,20 @@ const AdminSourateContent = () => {
     const { error } = await supabase.from('sourate_admin_unlocks').delete().eq('id', r.unlock.id);
     if (error) { toast.error('Erreur : la sourate est toujours débloquée'); return; }
     refetchUnlocks();
-    toast.success('Sourate reverrouillée (le déblocage est dans la corbeille)');
+    void refetchValidees();
+    toast.success('Validation annulée (elle est dans la corbeille de Paramètres)');
   };
 
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+  // Sourates que l'élève a validées LUI-MÊME (récitation acceptée, mode fantôme…) : affichées « ✅ Validée par l'élève »
+  const { data: valideesEleve = [], refetch: refetchValidees } = useQuery({
+    queryKey: ['admin-sourates-validees', selectedStudent],
+    enabled: !!selectedStudent,
+    queryFn: async () => {
+      const { data } = await supabase.from('user_sourate_progress').select('sourate_id').eq('user_id', selectedStudent!).eq('context', 'sourates').eq('is_validated', true);
+      return (data || []).map((d) => d.sourate_id);
+    },
+  });
 
   const chargerSourates = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-sourates-list'] });
@@ -368,14 +389,14 @@ const AdminSourateContent = () => {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-bold text-foreground">Gestion du contenu Sourates</h3>
-      <p className="text-sm text-muted-foreground">Ajoutez des fichiers, vidéos YouTube ou audio pour chaque sourate. Débloquez des sourates pour vos élèves.</p>
+      <p className="text-sm text-muted-foreground">Ajoutez des fichiers, vidéos YouTube ou audio pour chaque sourate. Validez des sourates pour vos élèves.</p>
 
       {/* Student unlock section */}
       <Card>
         <CardContent className="p-4 space-y-3">
           <h4 className="font-bold flex items-center gap-2">
             <Unlock className="h-4 w-4" />
-            Débloquer des sourates pour un élève
+            Valider des sourates pour un élève
           </h4>
           <select
             className="w-full p-2 border rounded-lg bg-background text-foreground"
@@ -391,13 +412,19 @@ const AdminSourateContent = () => {
             <div className="max-h-60 overflow-y-auto space-y-1">
               {sourates.map(s => {
                 const isUnlocked = unlocks.some(u => u.user_id === selectedStudent && u.sourate_id === s.id);
+                const parEleve = !isUnlocked && valideesEleve.includes(s.id);
                 return (
-                  <div key={s.id} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                    <span className="text-sm">{s.number}. {s.name_french}</span>
-                    <Button variant={isUnlocked ? 'default' : 'outline'} size="sm" onClick={() => toggleUnlock(selectedStudent, s.id, `${s.number}. ${s.name_french} — ${(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'Élève'}`)}>
-                      {isUnlocked ? <Unlock className="h-3 w-3 mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
-                      {isUnlocked ? 'Débloqué' : 'Débloquer'}
-                    </Button>
+                  <div key={s.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded">
+                    <span className="text-sm min-w-0 [overflow-wrap:anywhere]">{s.number}. {s.name_french}</span>
+                    {parEleve
+                      ? <span className="shrink-0 rounded-md bg-emerald-100 dark:bg-emerald-950/40 px-2 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">✅ Validée par l'élève</span>
+                      : (
+                        <Button variant={isUnlocked ? 'default' : 'outline'} size="sm" className={isUnlocked ? 'shrink-0 bg-emerald-600 hover:bg-emerald-700' : 'shrink-0'}
+                          onClick={() => toggleUnlock(selectedStudent, s.id, `${s.number}. ${s.name_french} — ${(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'Élève'}`)}>
+                          {isUnlocked ? <Unlock className="h-3 w-3 mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
+                          {isUnlocked ? '✅ Validée' : 'Valider'}
+                        </Button>
+                      )}
                   </div>
                 );
               })}
@@ -440,9 +467,21 @@ const AdminSourateContent = () => {
         open={!!toRelock}
         onOpenChange={(open) => !open && setToRelock(null)}
         onConfirm={confirmRelock}
-        title="Reverrouiller cette sourate ?"
-        description={toRelock ? `« ${toRelock.label} » ne sera plus débloquée à la main. Le déblocage ira dans la corbeille (Paramètres), d'où tu pourras le restaurer.` : ''}
+        title="Annuler la validation de cette sourate ?"
+        description={toRelock ? `« ${toRelock.label} » ne sera plus validée pour cet élève (ses points baissent de la même valeur). La validation ira dans la corbeille (Paramètres), d'où tu pourras la restaurer.` : ''}
       />
+      <AlertDialog open={!!toValidate} onOpenChange={(o) => !o && setToValidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Valider cette sourate ?</AlertDialogTitle>
+            <AlertDialogDescription className="[overflow-wrap:anywhere]">{toValidate ? `« ${toValidate.label} » sera validée comme si l'élève l'avait validée lui-même : verte sur son chemin et comptée dans ses points.` : ''}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmValidate()}>✅ Valider</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

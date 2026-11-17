@@ -66,17 +66,8 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
 
   const approveMutation = useMutation({
     mutationFn: async (request: PendingRequest) => {
-      const { error: updateError } = await supabase
-        .from('invocation_validation_requests')
-        .update({
-          status: 'approved',
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-        })
-        .eq('id', request.id);
-
-      if (updateError) throw updateError;
-
+      // 1) D'abord la validation chez l'élève, 2) ensuite seulement la demande « acceptée » (2026-11-17 : avant, la demande
+      //    passait « acceptée » même quand la validation était refusée par la base → invocation jamais validée, 0 point)
       // Validate the invocation progress
       const existing = await supabase
         .from('user_invocation_progress')
@@ -97,6 +88,17 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
           .insert({ user_id: request.user_id, invocation_id: request.invocation_id, is_validated: true, is_memorized: true });
         if (error) throw error;
       }
+
+      const { error: updateError } = await supabase
+        .from('invocation_validation_requests')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+        })
+        .eq('id', request.id);
+
+      if (updateError) throw updateError;
 
       // Recalculate points
       await supabase.rpc('recalculate_student_points', { p_user_id: request.user_id });

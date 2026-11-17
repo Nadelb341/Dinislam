@@ -222,7 +222,7 @@ const SouratesPage = () => {
   }, [user, loadAll]);
 
   // 🔄 En direct : versets cochés (autre appareil), déblocages de l'enseignante, sourates (sans écran de chargement)
-  useRealtimeRefresh(['user_sourate_verse_progress', 'sourate_admin_unlocks', 'sourates'], () => { void loadAll(true); }, !!user);
+  useRealtimeRefresh(['user_sourate_progress', 'user_sourate_verse_progress', 'sourate_admin_unlocks', 'sourates'], () => { void loadAll(true); }, !!user);
 
   useEffect(() => {
     if (!user) return;
