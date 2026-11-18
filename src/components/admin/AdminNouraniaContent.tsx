@@ -11,7 +11,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminCommentaireLecon from './AdminCommentaireLecon';
-import ValiderLeconsNourania from './ValiderLeconsNourania';
+import ValiderPourEleve from './ValiderPourEleve';
 import { compressDocument } from '@/lib/compressImage';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
@@ -307,7 +307,8 @@ const AdminNouraniaContent = () => {
       </p>
 
       {/* ✅ Valider des leçons pour un élève (comme pour les sourates, 2026-11-17) : comptées dans le classement */}
-      <ValiderLeconsNourania lessons={lessons} profiles={profiles} />
+      <ValiderPourEleve genre="nourania" profiles={profiles}
+        elements={lessons.map((l) => ({ id: l.id, libelle: `Leçon ${l.lesson_number}${l.title_french ? ` – ${l.title_french}` : ''}` }))} />
 
       {/* Import en lot */}
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-2">

@@ -314,6 +314,19 @@ const AdminSourateContent = () => {
     if (existing) { setToRelock({ unlock: existing, label }); return; }
     setToValidate({ userId, sourateId, label });
   };
+  // ↩️ Invalider une sourate que l'élève a validée lui-même (Nadia, 2026-11-18) : elle redevient « à faire », ses points baissent
+  const [toInvalidate, setToInvalidate] = useState<{ sourateId: string; label: string } | null>(null);
+  const confirmInvalidate = async () => {
+    const v = toInvalidate;
+    setToInvalidate(null);
+    if (!v || !selectedStudent) return;
+    const { error } = await supabase.from('user_sourate_progress')
+      .update({ is_validated: false, is_memorized: false, progress_percentage: 0, validated_at: null })
+      .eq('user_id', selectedStudent).eq('sourate_id', v.sourateId).eq('context', 'sourates');
+    if (error) { toast.error('📡 La sourate n\'a pas été invalidée : vérifie ta connexion'); return; }
+    void refetchValidees();
+    toast.success('↩️ Sourate invalidée : elle est de nouveau à faire pour l\'élève');
+  };
   const confirmValidate = async () => {
     const v = toValidate;
     setToValidate(null);
@@ -417,7 +430,12 @@ const AdminSourateContent = () => {
                   <div key={s.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded">
                     <span className="text-sm min-w-0 [overflow-wrap:anywhere]">{s.number}. {s.name_french}</span>
                     {parEleve
-                      ? <span className="shrink-0 rounded-md bg-emerald-100 dark:bg-emerald-950/40 px-2 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">✅ Validée par l'élève</span>
+                      ? (
+                        <Button size="sm" variant="outline" className="shrink-0 border-emerald-300 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200"
+                          onClick={() => setToInvalidate({ sourateId: s.id, label: `${s.number}. ${s.name_french} — ${(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'Élève'}` })}>
+                          ✅ Validée par l'élève
+                        </Button>
+                      )
                       : (
                         <Button variant={isUnlocked ? 'default' : 'outline'} size="sm" className={isUnlocked ? 'shrink-0 bg-emerald-600 hover:bg-emerald-700' : 'shrink-0'}
                           onClick={() => toggleUnlock(selectedStudent, s.id, `${s.number}. ${s.name_french} — ${(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'Élève'}`)}>
@@ -470,6 +488,18 @@ const AdminSourateContent = () => {
         title="Annuler la validation de cette sourate ?"
         description={toRelock ? `« ${toRelock.label} » ne sera plus validée pour cet élève (ses points baissent de la même valeur). La validation ira dans la corbeille (Paramètres), d'où tu pourras la restaurer.` : ''}
       />
+      <AlertDialog open={!!toInvalidate} onOpenChange={(o) => !o && setToInvalidate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invalider cette sourate ?</AlertDialogTitle>
+            <AlertDialogDescription className="[overflow-wrap:anywhere]">{toInvalidate ? `« ${toInvalidate.label} » a été validée par l'élève. Elle redeviendra « à faire » sur son chemin (les sourates d'après se referment si elles ne sont pas validées) et ses points baissent de la même valeur.` : ''}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Garder validée</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void confirmInvalidate()}>↩️ Invalider</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!toValidate} onOpenChange={(o) => !o && setToValidate(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

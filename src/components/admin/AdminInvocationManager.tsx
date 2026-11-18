@@ -21,6 +21,7 @@ import {
   Sun, Moon, CloudMoon, Home, Church, Plane, Shirt, Bath, UtensilsCrossed, CloudRain, Heart, BedDouble, Droplets, PawPrint, Activity, Hand, BookOpen, ArrowLeft,
 } from 'lucide-react';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import ValiderPourEleve from './ValiderPourEleve';
 import { SortableCardList, withResequencedOrder } from '@/components/shared/SortableCardList';
 import { compressDocument } from '@/lib/compressImage';
 import { errorMessage } from '@/lib/utils';
@@ -97,6 +98,16 @@ const AdminInvocationManager = ({ onBack }: Props) => {
     queryKey: ['admin-invocations-full'],
     queryFn: async () => {
       const { data, error } = await supabase.from('invocations').select('*').order('display_order');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // ✅ Élèves pour « Valider des invocations pour un élève » (2026-11-18)
+  const { data: eleves = [] } = useQuery({
+    queryKey: ['admin-profiles-invocations'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('user_id, full_name, email').order('full_name', { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -288,6 +299,10 @@ const AdminInvocationManager = ({ onBack }: Props) => {
         <h2 className="text-xl font-bold text-foreground">Gestion des Invocations</h2>
         <p className="text-sm text-muted-foreground">Glissez-déposez pour réordonner. Cliquez sur 📷 pour changer l'image, sur 📁 pour ajouter du contenu.</p>
       </div>
+
+      {/* ✅ Valider / ↩️ invalider des invocations pour un élève (comme les sourates et Nourania, 2026-11-18) */}
+      <ValiderPourEleve genre="invocation" profiles={eleves}
+        elements={invocations.map((i) => ({ id: String(i.id), libelle: i.title_french || i.title_arabic || `Invocation ${i.id}` }))} />
 
       {isLoading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />)}</div>
