@@ -1,3 +1,5 @@
+import { ImageCadree } from '@/components/shared/ImageCadree';
+import { Cadreur } from '@/components/shared/Cadreur';
 import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +61,7 @@ const PrayerModuleCards = () => {
   const queryClient = useQueryClient();
   const [selectedCard, setSelectedCard] = useState<Tables<'prayer_cards'> | null>(null);
   const [editingCard, setEditingCard] = useState<Tables<'prayer_cards'> | null>(null);
+  const [aCadrer, setACadrer] = useState<Tables<'prayer_cards'> | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -259,7 +262,7 @@ const PrayerModuleCards = () => {
           >
             {card.image_url ? (
               <div className="aspect-[4/3] bg-muted">
-                <img src={card.image_url} alt={card.title} className="w-full h-full object-cover" />
+                <ImageCadree src={card.image_url} alt={card.title} cadrages={card.image_cadrage} emplacement="carte" className="w-full h-full" />
               </div>
             ) : (
               <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
@@ -274,11 +277,19 @@ const PrayerModuleCards = () => {
                 <button onClick={() => moveCard.mutate({ cardId: card.id, direction: 'up' })} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">↑</button>
                 <button onClick={() => moveCard.mutate({ cardId: card.id, direction: 'down' })} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">↓</button>
                 <button onClick={() => { setEditingCard(card); setEditTitle(card.title); }} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"><Edit2 className="h-3 w-3 inline" /></button>
+                {card.image_url && <button onClick={() => setACadrer(card)} aria-label="Cadrer la photo" className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">📐</button>}
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {/* 📐 Cadrer la photo d'une carte (2026-11-18) */}
+      {aCadrer?.image_url && (
+        <Cadreur open onClose={() => setACadrer(null)} src={aCadrer.image_url} table="prayer_cards" id={aCadrer.id} valeur={aCadrer.image_cadrage}
+          emplacements={[{ cle: 'carte', nom: 'Carte', classeCadre: 'w-56 max-w-full aspect-[4/3] rounded-xl' }]}
+          onEnregistre={() => queryClient.invalidateQueries({ queryKey: ['prayer-cards'] })} />
+      )}
 
       {/* Card detail dialog */}
       <Dialog open={!!selectedCard} onOpenChange={(open) => !open && setSelectedCard(null)}>

@@ -633,6 +633,7 @@ export type Database = {
           display_order: number | null
           explanation: string | null
           id: number
+          image_cadrage: Json | null
           image_url: string | null
           name_arabic: string
           name_french: string
@@ -644,6 +645,7 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           id?: number
+          image_cadrage?: Json | null
           image_url?: string | null
           name_arabic: string
           name_french: string
@@ -655,6 +657,7 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           id?: number
+          image_cadrage?: Json | null
           image_url?: string | null
           name_arabic?: string
           name_french?: string
@@ -2997,6 +3000,7 @@ export type Database = {
           display_order: number | null
           group_key: string | null
           id: string
+          image_cadrage: Json | null
           image_url: string | null
           is_locked: boolean | null
           title: string | null
@@ -3009,6 +3013,7 @@ export type Database = {
           display_order?: number | null
           group_key?: string | null
           id?: string
+          image_cadrage?: Json | null
           image_url?: string | null
           is_locked?: boolean | null
           title?: string | null
@@ -3021,6 +3026,7 @@ export type Database = {
           display_order?: number | null
           group_key?: string | null
           id?: string
+          image_cadrage?: Json | null
           image_url?: string | null
           is_locked?: boolean | null
           title?: string | null

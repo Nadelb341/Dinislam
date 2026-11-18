@@ -10,6 +10,7 @@ import { datesRetenues } from "../_shared/ramadanDates.ts";
  *  - relance : 2 jours après l'envoi, ceux qui n'ont pas touché « J'ai lu » reçoivent un petit rappel (une seule fois : relance_le).
  * ⏳ Gagner du temps (choix de Nadia du 11/11)
  *  - le MARDI à partir de 18 h : « 🤖 Les devoirs de la semaine sont prêts » (pré-remplis élève par élève, à relire puis donner).
+ *  - les tâches « À faire » cochées depuis plus de 30 jours → corbeille de Paramètres (règle « coché en bas 1 mois ») ;
  *  Une seule fois par semaine : table taches_auto_journal.
  */
 serve(async () => {
@@ -74,6 +75,22 @@ serve(async () => {
       }
     }
     bilan.carnet_corbeille_14_mois = ranges;
+
+    // ✅⬇️ Règle commune « coché = en bas 1 mois, puis corbeille » (2026-11-12, appliquée à Dinislam le 2026-11-18) :
+    // une tâche « À faire » de l'enseignante cochée depuis plus de 30 jours part dans la corbeille de Paramètres (copie complète,
+    // restaurable). Les lignes Nourania et les étapes des devoirs restent : c'est l'historique de l'élève (choix de Nadia).
+    const il30jours = new Date(Date.now() - 30 * 86400000).toISOString();
+    let tachesRangees = 0;
+    if (premierAdmin) {
+      const { data: faites } = await supabase.from('admin_tasks').select('*').eq('done', true).lt('done_at', il30jours).limit(50);
+      for (const t of faites || []) {
+        const { error: eT } = await supabase.from('trash_items').insert({ user_id: t.created_by || premierAdmin, item_type: 'admin_task', original_id: t.id, label: `✅ ${t.title} (cochée il y a plus d'un mois)`, item_data: t });
+        if (eT) { console.error('tâche corbeille', eT); continue; }
+        const { error: eD } = await supabase.from('admin_tasks').delete().eq('id', t.id);
+        if (eD) console.error('tâche effacement', eD); else tachesRangees++;
+      }
+    }
+    bilan.taches_cochees_corbeille = tachesRangees;
 
     // ⏳ Les rendez-vous du mardi (une fois par semaine)
     const p = parisNow();

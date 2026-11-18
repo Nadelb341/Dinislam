@@ -1,3 +1,4 @@
+import { Cadreur } from '@/components/shared/Cadreur';
 /**
  * AdminAllahNamesManager — Gestion admin des 99 Noms d'Allah
  * Design: Bleu profond & Ambre/Doré — selon capture
@@ -35,6 +36,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editingName, setEditingName] = useState<Tables<'allah_names'> | null>(null);
+  const [aCadrer, setACadrer] = useState<Tables<'allah_names'> | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState<{ nameId: number; type: string } | null>(null);
   const [mediaToDelete, setMediaToDelete] = useState<{ id: string; file_name: string | null } | null>(null);
@@ -253,6 +255,12 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
 
   return (
     <div className="space-y-4">
+      {/* 📐 Cadrer la photo d'un nom (2026-11-18) : carte de la liste et grande image */}
+      {aCadrer?.image_url && (
+        <Cadreur open onClose={() => setACadrer(null)} src={aCadrer.image_url} table="allah_names" id={aCadrer.id} valeur={aCadrer.image_cadrage}
+          emplacements={[{ cle: 'carte', nom: 'Carte (liste)', classeCadre: 'w-40 h-14 rounded-xl' }, { cle: 'detail', nom: 'Grande image', classeCadre: 'w-full h-40 rounded-2xl' }]}
+          onEnregistre={() => queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] })} />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -317,6 +325,10 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
                           <ImageIcon className="h-4 w-4 text-white" />
                         </label>
                       </div>
+                      {name.image_url && (
+                        <button type="button" onClick={() => setACadrer(name)} onPointerDown={(e) => e.stopPropagation()} aria-label="Cadrer la photo"
+                          className="shrink-0 rounded-lg border bg-card px-1.5 py-1 text-sm hover:bg-muted">📐</button>
+                      )}
 
                       {/* Name info */}
                       <div className="flex-1 min-w-0">

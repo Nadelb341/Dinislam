@@ -23,6 +23,7 @@ import { useSaisonActive } from '@/lib/saisons';
 import { DecorPages } from '@/components/saisons/DecorPages';
 import { TapisPromeneur } from '@/components/saisons/TapisPromeneur';
 import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
+import { BoutonRetour } from '@/components/layout/BoutonRetour';
 
 /** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
 function useCouleursSaison() {
@@ -82,6 +83,8 @@ const AppLayout = ({
           <SilentBoundary name="Numéro de téléphone"><NumeroPremiereConnexion /></SilentBoundary>
           <ComebackCelebration />
         </div>
+        {/* ⬅️ « ← Retour » en haut à gauche de chaque page (sauf l'accueil), règle commune du 2026-11-05 */}
+        <div className="px-4"><BoutonRetour /></div>
         {/* Filet par page : si une page plante, l'en-tête et le menu du bas restent utilisables */}
         <ErrorBoundary scope="page">{children}</ErrorBoundary>
       </main>

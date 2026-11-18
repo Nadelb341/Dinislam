@@ -1,3 +1,4 @@
+import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useState, useEffect } from 'react';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
 import { useConfetti } from '@/hooks/useConfetti';
@@ -279,11 +280,8 @@ const AllahNamesPage = () => {
 
                     {/* Image or decorative element */}
                     {name.image_url ? (
-                      <img
-                        src={name.image_url}
-                        alt={name.name_french}
-                        className="w-full h-14 object-cover rounded-xl mb-2 mt-12 opacity-80"
-                      />
+                      <ImageCadree src={name.image_url} alt={name.name_french} cadrages={name.image_cadrage} emplacement="carte"
+                        className="w-full h-14 rounded-xl mb-2 mt-12 opacity-80" />
                     ) : (
                       <div className="w-full flex items-center justify-center mt-12 mb-1">
                         <svg width="44" height="28" viewBox="0 0 44 28" fill="none" opacity={accessible ? 0.3 : 0.12}>
@@ -355,8 +353,8 @@ const AllahNamesPage = () => {
                 </span>
 
                 {selected.image_url && (
-                  <img src={selected.image_url} alt={selected.name_french}
-                    className="w-full h-40 object-cover rounded-2xl mb-4 opacity-90" />
+                  <ImageCadree src={selected.image_url} alt={selected.name_french} cadrages={selected.image_cadrage} emplacement="detail"
+                    className="w-full h-40 rounded-2xl mb-4 opacity-90" />
                 )}
 
                 <p className="font-arabic text-5xl font-bold leading-tight mb-3" style={{ color: 'hsl(0 0% 97%)' }}>
