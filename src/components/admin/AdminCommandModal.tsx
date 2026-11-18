@@ -42,7 +42,7 @@ interface AdminCommandModalProps {
   /** Exercices et demandes de validation d'Alphabet en attente */
   pendingAlphabet?: number;
   total: number;
-  /** Élèves qui n'arrivent pas à se connecter (pastille sur « Élèves ») */
+  /** Élèves qui n'arrivent pas à se connecter + liens parent à confirmer (pastille sur « Élèves », 2026-11-18) */
   pendingLoginTrouble?: number;
   /** Écran à ouvrir directement (ex. depuis la carte « À FAIRE ») */
   initialSection?: string;

@@ -145,7 +145,7 @@ export function ChoixEnfants({ nomParent, onOk }: { nomParent: string | null; on
     setBusy(false);
     if (error) { toast.error(errorMessage(error)); return; }
     sendPushNotification({ type: 'admin', category: 'adm_par', title: '👨‍👩‍👧 Lien parent à confirmer',
-      body: `${prenomDe(nomParent)} : ${choisis.map((c) => c.display).join(', ')}. Confirme-le dans la fiche de l'élève (⋮ › Parents et téléphones).`, data: { url: '/?admin=users' } });
+      body: `${prenomDe(nomParent)} : ${choisis.map((c) => c.display).join(', ')}. À confirmer dans le bouclier › Élèves (en rouge) › son nom › Parents et téléphones.`, data: { url: '/?admin=eleves' } });
     // 🔒 2026-11-07 : le lien doit être confirmé (par le professeur ou avec le code parents de l'enfant)
     toast.success(`📨 Demande envoyée pour ${choisis.map((c) => prenomDe(c.display)).join(' et ')}. Le professeur va la confirmer, ou tapez le code parents de l'enfant dans ⚙️ › Espace parents.`, { duration: 9000 });
     onOk();

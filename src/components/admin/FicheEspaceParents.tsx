@@ -65,7 +65,11 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
   const confirmerLien = async () => {
     if (!aConfirmer) return;
     const { error } = await supabase.from('parent_links').update({ confirme: true }).eq('parent_id', aConfirmer.parent_id).eq('child_id', aConfirmer.child_id);
-    if (error) toast.error(errorMessage(error)); else { toast.success('✅ Lien confirmé'); void rafraichir(); }
+    if (error) toast.error(errorMessage(error)); else {
+      toast.success('✅ Lien confirmé'); void rafraichir();
+      // Le chemin rouge s'éteint aussitôt (bouclier › Élèves › l'élève › Parents et téléphones)
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-breakdown'] }); queryClient.invalidateQueries({ queryKey: ['liens-parent-a-confirmer'] });
+    }
     setAConfirmer(null);
   };
 
@@ -127,16 +131,16 @@ export function FicheEspaceParents({ userId }: { userId: string }) {
       {(data.parents.length > 0 || data.enfants.length > 0 || p?.children_question) && (
         <div className="space-y-1.5 text-sm">
           {data.parents.map((l) => (
-            <div key={l.parent_id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5">
-              <span className="flex-1 [overflow-wrap:anywhere]">👤 Parent relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-amber-700">⏳ à confirmer</span>}</span>
-              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="text-xs font-bold text-emerald-700">✅ Confirmer</button>}
+            <div key={l.parent_id} className={`flex flex-wrap items-center gap-2 rounded-lg px-2.5 py-1.5 ${l.confirme ? 'bg-muted/40' : 'border-2 border-destructive bg-destructive/10'}`}>
+              <span className="flex-1 [overflow-wrap:anywhere]">👤 Parent relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-destructive">🔴 à confirmer</span>}</span>
+              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-white">✅ Confirmer</button>}
               <button type="button" onClick={() => setARetirer({ type: 'lien', id: l.parent_id, label: `Lien ${l.nom} → enfant`, data: { parent_id: l.parent_id, child_id: l.child_id } })} className="text-xs font-bold text-destructive">Retirer</button>
             </div>
           ))}
           {data.enfants.map((l) => (
-            <div key={l.child_id} className="flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-1.5">
-              <span className="flex-1 [overflow-wrap:anywhere]">🧒 Enfant relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-amber-700">⏳ à confirmer</span>}</span>
-              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="text-xs font-bold text-emerald-700">✅ Confirmer</button>}
+            <div key={l.child_id} className={`flex flex-wrap items-center gap-2 rounded-lg px-2.5 py-1.5 ${l.confirme ? 'bg-muted/40' : 'border-2 border-destructive bg-destructive/10'}`}>
+              <span className="flex-1 [overflow-wrap:anywhere]">🧒 Enfant relié : <b>{l.nom}</b>{!l.confirme && <span className="ml-1 text-xs font-bold text-destructive">🔴 à confirmer</span>}</span>
+              {!l.confirme && <button type="button" onClick={() => setAConfirmer({ parent_id: l.parent_id, child_id: l.child_id, nom: l.nom })} className="rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-white">✅ Confirmer</button>}
               <button type="button" onClick={() => setARetirer({ type: 'lien', id: l.child_id, label: `Lien parent → ${l.nom}`, data: { parent_id: l.parent_id, child_id: l.child_id } })} className="text-xs font-bold text-destructive">Retirer</button>
             </div>
           ))}

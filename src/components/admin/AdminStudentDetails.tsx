@@ -19,7 +19,7 @@ import {
 import { Users,
   ArrowLeft, User, Search,
   Moon, Sparkles, BookOpen, Hand, BookMarked,
-  MessageSquare, MoreVertical, CalendarIcon, KeyRound, Eye, EyeOff,
+  MessageSquare, CalendarIcon, KeyRound, Eye, EyeOff,
   TrendingDown, Loader2, Trash2, Pencil,
 } from 'lucide-react';
 import {
@@ -121,6 +121,18 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   };
 
   const { data: noPush } = useQuery({ queryKey: ['admin-no-push-students-list'], queryFn: fetchNoPushStudents });
+  // 🔴 Chemin rouge (Nadia, 2026-11-18) : un parent a demandé à être relié à ses enfants → le parent ET les enfants en rouge,
+  // en tête de liste, et « Parents et téléphones » en rouge dans leur liste d'actions, jusqu'à la confirmation
+  const { data: liensAConfirmer } = useQuery({
+    queryKey: ['liens-parent-a-confirmer'],
+    queryFn: async () => {
+      const { data } = await supabase.from('parent_links').select('parent_id, child_id').eq('confirme', false);
+      const ids = new Map<string, number>();
+      for (const l of data || []) { ids.set(l.parent_id, (ids.get(l.parent_id) || 0) + 1); ids.set(l.child_id, (ids.get(l.child_id) || 0) + 1); }
+      return ids;
+    },
+  });
+  const lienAConfirmer = (id: string) => liensAConfirmer?.get(id) || 0;
   const { data: authStatus } = useQuery({
     queryKey: ['admin-students-auth-status'],
     queryFn: async () => {
@@ -260,7 +272,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
   const filteredStudents = students?.filter((s) =>
     s.email?.toLowerCase().includes(search.toLowerCase()) ||
     s.full_name?.toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => Number(hasLoginTrouble(b.user_id)) - Number(hasLoginTrouble(a.user_id)) || byName<{ full_name: string | null }>()(a, b));
+  ).sort((a, b) => Number(lienAConfirmer(b.user_id) > 0) - Number(lienAConfirmer(a.user_id) > 0) || Number(hasLoginTrouble(b.user_id)) - Number(hasLoginTrouble(a.user_id)) || byName<{ full_name: string | null }>()(a, b));
 
   // DOB helpers
   const handleDobInputChange = (value: string) => {
@@ -471,24 +483,28 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
 
       <div className="space-y-3">
         {filteredStudents?.map((student) => (
-          <Card key={student.user_id} className="hover:bg-muted/50 transition-colors">
+          <Card key={student.user_id} className={`hover:bg-muted/50 transition-colors ${lienAConfirmer(student.user_id) ? 'border-2 border-destructive' : ''}`}>
             <CardContent className="p-4 flex items-center justify-between">
-              <div
-                className="flex items-center gap-3 flex-1 cursor-pointer"
-                onClick={() => setSelectedStudent({ id: student.user_id, email: student.email || '', full_name: student.full_name })}
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-5 w-5 text-primary" />
+              {/* 👆 Toucher la carte = la liste d'actions de l'élève (Nadia, 2026-11-18 : plus de ⋮ à chercher) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+              <div role="button" tabIndex={0} aria-label={`Actions pour ${student.full_name || 'l\'élève'}`}
+                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer text-start outline-none">
+                <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${lienAConfirmer(student.user_id) ? 'bg-destructive text-white' : 'bg-primary/10'}`}>
+                  <User className={`h-5 w-5 ${lienAConfirmer(student.user_id) ? 'text-white' : 'text-primary'}`} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-foreground [overflow-wrap:anywhere]">{student.full_name || 'Élève'}</p>
+                  {lienAConfirmer(student.user_id) > 0 && (
+                    <span className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-bold bg-destructive text-destructive-foreground">👨‍👩‍👧 Lien parent à confirmer</span>
+                  )}
                   {noPush?.all.has(student.user_id) && (
                     <span className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200">
                       🔕 Ne reçoit pas les notifications
                     </span>
                   )}
                   {authStatus?.get(student.user_id)?.email_confirmed === false && (
-                    <UnconfirmedEmailBadge userId={student.user_id} name={student.full_name || "l'élève"} />
+                    <span onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}><UnconfirmedEmailBadge userId={student.user_id} name={student.full_name || "l'élève"} /></span>
                   )}
                   {(() => {
                     const st = authStatus?.get(student.user_id);
@@ -496,6 +512,7 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                     return hasLoginTrouble(student.user_id) ? (
                       <button
                         type="button"
+                        onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); openPasswordDialog(student); }}
                         className="inline-flex items-center gap-1 mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-start bg-destructive text-destructive-foreground"
                       >
@@ -511,11 +528,8 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                   )}
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm"><MoreVertical className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="z-[600]">
+                <DropdownMenuContent align="start" className="z-[600]">
                   <DropdownMenuItem onClick={() => setSelectedStudent({ id: student.user_id, email: student.email || '', full_name: student.full_name })}>
                     <BookOpen className="h-4 w-4 mr-2" /> Voir la progression
                   </DropdownMenuItem>
@@ -533,8 +547,10 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
                     <CalendarIcon className="h-4 w-4 mr-2" /> 📅 Changer Date Naissance
                   </DropdownMenuItem>
                   {/* 👨‍👩‍👧 Téléphones des parents, Espace parents, codes, parents reliés (2026-10-30 : avant, caché dans « Voir la progression ») */}
-                  <DropdownMenuItem onClick={() => setParentsEleve({ id: student.user_id, full_name: student.full_name })}>
+                  <DropdownMenuItem onClick={() => setParentsEleve({ id: student.user_id, full_name: student.full_name })}
+                    className={lienAConfirmer(student.user_id) ? 'bg-destructive text-destructive-foreground focus:bg-destructive/90 focus:text-destructive-foreground font-bold' : undefined}>
                     <Users className="h-4 w-4 mr-2" /> 👨‍👩‍👧 Parents et téléphones
+                    {lienAConfirmer(student.user_id) > 0 && <span className="ml-auto rounded-full bg-white px-1.5 text-xs font-bold text-destructive">{lienAConfirmer(student.user_id)}</span>}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => openPasswordDialog(student)}>
                     <KeyRound className="h-4 w-4 mr-2" /> 🔑 Modifier le mot de passe

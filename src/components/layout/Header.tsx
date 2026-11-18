@@ -194,7 +194,7 @@ const Header = ({
           pendingRecitations={pendingCounts.recitations}
           pendingAllahNames={pendingCounts.allahNames}
           pendingAlphabet={pendingCounts.alphabet}
-          pendingLoginTrouble={pendingCounts.loginTrouble}
+          pendingLoginTrouble={pendingCounts.loginTrouble + pendingCounts.parentLinks}
           total={pendingCounts.total}
         />
         </Suspense></SilentBoundary>
