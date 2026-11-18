@@ -99,15 +99,17 @@ export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
   const couleurRuban = (vers: number) => {
     const e = etats[vers];
     if (e?.validee) return '#e7bf55';
-    if (e?.ouverte) return '#8fa2e8';
-    return '#3a4573';
+    if (e?.ouverte) return '#a9bcff';
+    return '#4a5a96';
   };
 
   return (
-    <div ref={boite} className="relative w-full overflow-hidden rounded-3xl border border-[#c9a04a]/40 bg-gradient-to-b from-[#0f1736] via-[#16214b] to-[#1c2a5c] shadow-[inset_0_0_40px_rgba(0,0,0,0.35)]">
+    <div ref={boite} className="relative w-full overflow-hidden rounded-3xl border border-[#c9a04a]/40 bg-gradient-to-b from-[#17307a] via-[#1f43a3] to-[#2856c0] shadow-[inset_0_0_40px_rgba(0,0,0,0.22)]">
       <style>{`
         @keyframes np-halo { 0%,100% { filter: drop-shadow(0 0 5px rgba(240,200,100,.55)); transform: scale(1); } 50% { filter: drop-shadow(0 0 14px rgba(245,210,120,.9)); transform: scale(1.06); } }
         .np-en-cours { animation: np-halo 2.4s ease-in-out infinite; }
+        /* Leçon validée : plus lumineuse (Nadia, 2026-11-18) */
+        .np-validee { filter: drop-shadow(0 0 7px rgba(255,222,120,.95)) drop-shadow(0 0 16px rgba(255,205,90,.55)); }
         @keyframes np-scintille { 0%,100% { opacity: .25; } 50% { opacity: .9; } }
         .np-etoile { animation: np-scintille 3.2s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) { .np-en-cours, .np-etoile, .bulle-tu-es-ici { animation: none !important; } }
@@ -146,30 +148,30 @@ export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
               <button type="button" onClick={ouvrir} disabled={!e.ouverte}
                 aria-label={`Leçon ${lecon.lesson_number}${lecon.title_french ? ` : ${lecon.title_french}` : ''}${e.validee ? ', validée' : e.enAttente ? ', en attente de validation' : !e.ouverte ? ', verrouillée' : ''}`}
                 className={cn('relative grid place-items-center rounded-full transition-transform duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f3c86a]',
-                  e.ouverte && !e.validee && 'hover:scale-105', courante && 'np-en-cours', !e.ouverte && 'cursor-not-allowed')}
+                  e.ouverte && !e.validee && 'hover:scale-105', courante && 'np-en-cours', e.validee && 'np-validee', !e.ouverte && 'cursor-not-allowed')}
                 style={{ width: TAILLE, height: TAILLE }}>
                 <svg viewBox="0 0 66 66" className="absolute inset-0 h-full w-full" aria-hidden>
                   <defs>
-                    <linearGradient id={`npo${i}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ffe9a8" /><stop offset=".55" stopColor="#e0b23a" /><stop offset="1" stopColor="#b8891c" /></linearGradient>
-                    <linearGradient id={`npb${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2b3a7a" /><stop offset="1" stopColor="#141d45" /></linearGradient>
+                    <linearGradient id={`npo${i}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff6cf" /><stop offset=".5" stopColor="#f5cd55" /><stop offset="1" stopColor="#d9a521" /></linearGradient>
+                    <linearGradient id={`npb${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3f62cc" /><stop offset="1" stopColor="#21409a" /></linearGradient>
                   </defs>
                   {/* Étoile à 8 branches arrondie (deux carrés croisés), comme les motifs des livres de Nourania */}
                   {[0, 45].map((r) => (
                     <rect key={r} x="13" y="13" width="40" height="40" rx="7" transform={`rotate(${r} 33 33)`}
-                      fill={e.validee ? `url(#npo${i})` : e.ouverte ? `url(#npb${i})` : '#4a5276'}
+                      fill={e.validee ? `url(#npo${i})` : e.ouverte ? `url(#npb${i})` : '#5a6898'}
                       stroke={e.validee ? '#fff1bf' : e.ouverte ? '#e7bf55' : '#646c90'} strokeWidth={e.ouverte || e.validee ? 2.4 : 1.4} />
                   ))}
-                  <circle cx="33" cy="33" r="15" fill={e.validee ? '#f6d679' : e.ouverte ? '#1a2558' : '#565e82'} stroke={e.validee ? '#fff4cf' : e.ouverte ? '#e7bf55' : '#6d7598'} strokeWidth="1.2" />
+                  <circle cx="33" cy="33" r="15" fill={e.validee ? '#ffe28a' : e.ouverte ? '#1f3d94' : '#65729f'} stroke={e.validee ? '#fff4cf' : e.ouverte ? '#e7bf55' : '#6d7598'} strokeWidth="1.2" />
                 </svg>
-                <span className={cn('relative text-[15px] font-extrabold leading-none tabular-nums', e.validee ? 'text-[#6b4a00]' : e.ouverte ? 'text-[#f3d27a]' : 'text-[#a7aecb]')}>
+                <span className={cn('relative text-[15px] font-extrabold leading-none tabular-nums', e.validee ? 'text-[#6b4a00]' : e.ouverte ? 'text-[#ffe08a]' : 'text-[#e1e6f7]')}>
                   {e.validee ? <Check className="h-5 w-5" strokeWidth={3} /> : !e.ouverte ? <Lock className="h-4 w-4" /> : lecon.lesson_number}
                 </span>
                 {e.enAttente && !e.validee && (
                   <span aria-hidden className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full border border-[#e7bf55] bg-[#fff4d6] text-[11px]">⏳</span>
                 )}
               </button>
-              <span className={cn('mt-1.5 w-[104px] text-center text-[10px] font-medium leading-snug [overflow-wrap:break-word] [hyphens:none]', e.ouverte ? 'text-[#efe4c8]' : 'text-[#9aa2c2]')}>
-                <span className="font-bold text-[#f3c86a]">Leçon {lecon.lesson_number}</span>
+              <span className={cn('mt-1.5 w-[104px] text-center text-[10px] font-medium leading-snug [overflow-wrap:break-word] [hyphens:none]', e.ouverte ? 'text-[#f6efdc]' : 'text-[#c9d1ee]')}>
+                <span className="text-[13px] font-extrabold text-[#ffd86e]">Leçon {lecon.lesson_number}</span>
                 {lecon.title_french ? <><br />{lecon.title_french.replace(/^Leçon\s*\d+\s*[-–:]\s*/i, '')}</> : null}
               </span>
             </div>

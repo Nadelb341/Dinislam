@@ -57,6 +57,8 @@ interface InvocationDetailDialogProps {
   isRequestingValidation: boolean;
   /** 🎙️ Élève de moins de 20 ans : un audio de sa récitation est obligatoire pour demander la validation (Nadia, 2026-11-18) */
   audioObligatoire: boolean;
+  /** Compte admin : montre ce que voit un enfant (l'enregistreur), pour que Nadia sache où il est */
+  apercuAdmin: boolean;
 }
 
 const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
@@ -68,7 +70,7 @@ const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
   }
 };
 
-const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onRequestValidation, isRequestingValidation, audioObligatoire }: InvocationDetailDialogProps) => {
+const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onRequestValidation, isRequestingValidation, audioObligatoire, apercuAdmin }: InvocationDetailDialogProps) => {
   const [audio, setAudio] = useState<Blob | null>(null);
   const garderAudio = useCallback((b: Blob | null) => setAudio(b), []);
   const isValidated = progress?.is_validated ?? false;
@@ -248,6 +250,14 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 </Button>
               </div>
             ) : (
+              <div className="space-y-2">
+              {apercuAdmin && (
+                <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50/60 dark:bg-orange-950/20 p-2.5 text-xs text-orange-900 dark:text-orange-200 space-y-1">
+                  <p className="font-bold">👀 Ce que voit ici un élève de moins de 20 ans :</p>
+                  <p>🎙️ « Enregistre ta récitation » → réécouter / refaire → « Envoyer ma récitation ». Tu l'écoutes dans bouclier › Invocations à valider.</p>
+                  <p className="opacity-80">Toi et les élèves de 20 ans et plus, vous validez directement avec le bouton ci-dessous.</p>
+                </div>
+              )}
               <Button
                 className="w-full gap-2"
                 variant="outline"
@@ -255,8 +265,9 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 disabled={isRequestingValidation}
               >
                 <Send className="h-4 w-4" />
-                Demander la validation
+                Valider l'invocation
               </Button>
+              </div>
             )}
           </div>
         </div>
@@ -602,6 +613,7 @@ const Invocations = () => {
           onRequestValidation={(id, audio) => requestValidationMutation.mutate({ invocationId: id, audio })}
           isRequestingValidation={requestValidationMutation.isPending}
           audioObligatoire={!isAdmin && !isOver20}
+          apercuAdmin={isAdmin}
         />
       )}
     </AppLayout>
