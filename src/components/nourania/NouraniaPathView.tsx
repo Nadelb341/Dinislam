@@ -30,12 +30,14 @@ const DECORS: Decor[] = [
   { k: 'image', slug: 'hadiths' }, { k: 'compagnon', c: 'lune' },
 ];
 
-// Petites étoiles fixes dans le ciel (positions en fraction, toujours les mêmes)
-const ETOILES = Array.from({ length: 34 }, (_, i) => ({
-  x: ((i * 37) % 97) / 100 + 0.015,
-  y: ((i * 53) % 101) / 101,
-  r: i % 5 === 0 ? 1.6 : i % 3 === 0 ? 1.2 : 0.8,
-  d: (i % 7) * 0.6,
+// Petites étoiles du ciel (Nadia, 2026-11-19 : « un peu partout, et qu'elles brillent un peu plus ») :
+// toujours aux mêmes places (pas de hasard), environ une tous les 18 px de hauteur ; 1 sur 6 = éclat à 4 branches
+const etoilesDuCiel = (n: number) => Array.from({ length: n }, (_, i) => ({
+  x: ((i * 37 + 11) % 97) / 100 + 0.015,
+  y: ((i * 53 + 7) % 211) / 211 * 0.33 + Math.floor(i / Math.max(1, Math.ceil(n / 3))) / 3,
+  r: i % 5 === 0 ? 2 : i % 3 === 0 ? 1.5 : 1.1,
+  eclat: i % 6 === 0,
+  d: (i % 9) * 0.45,
 }));
 
 export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
@@ -83,6 +85,7 @@ export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
 
   const rangees = Math.ceil(lessons.length / PAR_RANGEE);
   const hauteur = MARGE_HAUT + Math.max(0, rangees - 1) * HAUT_RANGEE + 120;
+  const ciel = useMemo(() => etoilesDuCiel(Math.max(40, Math.round(hauteur / 18))), [hauteur]);
 
   // Un décor dans le creux de chaque virage (côté opposé à la courbe), entre le nom d'une rangée et l'étoile de la suivante.
   // Pas de décor quand la leçon en cours est juste en dessous (sa bulle « Tu es ici » passerait dessus).
@@ -109,16 +112,22 @@ export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
         @keyframes np-halo { 0%,100% { filter: drop-shadow(0 0 5px rgba(240,200,100,.55)); transform: scale(1); } 50% { filter: drop-shadow(0 0 14px rgba(245,210,120,.9)); transform: scale(1.06); } }
         .np-en-cours { animation: np-halo 2.4s ease-in-out infinite; }
         /* Leçon validée : plus lumineuse (Nadia, 2026-11-18) */
-        .np-validee { filter: drop-shadow(0 0 7px rgba(255,222,120,.95)) drop-shadow(0 0 16px rgba(255,205,90,.55)); }
-        @keyframes np-scintille { 0%,100% { opacity: .25; } 50% { opacity: .9; } }
-        .np-etoile { animation: np-scintille 3.2s ease-in-out infinite; }
+        .np-validee { filter: drop-shadow(0 0 8px rgba(255,226,130,1)) drop-shadow(0 0 20px rgba(255,205,90,.7)); }
+        /* Toutes les étoiles ouvertes sont dorées et illuminées (Nadia, 2026-11-19) ; la validée brille encore plus */
+        .np-ouverte { filter: drop-shadow(0 0 5px rgba(255,220,120,.8)) drop-shadow(0 0 12px rgba(255,205,90,.4)); }
+        @keyframes np-scintille { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+        .np-etoile { animation: np-scintille 2.8s ease-in-out infinite; filter: drop-shadow(0 0 2.5px rgba(255,240,190,.95)); }
+        .np-eclat { filter: drop-shadow(0 0 4px rgba(255,236,170,1)); }
         @media (prefers-reduced-motion: reduce) { .np-en-cours, .np-etoile, .bulle-tu-es-ici { animation: none !important; } }
       `}</style>
       <div className="relative mx-auto" style={{ width: W, height: hauteur }}>
         {/* Ciel étoilé + ruban */}
         <svg className="pointer-events-none absolute inset-0" width={W} height={hauteur} viewBox={`0 0 ${W} ${hauteur}`} fill="none" aria-hidden>
-          {ETOILES.map((e, i) => (
-            <circle key={i} className="np-etoile" cx={e.x * W} cy={e.y * hauteur} r={e.r} fill="#fff3c4" style={{ animationDelay: `${-e.d}s` }} />
+          {ciel.map((e, i) => e.eclat ? (
+            <path key={i} className="np-etoile np-eclat" fill="#fff6d0" style={{ animationDelay: `${-e.d}s` }}
+              d={`M${e.x * W} ${e.y * hauteur - 5}Q${e.x * W + 1} ${e.y * hauteur - 1} ${e.x * W + 5} ${e.y * hauteur}Q${e.x * W + 1} ${e.y * hauteur + 1} ${e.x * W} ${e.y * hauteur + 5}Q${e.x * W - 1} ${e.y * hauteur + 1} ${e.x * W - 5} ${e.y * hauteur}Q${e.x * W - 1} ${e.y * hauteur - 1} ${e.x * W} ${e.y * hauteur - 5}Z`} />
+          ) : (
+            <circle key={i} className="np-etoile" cx={e.x * W} cy={e.y * hauteur} r={e.r} fill="#fff6d0" style={{ animationDelay: `${-e.d}s` }} />
           ))}
           {segments.map((s, i) => <path key={`o${i}`} d={s.d} stroke="#000" strokeOpacity={0.25} strokeWidth={RUBAN + 4} strokeLinecap="round" />)}
           {segments.map((s, i) => <path key={`r${i}`} d={s.d} stroke={couleurRuban(s.vers)} strokeWidth={RUBAN} strokeLinecap="round" opacity={0.85} />)}
@@ -148,22 +157,21 @@ export default function NouraniaPathView({ lessons, etat, onLessonClick }: {
               <button type="button" onClick={ouvrir} disabled={!e.ouverte}
                 aria-label={`Leçon ${lecon.lesson_number}${lecon.title_french ? ` : ${lecon.title_french}` : ''}${e.validee ? ', validée' : e.enAttente ? ', en attente de validation' : !e.ouverte ? ', verrouillée' : ''}`}
                 className={cn('relative grid place-items-center rounded-full transition-transform duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f3c86a]',
-                  e.ouverte && !e.validee && 'hover:scale-105', courante && 'np-en-cours', e.validee && 'np-validee', !e.ouverte && 'cursor-not-allowed')}
+                  e.ouverte && !e.validee && 'hover:scale-105', courante && 'np-en-cours', e.validee ? 'np-validee' : e.ouverte && !courante && 'np-ouverte', !e.ouverte && 'cursor-not-allowed')}
                 style={{ width: TAILLE, height: TAILLE }}>
                 <svg viewBox="0 0 66 66" className="absolute inset-0 h-full w-full" aria-hidden>
                   <defs>
                     <linearGradient id={`npo${i}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff6cf" /><stop offset=".5" stopColor="#f5cd55" /><stop offset="1" stopColor="#d9a521" /></linearGradient>
-                    <linearGradient id={`npb${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3f62cc" /><stop offset="1" stopColor="#21409a" /></linearGradient>
                   </defs>
                   {/* Étoile à 8 branches arrondie (deux carrés croisés), comme les motifs des livres de Nourania */}
                   {[0, 45].map((r) => (
                     <rect key={r} x="13" y="13" width="40" height="40" rx="7" transform={`rotate(${r} 33 33)`}
-                      fill={e.validee ? `url(#npo${i})` : e.ouverte ? `url(#npb${i})` : '#5a6898'}
-                      stroke={e.validee ? '#fff1bf' : e.ouverte ? '#e7bf55' : '#646c90'} strokeWidth={e.ouverte || e.validee ? 2.4 : 1.4} />
+                      fill={e.ouverte || e.validee ? `url(#npo${i})` : '#a89a6c'}
+                      stroke={e.validee || e.ouverte ? '#fff1bf' : '#d8cba0'} strokeWidth={e.ouverte || e.validee ? 2.4 : 1.4} opacity={e.ouverte || e.validee ? 1 : 0.6} />
                   ))}
-                  <circle cx="33" cy="33" r="15" fill={e.validee ? '#ffe28a' : e.ouverte ? '#1f3d94' : '#65729f'} stroke={e.validee ? '#fff4cf' : e.ouverte ? '#e7bf55' : '#6d7598'} strokeWidth="1.2" />
+                  <circle cx="33" cy="33" r="15" fill={e.validee || e.ouverte ? '#ffe28a' : '#b8ab80'} opacity={e.ouverte || e.validee ? 1 : 0.6} stroke={e.validee || e.ouverte ? '#fff4cf' : '#d8cba0'} strokeWidth="1.2" />
                 </svg>
-                <span className={cn('relative text-[15px] font-extrabold leading-none tabular-nums', e.validee ? 'text-[#6b4a00]' : e.ouverte ? 'text-[#ffe08a]' : 'text-[#e1e6f7]')}>
+                <span className={cn('relative text-[15px] font-extrabold leading-none tabular-nums', e.validee ? 'text-[#6b4a00]' : e.ouverte ? 'text-[#6b4a00]' : 'text-[#f4f0e2]')}>
                   {e.validee ? <Check className="h-5 w-5" strokeWidth={3} /> : !e.ouverte ? <Lock className="h-4 w-4" /> : lecon.lesson_number}
                 </span>
                 {e.enAttente && !e.validee && (
