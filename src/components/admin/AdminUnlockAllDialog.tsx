@@ -1,3 +1,4 @@
+import { sendPushNotification } from '@/lib/pushHelper';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +19,15 @@ const MODULE_LABELS: Record<string, string> = {
   invocations: 'toutes les invocations',
   'allah-names': 'les 99 Noms d\'Allah',
   alphabet: 'l\'Alphabet (les 28 lettres ouvertes, sans les marquer comme apprises)',
+};
+
+// 🔓 Nom de la carte et lien, pour prévenir l'élève (Nadia, 2026-11-18, idée 11)
+const CARTE_OUVERTE: Record<Props['moduleType'], { nom: string; url: string }> = {
+  sourates: { nom: 'Sourates', url: '/sourates' },
+  nourania: { nom: 'Nourania', url: '/nourania' },
+  invocations: { nom: 'Invocations', url: '/invocations' },
+  'allah-names': { nom: '99 Noms d\'Allah', url: '/allah-names' },
+  alphabet: { nom: 'Alphabet', url: '/alphabet' },
 };
 
 const AdminUnlockAllDialog = ({ moduleType }: Props) => {
@@ -252,6 +262,10 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
       const parts = [];
       if (toUnlock.length > 0) parts.push(`${toUnlock.length} élève(s) déverrouillé(s)`);
       if (toLock.length > 0) parts.push(`${toLock.length} élève(s) remis en mode normal`);
+      if (toUnlock.length > 0) {
+        const c = CARTE_OUVERTE[moduleType];
+        sendPushNotification({ title: `🔓 {prenom}, toute la carte ${c.nom} est ouverte pour toi !`, body: 'Tu peux maintenant tout voir et avancer à ton rythme ✨', category: 'lesson', type: 'user', userIds: toUnlock, data: { url: c.url } });
+      }
       toast.success(`✅ ${parts.join(' · ')}`);
       setOpen(false);
     },

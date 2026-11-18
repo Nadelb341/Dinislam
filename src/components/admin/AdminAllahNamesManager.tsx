@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { Cadreur } from '@/components/shared/Cadreur';
 /**
  * AdminAllahNamesManager — Gestion admin des 99 Noms d'Allah
@@ -108,6 +109,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
         const maxOrder = names.reduce((max: number, n) => Math.max(max, n.display_order ?? 0), 0);
         const { error } = await supabase.from('allah_names').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
+        void prevenirNouveauContenu({ carte: { chemin: '/allah-names' }, quoi: `Un nouveau nom : ${formNameFr.trim()}`, url: '/allah-names' });
       }
     },
     onSuccess: () => {
@@ -194,9 +196,10 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-allah-name-media'] });
       queryClient.invalidateQueries({ queryKey: ['allah-name-media', nameId] });
       toast.success(`${type === 'video' ? 'Vidéo' : type === 'audio' ? 'Audio' : 'PDF'} mis à jour ✅`);
+      { const nom = names.find((n) => n.id === nameId); void prevenirNouveauContenu({ carte: { chemin: '/allah-names' }, quoi: `${nom?.name_french || 'Un nom'} : ${type === 'video' ? 'une nouvelle vidéo' : type === 'audio' ? 'un nouvel audio' : 'un nouveau document'}`, url: `/allah-names?item=${nameId}` }); }
     } catch (e) { toast.error(errorMessage(e)); }
     finally { setUploadingMedia(null); }
-  }, [queryClient, allMedia, user]);
+  }, [queryClient, allMedia, user, names]);
 
   useEditDraftResume('dinislam_allah_name', names, (n) => openEdit(n));
 

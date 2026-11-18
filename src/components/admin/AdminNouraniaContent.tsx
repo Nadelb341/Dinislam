@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -171,9 +172,10 @@ const AdminNouraniaContent = () => {
       await refetchContents();
       const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Fichier envoyé à ${studentName} ✅` : 'Fichier téléversé ✅');
+      { const lec = lessons.find((l) => l.id === lessonId); void prevenirNouveauContenu({ carte: { chemin: '/nourania' }, quoi: `Leçon ${lec?.lesson_number ?? ''} : un nouveau fichier`, url: `/nourania?item=${lessonId}`, eleveId: targetUserId }); }
     } catch (error) { console.error('Upload error:', error); }
     finally { setIsUploading(false); }
-  }, [user, contents, profiles, refetchContents]);
+  }, [user, contents, profiles, lessons, refetchContents]);
 
   const handleAddYoutube = useCallback(async (lessonId: string, embedUrl: string, targetUserId?: string) => {
     if (!user?.id) return;
@@ -190,9 +192,10 @@ const AdminNouraniaContent = () => {
       await refetchContents();
       const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Lien envoyé à ${studentName} ✅` : 'Lien YouTube ajouté ✅');
+      { const lec = lessons.find((l) => l.id === lessonId); void prevenirNouveauContenu({ carte: { chemin: '/nourania' }, quoi: `Leçon ${lec?.lesson_number ?? ''} : une nouvelle vidéo`, url: `/nourania?item=${lessonId}`, eleveId: targetUserId }); }
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
-  }, [user, contents, profiles, refetchContents]);
+  }, [user, contents, profiles, lessons, refetchContents]);
 
   const handleUploadAudio = useCallback(async (lessonId: string, file: File, targetUserId?: string) => {
     if (!user?.id) { toast.error('Vous devez être connecté'); return; }
@@ -215,9 +218,10 @@ const AdminNouraniaContent = () => {
       await refetchContents();
       const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Audio envoyé à ${studentName} ✅` : 'Audio téléversé ✅');
+      { const lec = lessons.find((l) => l.id === lessonId); void prevenirNouveauContenu({ carte: { chemin: '/nourania' }, quoi: `Leçon ${lec?.lesson_number ?? ''} : un nouvel audio`, url: `/nourania?item=${lessonId}`, eleveId: targetUserId }); }
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
-  }, [user, contents, profiles, refetchContents]);
+  }, [user, contents, profiles, lessons, refetchContents]);
 
   const updateTitleMutation = useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {

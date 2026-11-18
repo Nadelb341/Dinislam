@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { useState, useCallback } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -140,6 +141,7 @@ const AdminInvocationManager = ({ onBack }: Props) => {
         const maxOrder = invocations.reduce((max: number, inv) => Math.max(max, inv.display_order ?? 0), -1);
         const { error } = await supabase.from('invocations').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
+        void prevenirNouveauContenu({ carte: { chemin: '/invocations' }, quoi: `Une nouvelle invocation : ${formTitle.trim()}`, url: '/invocations' });
       }
     },
     onSuccess: () => {
@@ -231,13 +233,15 @@ const AdminInvocationManager = ({ onBack }: Props) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invocation-contents-full'] });
       queryClient.invalidateQueries({ queryKey: ['invocation-contents-all'] });
       toast.success(`${files.length} fichier(s) téléversé(s) ✅`);
+      // Un seul message pour tout le lot de fichiers
+      { const inv = invocations.find((x) => x.id === invocationId); void prevenirNouveauContenu({ carte: { chemin: '/invocations' }, quoi: `${inv?.title_french || 'Une invocation'} : ${files.length > 1 ? 'de nouveaux contenus' : 'un nouveau contenu'}`, url: `/invocations?item=${invocationId}` }); }
     } catch (e) {
       toast.error(errorMessage(e) || 'Erreur upload');
     } finally {
       setIsUploading(false);
       setUploadingInvId(null);
     }
-  }, [user, contents, queryClient]);
+  }, [user, contents, invocations, queryClient]);
 
   // Upload image for invocation card
   const handleUploadImage = useCallback(async (invocationId: number, file: File) => {

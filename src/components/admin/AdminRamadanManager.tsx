@@ -1,3 +1,5 @@
+import { sendPushNotification } from '@/lib/pushHelper';
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useState, useRef, useEffect } from 'react';
@@ -549,6 +551,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-days-manager'] });
       queryClient.invalidateQueries({ queryKey: ['ramadan-days'] });
       toast({ title: newLocked ? `🔒 Jour ${dayNum} verrouillé pour tous les élèves` : `🔓 Jour ${dayNum} déverrouillé pour tous les élèves` });
+      if (!newLocked) void prevenirNouveauContenu({ carte: { chemin: '/ramadan' }, quoi: `🔓 Le jour ${dayNum ?? ''} est ouvert : il`, url: '/ramadan' });
     },
   });
 
@@ -558,9 +561,12 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
       const { error } = await supabase.from('ramadan_day_exceptions').upsert({ user_id: userId, day_id: dayId, is_unlocked: true }, { onConflict: 'user_id,day_id' });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, { userId, dayId }) => {
       queryClient.invalidateQueries({ queryKey: ['admin-ramadan-day-exceptions'] });
       toast({ title: 'Jour déverrouillé pour cet élève' });
+      // 🌙 L'élève est prévenu (Nadia, 2026-11-18, idée 12)
+      const jour = days.find((d) => d.id === dayId)?.day_number;
+      sendPushNotification({ title: `🌙 {prenom}, le jour ${jour ?? ''} du Ramadan est ouvert pour toi !`, body: 'Il t\'attend dans la carte Ramadan ✨', category: 'lesson', type: 'user', userId, data: { url: '/ramadan' } });
       setSelectedStudentForException('');
     },
   });

@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { Cadreur } from '@/components/shared/Cadreur';
@@ -160,7 +161,10 @@ const PrayerModuleCards = () => {
       });
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['prayer-card-content', selectedCard?.id] }); toast.success('Fichier ajouté !'); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prayer-card-content', selectedCard?.id] }); toast.success('Fichier ajouté !');
+      void prevenirNouveauContenu({ carte: { chemin: '/priere' }, quoi: `${selectedCard?.title || 'Une carte'} : un nouveau contenu` });
+    },
     onError: () => toast.error('Erreur lors de l\'upload'),
   });
 

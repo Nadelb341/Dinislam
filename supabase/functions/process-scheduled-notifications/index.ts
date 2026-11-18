@@ -287,23 +287,28 @@ serve(async (req) => {
       }
     }
 
-    // 📝 20 h : « Ce qu'on a vu » envoyé aux élèves notés absents (seulement si l'enseignante l'a écrit)
+    // 📝 20 h : « Ce qu'on a vu » envoyé à TOUS les élèves du groupe (seulement si l'enseignante l'a écrit).
+    // Absents : « Tu n'étais pas là… » ; présents (Nadia, 2026-11-18, idée 15) : un récapitulatif pour réviser.
     let vuEnvoye = 0;
     if (currTotal >= 20 * 60 && currTotal < 20 * 60 + 5) {
       const { data: sessions } = await supabase.from('group_sessions').select('id, group_id, session_date, seen').eq('session_date', today).is('seen_sent_at', null).not('seen', 'is', null);
       for (const se of (sessions ?? []) as { id: string; group_id: string; session_date: string; seen: string }[]) {
         if (!se.seen?.trim()) continue;
         const { data: membres } = await supabase.from('student_group_members').select('user_id').eq('group_id', se.group_id);
-        const ids = (membres ?? []).map((x: { user_id: string }) => x.user_id);
+        const ids = [...new Set((membres ?? []).map((x: { user_id: string }) => x.user_id))];
         const { data: absents } = ids.length
           ? await supabase.from('attendance_records').select('user_id').eq('date', today).in('status', ['absent', 'justified']).in('user_id', ids)
           : { data: [] };
-        for (const a of (absents ?? []) as { user_id: string }[]) {
-          const texte = `📖 Tu n'étais pas là aujourd'hui, voici ce qu'on a vu en cours :\n${se.seen.trim()}\nN'hésite pas à poser tes questions à ton professeur 😊`;
-          const { error: mErr } = await supabase.from('user_messages').insert({ user_id: a.user_id, message: texte, sender_type: 'admin', message_type: 'text' });
-          if (mErr) { console.error('Ce qu\'on a vu : message non enregistré', a.user_id, mErr); continue; }
+        const absentsIds = new Set((absents ?? []).map((a: { user_id: string }) => a.user_id));
+        for (const uid of ids) {
+          const absent = absentsIds.has(uid);
+          const texte = absent
+            ? `📖 Tu n'étais pas là aujourd'hui, voici ce qu'on a vu en cours :\n${se.seen.trim()}\nN'hésite pas à poser tes questions à ton professeur 😊`
+            : `📖 Voici ce qu'on a vu en cours aujourd'hui :\n${se.seen.trim()}\nPense à le réviser à la maison 😊`;
+          const { error: mErr } = await supabase.from('user_messages').insert({ user_id: uid, message: texte, sender_type: 'admin', message_type: 'text' });
+          if (mErr) { console.error('Ce qu\'on a vu : message non enregistré', uid, mErr); continue; }
           try {
-            await sendPushInternal({ userId: a.user_id, title: "📖 {prenom}, voici ce qu'on a vu en cours", body: se.seen.trim().substring(0, 100), type: 'cours_vu', category: 'msg', data: { url: '/?open=messages' } });
+            await sendPushInternal({ userId: uid, title: absent ? "📖 {prenom}, voici ce qu'on a vu en cours" : "📖 {prenom}, ce qu'on a vu aujourd'hui", body: se.seen.trim().substring(0, 100), type: 'cours_vu', category: 'msg', data: { url: '/?open=messages' } });
           } catch (e) { console.error(e); }
           vuEnvoye++;
         }

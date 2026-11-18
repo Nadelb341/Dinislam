@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -71,6 +72,7 @@ export function AlphabetLetterResources({ letterId, contents, isAdmin }: { lette
     if (error) throw error;
     await refresh();
     toast.success('Ressource ajoutée ✅');
+    void prevenirNouveauContenu({ carte: { chemin: '/alphabet' }, quoi: 'Une nouvelle ressource pour une lettre', url: `/alphabet?item=${letterId}` });
   };
 
   const uploadFile = async (file: File, contentType: 'fichier' | 'audio') => {

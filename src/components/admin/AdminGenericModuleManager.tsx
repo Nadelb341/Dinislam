@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 /**
  * AdminGenericModuleManager — Gestionnaire admin de cartes pour tous les modules génériques
  * (Vocabulaire, Darija, Dictionnaire, Dhikr, Histoires prophètes, Hadiths, Grammaire, 99 Noms, Alphabet, etc.)
@@ -106,6 +107,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
         const maxOrder = cards.reduce((max: number, c) => Math.max(max, c.display_order ?? 0), -1);
         const { error } = await supabase.from('module_cards').insert({ ...payload, display_order: maxOrder + 1 });
         if (error) throw error;
+        void prevenirNouveauContenu({ carte: { moduleId }, quoi: `Une nouvelle fiche : ${formTitle.trim()}` });
       }
     },
     onSuccess: () => {
@@ -192,6 +194,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
       toast.success('Contenu ajouté ✅');
+      { const c = cards.find((x) => x.id === cardId); void prevenirNouveauContenu({ carte: { moduleId }, quoi: `${c?.title || 'Une fiche'} : ${contentType === 'audio' ? 'un nouvel audio' : 'un nouveau contenu'}` }); }
 
       // Génération automatique des flashcards en arrière-plan
       const card = cards.find((c) => c.id === cardId);
@@ -239,6 +242,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       queryClient.invalidateQueries({ queryKey: ['admin-module-card-contents', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-card-contents', moduleId] });
       toast.success('Lien YouTube ajouté ✅');
+      { const c = cards.find((x) => x.id === cardId); void prevenirNouveauContenu({ carte: { moduleId }, quoi: `${c?.title || 'Une fiche'} : ${'une nouvelle vidéo'}` }); }
 
       // Génération automatique des flashcards en arrière-plan
       const card = cards.find((c) => c.id === cardId);

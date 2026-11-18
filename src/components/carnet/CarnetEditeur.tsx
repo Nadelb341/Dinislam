@@ -49,6 +49,9 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
   const [envoi, setEnvoi] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
   const [recherche, setRecherche] = useState('');
+  // ✏️ Message déjà parti, modifié : Nadia choisit de prévenir ou non (décoché par défaut, idée 14 du 18/11)
+  const dejaEnvoye = !!message && new Date(message.envoyer_le).getTime() <= Date.now();
+  const [prevenirModif, setPrevenirModif] = useState(false);
   const maj = (p: Partial<Formulaire>) => setF((x) => ({ ...x, ...p }));
 
   // 💾 Brouillon automatique (création seulement) : fermé sans envoyer → rappelé à l'ouverture de l'appli
@@ -99,7 +102,11 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
       let r: 'ok' | 'en_attente';
       if (message) {
         // Un message programmé repoussé repart pour la notification à la bonne heure
-        r = await ecrireOuGarder({ table: 'carnet_messages', op: 'update', id: message.id, values: { ...valeurs, ...(immediat ? {} : { notifie_le: null }) } });
+        const ids = vises.flatMap((e) => [e.id, ...e.parents]);
+        r = await ecrireOuGarder({
+          table: 'carnet_messages', op: 'update', id: message.id, values: { ...valeurs, ...(immediat ? {} : { notifie_le: null }) },
+          push: dejaEnvoye && immediat && prevenirModif && ids.length ? [{ userIds: ids, category: 'sched', title: `✏️ Message modifié : ${valeurs.emoji} ${valeurs.titre}`, body: valeurs.texte.slice(0, 140) || 'Ton professeur a modifié un message du carnet', data: { url: '/?carnet=1' } }] : undefined,
+        });
       } else {
         const ids = vises.flatMap((e) => [e.id, ...e.parents]);
         r = await ecrireOuGarder({
@@ -110,7 +117,7 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
         draft.done();
       }
       toast.success(r === 'en_attente' ? '📡 Gardé sur cet appareil : envoyé dès le retour du réseau'
-        : message ? '✏️ Message modifié' : immediat ? `📒 Message envoyé à ${vises.length} élève${vises.length > 1 ? 's' : ''}` : '🕑 Message programmé');
+        : message ? (dejaEnvoye && immediat && prevenirModif ? '✏️ Message modifié, élèves prévenus' : '✏️ Message modifié') : immediat ? `📒 Message envoyé à ${vises.length} élève${vises.length > 1 ? 's' : ''}` : '🕑 Message programmé');
       onClose();
     } catch (e) { toast.error(`Pas envoyé : ${(e as Error).message}`); }
     finally { setEnvoi(false); }
@@ -225,6 +232,12 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
               </div>
             </div>
 
+            {dejaEnvoye && !f.programme && (
+              <label className="flex items-center gap-3 rounded-xl border px-3 py-2">
+                <span className="flex-1 min-w-0"><span className="block text-sm font-semibold">🔔 Prévenir les élèves de la modification</span><span className="block text-[11px] text-muted-foreground">Ils reçoivent « ✏️ Message modifié » (et leurs parents reliés). Sinon, le message change sans rien envoyer.</span></span>
+                <Switch checked={prevenirModif} onCheckedChange={setPrevenirModif} />
+              </label>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={onClose}>Fermer</Button>
               <Button className="flex-1 bg-amber-500 hover:bg-amber-600 text-white" disabled={envoi} onClick={() => { if (verifier()) setConfirmer(true); }}>

@@ -1,3 +1,4 @@
+import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { ChoixEleveParGroupe } from '@/components/shared/ChoixEleveParGroupe';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -52,6 +53,7 @@ function SourateAdminCard({ sourate, sourateContents, mapContentType, setDeleteC
     const { error } = await supabase.from('sourates').update({ video_url: embedUrl }).eq('id', sourateId);
     if (error) { toast.error('Erreur: ' + error.message); return; }
     toast.success('✅ Vidéo sauvegardée');
+    if (embedUrl && embedUrl !== sourate.video_url) void prevenirNouveauContenu({ carte: { chemin: '/sourates' }, quoi: `Sourate ${sourate.name_french} : une nouvelle vidéo`, url: '/sourates' });
     chargerSourates();
   };
 
@@ -258,9 +260,10 @@ const AdminSourateContent = () => {
       await refetchContents();
       const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Contenu envoyé à ${studentName} ✅` : 'Contenu ajouté ✅');
+      { const so = sourates.find((x) => x.id === sourateId); void prevenirNouveauContenu({ carte: { chemin: '/sourates' }, quoi: `${so ? `Sourate ${so.name_french}` : 'Une sourate'} : ${contentType === 'audio' ? 'un nouvel audio' : 'un nouveau contenu'}`, url: `/sourates?item=${so?.number ?? ''}`, eleveId: targetUserId }); }
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
-  }, [user, contents, profiles, refetchContents]);
+  }, [user, contents, profiles, sourates, refetchContents]);
 
   const handleAddYoutube = useCallback(async (sourateId: string, embedUrl: string, targetUserId?: string) => {
     if (!user?.id) return;
@@ -277,9 +280,10 @@ const AdminSourateContent = () => {
       await refetchContents();
       const studentName = targetUserId ? profiles.find((p) => p.user_id === targetUserId)?.full_name : null;
       toast.success(studentName ? `Lien envoyé à ${studentName} ✅` : 'Lien YouTube ajouté ✅');
+      { const so = sourates.find((x) => x.id === sourateId); void prevenirNouveauContenu({ carte: { chemin: '/sourates' }, quoi: `${so ? `Sourate ${so.name_french}` : 'Une sourate'} : ${'une nouvelle vidéo'}`, url: `/sourates?item=${so?.number ?? ''}`, eleveId: targetUserId }); }
     } catch (error) { console.error(error); }
     finally { setIsUploading(false); }
-  }, [user, contents, profiles, refetchContents]);
+  }, [user, contents, profiles, sourates, refetchContents]);
 
   const updateTitleMutation = useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
