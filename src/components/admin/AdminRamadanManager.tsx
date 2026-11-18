@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useState, useRef, useEffect } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
@@ -1250,7 +1251,7 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               ) : currentDayData?.video_url ? (
                 <div className="p-2 border rounded-lg bg-muted/30">
                   <p className="text-xs text-muted-foreground mb-1">Vidéo existante (format ancien)</p>
-                  <video src={currentDayData.video_url} controls className="w-full rounded aspect-video bg-black" />
+                  <LecteurVideo src={currentDayData.video_url} className="rounded aspect-video" videoClassName="h-full" />
                 </div>
               ) : (
                 <div className="border-2 border-dashed rounded-lg p-8 text-center">

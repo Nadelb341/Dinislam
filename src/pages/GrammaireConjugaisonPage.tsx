@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -417,7 +418,7 @@ const GrammaireConjugaisonPage = () => {
                           {selectedContents.map((content) => (
                             <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                               {content.content_type === 'video' && (
-                                <video src={content.file_url} controls className="w-full" />
+                                <LecteurVideo src={content.file_url} className="rounded-none" />
                               )}
                               {content.content_type === 'audio' && (
                                 <div className="p-4 flex items-center gap-3 bg-muted/30">

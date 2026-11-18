@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Volume2 } from 'lucide-react';
@@ -33,7 +34,7 @@ function ResourceView({ content }: { content: Content }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {kind === 'youtube' && <SafeYoutubeEmbed embedUrl={content.file_url} title={content.file_name} />}
-      {kind === 'video' && <video src={content.file_url} controls className="w-full" controlsList="nodownload" />}
+      {kind === 'video' && <LecteurVideo src={content.file_url} controlsList="nodownload" className="rounded-none" />}
       {kind === 'image' && <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />}
       {kind === 'pdf' && (
         <a href={content.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 hover:bg-muted/50">

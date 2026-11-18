@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -43,7 +44,7 @@ const Ressources = () => {
         if (card.content) {
           const videoId = extractYoutubeVideoId(card.content);
           if (videoId) return <YoutubePlayer videoId={videoId} />;
-          return <video src={card.content} controls className="w-full rounded-lg" />;
+          return <LecteurVideo src={card.content} className="rounded-lg" />;
         }
         return null;
       case 'document':

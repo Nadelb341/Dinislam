@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from '@/components/ui/carousel';
@@ -33,7 +34,7 @@ function Apercu({ a }: { a: PieceJointe }) {
   const url = useUrlLisible(urlPJ(a.path)), k = kindPJ(a);
   if (!url) return <div className="grid h-40 place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (k === 'image') return <img src={url} alt={a.name} className="max-h-[62dvh] w-full object-contain rounded-xl bg-black/5" />;
-  if (k === 'video') return <video key={url} src={url} controls playsInline className="max-h-[62dvh] w-full rounded-xl bg-black" />;
+  if (k === 'video') return <LecteurVideo key={url} src={url} className="rounded-xl" videoClassName="max-h-[62dvh] object-contain" />;
   if (k === 'audio') return <div className="py-10 px-2"><audio key={url} src={url} controls className="w-full" /></div>;
   if (k === 'pdf') return <iframe src={url} title={a.name} className="h-[62dvh] w-full rounded-xl border" />;
   if (k === 'office') return <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`} title={a.name} className="h-[62dvh] w-full rounded-xl border" />;

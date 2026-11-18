@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NPM_VERSETS } from './npmVersets';
 import { getCdnAudioUrl } from './cdnAudio';
@@ -652,9 +653,7 @@ const SourateDetailDialog = ({
                     </div>
                   )}
                   {content.content_type === 'video' && (
-                    <video controls className="w-full rounded-lg" src={content.file_url}>
-                      Votre navigateur ne supporte pas la lecture vidéo.
-                    </video>
+                    <LecteurVideo className="rounded-lg" src={content.file_url} />
                   )}
                   {content.content_type === 'pdf' && (
                     <a href={content.file_url} target="_blank" rel="noopener noreferrer"

@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -59,7 +60,7 @@ function Preview({ a, url }: { a: TodoAttachment; url?: string }) {
   if (!url) return <div className="h-[55dvh] grid place-items-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   const k = kindOf(a);
   if (k === 'image') return <img src={url} alt={a.name} className="max-h-[60dvh] w-full object-contain rounded-xl bg-black/5" />;
-  if (k === 'video') return <video src={url} controls playsInline className="max-h-[60dvh] w-full rounded-xl bg-black" />;
+  if (k === 'video') return <LecteurVideo src={url} className="rounded-xl" videoClassName="max-h-[60dvh] object-contain" />;
   if (k === 'audio') return <div className="py-10 px-2"><audio src={url} controls className="w-full" /></div>;
   if (k === 'pdf') return <iframe src={url} title={a.name} className="h-[60dvh] w-full rounded-xl border" />;
   if (k === 'office') return <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`} title={a.name} className="h-[60dvh] w-full rounded-xl border" />;

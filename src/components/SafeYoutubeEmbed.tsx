@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, RotateCw, Volume2, VolumeX } from "lucide-react";
+import { Play } from "lucide-react";
+import { BarreVideo } from "@/components/video/BarreVideo";
 
 interface YTPlayer {
   playVideo(): void;
@@ -65,17 +66,6 @@ function loadYoutubeApi(): Promise<void> {
   return apiPromise;
 }
 
-const fmt = (s: number) => {
-  if (!Number.isFinite(s) || s < 0) s = 0;
-  const m = Math.floor(s / 60);
-  return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-};
-
-// iPhone/iPad : le volume ne se règle qu'avec les boutons de l'appareil (limite d'Apple), on garde seulement « couper le son »
-const isAppleTouch = () =>
-  typeof navigator !== "undefined" &&
-  (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-
 /**
  * Lecteur YouTube sans aucun lien de sortie possible : le logo, les cartes de
  * fin de vidéo et toute la UI native YouTube sont masqués (controls: 0), et un
@@ -97,7 +87,6 @@ export function SafeYoutubeEmbed({ embedUrl, videoId: videoIdProp, title, classN
   const [volume, setVolumeState] = useState(100);
   const [muted, setMuted] = useState(false);
   const [seeking, setSeeking] = useState(false);
-  const appleTouch = isAppleTouch();
 
   useEffect(() => {
     if (!videoId || !mountRef.current) return;
@@ -191,12 +180,10 @@ export function SafeYoutubeEmbed({ embedUrl, videoId: videoIdProp, title, classN
 
   if (!videoId) return null;
 
-  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
-  const btn = "flex items-center justify-center h-9 w-9 shrink-0 rounded-full text-white hover:bg-white/20 active:scale-95 disabled:opacity-40";
-
   return (
-    <div className={className ?? "aspect-video relative overflow-hidden rounded-md bg-black"}>
-      <div className="absolute inset-0 pointer-events-none">
+    // isolate + z-0 : l'iframe YouTube reste SOUS le calque et la barre, même dans une fenêtre qui défile (iPhone)
+    <div className={`${className ?? "aspect-video relative overflow-hidden rounded-md bg-black"} isolate`}>
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <div ref={mountRef} className="w-full h-full" />
       </div>
 
@@ -205,7 +192,7 @@ export function SafeYoutubeEmbed({ embedUrl, videoId: videoIdProp, title, classN
         <img
           src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+          className="absolute inset-0 z-[1] h-full w-full object-cover pointer-events-none"
         />
       )}
 
@@ -215,7 +202,7 @@ export function SafeYoutubeEmbed({ embedUrl, videoId: videoIdProp, title, classN
         onClick={togglePlay}
         aria-label={isPlaying ? "Mettre en pause" : "Lecture"}
         title={title}
-        className="absolute inset-0 z-10 flex items-center justify-center bg-transparent"
+        className="absolute inset-0 z-10 flex items-center justify-center bg-transparent [transform:translateZ(0)]"
       >
         {!isPlaying && (
           <span className="flex items-center justify-center h-16 w-16 rounded-full bg-white/90 shadow-lg">
@@ -224,57 +211,20 @@ export function SafeYoutubeEmbed({ embedUrl, videoId: videoIdProp, title, classN
         )}
       </button>
 
-      {/* Barre de commandes (au-dessus du calque) */}
-      <div
-        className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/50 to-transparent px-2 pb-1.5 pt-5"
-        onClick={stop}
-        onPointerDown={stop}
-      >
-        <input
-          type="range"
-          min={0}
-          max={Math.max(duration, 1)}
-          step={1}
-          value={Math.min(current, Math.max(duration, 1))}
-          disabled={!ready}
-          onChange={(e) => { setSeeking(true); setCurrent(Number(e.target.value)); }}
-          onPointerUp={(e) => { seek(Number((e.target as HTMLInputElement).value)); setSeeking(false); }}
-          onKeyUp={(e) => { seek(Number((e.target as HTMLInputElement).value)); setSeeking(false); }}
-          aria-label="Position dans la vidéo"
-          className="w-full h-1.5 accent-white cursor-pointer"
-        />
-        <div className="mt-1 flex items-center gap-1">
-          <button type="button" className={`${btn} w-auto gap-0.5 px-2`} disabled={!ready} onClick={() => seek(current - 10)} aria-label="Reculer de 10 secondes">
-            <RotateCcw className="h-4 w-4" /><span className="text-[11px] font-bold">10</span>
-          </button>
-          <button type="button" className={btn} disabled={!ready} onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Lecture"}>
-            {isPlaying ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4 ml-0.5" fill="currentColor" />}
-          </button>
-          <button type="button" className={`${btn} w-auto gap-0.5 px-2`} disabled={!ready} onClick={() => seek(current + 10)} aria-label="Avancer de 10 secondes">
-            <span className="text-[11px] font-bold">10</span><RotateCw className="h-4 w-4" />
-          </button>
-          <span className="ms-1 text-[11px] font-medium text-white tabular-nums whitespace-nowrap">
-            {fmt(current)} / {fmt(duration)}
-          </span>
-          <span className="flex-1" />
-          <button type="button" className={btn} disabled={!ready} onClick={toggleMute} aria-label={muted ? "Remettre le son" : "Couper le son"}>
-            {muted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </button>
-          {!appleTouch && (
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={muted ? 0 : volume}
-              disabled={!ready}
-              onChange={(e) => changeVolume(Number(e.target.value))}
-              aria-label="Volume"
-              className="w-16 sm:w-24 h-1.5 accent-white cursor-pointer"
-            />
-          )}
-        </div>
-      </div>
+      {/* Barre de commandes (au-dessus du calque) : la même pour toutes les vidéos de l'appli */}
+      <BarreVideo
+        ready={ready}
+        isPlaying={isPlaying}
+        current={current}
+        duration={duration}
+        muted={muted}
+        volume={volume}
+        onTogglePlay={togglePlay}
+        onSeek={seek}
+        onScrub={(v, enCours) => { setSeeking(enCours); setCurrent(v); }}
+        onToggleMute={toggleMute}
+        onVolume={changeVolume}
+      />
     </div>
   );
 }

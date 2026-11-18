@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState, useEffect, useRef } from 'react';
 import { personalize, withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -557,14 +558,11 @@ const Nourania = () => {
                               ) : null;
                             })()}
                             {content.content_type === 'video' && (
-                              <div className="aspect-video rounded-xl overflow-hidden bg-foreground/5">
-                                <video
-                                  src={content.file_url}
-                                  controls
-                                  className="w-full h-full"
-                                  preload="metadata"
-                                />
-                              </div>
+                              <LecteurVideo
+                                src={content.file_url}
+                                className="aspect-video rounded-xl"
+                                videoClassName="h-full"
+                              />
                             )}
                             {content.content_type === 'audio' && (
                               <div className="space-y-1">

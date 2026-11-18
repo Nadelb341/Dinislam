@@ -2,6 +2,7 @@
  * GenericModulePage — Page générique avec grille de cartes pour tous les modules dynamiques
  * (Grammaire, Vocabulaire, Darija, Dictionnaire, Dhikr, Histoires prophètes, Hadiths, etc.)
  */
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -196,7 +197,7 @@ const GenericModulePage = () => {
                     {selectedContents.map((content) => (
                       <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                         {content.content_type === 'video' && (
-                          <video src={content.file_url} controls className="w-full" />
+                          <LecteurVideo src={content.file_url} className="rounded-none" />
                         )}
                         {content.content_type === 'image' && (
                           <img src={content.file_url} alt={content.file_name} className="w-full object-cover max-h-64" />

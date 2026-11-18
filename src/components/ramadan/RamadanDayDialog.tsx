@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { withName } from '@/lib/encouragements';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -222,9 +223,7 @@ const RamadanDayDialog = ({
           return (
             <div key={activity.id} className="space-y-1">
               <p className="text-xs text-muted-foreground">{activity.file_name}</p>
-              <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                <video src={activity.file_url} controls preload="none" className="w-full h-full" />
-              </div>
+              <LecteurVideo src={activity.file_url} preload="none" className="aspect-video rounded-xl" videoClassName="h-full" />
             </div>
           );
         }
@@ -706,14 +705,13 @@ const RamadanDayDialog = ({
                     {currentVideo.video_url.includes('youtube.com/embed') ? (
                       <YoutubePlayer videoId={extractYoutubeVideoId(currentVideo.video_url) || ''} />
                     ) : (
-                      <video
+                      <LecteurVideo
                         ref={videoRef}
                         key={currentVideo.id}
                         src={currentVideo.video_url}
-                        controls
-                        playsInline
                         controlsList="nodownload"
-                        style={{ width: '100%', height: '100%' }}
+                        className="h-full w-full rounded-none"
+                        videoClassName="h-full"
                         onEnded={handleVideoEnded}
                         onPlay={handleVideoPlay}
                         onPause={handleVideoPause}
@@ -794,9 +792,7 @@ const RamadanDayDialog = ({
                       {playlist.length > 1 && (
                         <p className="text-xs text-muted-foreground text-left">Vidéo {idx + 1}</p>
                       )}
-                      <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                        <video src={v.video_url} controls preload="none" className="w-full h-full" />
-                      </div>
+                      <LecteurVideo src={v.video_url} preload="none" className="aspect-video rounded-xl" videoClassName="h-full" />
                     </div>
                   ))}
                 </div>

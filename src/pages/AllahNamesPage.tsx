@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useState, useEffect } from 'react';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
@@ -448,9 +449,7 @@ const AllahNamesPage = () => {
                     )}
                   </div>
                   {mediaOpen === 'video' && getMedia('video') && (
-                    <video controls className="w-full rounded-xl mt-2" style={{ maxHeight: '200px' }}>
-                      <source src={getMedia('video')!.file_url} />
-                    </video>
+                    <LecteurVideo className="rounded-xl mt-2" videoClassName="max-h-[200px] object-contain" src={getMedia('video')!.file_url} />
                   )}
                   {mediaOpen === 'pdf' && getMedia('pdf') && (
                     <button

@@ -2,6 +2,7 @@
  * GenericTimelinePage — Page élève générique avec design timeline vertical
  * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Dhikr, Hadiths, Histoires des Prophètes
  */
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -309,7 +310,7 @@ const GenericTimelinePage = () => {
                   {selectedContents.map((content) => (
                     <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                       {content.content_type === 'video' && (
-                        <video src={content.file_url} controls className="w-full rounded-xl" />
+                        <LecteurVideo src={content.file_url} className="rounded-xl" />
                       )}
                       {content.content_type === 'audio' && (
                         <div className="p-4 flex items-center gap-3 bg-muted/30">

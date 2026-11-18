@@ -1,3 +1,4 @@
+import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { Cadreur } from '@/components/shared/Cadreur';
 import { useState, useRef, useMemo } from 'react';
@@ -321,7 +322,7 @@ const PrayerModuleCards = () => {
                       </Button>
                     )}
                   </div>
-                  {item.content_type.includes('video') && <video controls className="w-full rounded-lg" src={item.file_url} />}
+                  {item.content_type.includes('video') && <LecteurVideo className="rounded-lg" src={item.file_url} />}
                   {item.content_type.includes('audio') && <audio controls className="w-full" src={item.file_url} />}
                   {item.content_type.includes('image') && <img src={item.file_url} alt={item.file_name} className="w-full rounded-lg" />}
                   {(item.content_type.includes('pdf') || item.file_name.endsWith('.pdf')) && <iframe src={item.file_url} className="w-full aspect-[3/4] rounded-lg" />}
