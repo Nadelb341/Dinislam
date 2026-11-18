@@ -78,14 +78,17 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   });
 
   const plan = eleves.map((e) => {
-    const items = MATIERES_GROUPE.filter((m) => matieres[m.type]?.on).flatMap((m) => {
+    const toutes = MATIERES_GROUPE.filter((m) => matieres[m.type]?.on).flatMap((m) => {
       const s = (etapes?.[e.user_id] || []).find((x) => x.type === m.type);
-      if (!s || !etapeVisible(acces, e.user_id, m.type) || retires.has(`${e.user_id}|${m.type}`)) return [];
+      if (!s || !etapeVisible(acces, e.user_id, m.type)) return [];
       const item = itemDepuisEtape(s, !!matieres[m.type]?.audio);
       const perso = textes[`${e.user_id}|${m.type}`];
-      return [{ m, item: perso?.trim() ? { ...item, titre: perso.trim() } : item }];
+      // ✕ (Nadia, 2026-11-18) : une ligne retirée reste visible, barrée, avec « ↩️ Remettre » (avant, elle disparaissait
+      // et l'élève affichait « Rien à donner… », comme s'il avait tout validé)
+      return [{ m, item: perso?.trim() ? { ...item, titre: perso.trim() } : item, retiree: retires.has(`${e.user_id}|${m.type}`) }];
     });
-    return { e, items, actif: !exclus.has(e.user_id) && items.length > 0 };
+    const items = toutes.filter((x) => !x.retiree);
+    return { e, toutes, items, actif: !exclus.has(e.user_id) && items.length > 0 };
   });
   const aDonner = plan.filter((p) => p.actif);
   const total = aDonner.reduce((n, p) => n + p.items.length, 0);
@@ -144,8 +147,16 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                     <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">{p.e.full_name || 'Élève'}</span>
                     {deja > 0 && <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">déjà {deja} cette semaine</span>}
                   </label>
-                  {p.items.map(({ m, item }) => {
+                  {p.toutes.map(({ m, item, retiree }) => {
                     const k = `${p.e.user_id}|${m.type}`;
+                    if (retiree) return (
+                      <div key={m.type} className="flex items-start gap-1.5 ps-6 text-xs">
+                        <span className="cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere] line-through text-muted-foreground">{m.emoji} {item.titre}</span>
+                        <button type="button" aria-label={`Remettre le devoir ${m.label} pour ${p.e.full_name}`}
+                          onClick={() => setRetires((x) => { const n = new Set(x); n.delete(k); return n; })}
+                          className="shrink-0 rounded-full border border-violet-300 dark:border-violet-700 px-2 py-0.5 text-[11px] font-bold text-violet-800 dark:text-violet-200">↩️ Remettre</button>
+                      </div>
+                    );
                     return (
                     <div key={m.type} className="flex items-start gap-1.5 ps-6 text-xs">
                       {enEdition === k ? (
@@ -163,7 +174,8 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                     </div>
                     );
                   })}
-                  {!p.items.length && <p className="ps-6 text-[11px] text-muted-foreground">Rien à donner dans ces matières (tout validé, ou carte fermée pour lui).</p>}
+                  {!p.toutes.length && <p className="ps-6 text-[11px] text-muted-foreground">Rien à donner dans ces matières (tout validé, ou carte fermée pour lui).</p>}
+                  {p.toutes.length > 0 && !p.items.length && <p className="ps-6 text-[11px] text-muted-foreground">Tout est retiré pour cet élève : touche « ↩️ Remettre » pour lui redonner une ligne.</p>}
                   {trop && p.actif && <p className="ps-6 text-[11px] font-semibold text-amber-700 dark:text-amber-300">⚠️ Plus que le maximum de la semaine ({maxSemaine}).</p>}
                 </div>
               );

@@ -9,7 +9,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 type Op =
   | { table: string; op: 'insert'; rows: Record<string, unknown>[]; push?: Parameters<typeof sendPushNotification>[0][] }
   | { table: string; op: 'upsert'; rows: Record<string, unknown>[]; push?: Parameters<typeof sendPushNotification>[0][] }
-  | { table: string; op: 'update'; id: string; values: Record<string, unknown>; col?: string }
+  | { table: string; op: 'update'; id: string; values: Record<string, unknown>; col?: string; push?: Parameters<typeof sendPushNotification>[0][] }
   | { table: string; op: 'delete'; id: string; col?: string };
 
 const CLE = 'dinislam_file_hors_ligne';
@@ -36,7 +36,7 @@ async function jouer(o: Op) {
   else if (o.op === 'update') r = await t.update(o.values).eq(o.col ?? 'id', o.id);
   else r = await t.delete().eq(o.col ?? 'id', o.id);
   if (r.error) throw new Error(r.error.message);
-  if ((o.op === 'insert' || o.op === 'upsert') && o.push) o.push.forEach((p) => sendPushNotification(p));
+  if ((o.op === 'insert' || o.op === 'upsert' || o.op === 'update') && o.push) o.push.forEach((p) => sendPushNotification(p));
 }
 
 /** Écrit tout de suite si possible, sinon garde l'écriture : 'ok' | 'en_attente' ; lève une erreur si la base refuse */

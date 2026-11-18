@@ -4,6 +4,7 @@ import { Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { sendPushNotification } from '@/lib/pushHelper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChoixEleveParGroupe } from '@/components/shared/ChoixEleveParGroupe';
@@ -74,6 +75,9 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
       // Une demande de validation encore en attente pour cet élément : acceptée (elle ne reste pas dans « à corriger »)
       await db.from(cfg.demandes).update({ status: 'approved', reviewed_at: maintenant, reviewed_by: user?.id } as never)
         .eq('user_id', eleve).eq(cfg.cle, idDe(v)).eq('status', 'pending');
+      // 🔔 2026-11-18 (Nadia : tout ce que j'envoie aux élèves doit les prévenir)
+      sendPushNotification({ userId: eleve, category: 'rec', title: '✅ {prenom}, ton professeur a validé !',
+        body: `${genre === 'nourania' ? 'Nourania' : 'Invocation'} : ${v.libelle} ✨`, data: { url: genre === 'nourania' ? '/nourania' : '/invocations' } });
       toast.success(`✅ ${v.libelle} : validée pour ${nomEleve} (verte chez lui, points ajoutés)`);
       rafraichir();
     } catch {

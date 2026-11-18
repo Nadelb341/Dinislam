@@ -23,7 +23,7 @@ const versJour = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString
  * ✏️ Modifier un devoir déjà donné (Nadia, 2026-11-11) : ses lignes, l'audio demandé, la date à rendre.
  * L'élève voit le changement tout de suite (en direct). Sans réseau : gardé sur l'appareil, envoyé au retour.
  */
-export function ModifierDevoirDialog({ devoir, nomEleve, onClose }: { devoir: DevoirAModifier | null; nomEleve: string; onClose: () => void }) {
+export function ModifierDevoirDialog({ devoir, nomEleve, eleveId, onClose }: { devoir: DevoirAModifier | null; nomEleve: string; eleveId?: string | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [lignes, setLignes] = useState<string[]>([]);
   const [audio, setAudio] = useState(false);
@@ -56,7 +56,9 @@ export function ModifierDevoirDialog({ devoir, nomEleve, onClose }: { devoir: De
     } else if (!jour) date_limite = null;
     setEnvoi(true);
     try {
-      const r = await ecrireOuGarder({ table: 'devoirs', op: 'update', id: devoir.id, values: { titre, etapes, audio_requis: audio, date_limite } });
+      const r = await ecrireOuGarder({ table: 'devoirs', op: 'update', id: devoir.id, values: { titre, etapes, audio_requis: audio, date_limite },
+        // 🔔 2026-11-18 : l'élève est prévenu que son devoir a changé
+        push: eleveId ? [{ userId: eleveId, category: 'hw_new', title: '✏️ {prenom}, ton devoir a été modifié', body: titre, data: { url: '/?open=devoirs' } }] : undefined });
       // Moins d'étapes qu'avant : les cases cochées en trop n'ont plus de ligne (sinon le diamant compterait faux)
       if (r === 'ok' && etapes.length < avant) {
         await supabase.from('devoir_steps').delete().eq('devoir_id', devoir.id).gt('step', etapes.length);

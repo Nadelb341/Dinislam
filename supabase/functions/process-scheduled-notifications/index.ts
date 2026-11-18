@@ -83,7 +83,8 @@ serve(async (req) => {
         body: notif.message,
         tag: `scheduled-${notif.id}`,
         type: 'scheduled',
-        category: 'sched',
+        // 📓 Devoirs programmés : même interrupteur que les devoirs donnés tout de suite (2026-11-18)
+        category: notif.module === 'devoirs' ? 'hw_new' : 'sched',
       };
 
       // Determine recipients
@@ -92,6 +93,18 @@ serve(async (req) => {
         pushBody.userIds = notif.recipients;
       } else {
         pushBody.sendToAll = true;
+      }
+
+      // 📓 Devoir programmé SUPPRIMÉ avant son heure (2026-11-18) : on ne prévient que les élèves qui ont
+      // encore un devoir qui devient visible maintenant (avant, la notification partait quand même)
+      if (notif.module === 'devoirs' && Array.isArray(pushBody.userIds)) {
+        const debut = new Date(Date.now() - 36 * 3600_000).toISOString();
+        const fin = new Date(Date.now() + 10 * 60_000).toISOString();
+        const { data: encore } = await supabase.from('devoirs').select('student_id')
+          .in('student_id', pushBody.userIds as string[]).gte('visible_a', debut).lte('visible_a', fin);
+        const restants = [...new Set((encore ?? []).map((d: { student_id: string | null }) => d.student_id).filter(Boolean))];
+        if (!restants.length) { await supabase.from('scheduled_notifications').update({ last_sent_on: today }).eq('id', notif.id); continue; }
+        pushBody.userIds = restants;
       }
 
       // Marquer AVANT l'envoi : si deux passages se chevauchent, un seul envoie

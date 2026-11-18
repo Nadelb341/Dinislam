@@ -390,17 +390,12 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
 
       if (groupMsgPush) {
         try {
-          if (groupMsgMode === 'all') {
+          // 🐛 2026-11-18 : le mode « Tous » envoyait { type: 'all' } sans destinataire → personne n'était prévenu.
+          // Maintenant, quel que soit le mode, chaque élève qui reçoit le message reçoit sa notification.
+          for (const t of targets) {
             await supabase.functions.invoke('send-push-notification', {
-              body: { title: '📢 {prenom}, nouveau message de ton prof', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'all', data: { url: '/?open=messages' } },
+              body: { title: '📢 {prenom}, nouveau message de ton prof', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'user', userId: t.user_id, data: { url: '/?open=messages' } },
             });
-          } else {
-            // Send to specific user IDs
-            for (const t of targets) {
-              await supabase.functions.invoke('send-push-notification', {
-                body: { title: '📢 {prenom}, nouveau message de ton prof', category: 'msg', body: groupMsgText.trim().substring(0, 200), type: 'user', userId: t.user_id, data: { url: '/?open=messages' } },
-              });
-            }
           }
         } catch (e) { console.error('Push notification error:', e); }
       }

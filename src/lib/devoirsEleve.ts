@@ -147,13 +147,15 @@ async function envoyer(d: Distribution) {
   // 📓 Une seule notification par distribution (texte choisi par Nadia)
   const liste = d.items.map((it) => it.titre).join(' · ');
   if (d.visible_a && new Date(d.visible_a) > new Date()) {
-    const v = new Date(d.visible_a);
-    const p = (n: number) => String(n).padStart(2, '0');
-    const jour = `${v.getFullYear()}-${p(v.getMonth() + 1)}-${p(v.getDate())}`;
-    await supabase.from('scheduled_notifications').insert({
+    // 🕑 Heure de PARIS (le serveur compare à l'heure de Paris) : juste même si l'appareil est réglé ailleurs (2026-11-18)
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(d.visible_a)).map((x) => [x.type, x.value]));
+    const jour = `${parts.year}-${parts.month}-${parts.day}`;
+    const { error: errProg } = await supabase.from('scheduled_notifications').insert({
       module: 'devoirs', message: liste, start_date: jour, end_date: jour,
-      send_time: `${p(v.getHours())}:${p(v.getMinutes())}`, recipients: d.eleveIds, is_active: true, created_by: d.created_by,
-    }).then(() => {}, () => {});
+      send_time: `${parts.hour}:${parts.minute}`, recipients: d.eleveIds, is_active: true, created_by: d.created_by,
+    });
+    if (errProg) console.error('[Devoirs] notification programmée non enregistrée', errProg.message);
   } else {
     sendPushNotification({ userIds: d.eleveIds, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: liste, data: { url: '/?open=devoirs' } });
   }

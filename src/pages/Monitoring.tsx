@@ -187,7 +187,7 @@ const Monitoring = () => {
     setBroadcasting(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
-        body: { title: broadcastTitle, body: broadcastBody, type: 'broadcast' }
+        body: { title: broadcastTitle, body: broadcastBody, type: 'broadcast', sendToAll: true } // 🐛 2026-11-18 : sans sendToAll, personne ne recevait la diffusion
       });
       if (error) throw error;
       toast({ title: '📢 Envoyé !', description: `${data?.sent || 0} notification(s)` });

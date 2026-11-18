@@ -631,7 +631,16 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
       <DecisionsDialog open={decisionsOuvert} items={nonDecides}
         nom={(id) => eleves.find((e) => e.user_id === id)?.full_name || 'Élève'}
         onClose={fermerDecisions}
-        onSave={(choix) => { enregistrerDecisions.mutate(choix); fermerDecisions(); }} />
+        onSave={(choix) => {
+          enregistrerDecisions.mutate(choix);
+          // 🔔 2026-11-18 : comme depuis la rotation, l'élève sait qu'un devoir lui est redonné
+          const aRattraper = choix.filter((c) => c.decision === 'rattraper');
+          for (const eleveId of new Set(aRattraper.map((c) => c.studentId))) {
+            const n = aRattraper.filter((c) => c.studentId === eleveId).length;
+            sendPushNotification({ userId: eleveId, title: '🔁 {prenom}, un devoir à rattraper', category: 'hw_new', body: n > 1 ? `${n} devoirs sont en haut de ton cahier de texte` : 'Il est en haut de ton cahier de texte', data: { url: '/?open=devoirs' } });
+          }
+          fermerDecisions();
+        }} />
 
       {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} memberships={memberships} />}
       {validationDialog}
@@ -640,7 +649,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
       {(() => {
         const d = devoirAModifier ? devoirs.find((x) => x.id === devoirAModifier.id) : null;
         return (
-          <ModifierDevoirDialog onClose={() => setDevoirAModifier(null)} nomEleve={d?.student_name || 'l\'élève'}
+          <ModifierDevoirDialog onClose={() => setDevoirAModifier(null)} nomEleve={d?.student_name || 'l\'élève'} eleveId={devoirAModifier?.eleveId ?? null}
             devoir={d ? { id: d.id, titre: d.titre, type: d.type, etapes: d.etapes, date_limite: d.date_limite, audio_requis: d.audio_requis, matiere_label: d.matiere_label } : null} />
         );
       })()}

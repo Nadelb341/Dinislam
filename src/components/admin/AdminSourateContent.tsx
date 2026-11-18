@@ -1,3 +1,4 @@
+import { sendPushNotification } from '@/lib/pushHelper';
 import { ChoixEleveParGroupe } from '@/components/shared/ChoixEleveParGroupe';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useState, useCallback } from 'react';
@@ -336,6 +337,8 @@ const AdminSourateContent = () => {
     if (error) { toast.error('📡 La sourate n\'a pas été validée : vérifie ta connexion'); return; }
     refetchUnlocks();
     void refetchValidees();
+    // 🔔 2026-11-18 : l'élève est prévenu
+    sendPushNotification({ userId: v.userId, category: 'rec', title: '✅ {prenom}, ton professeur a validé !', body: 'Une sourate vient d\'être validée ✨', data: { url: '/sourates' } });
     toast.success('✅ Sourate validée pour l\'élève (verte chez lui, points ajoutés)');
   };
 
