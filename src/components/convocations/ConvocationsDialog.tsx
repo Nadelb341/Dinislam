@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -92,7 +93,7 @@ function Message({ data, texte, setTexte }: { data: Donnees; texte: string; setT
           <button key={m.id} type="button" onClick={() => setTexte(m.texte)} className="rounded-full border bg-card px-2.5 py-1 text-xs font-semibold">{m.titre}</button>
         ))}
       </div>
-      <Textarea id="convocation-texte" value={texte} onChange={(e) => setTexte(e.target.value)} rows={4} className="bg-yellow-50 dark:bg-yellow-950/20" />
+      <TextareaDictee id="convocation-texte" value={texte} onChange={(e) => setTexte(e.target.value)} rows={4} className="bg-yellow-50 dark:bg-yellow-950/20" />
       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="text-muted-foreground">Ajouter :</span>
         {VARIABLES.map((v) => <button key={v} type="button" onClick={() => setTexte(`${texte}${texte.endsWith(' ') || !texte ? '' : ' '}${v}`)} className="rounded-md border px-1.5 py-0.5 font-mono">{v}</button>)}
@@ -333,7 +334,7 @@ function Modeles({ data, userId, resultat }: { data: Donnees; userId: string | n
     <div className="space-y-2">
       <button type="button" onClick={() => setEdit(null)} className="text-sm font-semibold text-primary">← Retour</button>
       <Input id="modele-titre" value={edit.titre} onChange={(e) => setEdit({ ...edit, titre: e.target.value })} placeholder="Titre (ex. 📨 Convocation)" />
-      <Textarea id="modele-texte" value={edit.texte} onChange={(e) => setEdit({ ...edit, texte: e.target.value })} rows={5} />
+      <TextareaDictee id="modele-texte" value={edit.texte} onChange={(e) => setEdit({ ...edit, texte: e.target.value })} rows={5} />
       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
         <span className="text-muted-foreground">Ajouter :</span>
         {VARIABLES.map((v) => <button key={v} type="button" onClick={() => setEdit({ ...edit, texte: `${edit.texte} ${v}` })} className="rounded-md border px-1.5 py-0.5 font-mono">{v}</button>)}

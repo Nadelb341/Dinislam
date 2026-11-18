@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -54,7 +55,7 @@ export function EncourageDialog({ student, onClose }: { student: Engagement | nu
       <DialogContent className="max-w-md" level="nested">
         <DialogTitle className="pe-8 [overflow-wrap:anywhere]">✉️ Encourager {student?.full_name?.trim().split(/\s+/)[0]}</DialogTitle>
         <p className="text-xs text-muted-foreground">Le message arrive dans sa messagerie, avec une notification. Tu peux le modifier avant.</p>
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} aria-label="Message d'encouragement" />
+        <TextareaDictee value={text} onChange={(e) => setText(e.target.value)} rows={5} aria-label="Message d'encouragement" />
         <button type="button" onClick={other} className="text-xs font-semibold text-primary text-start">🔀 Un autre message</button>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" onClick={() => { setOpenedFor(null); onClose(); }}>Annuler</Button>

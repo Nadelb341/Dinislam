@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -337,7 +338,7 @@ const AdminNotifications = () => {
 
           <div>
             <Label>Message</Label>
-            <Textarea
+            <TextareaDictee
               value={notificationBody}
               onChange={(e) => setNotificationBody(e.target.value)}
               placeholder="Corps du message"

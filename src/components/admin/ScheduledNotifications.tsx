@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState, useEffect } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -343,7 +344,7 @@ const ScheduledNotifications = () => {
 
               <div>
                 <Label>Message ({message.length}/150)</Label>
-                <Textarea
+                <TextareaDictee
                   value={message}
                   onChange={e => setMessage(e.target.value.slice(0, 150))}
                   placeholder="Contenu de la notification..."

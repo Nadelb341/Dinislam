@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -171,7 +172,7 @@ export function SignalerAbsenceDialog({ enfants, onClose }: { enfants: EnfantEsp
                   </div>
                 </div>
               ))}
-              <Textarea value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} placeholder="Motif (facultatif) : maladie, rendez-vous…" />
+              <TextareaDictee value={motif} onChange={(e) => setMotif(e.target.value)} rows={2} placeholder="Motif (facultatif) : maladie, rendez-vous…" />
               <Button className="w-full bg-red-600 hover:bg-red-700" disabled={busy || total === 0}
                 onClick={() => askValidation('Justifier cette absence ?', `${choisis.map((id) => `${nom(id)} (${(dates[id] || []).length} cours)`).join(', ')} : la professeure sera prévenue.`, () => void envoyer())}>
                 {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}✅ Absence justifiée

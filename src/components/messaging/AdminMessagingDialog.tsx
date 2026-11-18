@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState, useEffect, useRef } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { Mail, MailOpen, Send, User, ArrowLeft, Search, Music, Plus, Users, Trophy } from 'lucide-react';
@@ -505,7 +506,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
               {/* Reply */}
               <div className="space-y-2 py-3 border-t">
                 <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
-                <Textarea value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
+                <TextareaDictee value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Réponse..." rows={2} className="resize-none" />
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => audioInputRef.current?.click()} disabled={isSending}>
                     <Music className="h-4 w-4 mr-1" /> Audio
@@ -617,7 +618,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
             {/* Message */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Message</Label>
-              <Textarea
+              <TextareaDictee
                 value={newMsgText}
                 onChange={(e) => setNewMsgText(e.target.value)}
                 placeholder="Écrivez votre message..."
@@ -774,7 +775,7 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
               </div>
             )}
 
-            <Textarea
+            <TextareaDictee
               value={groupMsgText}
               onChange={(e) => setGroupMsgText(e.target.value)}
               placeholder="Votre message..."

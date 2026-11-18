@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -139,7 +140,7 @@ export function BookmarkButton({ index, bookmarks, onChange, onRemoveNote, open,
             </div>
             {askOpen && (
               <>
-                <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} placeholder="Écris ta question ici…" aria-label="Ma question" />
+                <TextareaDictee value={question} onChange={(e) => setQuestion(e.target.value)} rows={3} placeholder="Écris ta question ici…" aria-label="Ma question" />
                 <p className="text-[11px] text-muted-foreground">Elle arrivera dans la messagerie de ton professeur, avec cette page ({where}).</p>
                 <button type="button" disabled={sending || !question.trim()} onClick={() => void send()}
                   className="rounded-xl bg-[#2457a5] text-white px-4 py-2 text-sm font-bold disabled:opacity-50">✉️ Envoyer ma question</button>

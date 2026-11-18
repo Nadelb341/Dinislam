@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -111,7 +112,7 @@ export function CoranStudentsTab() {
         <DialogContent className="max-w-md" level="nested">
           <DialogTitle className="pe-8 [overflow-wrap:anywhere]">💌 Encourager {to?.full_name?.trim().split(/\s+/)[0]}</DialogTitle>
           <p className="text-xs text-muted-foreground">Le message arrive dans sa messagerie, avec une notification. Tu peux le modifier.</p>
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} aria-label="Message d'encouragement" />
+          <TextareaDictee value={text} onChange={(e) => setText(e.target.value)} rows={4} aria-label="Message d'encouragement" />
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => setTo(null)}>Annuler</Button>
             <Button onClick={() => void send()} disabled={sending || !text.trim()} className="bg-[#7a1d22] hover:bg-[#561216] text-white">Envoyer</Button>

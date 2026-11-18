@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -485,7 +486,7 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
             <div className="space-y-4 min-w-0">
               <div className="space-y-1.5">
                 <label htmlFor="bilan-appr" className="text-sm font-extrabold">💬 Appréciation</label>
-                <Textarea id="bilan-appr" value={appreciation} onChange={(e) => setAppreciation(e.target.value)} rows={4} className="cahier-main text-lg" placeholder="Ton appréciation pour les parents…" />
+                <TextareaDictee id="bilan-appr" value={appreciation} onChange={(e) => setAppreciation(e.target.value)} rows={4} className="cahier-main text-lg" placeholder="Ton appréciation pour les parents…" />
                 <p className="text-[11px] font-bold text-muted-foreground">Phrases proposées d'après ses chiffres (touche pour ajouter) :</p>
                 <div className="flex flex-wrap gap-1.5">
                   {phrases.map((p) => <button key={p} type="button" onClick={() => ajouter(p)} className="rounded-full border border-dashed border-sky-500 bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-200">{p}</button>)}
@@ -494,7 +495,7 @@ function EditeurBilan({ studentId, nom, snap, data, periode, report, lus, onClos
 
               <div className="space-y-1.5">
                 <label htmlFor="bilan-motiv" className="text-sm font-extrabold">💌 Un mot pour {snap.prenom}</label>
-                <Textarea id="bilan-motiv" value={motivation} onChange={(e) => setMotivation(e.target.value)} rows={2} placeholder="Un petit message d'encouragement" />
+                <TextareaDictee id="bilan-motiv" value={motivation} onChange={(e) => setMotivation(e.target.value)} rows={2} placeholder="Un petit message d'encouragement" />
                 <div className="flex flex-wrap gap-1.5">
                   {messagesEnfant(snap).map((p) => <button key={p} type="button" onClick={() => setMotivation(p)} className="rounded-full border border-dashed border-violet-500 bg-violet-50 dark:bg-violet-950/40 px-2.5 py-1 text-xs font-bold text-violet-800 dark:text-violet-200">{p}</button>)}
                 </div>

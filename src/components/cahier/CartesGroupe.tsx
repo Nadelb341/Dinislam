@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { rectSortingStrategy } from '@dnd-kit/sortable';
@@ -141,7 +142,7 @@ export function CartesGroupe({ contenu }: { contenu: Record<CleCarte, { phrase: 
           <Input value={emoji} maxLength={8} onChange={(e) => setEmoji(e.target.value)} placeholder="ex. 🎙️"
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('phrase-carte')?.focus(); } }} />
           <label className="text-xs font-semibold">Petite phrase (laisser vide = phrase d'origine)</label>
-          <Textarea id="phrase-carte" value={phrase} rows={2} maxLength={120} onChange={(e) => setPhrase(e.target.value)}
+          <TextareaDictee id="phrase-carte" value={phrase} rows={2} maxLength={120} onChange={(e) => setPhrase(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void validerModifier(); } }} />
           <div className="flex flex-wrap justify-between gap-2">
             {modifier && <button type="button" onClick={() => { setEmoji(CARTE_DEFAUT[modifier].emoji); setPhrase(''); }} className="text-xs font-semibold text-muted-foreground underline">↩️ Comme à l'origine</button>}

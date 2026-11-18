@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -109,7 +110,7 @@ function SubmissionItem({ sub, name, letter, onDone }: { sub: AlphabetSubmission
 
       {pending && (
         <>
-          <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="💬 Ton commentaire (facultatif)" className="min-h-[64px] text-sm" />
+          <TextareaDictee value={comment} onChange={(e) => setComment(e.target.value)} placeholder="💬 Ton commentaire (facultatif)" className="min-h-[64px] text-sm" />
           <div className="flex flex-wrap gap-1.5">
             {QUICK_REPLIES.map((q) => (
               <button key={q} type="button" onClick={() => setComment((c) => (c.trim() ? `${c.trim()} ${q}` : q))}

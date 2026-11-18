@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
 import { asPJ } from '@/lib/devoirFichiers';
 import { useState } from 'react';
@@ -143,7 +144,7 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
 
           {statut === 'rendu' && refaire && (
             <div className="space-y-2">
-              <Textarea
+              <TextareaDictee
                 value={commentaire}
                 onChange={(e) => setCommentaire(e.target.value)}
                 rows={3}

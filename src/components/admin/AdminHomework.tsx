@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -608,7 +609,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
             <DialogTitle>🔄 Devoir à refaire</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{modalARefaire?.devoirTitre}</p>
-          <Textarea
+          <TextareaDictee
             placeholder="Commentaire pour l'élève (optionnel)"
             value={commentaire}
             onChange={e => setCommentaire(e.target.value)}

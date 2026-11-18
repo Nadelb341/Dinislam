@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -261,9 +262,9 @@ function StoryEditor({ story, onDone }: { story: Story; onDone: () => void }) {
       <label className="text-xs font-bold" htmlFor="st-titre">Titre</label>
       <Input id="st-titre" value={titre} onChange={(e) => setTitre(e.target.value)} />
       <label className="text-xs font-bold" htmlFor="st-texte">Histoire</label>
-      <Textarea id="st-texte" value={texte} onChange={(e) => setTexte(e.target.value)} rows={7} />
+      <TextareaDictee id="st-texte" value={texte} onChange={(e) => setTexte(e.target.value)} rows={7} />
       <label className="text-xs font-bold" htmlFor="st-merite">Mérite (facultatif)</label>
-      <Textarea id="st-merite" value={merite} onChange={(e) => setMerite(e.target.value)} rows={3} />
+      <TextareaDictee id="st-merite" value={merite} onChange={(e) => setMerite(e.target.value)} rows={3} />
       <label className="text-xs font-bold" htmlFor="st-sources">Sources (une par ligne : référence | lien)</label>
       <Textarea id="st-sources" value={sources} onChange={(e) => setSources(e.target.value)} rows={3} />
       <div className="flex gap-2">

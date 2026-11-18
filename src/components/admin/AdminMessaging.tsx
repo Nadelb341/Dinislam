@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -264,7 +265,7 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
         {/* Reply input */}
         <div className="space-y-2 pt-3 border-t">
           <input ref={audioInputRef} type="file" className="hidden" accept=".mp3,.wav,.ogg,.webm,.m4a,audio/*" onChange={handleAudioUpload} />
-          <Textarea value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Votre réponse..." rows={2} className="resize-none" />
+          <TextareaDictee value={replyMessage} onChange={(e) => replyDraft.change(e.target.value)} placeholder="Votre réponse..." rows={2} className="resize-none" />
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => audioInputRef.current?.click()} disabled={isSending} size="sm">
               <Music className="h-4 w-4 mr-1" /> Audio

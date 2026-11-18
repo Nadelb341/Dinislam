@@ -1,3 +1,4 @@
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -180,7 +181,7 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
       {vuOuvert && group.id && next && (
         <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-3 space-y-2">
           <p className="text-sm font-bold">📝 Ce qu'on a vu au cours du {courseLabel(next)}</p>
-          <Textarea value={vu} onChange={(e) => setVu(e.target.value)} rows={3} placeholder="Ex. : leçon 10 lignes 1 à 4, révision d'Al-Masad…" />
+          <TextareaDictee value={vu} onChange={(e) => setVu(e.target.value)} rows={3} placeholder="Ex. : leçon 10 lignes 1 à 4, révision d'Al-Masad…" />
           <p className="text-[11px] text-muted-foreground">Envoyé tout seul ce soir à 20 h aux élèves notés absents à l'appel (seulement si tu as écrit quelque chose).{session?.seen_sent_at ? ' ✅ Déjà envoyé.' : ''}</p>
           <button type="button" onClick={() => void saveVu()} className="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-bold">💾 Enregistrer</button>
         </div>
