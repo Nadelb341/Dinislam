@@ -30,6 +30,7 @@ import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import PushToggle from '@/components/settings/PushToggle';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 import { errorMessage, byName } from '@/lib/utils';
+import { lienWhatsApp } from '@/lib/convocations';
 import type { Tables } from '@/integrations/supabase/types';
 
 const AdminNotifications = () => {
@@ -41,16 +42,15 @@ const AdminNotifications = () => {
   const [testSending, setTestSending] = useState(false);
 
   // État pour statut notifications élèves
-  const [elevesStatut, setElevesStatut] = useState<{ id: string; full_name: string; notifActive: boolean }[]>([]);
+  const [elevesStatut, setElevesStatut] = useState<{ id: string; full_name: string; notifActive: boolean; tel: string | null }[]>([]);
   const [showStatuts, setShowStatuts] = useState(false);
-  const [envoiIndividuel, setEnvoiIndividuel] = useState('');
 
   useEffect(() => { chargerStatutsEleves(); }, []);
 
   const chargerStatutsEleves = async () => {
     let { data: profils } = await supabase
       .from('profiles')
-      .select('user_id, full_name')
+      .select('user_id, full_name, phone, parent_phone')
       .eq('is_approved', true);
 
     // L'enseignante n'est pas une élève : on la retire de la liste
@@ -69,32 +69,22 @@ const AdminNotifications = () => {
       id: p.user_id,
       full_name: p.full_name || 'Sans nom',
       notifActive: subs?.some(s => s.user_id === p.user_id && s.is_active) || false,
+      // Numéro du profil (parent d'abord pour un enfant) : jamais de numéro écrit dans le code
+      tel: p.parent_phone || p.phone || null,
     }));
     setElevesStatut(enrichis.sort(byName()));
   };
 
-  const handleRenvoyerInvitation = async (userId?: string) => {
-    const cibles = userId ? [userId] : elevesStatut.filter(e => !e.notifActive).map(e => e.id);
-    if (!cibles.length) {
-      toast({ title: 'Aucun élève à relancer' });
-      return;
-    }
-
-    try {
-      for (const id of cibles) {
-        await supabase
-          .from('notification_invitations')
-          .upsert({ 
-            user_id: id, 
-            show_banner: true,
-            sent_at: new Date().toISOString()
-          }, { onConflict: 'user_id' });
-      }
-
-      toast({ title: `✅ Bannière renvoyée à ${cibles.length} élève(s)` });
-    } catch (e) {
-      toast({ title: 'Erreur', description: errorMessage(e), variant: 'destructive' });
-    }
+  /** 📲 Mode d'emploi envoyé par WhatsApp (idée 8 du 18/11) : le bandeau rouge de l'appli le rappelle aussi à chaque ouverture */
+  const lienModeEmploi = (e: { full_name: string; tel: string | null }) => {
+    if (!e.tel) return null;
+    const prenom = (e.full_name || '').split(' ')[0];
+    const texte = `Salam ${prenom} ! Pour recevoir les messages et les devoirs de Dinislam :\n`
+      + `1. Ouvre ${window.location.origin} sur ton téléphone.\n`
+      + `2. Installe l'appli sur l'écran d'accueil (iPhone : dans Safari, bouton Partager ⬆️ puis « Sur l'écran d'accueil » ; Android : menu ⋮ puis « Installer l'appli »).\n`
+      + `3. Ouvre Dinislam depuis son icône et touche « Activer » sur le bandeau rouge.\n`
+      + `Le bandeau rouge t'explique tout pas à pas. Merci !`;
+    return lienWhatsApp(e.tel, texte);
   };
 
   const handleTestAdmin = async () => {
@@ -394,12 +384,12 @@ const AdminNotifications = () => {
       {/* Invitations notifications */}
       <Card>
         <CardHeader>
-          <CardTitle>📢 Invitations notifications</CardTitle>
+          <CardTitle>🟥 Élèves qui ne reçoivent rien</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Qui ne reçoit pas les notifications (idée validée par Nadia le 2026-09-30) */}
-          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 space-y-2">
-            <p className="font-semibold text-red-900">
+          <div className="rounded-xl border-2 border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3 space-y-2">
+            <p className="font-semibold text-red-900 dark:text-red-200">
               🚫 Ne reçoivent pas les notifications : {elevesStatut.filter(e => !e.notifActive).length}
             </p>
             {elevesStatut.filter(e => !e.notifActive).length === 0 ? (
@@ -409,44 +399,20 @@ const AdminNotifications = () => {
                 {elevesStatut.filter(e => !e.notifActive).map(e => (
                   <li key={e.id} className="flex items-center gap-2 rounded-lg bg-background p-2">
                     <span className="flex-1 min-w-0 text-sm font-medium [overflow-wrap:anywhere]">{e.full_name || 'Élève'}</span>
-                    <Button size="sm" variant="outline" className="shrink-0 min-h-11" onClick={() => handleRenvoyerInvitation(e.id)}>
-                      🔔 Relancer
-                    </Button>
+                    {lienModeEmploi(e) ? (
+                      <Button asChild size="sm" variant="outline" className="shrink-0 min-h-11">
+                        <a href={lienModeEmploi(e)!} target="_blank" rel="noopener noreferrer">📲 WhatsApp</a>
+                      </Button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-muted-foreground">Pas de numéro</span>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
-            <p className="text-xs text-muted-foreground">« Relancer » réaffiche à l'élève le bandeau « Activer les notifications » à sa prochaine ouverture de l'appli.</p>
+            <p className="text-xs text-muted-foreground">Ces élèves voient un bandeau rouge « Installe l'appli » ou « Active tes notifications » à chaque ouverture. « 📲 WhatsApp » leur envoie en plus le mode d'emploi, déjà écrit.</p>
           </div>
 
-          <Button
-            onClick={() => handleRenvoyerInvitation()}
-            className="w-full py-4 rounded-2xl font-bold text-lg bg-orange-500 hover:bg-orange-600"
-          >
-            🔔 Relancer tous ceux qui ne reçoivent rien
-          </Button>
-
-          <Select value={envoiIndividuel} onValueChange={setEnvoiIndividuel}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un élève..." />
-            </SelectTrigger>
-            <SelectContent>
-              {elevesStatut.map(e => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.notifActive ? '✅' : '❌'} {e.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {envoiIndividuel && (
-            <Button
-              onClick={() => handleRenvoyerInvitation(envoiIndividuel)}
-              className="w-full py-4 rounded-2xl font-bold text-lg"
-            >
-              🔔 Envoyer à cet élève
-            </Button>
-          )}
         </CardContent>
       </Card>
 
@@ -479,9 +445,9 @@ const AdminNotifications = () => {
                   <Badge variant="outline" className={e.notifActive ? 'bg-green-500/10 text-green-700 border-green-300' : 'bg-red-500/10 text-red-700 border-red-300'}>
                     {e.notifActive ? '✅ Actif' : '❌ Inactif'}
                   </Badge>
-                  {!e.notifActive && (
-                    <Button size="sm" variant="outline" onClick={() => handleRenvoyerInvitation(e.id)} className="text-xs">
-                      Relancer
+                  {!e.notifActive && lienModeEmploi(e) && (
+                    <Button asChild size="sm" variant="outline" className="text-xs">
+                      <a href={lienModeEmploi(e)!} target="_blank" rel="noopener noreferrer">📲 WhatsApp</a>
                     </Button>
                   )}
                 </div>

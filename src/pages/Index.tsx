@@ -8,7 +8,7 @@ import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, Bell, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
+import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
@@ -214,8 +214,6 @@ const Index = () => {
   }, [location.search, location.pathname, navigate]);
   const queryClient = useQueryClient();
 
-  const [showNotifBanner, setShowNotifBanner] = useState(false);
-  const [activatingNotif, setActivatingNotif] = useState(false);
   const { data: progress } = useUserProgress();
 
   // 📍 2026-11-15 : la ville du profil de l'élève (sinon celle choisie sur l'appareil)
@@ -362,7 +360,7 @@ const Index = () => {
       if (!user) return null;
       const { data, error } = await supabase.
       from('profiles').
-      select('full_name, date_of_birth, notification_prompt_dismissed, notification_prompt_later_count, notification_prompt_later_at').
+      select('full_name, date_of_birth').
       eq('user_id', user.id).
       maybeSingle();
       if (error) throw error;
@@ -371,66 +369,6 @@ const Index = () => {
     enabled: !!user
   });
 
-
-  // Check notification permission and show banner with smart logic
-  useEffect(() => {
-    if (user && 'Notification' in window && profile) {
-      const dismissed = profile.notification_prompt_dismissed;
-      const laterCount = profile.notification_prompt_later_count || 0;
-      const laterAt = profile.notification_prompt_later_at;
-
-      if (dismissed === 'accepted' || Notification.permission === 'granted') {
-        setShowNotifBanner(false);
-        return;
-      }
-
-      // If clicked "later" 3+ times, wait 7 days
-      if (laterCount >= 3 && laterAt) {
-        const sevenDaysLater = new Date(laterAt);
-        sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
-        if (new Date() < sevenDaysLater) {
-          setShowNotifBanner(false);
-          return;
-        }
-      }
-
-      // Show banner if permission is default
-      if (Notification.permission === 'default') {
-        setShowNotifBanner(true);
-      }
-    }
-  }, [user, profile]);
-
-  const handleActivateNotifications = async () => {
-    if (!user) return;
-    setActivatingNotif(true);
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === 'granted') {
-        toast.success('Notifications activées !');
-        await supabase.from('profiles').update({ notification_prompt_dismissed: 'accepted' }).eq('user_id', user.id);
-        queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
-      } else {
-        toast.info('Permission refusée');
-      }
-      setShowNotifBanner(false);
-    } catch (e) {
-      toast.error('Erreur : ' + errorMessage(e));
-    }
-    setActivatingNotif(false);
-  };
-
-  const handleDismissNotifBanner = async () => {
-    if (!user) return;
-    setShowNotifBanner(false);
-    const laterCount = (profile?.notification_prompt_later_count || 0) + 1;
-    await supabase.from('profiles').update({
-      notification_prompt_dismissed: 'later',
-      notification_prompt_later_count: laterCount,
-      notification_prompt_later_at: new Date().toISOString()
-    }).eq('user_id', user.id);
-    queryClient.invalidateQueries({ queryKey: ['profile', user.id] });
-  };
 
 const handleModuleClick = (mod) => {
     // 👁️ Une visite par élève, par carte et par jour (« Vu par N élèves cette semaine », 2026-10-27)
@@ -479,23 +417,6 @@ const handleModuleClick = (mod) => {
               <Suspense fallback={null}><MeteoSaison saison={saison} r={reglagesSaison} soir={soir} ville={prayerCity} /></Suspense>
             </SilentBoundary>
           )}
-          {/* Notification Permission Banner */}
-          {showNotifBanner &&
-          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
-              <Bell className="h-6 w-6 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">🔔 Active les notifications pour ne rien manquer !</p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button size="sm" variant="ghost" onClick={handleDismissNotifBanner}>
-                  Plus tard
-                </Button>
-                <Button size="sm" onClick={handleActivateNotifications} disabled={activatingNotif}>
-                  {activatingNotif ? '...' : 'Activer'}
-                </Button>
-              </div>
-            </div>
-          }
           {/* ✨ Titre de l'accueil, réglable dans le bouclier › 🔧 Apparence appli › Le titre (2026-10-29) */}
           <SilentBoundary name="Titre de l'accueil">
             <TitreAccueil nom={profile?.full_name ?? null}>
