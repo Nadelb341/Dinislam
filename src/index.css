@@ -931,34 +931,3 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 @keyframes cadre-halo { 0%, 100% { box-shadow: 0 0 0 0 var(--cadre-doux), 0 0 8px var(--cadre); } 50% { box-shadow: 0 0 0 calc(6px * var(--ep, 1)) var(--cadre-doux), 0 0 22px var(--cadre); } }
 @media (prefers-reduced-motion: reduce) { .cadre-halo { animation: none; box-shadow: 0 0 0 5px var(--cadre-doux), 0 0 16px var(--cadre); } }
 
-/* 🎛️ Icônes de l'en-tête « boutons de jeu » (Nadia, 2026-11-18, modèle 1 : bille bleue + anneau or/cuivre) — composant BoutonEntete.
-   Téléphone : bouton 36 px (bille 26 px + anneau 3,5 px = 33 px visibles) → 10 icônes tiennent sur un iPhone de 375 px. */
-.bouton-entete{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:9999px;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.bouton-entete:focus-visible{outline:2px solid #ffd27a;outline-offset:1px}
-.bouton-entete .bille{position:relative;display:grid;place-items:center;width:26px;height:26px;border-radius:9999px;
-  background:radial-gradient(circle at 50% 30%,#7cc3ff 0,#2a86e6 45%,#1559b8 100%);
-  box-shadow:0 0 0 2px #f2b65a,0 0 0 3.5px #b76a1e,0 2px 3px 2px rgba(0,0,0,.25),inset 0 -2px 3px rgba(0,0,0,.25);
-  transition:transform .12s ease}
-.bouton-entete .bille::before{content:"";position:absolute;left:18%;right:18%;top:8%;height:36%;border-radius:50%;background:linear-gradient(#ffffff99,#ffffff00);pointer-events:none}
-.bouton-entete .bille svg{position:relative;z-index:1;width:15px;height:15px;color:#ffc65c;stroke-width:2.4}
-.bouton-entete:active .bille{transform:scale(.88)}
-.bouton-entete .bille.rebond{animation:entete-rebond .38s ease-out}
-.bouton-entete .bille.tourne svg{animation:entete-tourne .6s ease-in-out}
-@keyframes entete-rebond{0%{transform:scale(.86)}55%{transform:scale(1.1)}100%{transform:scale(1)}}
-@keyframes entete-tourne{to{transform:rotate(360deg)}}
-.pastille-entete{position:absolute;top:-1px;right:-2px;z-index:2;min-width:16px;height:16px;padding:0 3px;border-radius:9999px;display:grid;place-items:center;
-  font:800 9px/1 system-ui,sans-serif;color:#fff;
-  background:radial-gradient(circle at 35% 28%,#ff9a8c 0,#ef3b2d 50%,#b3170c 100%);box-shadow:0 0 0 1.5px #fff,0 1px 3px rgba(0,0,0,.35)}
-.pastille-entete.orange{background:radial-gradient(circle at 35% 28%,#ffd08a 0,#f59e0b 50%,#c2610c 100%)}
-.pastille-entete.vert{background:radial-gradient(circle at 35% 28%,#8ff0c4 0,#10b981 50%,#047857 100%)}
-@media (min-width:640px){
-  .bouton-entete{width:42px;height:42px;flex-basis:42px}
-  .bouton-entete .bille{width:30px;height:30px;box-shadow:0 0 0 2.5px #f2b65a,0 0 0 4px #b76a1e,0 3px 4px 3px rgba(0,0,0,.25),inset 0 -3px 4px rgba(0,0,0,.25)}
-  .bouton-entete .bille svg{width:17px;height:17px}
-  .pastille-entete{min-width:17px;height:17px;font-size:10px}
-}
-@media (prefers-reduced-motion:reduce){.bouton-entete .bille.rebond,.bouton-entete .bille.tourne svg{animation:none}}
-/* Retour à l'ancien style (STYLE_JEU = false) : icône blanche simple */
-.bouton-entete-simple .bille{background:none;box-shadow:none}
-.bouton-entete-simple .bille::before{display:none}
-.bouton-entete-simple .bille svg{color:hsl(var(--primary-foreground));width:20px;height:20px;stroke-width:2}

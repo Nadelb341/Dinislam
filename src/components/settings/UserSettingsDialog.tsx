@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { authErrorFr, rememberPassword } from '@/lib/rememberPassword';
 import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BoutonEntete } from '@/components/layout/BoutonEntete';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -221,17 +220,21 @@ const UserSettingsDialog = () => {
 
   return (
     <>
-      {/* 🎛️ Bouton de l'en-tête « bouton de jeu » (2026-11-18) */}
-      <BoutonEntete
-        icone={<Settings />}
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={requestOpen}
-        className={locked ? 'opacity-60' : undefined}
-        aria-label={locked ? 'Paramètres (réservé aux parents)' : bilansNonLus > 0 && !isAdmin ? `Paramètres, ${bilansNonLus} nouveau bilan` : 'Paramètres'}
-        title="Paramètres"
-        compteur={!isAdmin ? bilansNonLus : 0}
+        className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+        aria-label={locked ? 'Paramètres (réservé aux parents)' : 'Paramètres'}
       >
-        {locked && <Lock className="absolute bottom-0 right-0 z-[3] h-3 w-3 text-white drop-shadow" />}
-      </BoutonEntete>
+        <Settings className="h-5 w-5" />
+        {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
+        {bilansNonLus > 0 && !isAdmin && (
+          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1" aria-label={`${bilansNonLus} nouveau bilan`}>
+            {bilansNonLus > 99 ? '99+' : bilansNonLus}
+          </span>
+        )}
+      </Button>
       <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={handleOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
