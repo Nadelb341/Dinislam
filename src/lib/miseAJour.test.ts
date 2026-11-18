@@ -11,3 +11,10 @@ describe('nouvelle version en ligne', () => {
     expect(estErreurMiseAJour(new TypeError("Cannot read properties of undefined (reading 'map')"))).toBe(false);
   });
 });
+
+describe('plantage iPhone pendant une mise en ligne (Wiam, 18/11)', () => {
+  it('reconnaît l\'erreur Safari de React.lazy', () => {
+    expect(estErreurMiseAJour(new TypeError("undefined is not an object (evaluating 'e._result.default')"))).toBe(true);
+    expect(estErreurMiseAJour(new TypeError("Cannot read properties of undefined (reading 'default')"))).toBe(true);
+  });
+});

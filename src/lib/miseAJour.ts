@@ -1,13 +1,14 @@
 /**
  * 🔄 Nouvelle version mise en ligne pendant que l'appli est ouverte (2026-10-30) : l'ancienne page cherche un morceau
  * de l'appli qui n'existe plus (« 'text/html' is not a valid JavaScript MIME type », « Failed to fetch dynamically
- * imported module »…). Au lieu du chat qui pleure, l'appli se recharge toute seule sur la nouvelle version (une fois).
+ * imported module », et sur iPhone « undefined is not an object (evaluating 'e._result.default') » : plantage de Wiam
+ * le 18/11 sur /invocations pendant une mise en ligne)…). Au lieu du chat qui pleure, l'appli se recharge toute seule sur la nouvelle version (une fois).
  */
 const CLE = 'dinislam_rechargement_maj';
 
 export function estErreurMiseAJour(err: unknown): boolean {
   const m = err instanceof Error ? `${err.name} ${err.message}` : String(err ?? '');
-  return /not a valid JavaScript MIME type|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Loading chunk [\w-]+ failed/i.test(m);
+  return /not a valid JavaScript MIME type|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Loading chunk [\w-]+ failed|_result\.default|reading 'default'|Element type is invalid.*lazy/i.test(m);
 }
 
 /** Recharge la page, sauf si on vient déjà de le faire (moins de 30 s) : jamais de boucle */
