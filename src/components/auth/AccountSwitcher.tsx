@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { BoutonEntete } from '@/components/layout/BoutonEntete';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -117,15 +118,14 @@ const AccountSwitcher = () => {
     <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={() => setOpen(true)} />
     <Dialog open={open} onOpenChange={(v) => { if (v && locked) { setGateOpen(true); return; } setOpen(v); if (!v) { setSwitchEmail(null); setPassword(''); setShowAdd(false); } }}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+        <BoutonEntete
+          icone={<UsersRound />}
+          className={locked ? 'opacity-60' : undefined}
           aria-label={locked ? 'Changer de compte (réservé aux parents)' : 'Changer de compte'}
+          title="Changer de compte"
         >
-          <UsersRound className="h-5 w-5" />
-          {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
-        </Button>
+          {locked && <Lock className="absolute bottom-0 right-0 z-[3] h-3 w-3 text-white drop-shadow" />}
+        </BoutonEntete>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>

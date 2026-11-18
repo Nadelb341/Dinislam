@@ -1,14 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import { DraftDot } from '@/components/shared/DraftDot';
+import { BoutonEntete } from '@/components/layout/BoutonEntete';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
-import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy, RotateCw } from 'lucide-react';
+import { Home, Mail, CalendarCheck, Shield, BarChart3, Trophy, RotateCw } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import MessagingDialog from '@/components/messaging/MessagingDialog';
 import NewMessageNotification from '@/components/messaging/NewMessageNotification';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
@@ -23,11 +22,11 @@ const AdminMessagingDialog = lazy(() => import('@/components/messaging/AdminMess
 
 const ZOOM_URL = 'https://us06web.zoom.us/j/4080361371?pwd=UHVDc1o0RDE3WFBmNTBNTENaMDJnUT09';
 
+// Caméra Zoom en trait doré (même dessin que la page de choix du 18/11), comme les autres icônes de l'en-tête
 const ZoomIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-    <rect width="20" height="20" rx="4" fill="#2D8CFF"/>
-    <rect x="2.5" y="5.5" width="9.5" height="9" rx="1.5" fill="white"/>
-    <path d="M13.5 8.2l3.8-2.2v7.8l-3.8-2.2V8.2z" fill="white"/>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2.5" y="7" width="13" height="10" rx="2.5" />
+    <path d="m15.5 10.5 6-3.5v10l-6-3.5z" />
   </svg>
 );
 
@@ -105,76 +104,40 @@ const Header = ({
           <div className="hidden sm:block w-10" />
           <div className="flex-1" />
 
-          <div className="flex items-center gap-0 sm:gap-1 [&>button]:h-9 [&>button]:w-9 sm:[&>button]:h-10 sm:[&>button]:w-10">
+          {/* 🎛️ 2026-11-18 : icônes en « boutons de jeu » (BoutonEntete) ; 10 icônes de 36 px tiennent sur un iPhone de 375 px */}
+          <div className="flex items-center gap-0 sm:gap-1">
             <UserSettingsDialog />
             <AccountSwitcher />
-            <Button variant="ghost" size="icon" onClick={handleOpenMessaging} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-              <Mail className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <Badge className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-orange-500 border-2 border-primary ${hasNewMessage ? 'animate-pulse' : ''}`}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </Badge>
-              )}
+            <BoutonEntete icone={<Mail />} onClick={handleOpenMessaging} aria-label="Messages" title="Messages"
+              compteur={unreadCount} couleurCompteur="orange" className={hasNewMessage ? '[&>.pastille-entete]:animate-pulse' : undefined}>
               {/* Message commencé mais pas envoyé */}
               <DraftDot
                 tiny
                 draftKey={isAdmin ? ['dinislam_admin_new_msg', 'dinislam_admin_group_msg', 'dinislam_admin_reply_'] : user ? `messaging_student_${user.id}` : null}
-                className="absolute -bottom-0.5 -right-0.5 text-[10px]"
+                className="absolute -bottom-0.5 -right-0.5 z-[3] text-[10px]"
               />
-            </Button>
-            <Button
-              variant="ghost" size="icon"
-              onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')}
-              className="hover:bg-primary-foreground/10 p-1"
-              title="Rejoindre le cours Zoom"
-            >
-              <ZoomIcon />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/classement')} className="text-primary-foreground hover:bg-primary-foreground/10">
-              <Trophy className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/attendance')} className="text-primary-foreground hover:bg-primary-foreground/10">
-              <CalendarCheck className="h-5 w-5" />
-            </Button>
+            </BoutonEntete>
+            <BoutonEntete icone={<ZoomIcon />} onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')} aria-label="Rejoindre le cours Zoom" title="Rejoindre le cours Zoom" />
+            <BoutonEntete icone={<Trophy />} onClick={() => navigate('/classement')} aria-label="Classement" title="Classement" />
+            <BoutonEntete icone={<CalendarCheck />} onClick={() => navigate('/attendance')} aria-label="Ma présence" title="Ma présence" />
             {/* Admin: monitoring icon */}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/monitoring')} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-                <BarChart3 className="h-5 w-5" />
-                {monitoringErrors > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
-                    {monitoringErrors > 9 ? '9+' : monitoringErrors}
-                  </Badge>
-                )}
-              </Button>
+              <BoutonEntete icone={<BarChart3 />} onClick={() => navigate('/monitoring')} aria-label="Suivi" title="Suivi"
+                compteur={monitoringErrors} className="[&>.pastille-entete]:animate-pulse" />
             )}
-            {/* Admin: shield icon with dynamic badge, navigates directly to /admin */}
+            {/* Admin: bouclier avec compteur (rouge) ou ✓ vert quand tout est fait */}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => setShowAdminModal(true)} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-                <Shield className="h-5 w-5" />
-                {shieldTotal > 0 ? (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
-                    {shieldTotal > 9 ? '9+' : shieldTotal}
-                  </Badge>
-                ) : (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-primary flex items-center justify-center">
-                    <Check className="h-3 w-3 text-white" />
-                  </span>
-                )}
-              </Button>
+              <BoutonEntete icone={<Shield />} onClick={() => setShowAdminModal(true)} aria-label="Bouclier" title="Bouclier"
+                compteur={shieldTotal} ok={shieldTotal === 0} className={shieldTotal > 0 ? '[&>.pastille-entete]:animate-pulse' : undefined} />
             )}
-            {/* 🔄 Actualiser la page en cours (Nadia, 2026-11-18). Sans réseau : on ne recharge pas (l'appli resterait utilisable, mais rien de neuf à chercher) */}
-            <Button variant="ghost" size="icon" title="Actualiser" aria-label="Actualiser la page"
+            {/* 🔄 Actualiser la page en cours (Nadia, 2026-11-18). Sans réseau : on ne recharge pas. L'icône fait un tour avant le rechargement */}
+            <BoutonEntete icone={<RotateCw />} tourne aria-label="Actualiser la page" title="Actualiser"
               onClick={() => {
-                if (navigator.onLine) { window.location.reload(); return; }
+                if (navigator.onLine) { window.setTimeout(() => window.location.reload(), 450); return; }
                 toast('📡 Pas de connexion Internet : tu vois les dernières données gardées sur l\'appareil.');
-              }}
-              className="text-primary-foreground hover:bg-primary-foreground/10 active:[&>svg]:rotate-180 [&>svg]:transition-transform">
-              <RotateCw className="h-5 w-5" />
-            </Button>
+              }} />
             {!isHome && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Home className="h-5 w-5" />
-              </Button>
+              <BoutonEntete icone={<Home />} onClick={() => navigate('/')} aria-label="Accueil" title="Accueil" />
             )}
           </div>
         </div>
