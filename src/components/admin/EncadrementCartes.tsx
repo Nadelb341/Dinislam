@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -70,6 +70,13 @@ export default function EncadrementCartes() {
     toast.success('🖼️ Encadrements enregistrés : tout le monde les voit déjà');
   };
 
+  // La carte choisie se place toute seule au milieu du petit téléphone (on voit le résultat de chaque réglage)
+  const telephone = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = telephone.current?.querySelector<HTMLElement>('[aria-pressed="true"], .ring-2');
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [choisie]);
+
   if (isLoading) return <p className="text-center text-sm text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin" /> Un instant…</p>;
   if (isError && !enregistre) return (
     <div className="text-center text-sm space-y-2">
@@ -90,13 +97,12 @@ export default function EncadrementCartes() {
   );
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
-      {/* 👀 Aperçu en direct (idée 3) */}
-      <div className="space-y-2 min-w-0">
-        <p className="text-sm font-extrabold">👀 Aperçu en direct</p>
-        <p className="text-xs text-muted-foreground">Touche une carte du téléphone pour la régler.</p>
-        <div className="mx-auto w-full max-w-[280px] rounded-[2rem] border-[6px] border-slate-800 bg-background p-3 shadow-lg lg:sticky lg:top-4">
-          <div className="flex max-h-[520px] flex-col gap-3 overflow-y-auto p-1.5">
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[300px_1fr]">
+      {/* 👀 Aperçu en direct (idée 3). Nadia, 2026-11-18 : figé en haut de l'écran (un peu plus petit) pendant que les réglages défilent dessous */}
+      <div className="sticky top-0 z-20 -mx-1 space-y-1.5 min-w-0 self-start bg-background/95 px-1 pb-2 pt-1 backdrop-blur lg:top-4 lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+        <p className="text-sm font-extrabold">👀 Aperçu en direct <span className="text-xs font-normal text-muted-foreground">· touche une carte pour la régler</span></p>
+        <div ref={telephone} className="mx-auto w-full max-w-[230px] rounded-[1.6rem] border-[5px] border-slate-800 bg-background p-2 shadow-lg lg:max-w-[280px] lg:rounded-[2rem] lg:border-[6px] lg:p-3">
+          <div className="flex max-h-[32dvh] flex-col gap-2.5 overflow-y-auto p-1 lg:max-h-[520px] lg:gap-3 lg:p-1.5">
             {mini('carnet', '📒 Carnet de liaison')}
             {mini('majournee', '📋 Ma journée (toi seulement)')}
             <div className="grid grid-cols-2 gap-3">
@@ -119,7 +125,7 @@ export default function EncadrementCartes() {
             </div>
           </div>
         </div>
-        <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-2">
+        <label className="mx-auto flex w-full max-w-[300px] items-center justify-between gap-3 rounded-xl border-2 border-border bg-card px-3 py-1.5 lg:max-w-none">
           <span className="text-xs font-bold">Voir un jour où un devoir est à rendre</span>
           <Switch checked={jourDevoir} onCheckedChange={setJourDevoir} />
         </label>

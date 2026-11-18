@@ -1,7 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { toast } from 'sonner';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
-import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy } from 'lucide-react';
+import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy, RotateCw } from 'lucide-react';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -161,6 +162,15 @@ const Header = ({
                 )}
               </Button>
             )}
+            {/* 🔄 Actualiser la page en cours (Nadia, 2026-11-18). Sans réseau : on ne recharge pas (l'appli resterait utilisable, mais rien de neuf à chercher) */}
+            <Button variant="ghost" size="icon" title="Actualiser" aria-label="Actualiser la page"
+              onClick={() => {
+                if (navigator.onLine) { window.location.reload(); return; }
+                toast('📡 Pas de connexion Internet : tu vois les dernières données gardées sur l\'appareil.');
+              }}
+              className="text-primary-foreground hover:bg-primary-foreground/10 active:[&>svg]:rotate-180 [&>svg]:transition-transform">
+              <RotateCw className="h-5 w-5" />
+            </Button>
             {!isHome && (
               <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Home className="h-5 w-5" />
