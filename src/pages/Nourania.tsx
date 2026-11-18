@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { personalize, withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
@@ -185,8 +185,7 @@ const Nourania = () => {
 
           // Find next lesson to show unlock dialog
           const approvedLessonId = (payload.new as Tables<'nourania_validation_requests'>).lesson_id;
-          const currentIndex = lessons.findIndex(l => l.id === approvedLessonId);
-          const nextLesson = lessons[currentIndex + 1];
+          const nextLesson = leconQuiSouvre(approvedLessonId);
           if (nextLesson) {
             setTimeout(() => {
               setUnlockDialog({
@@ -201,6 +200,8 @@ const Nourania = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+    // leconQuiSouvre lit la progression par une référence (toujours à jour) : pas besoin de se réabonner à chaque rendu
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, lessons, queryClient, fireSuccess, myName]);
 
   // Auto-expand lesson from URL param (e.g., ?lesson=5)
@@ -227,20 +228,33 @@ const Nourania = () => {
   const isLessonValidated = (lessonId: string) =>
     userProgress.some(p => p.lesson_id === lessonId && p.is_validated);
 
+  // La leçon qui s'OUVRE vraiment après la validation de `valideeId` : seulement si celle-ci était la leçon en cours
+  // (toutes celles d'avant validées) ; une leçon validée « en avance » n'ouvre rien (règle du 2026-11-18)
+  const progressRef = useRef(userProgress);
+  progressRef.current = userProgress;
+  const leconQuiSouvre = (valideeId: string) => {
+    const ok = (id: string) => id === valideeId || progressRef.current.some((p) => p.lesson_id === id && p.is_validated);
+    const i = lessons.findIndex((l) => l.id === valideeId);
+    if (i < 0 || !lessons.slice(0, i).every((l) => ok(l.id))) return undefined;
+    return lessons.find((l) => !ok(l.id));
+  };
+
   const isLessonPendingValidation = (lessonId: string) =>
     pendingRequests.some(p => p.lesson_id === lessonId && p.status === 'pending');
 
   const hasLessonBeenStarted = (lessonId: string) =>
     userProgress.some(p => p.lesson_id === lessonId) || pendingRequests.some(p => p.lesson_id === lessonId);
 
+  // 🔒 Règle de Nadia (2026-11-18, comme les sourates) : une leçon validée reste ouverte ; une leçon PAS encore validée ne
+  // s'ouvre que si TOUTES celles d'avant sont validées (valider une leçon « en avance » n'ouvre pas la suivante),
+  // ou si l'enseignante l'a ouverte elle-même avec le 🔓 (nourania_admin_unlocks).
   const isLessonUnlocked = (index: number) => {
     if (isOver20 || isAdmin) return true;
-    if (index === 0) return true;
     const lesson = lessons[index];
-    // Déverrouillage admin direct sur cette leçon
-    if (lesson && adminUnlocks.includes(lesson.id)) return true;
-    const previousLesson = lessons[index - 1];
-    return previousLesson ? isLessonValidated(previousLesson.id) : false;
+    if (!lesson) return false;
+    if (isLessonValidated(lesson.id)) return true;
+    if (adminUnlocks.includes(lesson.id)) return true;
+    return lessons.slice(0, index).every((l) => isLessonValidated(l.id));
   };
 
   // Submit validation request (ou auto-validation si leçon débloquée par admin)
@@ -308,8 +322,7 @@ const Nourania = () => {
         queryClient.invalidateQueries({ queryKey: ['nourania-admin-unlocks'] });
         fireSuccess();
         toast.success(withName(user, 'Leçon validée, bravo {prenom} ! 🎉'));
-        const currentIndex = lessons.findIndex(l => l.id === result.lessonId);
-        const nextLesson = lessons[currentIndex + 1];
+        const nextLesson = leconQuiSouvre(result.lessonId);
         if (nextLesson) {
           setTimeout(() => {
             setUnlockDialog({

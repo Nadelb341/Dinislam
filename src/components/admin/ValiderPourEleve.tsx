@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ChoixEleveParGroupe } from '@/components/shared/ChoixEleveParGroupe';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
@@ -34,6 +35,7 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [eleve, setEleve] = useState<string | null>(null);
+  const [nomChoisi, setNomChoisi] = useState('');
   const [aValider, setAValider] = useState<ElementAValider | null>(null);
   const [aAnnuler, setAAnnuler] = useState<ElementAValider | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,7 +50,7 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
     },
   });
 
-  const nomEleve = profiles.find((p) => p.user_id === eleve)?.full_name || 'Élève';
+  const nomEleve = nomChoisi || profiles.find((p) => p.user_id === eleve)?.full_name || 'Élève';
   const rafraichir = () => {
     void refetch();
     queryClient.invalidateQueries({ queryKey: [genre === 'nourania' ? 'nourania-progress' : 'invocation-progress'] });
@@ -94,10 +96,8 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
     <Card>
       <CardContent className="p-4 space-y-3">
         <h4 className="font-bold flex items-center gap-2"><Unlock className="h-4 w-4" /> {cfg.titre}</h4>
-        <select className="w-full p-2 border rounded-lg bg-background text-foreground" value={eleve || ''} onChange={(e) => setEleve(e.target.value || null)} aria-label="Élève">
-          <option value="">Sélectionner un élève...</option>
-          {profiles.map((p) => <option key={p.user_id} value={p.user_id}>{p.full_name || p.email || 'Élève'}</option>)}
-        </select>
+        <ChoixEleveParGroupe value={eleve} onChange={(id, nom) => { setEleve(id); setNomChoisi(nom); }} />
+        {eleve && <p className="text-sm font-bold text-violet-800 dark:text-violet-200">Pour {nomEleve} :</p>}
         {eleve && (
           <div className="max-h-60 overflow-y-auto space-y-1">
             {elements.map((l) => {

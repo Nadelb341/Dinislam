@@ -87,6 +87,10 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
 
   // 🔁 Son du feu : un toucher le lance, un autre l'arrête ; il s'arrête aussi en quittant l'accueil
   const [sonJoue, setSonJoue] = useState(sonFeuEnCours());
+  // 👂 Pour que les élèves sachent que le feu crépite (Nadia, 2026-11-18) : à chaque arrivée sur l'accueil, une bulle
+  // « 🔊 Touche le feu ! » pendant 8 s, puis un petit 🔈 discret reste au-dessus du foyer
+  const [bulleSon, setBulleSon] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setBulleSon(false), 8000); return () => clearTimeout(t); }, []);
   useEffect(() => {
     const f = () => setSonJoue(sonFeuEnCours());
     window.addEventListener(EVT_SON_FEU, f);
@@ -136,7 +140,11 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
         className="fixed bottom-0 z-[32] rounded-full"
         style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }}>
         {/* 🔊 pendant que le son joue : on comprend qu'un nouveau toucher l'arrête */}
-        {sonJoue && <span aria-hidden className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-pulse rounded-full bg-white/90 px-1.5 text-xs shadow">🔊</span>}
+        {sonJoue
+          ? <span aria-hidden className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-pulse rounded-full bg-white/90 px-1.5 text-xs shadow">🔊</span>
+          : bulleSon
+            ? <span aria-hidden className="feu-bulle-son pointer-events-none absolute bottom-1 right-full mr-8 whitespace-nowrap rounded-full rounded-br-none border-2 border-orange-300 bg-white px-2 py-0.5 text-[11px] font-extrabold text-orange-700 shadow-md">🔊 Touche le feu !</span>
+            : <span aria-hidden className="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded-full bg-white/80 px-1 text-[10px] opacity-80 shadow-sm">🔈</span>}
       </button>
     )}
     </>,

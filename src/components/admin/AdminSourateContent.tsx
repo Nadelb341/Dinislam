@@ -1,3 +1,4 @@
+import { ChoixEleveParGroupe } from '@/components/shared/ChoixEleveParGroupe';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -411,16 +412,8 @@ const AdminSourateContent = () => {
             <Unlock className="h-4 w-4" />
             Valider des sourates pour un élève
           </h4>
-          <select
-            className="w-full p-2 border rounded-lg bg-background text-foreground"
-            value={selectedStudent || ''}
-            onChange={(e) => setSelectedStudent(e.target.value || null)}
-          >
-            <option value="">Sélectionner un élève...</option>
-            {profiles.map(p => (
-              <option key={p.user_id} value={p.user_id}>{p.full_name || p.email || 'Élève'}</option>
-            ))}
-          </select>
+          <ChoixEleveParGroupe value={selectedStudent} onChange={(id) => setSelectedStudent(id)} />
+          {selectedStudent && <p className="text-sm font-bold text-violet-800 dark:text-violet-200">Pour {(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'cet élève'} :</p>}
           {selectedStudent && (
             <div className="max-h-60 overflow-y-auto space-y-1">
               {sourates.map(s => {
