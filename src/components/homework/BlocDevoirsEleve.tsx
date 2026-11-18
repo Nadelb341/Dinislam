@@ -22,6 +22,8 @@ import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
 import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
 import type { GroupSchedule } from "@/lib/groupCourse";
+import { Encadre } from "@/components/home/Encadre";
+import { useReglagesEncadrements } from "@/lib/encadrements";
 
 type Devoir = {
   id: string;
@@ -171,6 +173,9 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
   // Ouvert par défaut à l'ouverture de l'appli ; la flèche le referme et le rouvre (demande de Nadia, 2026-10-26)
   const [ouvert, setOuvert] = useState(true);
+  // 🖼️ Cahier de texte encadré : les marges passent sur le cadre (sinon la carte garde ses marges d'avant)
+  const { data: encadrements } = useReglagesEncadrements();
+  const cadreCahier = (encadrements?.cartes.cahier.cadre ?? 'aucun') !== 'aucun';
   const queryClient = useQueryClient();
   const { fireSuccess } = useConfetti();
 
@@ -320,6 +325,10 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
     .map(d => new Date(d.date_limite!))
     .sort((a, b) => a.getTime() - b.getTime())[0];
 
+  // 🖼️ Idée 5 des encadrements (2026-11-18) : un devoir à rendre aujourd'hui (heure de Paris) → « Devoirs à faire » en Halo
+  const jourParis = (d: Date) => d.toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' });
+  const aRendreAujourdhui = enCours.some((d) => d.rang === 'semaine' && jourParis(d.heureRendu) === jourParis(now));
+
   // 📜 Historique d'un élève pour l'enseignante : le cahier complet, chaque devoir en lecture seule
   if (eleveId) {
     return (
@@ -329,8 +338,9 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
   }
 
   return (
+    <Encadre carte="cahier" className="mx-4 mb-4">
     <div className={cn(
-      "mx-4 mb-4 rounded-2xl overflow-hidden shadow border-2",
+      cadreCahier ? "" : "mx-4 mb-4", "rounded-2xl overflow-hidden shadow border-2",
       toutAJour ? "border-green-500 dark:border-green-600" : "border-red-600 dark:border-red-500"
     )}>
       <button
@@ -386,11 +396,14 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
           )}
 
           {(devoirs.length > 0 || devoirsTermines.length > 0) && (
+            <Encadre carte="devoirs" forcerHalo={aRendreAujourdhui}>
             <CahierRotation simple={simple} devoirs={ranges} prochainCours={prochainCours} coursHistorique={coursHisto} pageKey={`dinislam_cahier_page_${user?.id}`}
               renderDetail={(r) => { const d = tous.find((x) => x.id === r.id); return d ? <CarteDevoir devoir={d} onEtape={(id, n, v) => void handleEtape(id, n, v)} onSent={() => void chargerDevoirs()} /> : null; }} />
+            </Encadre>
           )}
         </div>
       )}
     </div>
+    </Encadre>
   );
 }

@@ -16,6 +16,7 @@ import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { ProgressionCompacte } from '@/components/home/ProgressionCompacte';
+import { Encadre } from '@/components/home/Encadre';
 import { usePrayerTimesCity, getSavedMethod } from '@/hooks/usePrayerTimesCity';
 import { cn, errorMessage } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
@@ -528,11 +529,14 @@ const handleModuleClick = (mod) => {
             </SilentBoundary>
           )}
           {/* 📒 Carnet de liaison (2026-11-12) : juste sous le message de bienvenue, élèves ET enseignante */}
-          <SilentBoundary name="Carnet de liaison">
-            <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>
-          </SilentBoundary>
+          {/* 🖼️ <Encadre> : cadre choisi dans le bouclier › 🔧 Apparence appli › Modifications générales (2026-11-18) */}
+          <Encadre carte="carnet">
+            <SilentBoundary name="Carnet de liaison">
+              <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>
+            </SilentBoundary>
+          </Encadre>
           {/* 📋 Ma journée (2026-11-12) : tout ce qui attend l'enseignante, un appui y emmène */}
-          {isAdmin && <SilentBoundary name="Ma journée"><Suspense fallback={null}><MaJournee /></Suspense></SilentBoundary>}
+          {isAdmin && <Encadre carte="majournee"><SilentBoundary name="Ma journée"><Suspense fallback={null}><MaJournee /></Suspense></SilentBoundary></Encadre>}
 
           {/* 📊 Nouveau bilan trimestriel pas encore ouvert par un parent : jaune bordé de rouge (2026-11-02) */}
           <SilentBoundary name="Annonce bilan"><AnnonceBilan /></SilentBoundary>
@@ -550,12 +554,13 @@ const handleModuleClick = (mod) => {
           {!isAdmin && <SilentBoundary name="Convocation"><ConvocationEleve /></SilentBoundary>}
           {/* 📩 Absences signalées par les parents (aujourd'hui et à venir), juste au-dessus du Cahier de texte (2026-10-30) */}
           {isAdmin && <SilentBoundary name="Absences signalées"><AbsencesSignalees compacte /></SilentBoundary>}
-          {isAdmin && <AdminTodoCard />}
+          {isAdmin && <Encadre carte="cahier"><AdminTodoCard /></Encadre>}
 
           {/* Prochaine Prière — version compacte sur 2 lignes (2026-11-04) :
               ligne 1 = date + hégire + prochaine prière + ville, ligne 2 = les 5 horaires (la prochaine est entourée) */}
           {/* Les deux cartes côte à côte sur tablette/ordinateur, l'une sous l'autre sur téléphone (trop étroit) — 2026-11-05 */}
           <div className="grid gap-4 sm:grid-cols-2 items-stretch">
+          <Encadre carte="priere">
           <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-indigo-300 dark:border-indigo-700 flex flex-col">
             <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
@@ -608,8 +613,11 @@ const handleModuleClick = (mod) => {
             </div>
           </div>
 
+          </Encadre>
+
           {/* Hadith du Jour — version compacte sur 2 lignes (2026-11-04) :
               ligne 1 = titre + thème + arabe, ligne 2 = le hadith suivi de sa source */}
+          <Encadre carte="hadith">
           <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-emerald-300 dark:border-emerald-700 flex flex-col">
             <div className="bg-gradient-to-r from-emerald-100 via-teal-100 to-cyan-100 dark:from-emerald-900/40 dark:via-teal-900/40 dark:to-cyan-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
@@ -639,10 +647,11 @@ const handleModuleClick = (mod) => {
             </div>
           </div>
 
+          </Encadre>
           </div>
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
-          <SourateDuJour />
+          <Encadre carte="sourateJour"><SourateDuJour /></Encadre>
 
           {/* Homework Card - only for admin ; id « devoirs » : cible des notifications de devoirs (?open=devoirs) */}
           <div id="devoirs" className="scroll-mt-20 space-y-4">
@@ -673,7 +682,7 @@ const handleModuleClick = (mod) => {
                 // Même visuel que la carte de l'accueil (image, ou emoji + fond pastel)
                 return { path: m.builtin_path!, ...PROGRESS_MAP[m.builtin_path!], emoji: fb?.emoji ?? '📚', fond: fb?.bgColor ?? '#f3f4f6', image: m.image_url ?? undefined };
               });
-            return <ProgressionCompacte elements={elements} />;
+            return <Encadre carte="progres"><ProgressionCompacte elements={elements} /></Encadre>;
           })()}
 
           {/* Module Cards Grid - Dynamic from DB */}
@@ -692,6 +701,7 @@ const handleModuleClick = (mod) => {
                   {...dragAttrs}
                   className={cn('flex flex-col items-center relative', isDragging && 'opacity-60')}
                 >
+                  <Encadre carte="matieres" className="w-full">
                   <button
                     onClick={() => handleModuleClick(mod)}
                     data-carte-nom={mod.title}
@@ -740,6 +750,7 @@ const handleModuleClick = (mod) => {
                       {mod.description}
                     </p>
                   </button>
+                  </Encadre>
 
                   {/* 🍂 Image de saison en haut à droite de la carte (à gauche du menu ⋮ pour l'enseignante, pour ne rien cacher) */}
                   {((automne && reglagesSaison.automne.images) || (hiver && reglagesSaison.hiver.images) || (clair && reglagesSaison[clair].images) || (ramadan && reglagesSaison.ramadan.images)) && (

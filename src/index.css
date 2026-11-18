@@ -895,3 +895,23 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 .ramadan-mois.allumee { filter: none; }
 .ramadan-mois.allumee .ram-lueur { opacity: .45; }
 .ramadan-mois.aujourdhui { filter: none; animation: ram-scint 2.4s ease-in-out infinite; }
+
+/* 🖼️ Encadrement des cartes de l'accueil (Nadia, 2026-11-18) : réglé dans le bouclier › 🔧 Apparence appli ›
+   Modifications générales › Page d'accueil › Encadrement des cartes. Couleurs passées par --cadre-c/-dc (clair) et --cadre-s/-ds (sombre),
+   épaisseur par --ep (0,6 / 1 / 1,6). Cadres repris de l'artefact E9CN… : 1 Cadre doré, 3 Couture, 6 Coins ornés, 9 Arche, 10 Halo. */
+.cadre-accueil { --cadre: var(--cadre-c); --cadre-doux: var(--cadre-dc); position: relative; display: flex; flex-direction: column; border-radius: 1.6rem; padding: calc(5px * var(--ep, 1)); }
+.dark .cadre-accueil { --cadre: var(--cadre-s); --cadre-doux: var(--cadre-ds); }
+.cadre-accueil > .cadre-contenu { position: relative; flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.cadre-accueil > .cadre-contenu > * { flex: 1 1 auto; }
+/* Carte qui n'affiche rien (pas de sourate du jour, rien à faire…) : pas de cadre vide */
+.cadre-accueil:has(> .cadre-contenu:empty) { display: none; }
+.cadre-dore { border: calc(5px * var(--ep, 1)) double var(--cadre); box-shadow: 0 0 0 calc(3px * var(--ep, 1)) var(--cadre-doux); }
+.cadre-couture { border: calc(2px * var(--ep, 1)) solid var(--cadre); padding: calc(11px * var(--ep, 1)); }
+.cadre-couture::after { content: ""; position: absolute; inset: calc(4px * var(--ep, 1)); border: calc(2px * var(--ep, 1)) dashed var(--cadre); border-radius: 1.25rem; pointer-events: none; }
+.cadre-coins { border: calc(2px * var(--ep, 1)) solid var(--cadre); margin: 6px; }
+.cadre-coin { position: absolute; z-index: 2; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 19px; color: var(--cadre); background: hsl(var(--background)); border-radius: 50%; pointer-events: none; }
+.cadre-coin.a { top: -11px; left: -11px; } .cadre-coin.b { top: -11px; right: -11px; } .cadre-coin.c { bottom: -11px; left: -11px; } .cadre-coin.d { bottom: -11px; right: -11px; }
+.cadre-arche { border: calc(3px * var(--ep, 1)) solid var(--cadre); border-radius: 150px 150px 24px 24px / 60px 60px 24px 24px; padding-top: 26px; }
+.cadre-halo { border: calc(2px * var(--ep, 1)) solid var(--cadre); animation: cadre-halo 2.8s ease-in-out infinite; }
+@keyframes cadre-halo { 0%, 100% { box-shadow: 0 0 0 0 var(--cadre-doux), 0 0 8px var(--cadre); } 50% { box-shadow: 0 0 0 calc(6px * var(--ep, 1)) var(--cadre-doux), 0 0 22px var(--cadre); } }
+@media (prefers-reduced-motion: reduce) { .cadre-halo { animation: none; box-shadow: 0 0 0 5px var(--cadre-doux), 0 0 16px var(--cadre); } }

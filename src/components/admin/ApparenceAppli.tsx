@@ -15,6 +15,8 @@ import { POLICES, TITRE_DEFAUT, useReglagesTitre, type Police, type ReglagesTitr
 import { TitreAppli } from '@/components/home/TitreAppli';
 import { cn, errorMessage } from '@/lib/utils';
 import DecorationsSaisons, { ApercuSaisonTelephone } from '@/components/admin/DecorationsSaisons';
+import EncadrementCartes from '@/components/admin/EncadrementCartes';
+import { TITRE_MODIFICATIONS_GENERALES } from '@/lib/encadrements';
 
 const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } };
 
@@ -24,13 +26,33 @@ const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'En
  * textes d'accueil et couleurs du Ramadan. Aperçu en direct ; enregistré pour tout le monde (en direct chez les élèves).
  */
 export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
-  const [sousCarte, setSousCarte] = useState<'titre' | 'saisons' | null>(null);
+  // 🖼️ 2026-11-18 : « Modifications générales » › « Page d'accueil » › « Encadrement des cartes » (Retour = un niveau au-dessus)
+  const [sousCarte, setSousCarte] = useState<'titre' | 'saisons' | 'general' | 'accueil' | 'cadres' | null>(null);
+  const parent = { titre: null, saisons: null, general: null, accueil: 'general', cadres: 'accueil' } as const;
+  const titreNiveau = sousCarte === 'general' ? `🧩 ${TITRE_MODIFICATIONS_GENERALES}` : sousCarte === 'accueil' ? '🏠 Page d\'accueil' : sousCarte === 'cadres' ? '🖼️ Encadrement des cartes' : null;
   return (
     <div className="space-y-4">
-      <Button variant="ghost" onClick={sousCarte ? () => setSousCarte(null) : onBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button>
+      <Button variant="ghost" onClick={sousCarte ? () => setSousCarte(parent[sousCarte]) : onBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button>
       <h2 className="text-xl font-extrabold">🔧 Apparence appli</h2>
-      <ApercuSaisonTelephone />
-      {sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : (
+      {titreNiveau && <p className="text-lg font-extrabold">{titreNiveau}</p>}
+      {sousCarte !== 'cadres' && <ApercuSaisonTelephone />}
+      {sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : sousCarte === 'cadres' ? <EncadrementCartes /> : sousCarte === 'general' ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => setSousCarte('accueil')}
+            className="rounded-2xl border-2 border-sky-300 bg-gradient-to-br from-sky-50 to-amber-50 dark:from-sky-950/30 dark:to-amber-950/30 p-4 text-left">
+            <p className="text-lg font-extrabold">🏠 Page d'accueil</p>
+            <p className="text-sm text-muted-foreground">Ce qui se voit sur l'accueil : l'encadrement des cartes.</p>
+          </button>
+        </div>
+      ) : sousCarte === 'accueil' ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => setSousCarte('cadres')}
+            className="rounded-2xl border-[5px] border-double border-[#c99a2e] bg-gradient-to-br from-amber-50 to-rose-50 dark:from-amber-950/30 dark:to-rose-950/30 p-4 text-left shadow-[0_0_0_3px_#f3dc9a] dark:shadow-[0_0_0_3px_#5a4718]">
+            <p className="text-lg font-extrabold">🖼️ Encadrement des cartes</p>
+            <p className="text-sm text-muted-foreground">Un cadre pour chaque carte de l'accueil : Cadre doré, Couture, Coins ornés, Arche, Halo ou sans cadre. Couleur et épaisseur au choix.</p>
+          </button>
+        </div>
+      ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={() => setSousCarte('titre')}
             className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-sky-50 dark:from-amber-950/30 dark:to-sky-950/30 p-4 text-left">
@@ -41,6 +63,11 @@ export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
             className="rounded-2xl border-2 border-[#e2c08f] bg-gradient-to-br from-[#fff8ee] to-[#fbe7c8] dark:from-amber-950/30 dark:to-orange-950/20 p-4 text-left">
             <p className="text-lg font-extrabold">🍂 Décorations saisons</p>
             <p className="text-sm text-muted-foreground">L'appli habillée selon la saison : arbre, feuilles qui tombent, cheminée, images sur les cartes, couleurs. « Ambiance neutre » pour tout enlever.</p>
+          </button>
+          <button type="button" onClick={() => setSousCarte('general')}
+            className="rounded-2xl border-2 border-sky-300 bg-gradient-to-br from-sky-50 to-violet-50 dark:from-sky-950/30 dark:to-violet-950/30 p-4 text-left">
+            <p className="text-lg font-extrabold">🧩 {TITRE_MODIFICATIONS_GENERALES}</p>
+            <p className="text-sm text-muted-foreground">Les réglages de l'appli page par page. Pour commencer : la page d'accueil et l'encadrement de ses cartes.</p>
           </button>
         </div>
       )}
