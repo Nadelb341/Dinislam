@@ -2476,27 +2476,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_invitations: {
-        Row: {
-          id: string
-          sent_at: string | null
-          show_banner: boolean | null
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          sent_at?: string | null
-          show_banner?: boolean | null
-          user_id: string
-        }
-        Update: {
-          id?: string
-          sent_at?: string | null
-          show_banner?: boolean | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       notification_preferences: {
         Row: {
           asr_reminder: boolean | null
@@ -2526,6 +2505,8 @@ export type Database = {
           notif_lesson: boolean
           notif_msg: boolean
           notif_par_abs: boolean | null
+          notif_par_dev: boolean | null
+          notif_par_rap: boolean | null
           notif_par_bilan: boolean | null
           notif_prog_eve: boolean | null
           notif_prog_week: boolean
@@ -2574,6 +2555,8 @@ export type Database = {
           notif_lesson?: boolean
           notif_msg?: boolean
           notif_par_abs?: boolean | null
+          notif_par_dev?: boolean | null
+          notif_par_rap?: boolean | null
           notif_par_bilan?: boolean | null
           notif_prog_eve?: boolean | null
           notif_prog_week?: boolean
@@ -2622,6 +2605,8 @@ export type Database = {
           notif_lesson?: boolean
           notif_msg?: boolean
           notif_par_abs?: boolean | null
+          notif_par_dev?: boolean | null
+          notif_par_rap?: boolean | null
           notif_par_bilan?: boolean | null
           notif_prog_eve?: boolean | null
           notif_prog_week?: boolean

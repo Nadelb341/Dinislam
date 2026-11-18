@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { useConfetti } from '@/hooks/useConfetti';
-import { envoyerDevoir, lienTravail } from '@/lib/devoirTravail';
+import { carteDevoirAuto, envoyerDevoir, lienTravail } from '@/lib/devoirTravail';
 import { withName } from '@/lib/encouragements';
 import { errorMessage, cn } from '@/lib/utils';
 import { AudioProf } from './AudioProf';
@@ -62,6 +62,27 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
       onSent?.();
     } catch (e) { void logEchecAudio('envoi', e, `devoir ${devoir.titre}`); toast.error(`${navigator.onLine ? '' : '📡 Pas de connexion Internet. '}${errorMessage(e)}`); } finally { setSending(false); }
   };
+
+  // 💎 Devoir relié à son travail (Nadia, 2026-11-18) : pas de « Je valide mon devoir », le diamant s'allume tout seul
+  const carteAuto = carteDevoirAuto(devoir);
+  if (carteAuto && devoir.statut !== 'corrige' && devoir.statut !== 'rendu') {
+    return (
+      <div className="space-y-2">
+        {!dansLaCarte && lien && (
+          <button type="button" onClick={() => navigate(lien)}
+            className="w-full rounded-xl bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 text-sm font-extrabold active:scale-[0.98] transition-transform">
+            ▶️ Commencer mon travail
+          </button>
+        )}
+        <p className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-sm font-semibold text-amber-900 dark:text-amber-100 [overflow-wrap:anywhere]">
+          ✨ Il s'allume tout seul quand tu fais le travail dans{' '}
+          {lien && !dansLaCarte
+            ? <button type="button" onClick={() => navigate(lien)} className="font-extrabold underline underline-offset-2">{carteAuto}</button>
+            : <b>{carteAuto}</b>}
+        </p>
+      </div>
+    );
+  }
 
   if (devoir.statut === 'corrige') {
     return (

@@ -24,6 +24,7 @@ import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour
 import type { GroupSchedule } from "@/lib/groupCourse";
 import { Encadre } from "@/components/home/Encadre";
 import { useReglagesEncadrements } from "@/lib/encadrements";
+import { carteDevoirAuto } from "@/lib/devoirTravail";
 
 type Devoir = {
   id: string;
@@ -288,7 +289,7 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
     if (value) {
       fireSuccess();
       toast.success(faites >= devoir.etapes.length
-        ? withName(user, '💎 Toutes les étapes sont cochées, bravo {prenom} ! Touche « Je valide mon devoir » ✅')
+        ? withName(user, carteDevoirAuto(devoir) ? '💎 Toutes les étapes sont cochées, bravo {prenom} !' : '💎 Toutes les étapes sont cochées, bravo {prenom} ! Touche « Je valide mon devoir » ✅')
         : withName(user, `💎 Étape cochée, bravo {prenom} ! (${faites}/${devoir.etapes.length})`));
     }
     queryClient.invalidateQueries({ queryKey: ['weekly-program', user.id] });

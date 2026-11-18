@@ -10,7 +10,7 @@
  * (migration 20261025180000_realtime_all_content.sql) et avoir une policy SELECT (RLS).
  * ⚠️ Volontairement absentes : app_logs, crash_alert_settings, push_subscriptions, student_passwords
  * (sensible), user_roles, encouragement_logs, dropout_state, notification_confirmations,
- * notification_invitations, admin_conversations (historique privé de l'assistant 🌙, enregistré à chaque message).
+ * admin_conversations (historique privé de l'assistant 🌙, enregistré à chaque message).
  * Les 21 tables déjà en direct gardent leurs propres abonnements (non listées ici).
  */
 export const REALTIME_EVENT = 'dinislam:realtime';

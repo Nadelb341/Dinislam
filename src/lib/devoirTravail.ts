@@ -17,6 +17,21 @@ export const ROUTE_OF: Record<string, string> = {
   alphabet: '/alphabet', invocations: '/invocations', priere: '/priere', coran: '/coran',
 };
 
+/** Nom de la carte affiché à l'élève pour un devoir qui s'allume tout seul */
+const CARTE_AUTO: Record<string, string> = { nourania: 'Nourania', sourate: 'Sourates', sourates: 'Sourates', invocations: 'Invocations', invocation: 'Invocations' };
+
+/**
+ * 💎 Devoir qui s'allume TOUT SEUL avec le travail fait dans la carte (Nadia, 2026-11-18 ; même règle que
+ * `devoir_travail` en base, migration 20261118220000) : Nourania / sourate / invocation avec un élément visé,
+ * sauf les révisions (« Réviser… », « Revoir… ») qui se rendent toujours dans le cahier.
+ * Renvoie le nom de la carte, ou null si le devoir se valide avec « ✅ Je valide mon devoir ».
+ */
+export function carteDevoirAuto(d: { type: string; cible_id?: string | null; titre: string }): string | null {
+  if (!d.cible_id) return null;
+  if (/^\s*(r[ée]viser|revoir)/i.test(d.titre)) return null;
+  return CARTE_AUTO[d.type] ?? null;
+}
+
 /** Lien « Commencer mon travail » : la carte, l'élément visé, et le devoir (bandeau « Je valide mon devoir ») */
 export function lienTravail(d: { id: string; type: string; cible_id?: string | null }): string | null {
   const route = ROUTE_OF[d.type];

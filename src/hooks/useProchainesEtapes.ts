@@ -13,6 +13,17 @@ import { lireLignes, nombreDeLignes } from '@/lib/nouraniaLignes';
  */
 export interface Suggestion { type: string; texte: string; cible: Cible }
 
+/**
+ * Le 1er élément PAS fait qui vient APRÈS le dernier fait, dans l'ordre du parcours (Nadia, 2026-11-18 : « le devoir sera en
+ * fonction de la dernière leçon / sourate / invocation validée » ; pas de rattrapage d'un élément sauté plus haut).
+ * Rien de fait → le 1er du parcours.
+ */
+export function apresDernierFait<T>(liste: T[], fait: (x: T) => boolean): T | undefined {
+  let dernier = -1;
+  liste.forEach((x, i) => { if (fait(x)) dernier = i; });
+  return liste.slice(dernier + 1).find((x) => !fait(x));
+}
+
 const CARTE_DE: Record<string, string> = { nourania: '/nourania', sourate: '/sourates', alphabet: '/alphabet', allah_names: '/allah-names', invocations: '/invocations' };
 
 /** Prochaines étapes de PLUSIEURS élèves d'un coup (mêmes règles ; utilisé aussi par « ✨ Donner au groupe ») */
@@ -52,7 +63,7 @@ export async function chargerProchainesEtapes(ids: string[]): Promise<Record<str
       if (lecon && (!total || max < total)) cible = { lecon, ligne: max + 1 };
       else if (lecon) { const suivante = listeL.find((x) => x.lesson_number > lecon.lesson_number); if (suivante) cible = { lecon: suivante, ligne: 1 }; }
     }
-    const l = cible?.lecon ?? listeL.find((x) => !faitesN.has(x.id));
+    const l = cible?.lecon ?? apresDernierFait(listeL, (x) => faitesN.has(x.id));
     if (l) {
       const ligne = cible?.ligne ?? 1;
       out.push({ type: 'nourania', texte: `lire la leçon ${l.lesson_number}, ligne ${ligne}`, cible: { v: String(l.id), l: `Leçon ${l.lesson_number}${l.title_french ? ` · ${l.title_french}` : ''}` } });
@@ -61,7 +72,7 @@ export async function chargerProchainesEtapes(ids: string[]): Promise<Record<str
     const faitesS = new Set((sour.data || []).filter((x) => x.user_id === id).map((x) => x.sourate_id));
     // La sourate EN COURS DE VALIDATION (envoyée, pas encore validée), sinon la suivante du parcours
     const enCoursS = (sourates.data || []).find((x) => x.id === (sDemandes.data || []).find((x) => x.user_id === id)?.sourate_id && !faitesS.has(x.id));
-    const s = enCoursS ?? [...(sourates.data || [])].sort((a, b) => rangParcours(b.number) - rangParcours(a.number)).find((x) => !faitesS.has(x.id) && x.number !== 1);
+    const s = enCoursS ?? apresDernierFait([...(sourates.data || [])].filter((x) => x.number !== 1).sort((a, b) => rangParcours(b.number) - rangParcours(a.number)), (x) => faitesS.has(x.id));
     if (s) { const nom = s.name_french.split(' (')[0]; out.push({ type: 'sourate', texte: enCoursS ? `terminer ${nom} (en cours de validation)` : `apprendre ${nom}`, cible: { v: String(s.number), l: `${s.number === 1000 ? '2-255' : s.number} · ${nom}` } }); }
 
     const ordre = (lettres.data || []).map((x) => x.id);
@@ -77,7 +88,7 @@ export async function chargerProchainesEtapes(ids: string[]): Promise<Record<str
     const faitesI = new Set((invP.data || []).filter((x) => x.user_id === id).map((x) => x.invocation_id));
     // L'invocation EN COURS DE VALIDATION, sinon la suivante
     const enCoursI = (invs.data || []).find((x) => x.id === (iDemandes.data || []).find((x) => x.user_id === id)?.invocation_id && !faitesI.has(x.id));
-    const inv = enCoursI ?? (invs.data || []).find((x) => !faitesI.has(x.id));
+    const inv = enCoursI ?? apresDernierFait(invs.data || [], (x) => faitesI.has(x.id));
     if (inv) { const t = inv.title_french || inv.title_arabic || 'Invocation'; out.push({ type: 'invocations', texte: enCoursI ? `terminer l'invocation « ${t} » (en cours de validation)` : `apprendre l'invocation « ${t} »`, cible: { v: String(inv.id), l: t } }); }
     res[id] = out;
   }
