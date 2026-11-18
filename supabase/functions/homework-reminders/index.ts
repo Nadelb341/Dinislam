@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { parisNow, parisDay, sendPushInternal } from "../_shared/parisTime.ts";
+import { prevenirParents } from "../_shared/parentsDevoirs.ts";
 
 /**
  * Rappels de devoirs (choix de Nadia du 2026-09-30) :
@@ -46,6 +47,28 @@ serve(async (req) => {
     const adminIds = new Set((adminRoles || []).map((r: { user_id: string }) => r.user_id));
 
     let totalSent = 0;
+
+    // 👪 Rappel la veille aux PARENTS (Nadia, 2026-11-18, idée 3) : devoirs de l'enfant à rendre demain, ni faits ni envoyés
+    // (mêmes états que les diamants : program_item_done / program_item_pending). Un seul message par enfant, catégorie par_rap.
+    try {
+      const veille = new Map<string, string[]>();
+      for (const d of devoirs) {
+        if (d.assigned_to !== 'student' || !d.student_id || adminIds.has(d.student_id)) continue;
+        if (parisDay(new Date(d.date_limite)) !== tomorrow) continue;
+        const [{ data: fait }, { data: envoye }] = await Promise.all([
+          supabase.rpc('program_item_done', { p_user: d.student_id, p_module: 'devoir', p_item: d.id }),
+          supabase.rpc('program_item_pending', { p_user: d.student_id, p_module: 'devoir', p_item: d.id }),
+        ]);
+        if (fait || envoye) continue;
+        veille.set(d.student_id, [...(veille.get(d.student_id) ?? []), d.titre]);
+      }
+      for (const [eleve, titres] of veille) {
+        totalSent += await prevenirParents(supabase, [eleve], 'par_rap',
+          (p) => `⏰ ${p} : ${titres.length > 1 ? `${titres.length} devoirs à rendre` : 'un devoir à rendre'} demain`,
+          `Pas encore fait : ${titres.join(' · ')}`);
+      }
+    } catch (e) { console.error('Rappel parents non envoyé', e); }
+
     for (const devoir of devoirs) {
       let studentIds: string[] = [];
       if (devoir.assigned_to === 'all') {

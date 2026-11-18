@@ -13,6 +13,7 @@ import { nextCourse, courseLabel, type GroupSchedule } from '@/lib/groupCourse';
 import { COURS_PAR_DEFAUT } from '@/lib/rotationDevoirs';
 import { matiereDe } from '@/lib/devoirFichiers';
 import { sendPushNotification } from '@/lib/pushHelper';
+import { prevenirParentsNouveauxDevoirs } from '@/lib/notifParents';
 import { cn, errorMessage } from '@/lib/utils';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
@@ -75,7 +76,11 @@ export function CopierDevoirsDialog({ open, onClose, groupeId, groupeNom, groupe
       const { error } = await supabase.from('devoirs').insert(lignes);
       if (error) throw error;
       const ids = [...new Set(lignes.map((l) => l.student_id!).filter(Boolean))];
-      if (ids.length) sendPushNotification({ userIds: ids, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: coches.map((id) => recents.find((x) => x.id === id)?.titre).filter(Boolean).join(' · '), data: { url: '/?open=devoirs' } });
+      const listeCopiee = coches.map((id) => recents.find((x) => x.id === id)?.titre).filter(Boolean).join(' · ');
+      if (ids.length) {
+        sendPushNotification({ userIds: ids, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: listeCopiee, data: { url: '/?open=devoirs' } });
+        void prevenirParentsNouveauxDevoirs(ids, listeCopiee);
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-devoirs'] });
       toast.success(`📋 ${coches.length} devoir${coches.length > 1 ? 's' : ''} copié${coches.length > 1 ? 's' : ''} vers ${cibles.length} groupe${cibles.length > 1 ? 's' : ''}`);
       setCibles([]); setChoisis(null); onClose();

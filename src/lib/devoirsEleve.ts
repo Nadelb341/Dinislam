@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sendPushNotification } from '@/lib/pushHelper';
+import { prevenirParentsNouveauxDevoirs } from '@/lib/notifParents';
 import { loadDraft, saveDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import type { Json, TablesInsert } from '@/integrations/supabase/types';
 import type { LigneDevoir, PieceJointe } from '@/lib/devoirFichiers';
@@ -158,6 +159,7 @@ async function envoyer(d: Distribution) {
     if (errProg) console.error('[Devoirs] notification programmée non enregistrée', errProg.message);
   } else {
     sendPushNotification({ userIds: d.eleveIds, title: '📓 Tes nouveaux devoirs sont prêts !', category: 'hw_new', body: liste, data: { url: '/?open=devoirs' } });
+    void prevenirParentsNouveauxDevoirs(d.eleveIds, liste);
   }
 }
 

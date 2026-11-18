@@ -372,6 +372,8 @@ serve(async (req) => {
       coran: 'notif_coran', prog_eve: 'notif_prog_eve', cours_prep: 'notif_cours_prep', adm_bilan: 'notif_adm_bilan',
       // 👨‍👩‍👧 Espace parents (2026-10-28)
       par_bilan: 'notif_par_bilan', par_abs: 'notif_par_abs', adm_abs: 'notif_adm_abs', adm_par: 'notif_adm_par',
+      // 👪 Devoirs des enfants (2026-11-18) : à part des devoirs du parent lui-même
+      par_dev: 'notif_par_dev', par_rap: 'notif_par_rap',
     };
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {
@@ -424,6 +426,7 @@ serve(async (req) => {
       prog_week: '/?open=devoirs', adm_recap: '/?admin=cahier-texte', adm_crash: '/monitoring',
       coran: '/coran?tab=programme', prog_eve: '/?open=devoirs', cours_prep: '/?open=devoirs', adm_bilan: '/admin?section=bilan-trimestriel',
       par_bilan: '/?espace=parents', par_abs: '/', adm_abs: '/admin?section=attendance', adm_par: '/admin?section=students',
+      par_dev: '/?open=enfants', par_rap: '/?open=enfants',
     };
     const givenData = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
     const url = typeof givenData.url === 'string' ? givenData.url

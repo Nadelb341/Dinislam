@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 
 type PrefKey =
   | 'notif_msg' | 'notif_coran' | 'notif_prog_eve' | 'notif_cours_prep' | 'notif_adm_bilan' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
-  | 'notif_par_bilan' | 'notif_par_abs' | 'notif_adm_abs' | 'notif_adm_par'
+  | 'notif_par_bilan' | 'notif_par_abs' | 'notif_par_dev' | 'notif_par_rap' | 'notif_adm_abs' | 'notif_adm_par'
   | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task' | 'notif_prog_week' | 'notif_adm_recap' | 'notif_adm_crash'
   | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
 
@@ -74,6 +74,8 @@ const FAMILIES: Family[] = [
     items: [
       { key: 'notif_par_bilan', label: 'Nouveau bilan du trimestre 📊', hint: 'Avant chaque vacances scolaires' },
       { key: 'notif_par_abs', label: 'Enfant absent au cours ⚠️', hint: "15 min après le début du cours, si l'absence n'a pas été signalée" },
+      { key: 'notif_par_dev', label: 'Nouveaux devoirs de mon enfant 📓', hint: 'Avec son prénom, à part de tes propres devoirs' },
+      { key: 'notif_par_rap', label: 'Rappel la veille 👪', hint: "À 18 h, si un devoir de ton enfant n'est pas encore fait" },
     ],
   },
   {

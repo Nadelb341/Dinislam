@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { sendPushNotification } from '@/lib/pushHelper';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -67,9 +68,14 @@ export function WeeklyProgramAdmin() {
     if (on) cur.delete(id); else cur.add(id);
     saveSettings({ disabled_group_ids: [...cur] });
   };
-  const saveNote = async (programId: string) => {
-    const { error } = await supabase.from('weekly_programs').update({ teacher_note: note.trim() || null }).eq('id', programId);
+  const saveNote = async (programId: string, eleveId: string, avant: string | null) => {
+    const texte = note.trim();
+    const { error } = await supabase.from('weekly_programs').update({ teacher_note: texte || null }).eq('id', programId);
     if (error) { toast.error(errorMessage(error)); return; }
+    // 💬 Idée 13 (Nadia, 2026-11-18) : l'élève est prévenu quand le mot change (jamais quand il est retiré ou identique)
+    if (texte && texte !== (avant ?? '').trim()) {
+      sendPushNotification({ userId: eleveId, category: 'prog_week', type: 'user', title: '💬 {prenom}, ton professeur t\'a laissé un mot', body: texte, data: { url: '/?open=devoirs' } });
+    }
     toast.success(note.trim() ? 'Mot ajouté sur son chemin 💬' : 'Mot retiré');
     setEditing(null);
     refresh();
@@ -199,8 +205,8 @@ export function WeeklyProgramAdmin() {
                   {editing === p.program_id ? (
                     <div className="flex gap-1.5">
                       <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. insiste sur les madd" autoFocus
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveNote(p.program_id); } }} />
-                      <Button size="sm" onClick={() => saveNote(p.program_id)}>OK</Button>
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveNote(p.program_id, p.student_id, p.teacher_note); } }} />
+                      <Button size="sm" onClick={() => saveNote(p.program_id, p.student_id, p.teacher_note)}>OK</Button>
                     </div>
                   ) : (
                     <button type="button" onClick={() => { setEditing(p.program_id); setNote(p.teacher_note ?? ''); }} className="text-xs text-primary font-semibold text-start [overflow-wrap:anywhere]">

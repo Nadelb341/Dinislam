@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import HomeworkCard from '@/components/homework/HomeworkCard';
 import BlocDevoirsEleve from '@/components/homework/BlocDevoirsEleve';
+import CarteDevoirsEnfants from '@/components/parents/CarteDevoirsEnfants';
 import { useUserProgress } from '@/hooks/useUserProgress';
 import { ProgressionCompacte } from '@/components/home/ProgressionCompacte';
 import { Encadre } from '@/components/home/Encadre';
@@ -199,10 +200,12 @@ const Index = () => {
 
   // Notification touchée : ?open=devoirs → on descend jusqu'aux devoirs (le bloc peut arriver après le chargement)
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('open') !== 'devoirs') return;
+    // ?open=enfants : notification des devoirs d'un enfant (parents, 2026-11-18)
+    const cible = new URLSearchParams(location.search).get('open');
+    if (cible !== 'devoirs' && cible !== 'enfants') return;
     let tries = 0;
     const t = setInterval(() => {
-      const el = document.getElementById('devoirs');
+      const el = document.getElementById(cible);
       tries++;
       if (el && el.offsetHeight > 0) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -579,6 +582,9 @@ const handleModuleClick = (mod) => {
             {isAdmin && <HomeworkCard />}
             <BlocDevoirsEleve />
           </div>
+
+          {/* 👪 Devoirs de mes enfants (parents reliés et confirmés, 2026-11-18) : carte à part, jamais mélangée avec les siens */}
+          {!isAdmin && <SilentBoundary name="Devoirs de mes enfants"><CarteDevoirsEnfants /></SilentBoundary>}
 
           {/* 📈 Progrès (2026-11-02) : un anneau par carte QUE L'ÉLÈVE VOIT sur son accueil (mêmes règles que la grille :
               cartes ouvertes à tous + cartes ouvertes à lui ou à son groupe), sous le cahier de texte. Admin : cartes actives ou ciblées. */}

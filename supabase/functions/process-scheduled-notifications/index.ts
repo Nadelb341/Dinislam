@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { parisNow, sendPushInternal } from "../_shared/parisTime.ts";
+import { prevenirParents } from "../_shared/parentsDevoirs.ts";
 
 // Titre lisible de la notification (avant : « 📅 general »)
 const MODULE_TITLES: Record<string, string> = {
@@ -134,6 +135,11 @@ serve(async (req) => {
       const pushResult = await sendPushInternal(pushBody);
       const sent = pushResult?.sent || 0;
       totalSent += sent;
+      // 👪 Devoirs programmés : les parents confirmés sont prévenus au même moment, avec le prénom de l'enfant (2026-11-18)
+      if (notif.module === 'devoirs' && Array.isArray(pushBody.userIds)) {
+        try { totalSent += await prevenirParents(supabase, pushBody.userIds as string[], 'par_dev', (p) => `📓 ${p} : nouveaux devoirs`, notif.message ?? ''); }
+        catch (e) { console.error('Parents non prévenus (devoirs programmés)', e); }
+      }
       console.log(`Scheduled notification ${notif.id}: sent to ${sent} recipients`);
     }
 
