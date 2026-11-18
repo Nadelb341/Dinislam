@@ -53,7 +53,6 @@ interface InvocationDetailDialogProps {
   progress: Tables<'user_invocation_progress'> | undefined;
   validationRequest: Tables<'invocation_validation_requests'> | null | undefined;
   onClose: () => void;
-  onMarkMemorized: (invocationId: number, isMemorized: boolean) => void;
   onRequestValidation: (invocationId: number, audio: Blob | null) => void;
   isRequestingValidation: boolean;
   /** 🎙️ Élève de moins de 20 ans : un audio de sa récitation est obligatoire pour demander la validation (Nadia, 2026-11-18) */
@@ -69,10 +68,9 @@ const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
   }
 };
 
-const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onMarkMemorized, onRequestValidation, isRequestingValidation, audioObligatoire }: InvocationDetailDialogProps) => {
+const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onRequestValidation, isRequestingValidation, audioObligatoire }: InvocationDetailDialogProps) => {
   const [audio, setAudio] = useState<Blob | null>(null);
   const garderAudio = useCallback((b: Blob | null) => setAudio(b), []);
-  const isMemorized = progress?.is_memorized ?? false;
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
   const enrichment = getInvocationEnrichment(invocation.title_french);
@@ -218,19 +216,6 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
               </div>
             )}
 
-            {/* Bouton mémorisé */}
-            <Button
-              className="w-full gap-2"
-              variant={isMemorized ? 'outline' : 'default'}
-              onClick={() => isMemorized ? onMarkMemorized(invocation.id, false) : askValidation('Valider cette invocation ?', `« ${invocation.title_french} » sera marquée comme mémorisée.`, () => onMarkMemorized(invocation.id, true))}
-            >
-              {isMemorized ? (
-                <><Check className="h-4 w-4 text-green-500" /> Mémorisée ✅</>
-              ) : (
-                <><Hand className="h-4 w-4" /> Marquer comme mémorisée</>
-              )}
-            </Button>
-
             {/* Refusé */}
             {isRefused && !isValidated && (
               <div className="flex items-center justify-center gap-2 py-2 text-destructive font-medium text-sm">
@@ -266,7 +251,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
               <Button
                 className="w-full gap-2"
                 variant="outline"
-                onClick={() => onRequestValidation(invocation.id, null)}
+                onClick={() => askValidation('Valider cette invocation ?', `« ${invocation.title_french} » sera validée.`, () => onRequestValidation(invocation.id, null))}
                 disabled={isRequestingValidation}
               >
                 <Send className="h-4 w-4" />
@@ -376,31 +361,6 @@ const Invocations = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user, queryClient]);
-
-  const toggleMemorizedMutation = useMutation({
-    mutationFn: async ({ invocationId, isMemorized }: { invocationId: number; isMemorized: boolean }) => {
-      if (!user) throw new Error('Non connecté');
-      const existing = progress.find((p) => p.invocation_id === invocationId);
-      if (existing) {
-        const { error } = await supabase
-          .from('user_invocation_progress')
-          .update({ is_memorized: isMemorized })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_invocation_progress')
-          .insert({ user_id: user.id, invocation_id: invocationId, is_memorized: isMemorized });
-        if (error) throw error;
-      }
-    },
-    onSuccess: (_, { isMemorized }) => {
-      queryClient.invalidateQueries({ queryKey: ['user-invocation-progress', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['user-progress'] });
-      toast.success(isMemorized ? withName(user, '✅ Invocation mémorisée, bravo {prenom} !') : 'Marqué comme non mémorisé');
-    },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
-  });
 
   const requestValidationMutation = useMutation({
     mutationFn: async ({ invocationId, audio }: { invocationId: number; audio: Blob | null }) => {
@@ -639,7 +599,6 @@ const Invocations = () => {
           progress={progress.find((p) => p.invocation_id === selectedInvocation.id)}
           validationRequest={getCardValidationRequest(selectedInvocation.id)}
           onClose={() => setSelectedInvocation(null)}
-          onMarkMemorized={(id, mem) => toggleMemorizedMutation.mutate({ invocationId: id, isMemorized: mem })}
           onRequestValidation={(id, audio) => requestValidationMutation.mutate({ invocationId: id, audio })}
           isRequestingValidation={requestValidationMutation.isPending}
           audioObligatoire={!isAdmin && !isOver20}
