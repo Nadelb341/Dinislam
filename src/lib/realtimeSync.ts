@@ -28,7 +28,13 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   devoir_steps: ['weekly-program', 'weekly-program-admin', 'admin-devoirs'],
   sourate_stories: ['sourate-stories'],
   // ✅ Corrections (2026-11-15) : les invocations envoyées comptent dans le bouclier
-  invocation_validation_requests: ['admin-invocation-validations', 'admin-pending-breakdown'],
+  invocation_validation_requests: ['admin-invocation-validations', 'admin-pending-breakdown', ...PROGRESS_VIEWS],
+  // 💎 (2026-11-18) Un devoir relié à une carte s'allume avec le travail fait dans la carte : demandes, récitations, validations
+  nourania_validation_requests: [...PROGRESS_VIEWS],
+  sourate_validation_requests: [...PROGRESS_VIEWS],
+  sourate_recitations: [...PROGRESS_VIEWS],
+  user_sourate_progress: [...PROGRESS_VIEWS],
+  user_invocation_progress: [...PROGRESS_VIEWS],
   admin_card_order: ['admin-card-ordering'],
   admin_task_templates: ['admin-task-templates'],
   admin_tasks: ['admin-tasks', 'cahier-classe'],
@@ -97,7 +103,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   learning_modules: ['learning-modules', 'admin-learning-modules', 'cartes-visibles', 'cartes-acces', 'module-visibility'],
   notification_preferences: ['admin-push-stats', 'rappels-priere-actifs'],
   nourania_lesson_content: ['admin-nourania-contents', 'nourania-lesson-contents'],
-  nourania_lignes_faites: ['nourania-lignes-faites', 'devoir-prochaines-etapes', 'admin-nourania-lignes', 'admin-pending-breakdown'],
+  nourania_lignes_faites: ['nourania-lignes-faites', 'devoir-prochaines-etapes', 'admin-nourania-lignes', 'admin-pending-breakdown', ...PROGRESS_VIEWS],
   nourania_lessons: ['admin-dashboard-stats', 'admin-module-progress', 'admin-nourania-lessons', 'admin-nourania-validations', 'admin-stats', 'fully-unlocked-students', 'nourania-lessons', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
   parent_lock_settings: [],
   point_settings: ['alphabet-point-settings'],

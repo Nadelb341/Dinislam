@@ -5,6 +5,7 @@ import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
+import { sendPushNotification } from '@/lib/pushHelper';
 import { avecSessionEnseignante, estEnModeFantome } from '@/lib/modeFantome';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -132,7 +133,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
     try {
       if (deja?.valide_le && !deja.definitif && !leconValidee) {
         // 🟠 Validée en RÉVISION : à revoir avec le professeur au cours du mercredi
-        toast(`🟠 Ligne ${n} : ton professeur l'a validée, vous la revoyez ensemble au prochain cours`);
+        toast(`🟠 Ligne ${n} : ton professeur l'a validée, mais vous allez revoir cette ligne ensemble au prochain cours`);
         return;
       }
       if (deja && (deja.valide_le || leconValidee)) {
@@ -148,7 +149,17 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
         const id = crypto.randomUUID();
         queryClient.setQueryData(cleFaites, [...faites, { id, ligne: n }]);
         const r = await ecrireOuGarder({ table: 'nourania_lignes_faites', op: 'insert', rows: [{ id, user_id: user.id, lesson_id: lessonId, content_id: contentId ?? null, ligne: n }] });
-        toast.success(r === 'ok' ? `✅ Ligne ${n} cochée, bravo ! Ton professeur va la valider ⏳` : `📡 Ligne ${n} cochée sur cet appareil : envoyée au retour du réseau`);
+        // 🏁 Dernière ligne de la leçon cochée (2026-11-18) : la base envoie toute seule la demande de validation de la leçon
+        // entière (déclencheur nourania_derniere_ligne_demande) ; ici on prévient l'enseignante
+        const total = numeros.filter((x) => x != null).length;
+        const toutes = total > 0 && new Set([...faites.map((f) => f.ligne), n].filter((x) => x <= total)).size >= total;
+        if (toutes && !leconValidee) {
+          toast.success(`🎉 Toutes les lignes sont cochées ! Ton professeur va valider la leçon entière ⏳`);
+          if (r === 'ok') sendPushNotification({ title: '📝 Leçon Nourania à valider', category: 'adm_valid', type: 'admin',
+            body: `${user.user_metadata?.full_name || 'Un élève'} a coché toutes les lignes de ${lessonTitle ?? 'sa leçon'}`, data: { url: '/?admin=nourania-validations' } });
+        } else {
+          toast.success(r === 'ok' ? `✅ Ligne ${n} cochée, bravo ! Ton professeur va la valider ⏳` : `📡 Ligne ${n} cochée sur cet appareil : envoyée au retour du réseau`);
+        }
       }
     } catch (e) {
       toast.error(errorMessage(e));
