@@ -19,7 +19,19 @@ function sprite(taille: number, dessin: (g: CanvasRenderingContext2D, s: number)
   return c;
 }
 
-export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => void }) {
+/** 🎨 Couleurs du feu d'artifice selon la saison (2026-11-18 : un objet qui se promène dans chaque saison) */
+export type ThemeFeu = 'ramadan' | 'hiver' | 'automne' | 'ete' | 'printemps';
+type Palette = { lueur: [string, string, string, string]; etoile: [string, string, string]; special: [string, string]; ruban: [string, string, string, string]; voile: string; forme: 'lune' | 'flocon' | 'feuille' | 'soleil' | 'fleur' };
+const PALETTES: Record<ThemeFeu, Palette> = {
+  ramadan: { lueur: ['rgba(255,255,240,1)', 'rgba(255,236,150,1)', 'rgba(255,200,80,.45)', 'rgba(255,190,60,0)'], etoile: ['#fff6cf', '#ffd76a', '#e0a92a'], special: ['#fff4c4', '#e9b739'], ruban: ['#fff1b8', '#e0b23a', '#b8891c', '#8a6414'], voile: '18,14,34', forme: 'lune' },
+  hiver: { lueur: ['rgba(255,255,255,1)', 'rgba(214,240,255,1)', 'rgba(140,200,255,.45)', 'rgba(120,180,255,0)'], etoile: ['#ffffff', '#cfeaff', '#7fb8ec'], special: ['#ffffff', '#a9d6ff'], ruban: ['#ffffff', '#bfe2ff', '#7fb0e0', '#4f7fb5'], voile: '12,24,52', forme: 'flocon' },
+  automne: { lueur: ['rgba(255,250,230,1)', 'rgba(255,214,130,1)', 'rgba(240,140,50,.45)', 'rgba(220,110,40,0)'], etoile: ['#fff2c8', '#ffc25a', '#d9771f'], special: ['#ffd36b', '#c8611a'], ruban: ['#ffe6a8', '#e8962e', '#b0581a', '#7d3a10'], voile: '34,18,10', forme: 'feuille' },
+  ete: { lueur: ['rgba(255,255,235,1)', 'rgba(255,240,140,1)', 'rgba(255,190,70,.45)', 'rgba(255,170,40,0)'], etoile: ['#fffbd6', '#ffe066', '#ffa726'], special: ['#fff3a0', '#ffb300'], ruban: ['#fff6b0', '#ffd23f', '#ff9f1c', '#e07a00'], voile: '20,30,50', forme: 'soleil' },
+  printemps: { lueur: ['rgba(255,255,255,1)', 'rgba(255,214,236,1)', 'rgba(140,190,255,.45)', 'rgba(120,170,255,0)'], etoile: ['#ffffff', '#ffd0e8', '#7aa8f0'], special: ['#ffe1f0', '#ff8fc2'], ruban: ['#ffe3f1', '#ff9cc9', '#6f9be6', '#3f6fc0'], voile: '24,22,48', forme: 'fleur' },
+};
+
+export function FeuArtificeDore({ duree, onFin, theme = 'ramadan' }: { duree: number; onFin: () => void; theme?: ThemeFeu }) {
+  const pal = PALETTES[theme];
   const ref = useRef<HTMLCanvasElement>(null);
   const finRef = useRef(onFin);
   finRef.current = onFin;
@@ -37,7 +49,7 @@ export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => 
     // Petites images dessinées une fois : lueur dorée, étoile à 4 branches, croissant de lune
     const lueur = sprite(64, (g, s) => {
       const r = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-      r.addColorStop(0, 'rgba(255,255,240,1)'); r.addColorStop(.18, 'rgba(255,236,150,1)'); r.addColorStop(.42, 'rgba(255,200,80,.45)'); r.addColorStop(1, 'rgba(255,190,60,0)');
+      r.addColorStop(0, pal.lueur[0]); r.addColorStop(.18, pal.lueur[1]); r.addColorStop(.42, pal.lueur[2]); r.addColorStop(1, pal.lueur[3]);
       g.fillStyle = r; g.fillRect(0, 0, s, s);
     });
     const etoile = sprite(64, (g, s) => {
@@ -46,16 +58,39 @@ export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => 
       g.beginPath();
       for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4 - Math.PI / 2, d = i % 2 ? r : R; g.lineTo(c + Math.cos(a) * d, c + Math.sin(a) * d); }
       g.closePath();
-      const lg = g.createLinearGradient(0, 0, s, s); lg.addColorStop(0, '#fff6cf'); lg.addColorStop(.5, '#ffd76a'); lg.addColorStop(1, '#e0a92a');
+      const lg = g.createLinearGradient(0, 0, s, s); lg.addColorStop(0, pal.etoile[0]); lg.addColorStop(.5, pal.etoile[1]); lg.addColorStop(1, pal.etoile[2]);
       g.fillStyle = lg; g.fill();
     });
+    // La « grande » forme de la gerbe : lune (Ramadan), flocon (hiver), feuille (automne), soleil (été), fleur (printemps)
     const lune = sprite(64, (g, s) => {
       g.drawImage(lueur, 0, 0, s, s);
-      g.beginPath(); g.arc(s / 2, s / 2, s * .3, 0, Math.PI * 2);
-      const lg = g.createLinearGradient(0, 0, s, s); lg.addColorStop(0, '#fff4c4'); lg.addColorStop(1, '#e9b739');
-      g.fillStyle = lg; g.fill();
-      g.globalCompositeOperation = 'destination-out';
-      g.beginPath(); g.arc(s / 2 + s * .13, s / 2 - s * .06, s * .26, 0, Math.PI * 2); g.fill();
+      const c = s / 2;
+      const lg = g.createLinearGradient(0, 0, s, s); lg.addColorStop(0, pal.special[0]); lg.addColorStop(1, pal.special[1]);
+      g.fillStyle = lg; g.strokeStyle = lg; g.lineCap = 'round';
+      if (pal.forme === 'lune') {
+        g.beginPath(); g.arc(c, c, s * .3, 0, Math.PI * 2); g.fill();
+        g.globalCompositeOperation = 'destination-out';
+        g.beginPath(); g.arc(c + s * .13, c - s * .06, s * .26, 0, Math.PI * 2); g.fill();
+      } else if (pal.forme === 'flocon') {
+        g.lineWidth = s * .05;
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3, ex = c + Math.cos(a) * s * .32, ey = c + Math.sin(a) * s * .32;
+          g.beginPath(); g.moveTo(c, c); g.lineTo(ex, ey); g.stroke();
+          for (const k of [-1, 1]) { const mx = c + Math.cos(a) * s * .2, my = c + Math.sin(a) * s * .2, b = a + k * .7; g.beginPath(); g.moveTo(mx, my); g.lineTo(mx + Math.cos(b) * s * .09, my + Math.sin(b) * s * .09); g.stroke(); }
+        }
+      } else if (pal.forme === 'feuille') {
+        g.beginPath(); g.moveTo(c, c - s * .32);
+        g.bezierCurveTo(c + s * .34, c - s * .22, c + s * .3, c + s * .2, c, c + s * .3);
+        g.bezierCurveTo(c - s * .3, c + s * .2, c - s * .34, c - s * .22, c, c - s * .32); g.fill();
+        g.strokeStyle = 'rgba(140,60,10,.5)'; g.lineWidth = s * .025; g.beginPath(); g.moveTo(c, c - s * .26); g.lineTo(c, c + s * .38); g.stroke();
+      } else if (pal.forme === 'soleil') {
+        g.beginPath(); g.arc(c, c, s * .17, 0, Math.PI * 2); g.fill();
+        g.lineWidth = s * .05;
+        for (let i = 0; i < 10; i++) { const a = (i * Math.PI) / 5; g.beginPath(); g.moveTo(c + Math.cos(a) * s * .24, c + Math.sin(a) * s * .24); g.lineTo(c + Math.cos(a) * s * .34, c + Math.sin(a) * s * .34); g.stroke(); }
+      } else {
+        for (let i = 0; i < 5; i++) { const a = (i * Math.PI * 2) / 5 - Math.PI / 2; g.beginPath(); g.ellipse(c + Math.cos(a) * s * .15, c + Math.sin(a) * s * .15, s * .13, s * .09, a, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = '#ffe066'; g.beginPath(); g.arc(c, c, s * .08, 0, Math.PI * 2); g.fill();
+      }
     });
 
     const grains: Grain[] = [];
@@ -97,7 +132,7 @@ export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => 
         const x0 = Math.sin(r.ph + t * 2.4 + i * .55) * 16, x1 = Math.sin(r.ph + t * 2.4 + (i + 1) * .55) * 16;
         const face = Math.cos(r.ph + t * 2.4 + i * .55);
         const lg = ctx.createLinearGradient(x0 - r.larg, y0, x0 + r.larg, y1);
-        lg.addColorStop(0, face > 0 ? '#fff1b8' : '#b8891c'); lg.addColorStop(1, face > 0 ? '#e0b23a' : '#8a6414');
+        lg.addColorStop(0, face > 0 ? pal.ruban[0] : pal.ruban[2]); lg.addColorStop(1, face > 0 ? pal.ruban[1] : pal.ruban[3]);
         ctx.strokeStyle = lg;
         ctx.lineWidth = r.larg * (.35 + Math.abs(face) * .65);
         ctx.lineCap = 'round';
@@ -122,7 +157,7 @@ export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => 
       const voile = Math.min(1, t / .4) * Math.min(1, Math.max(0, (duree - t) / 1));
       ctx.globalCompositeOperation = 'source-over';
       ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = `rgba(18,14,34,${(.66 * voile).toFixed(3)})`;
+      ctx.fillStyle = `rgba(${pal.voile},${(.66 * voile).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
       // Rubans
       for (const r of rubans) {
@@ -162,7 +197,7 @@ export function FeuArtificeDore({ duree, onFin }: { duree: number; onFin: () => 
     };
     raf = requestAnimationFrame(tour);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', taille); };
-  }, [duree]);
+  }, [duree, pal]);
 
   return createPortal(<canvas ref={ref} aria-hidden className="pointer-events-none fixed inset-0 z-[90] h-full w-full" />, document.body);
 }

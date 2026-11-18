@@ -38,6 +38,7 @@ const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label
     { k: 'erable', label: '🍂 Érable' }, { k: 'chene', label: '🌿 Chêne' }, { k: 'ginkgo', label: '💛 Ginkgo' }, { k: 'simple', label: '🍃 Feuille simple' },
     { k: 'vent', label: '💨 Coups de vent' }, { k: 'eclate', label: '💥 Feuille qui éclate quand on la touche' }, { k: 'son', label: '🔊 Petit son de cristal (comme les flocons)' },
     { k: 'grandesFeuilles', label: '🍁 Grandes feuilles faciles à attraper' },
+    { k: 'promeneur', label: '🍂 Feuille géante dorée qui se promène dans l\'appli' },
     { k: 'messageSemaine', label: '💬 Message « Attrape les feuilles ! » chaque semaine' },
     { k: 'ventDefile', label: '🌬️ Feuilles soufflées quand on fait défiler' },
     { k: 'pluieValidation', label: '🌰 Pluie de glands, pommes de pin et feuilles à chaque validation' },
@@ -63,6 +64,7 @@ const GROUPES_HIVER: { titre: string; items: { k: keyof ReglagesHiver; label: st
     { k: 'eclate', label: '💥 Flocon qui éclate quand on le touche' }, { k: 'son', label: '🔊 Petit son de cristal' },
     { k: 'messageSemaine', label: '💬 Message « Attrape les flocons ! » chaque semaine' }, { k: 'ventDefile', label: '🌬️ Flocons soufflés quand on fait défiler' },
     { k: 'pluieDoree', label: '✨ Pluie de flocons dorés à chaque validation' }, { k: 'floconDore', label: '🌟 Flocon doré rare à attraper' },
+    { k: 'promeneur', label: '⛄ Bonhomme de neige qui se promène dans l\'appli' },
   ] },
   { titre: 'Le chalet et le ciel (en haut)', items: [
     { k: 'chalet', label: '🏠 Chalet en haut à gauche' }, { k: 'cielSoir', label: '🌌 Ciel du soir avec petites étoiles' },
@@ -92,6 +94,7 @@ const groupesClair = (ete: boolean): { titre: string; items: { k: keyof Reglages
     { k: 'son', label: ete ? '🔊 Petit « plop »' : '🔊 Petit tintement' }, { k: 'messageSemaine', label: ete ? '💬 Message « Éclate les bulles ! » chaque semaine' : '💬 Message « Attrape les papillons ! » chaque semaine' },
     { k: 'ventDefile', label: '🌬️ Soufflés quand on fait défiler' }, { k: 'pluieValidation', label: ete ? '⭐ Pluie d\'étoiles de mer et coquillages à chaque validation' : '🌼 Pluie de pétales et coccinelles à chaque validation' },
     { k: 'rare', label: ete ? '🌟 Bulle dorée rare' : '🌟 Papillon doré rare' },
+    { k: 'promeneur', label: ete ? '☀️ Soleil brillant qui se promène dans l\'appli' : '🐦 Oiseau bleu et blanc qui se promène dans l\'appli' },
   ] },
   { titre: 'Le soleil et les nuages (en haut)', items: [
     { k: 'soleil', label: ete ? '☀️ Grand soleil qui brille' : '🌞 Soleil qui brille et tourne' }, { k: 'nuages', label: '☁️ Nuages autour du titre' },

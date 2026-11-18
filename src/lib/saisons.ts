@@ -32,6 +32,8 @@ export interface ReglagesAutomne {
   ventDefile: boolean; pluieValidation: boolean; feuilleDoree: boolean;
   /** 🍁 7 grandes feuilles devant les cartes, lentes, faciles à attraper (2026-11-04) */
   grandesFeuilles: boolean;
+  /** 🍂 2026-11-18 : une feuille géante dorée se promène dans l'appli (comme le tapis volant) ; la toucher = feu d'artifice */
+  promeneur: boolean;
 }
 
 /** 🌙 Ramadan (choix de Nadia du 2026-11-15, page https://claude.ai/artifact/8423oTGgpm8VcaW5r67wvh, ambiance B) */
@@ -61,6 +63,8 @@ export interface ReglagesHiver {
   givre: boolean; givreMatin: boolean; neigeCartes: boolean; cielSoir: boolean; images: boolean; couleurs: boolean;
   /** 14 plongeon · 15 vent au défilement · 16 vitre givrée · 17 pluie dorée · 18 mot de l'ours · 19 neige sur le titre · 20 flocon doré */
   plongeon: boolean; ventDefile: boolean; vitre: boolean; pluieDoree: boolean; motOurs: boolean; neigeTitre: boolean; floconDore: boolean;
+  /** ⛄ 2026-11-18 : un bonhomme de neige se promène dans l'appli (comme le tapis volant) ; le toucher = feu d'artifice */
+  promeneur: boolean;
 }
 
 export const HIVER_DEFAUT: ReglagesHiver = {
@@ -69,6 +73,7 @@ export const HIVER_DEFAUT: ReglagesHiver = {
   neigeBas: true, lanternes: true, ours: true, personnage: true, traces: true, glissade: true,
   givre: true, givreMatin: true, neigeCartes: true, cielSoir: true, images: true, couleurs: true,
   plongeon: true, ventDefile: true, vitre: true, pluieDoree: true, motOurs: true, neigeTitre: true, floconDore: true,
+  promeneur: true,
 };
 
 /** 🌸☀️ Printemps et été (même principe que l'automne et l'hiver, demande de Nadia du 2026-11-04) */
@@ -93,13 +98,15 @@ export interface ReglagesClair {
   coccinelle: boolean;
   /** Idée 5 : château de sable que le crabe construit petit à petit pendant la semaine (été) */
   chateau: boolean;
+  /** 🐦☀️ 2026-11-18 : un oiseau bleu et blanc (printemps) / un soleil brillant (été) se promène dans l'appli ; le toucher = feu d'artifice */
+  promeneur: boolean;
 }
 export const CLAIR_DEFAUT: ReglagesClair = {
   volants: true, tombants: true, devantDerriere: true, attraper: true, son: true, messageSemaine: true,
   soleil: true, nuages: true, lune: true, decor: true, transparente: true,
   bas: true, animal: true, plongeon: true, motDuJour: true, lucioles: true, cielSoir: true, rosee: true,
   images: true, couleurs: true, ventDefile: true, pluieValidation: true, rare: true, titre: true,
-  repos: true, coccinelle: true, chateau: true,
+  repos: true, coccinelle: true, chateau: true, promeneur: true,
 };
 
 /**
@@ -229,6 +236,7 @@ export const AUTOMNE_DEFAUT: ReglagesAutomne = {
   cheminee: true, petitFeuJour: true, grandFeuSoir: true, transparente: true,
   bougies: true, feuillesPoutre: true, courge: true, buches: true, braises: true,
   images: true, couleurs: true, tapis: true, personnage: true, plongeon: true, ventDefile: true, pluieValidation: true, feuilleDoree: true, grandesFeuilles: true,
+  promeneur: true,
 };
 
 export const SAISONS_DEFAUT: ReglagesSaisons = {

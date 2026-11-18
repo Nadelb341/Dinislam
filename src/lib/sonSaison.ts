@@ -91,3 +91,65 @@ export function sonPlop() {
     o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + 0.16);
   } catch { /* pas de son possible */ }
 }
+
+/* ---------- 🧞⛄🍂☀️🐦 Sons des objets qui se promènent (Nadia, 2026-11-18) : doux, volume 45 % ---------- */
+const VOLUME_PROMENEUR = 0.45;
+function sortie(c: AudioContext) {
+  const out = c.createGain(); out.gain.value = VOLUME_PROMENEUR * 0.6; out.connect(c.destination); return out;
+}
+function ping(c: AudioContext, out: AudioNode, t: number, f: number, dur: number, g: number, type: OscillatorType = 'sine') {
+  const o = c.createOscillator(), e = c.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+  e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(g, t + 0.008); e.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(e).connect(out); o.start(t); o.stop(t + dur + 0.05);
+}
+/** 🧞 « D · Harpe magique » (choix de Nadia, page du 18/11) : une montée rapide de notes, comme une harpe */
+export function sonHarpe() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const out = sortie(c), t = c.currentTime + 0.02;
+    [1047, 1175, 1319, 1568, 1760, 2093, 2349, 2637, 3136, 3520].forEach((f, i) => ping(c, out, t + i * 0.045, f, 0.9, 0.12, 'triangle'));
+  } catch { /* pas de son possible */ }
+}
+/** ⛄ Hiver : cristal qui tinte, avec un petit écho glacé */
+export function sonCristalHiver() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const out = sortie(c), t = c.currentTime + 0.02;
+    [2637, 3136, 3951, 3136, 4699].forEach((f, i) => { ping(c, out, t + i * 0.08, f, 1.1, 0.1); ping(c, out, t + i * 0.08, f * 2.76, 0.3, 0.02); });
+  } catch { /* pas de son possible */ }
+}
+/** 🍂 Automne : froissement doré (feuille qui passe) + deux notes chaudes */
+export function sonFroissementDore() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const out = sortie(c), t = c.currentTime + 0.02, d = 0.5, n = Math.floor(c.sampleRate * d);
+    const buf = c.createBuffer(1, n, c.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) { const x = i / n; data[i] = (Math.random() * 2 - 1) * (Math.random() < 0.08 ? 1 : 0.3) * Math.sin(Math.PI * x) * (1 - x); }
+    const src = c.createBufferSource(); src.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(1800, t); bp.frequency.linearRampToValueAtTime(3200, t + d); bp.Q.value = 0.8;
+    const g = c.createGain(); g.gain.value = 0.5; src.connect(bp).connect(g).connect(out); src.start(t);
+    ping(c, out, t + 0.18, 1319, 0.9, 0.09, 'triangle'); ping(c, out, t + 0.3, 1760, 1.1, 0.08, 'triangle');
+  } catch { /* pas de son possible */ }
+}
+/** ☀️ Été : carillon chaud (notes graves et rondes) */
+export function sonCarillonChaud() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const out = sortie(c), t = c.currentTime + 0.02;
+    [784, 988, 1175, 1568].forEach((f, i) => { ping(c, out, t + i * 0.13, f, 1.4, 0.13, 'sine'); ping(c, out, t + i * 0.13, f * 2, 0.6, 0.03, 'triangle'); });
+  } catch { /* pas de son possible */ }
+}
+/** 🐦 Printemps : petit gazouillis (trois « tuit » qui montent) */
+export function sonGazouillis() {
+  const c = lecteurSon(); if (!c) return;
+  try {
+    const out = sortie(c), t0 = c.currentTime + 0.02;
+    [0, 0.16, 0.3, 0.52].forEach((d, i) => {
+      const t = t0 + d, o = c.createOscillator(), e = c.createGain(); o.type = 'sine';
+      const bas = 2600 + i * 250, haut = 4200 + i * 300;
+      o.frequency.setValueAtTime(bas, t); o.frequency.exponentialRampToValueAtTime(haut, t + 0.06); o.frequency.exponentialRampToValueAtTime(bas * 0.9, t + 0.11);
+      e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(0.14, t + 0.01); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      o.connect(e).connect(out); o.start(t); o.stop(t + 0.14);
+    });
+  } catch { /* pas de son possible */ }
+}
