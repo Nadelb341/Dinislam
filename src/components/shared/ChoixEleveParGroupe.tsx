@@ -7,6 +7,16 @@ export function ChoixEleveParGroupe({ value, onChange }: { value: string | null;
   const [cherche, setCherche] = useState('');
   const { data, isLoading } = useComptesParGroupe();
   const sections = useMemo(() => sectionsParGroupe(data, cherche), [data, cherche]);
+  // Élève choisi : la liste des élèves se REPLIE (Nadia, 2026-11-18 : « éviter d'avoir à trop scroller ») → une seule ligne
+  // avec son prénom et « Changer d'élève »
+  const choisi = value ? data?.comptes.find((c) => c.user_id === value) : null;
+  if (value) return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-violet-600 bg-violet-50 dark:bg-violet-950/40 px-3 py-2">
+      <span className="min-w-0 font-extrabold text-violet-900 dark:text-violet-100 [overflow-wrap:anywhere]">✓ {choisi?.full_name || 'Élève choisi'}</span>
+      <button type="button" onClick={() => onChange(null, '')}
+        className="shrink-0 rounded-full border-2 border-violet-300 bg-white dark:bg-card px-3 py-1 text-xs font-bold text-violet-800 dark:text-violet-200">👥 Changer d'élève</button>
+    </div>
+  );
   return (
     <div className="space-y-2">
       <Input placeholder="🔎 Chercher un prénom…" value={cherche} onChange={(e) => setCherche(e.target.value)}

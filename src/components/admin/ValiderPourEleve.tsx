@@ -97,9 +97,8 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
       <CardContent className="p-4 space-y-3">
         <h4 className="font-bold flex items-center gap-2"><Unlock className="h-4 w-4" /> {cfg.titre}</h4>
         <ChoixEleveParGroupe value={eleve} onChange={(id, nom) => { setEleve(id); setNomChoisi(nom); }} />
-        {eleve && <p className="text-sm font-bold text-violet-800 dark:text-violet-200">Pour {nomEleve} :</p>}
         {eleve && (
-          <div className="max-h-60 overflow-y-auto space-y-1">
+          <div className="max-h-[65vh] overflow-y-auto space-y-1">
             {elements.map((l) => {
               const ok = validees.includes(l.id);
               return (

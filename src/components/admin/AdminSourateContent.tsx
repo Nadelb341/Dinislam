@@ -413,9 +413,8 @@ const AdminSourateContent = () => {
             Valider des sourates pour un élève
           </h4>
           <ChoixEleveParGroupe value={selectedStudent} onChange={(id) => setSelectedStudent(id)} />
-          {selectedStudent && <p className="text-sm font-bold text-violet-800 dark:text-violet-200">Pour {(profiles || []).find((p) => p.user_id === selectedStudent)?.full_name || 'cet élève'} :</p>}
           {selectedStudent && (
-            <div className="max-h-60 overflow-y-auto space-y-1">
+            <div className="max-h-[65vh] overflow-y-auto space-y-1">
               {sourates.map(s => {
                 const isUnlocked = unlocks.some(u => u.user_id === selectedStudent && u.sourate_id === s.id);
                 const parEleve = !isUnlocked && valideesEleve.includes(s.id);

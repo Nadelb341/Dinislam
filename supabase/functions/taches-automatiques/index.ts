@@ -9,7 +9,6 @@ import { datesRetenues } from "../_shared/ramadanDates.ts";
  *  - message programmé : à l'heure choisie, notification aux élèves visés + à leurs parents reliés (une seule fois : notifie_le) ;
  *  - relance : 2 jours après l'envoi, ceux qui n'ont pas touché « J'ai lu » reçoivent un petit rappel (une seule fois : relance_le).
  * ⏳ Gagner du temps (choix de Nadia du 11/11)
- *  - le MARDI à partir de 16 h : « 📊 Le bilan de la semaine est prêt : l'envoyer aux parents ? » (c'est Nadia qui décide) ;
  *  - le MARDI à partir de 18 h : « 🤖 Les devoirs de la semaine sont prêts » (pré-remplis élève par élève, à relire puis donner).
  *  Une seule fois par semaine : table taches_auto_journal.
  */
@@ -84,10 +83,7 @@ serve(async () => {
       const { error } = await supabase.from('taches_auto_journal').insert({ cle });
       return !error; // déjà fait cette semaine = clé déjà là
     };
-    if (estMardi && p.hour >= 16 && adminIds.length && await uneFois(`bilan-semaine-${p.day}`)) {
-      await sendPushInternal({ userIds: adminIds, title: '📊 Le bilan de la semaine est prêt', body: 'Diamants, lignes, sourates de chaque élève : touche pour le relire et décider de l\'envoyer aux parents.', data: { url: '/?bilanSemaine=1' } }).catch((e) => console.error(e));
-      bilan.bilan_semaine = 'proposé';
-    }
+    // (« Bilan de la semaine » du mardi 16 h SUPPRIMÉ le 2026-11-18 à la demande de Nadia : seul le bilan avant chaque vacances reste)
     if (estMardi && p.hour >= 18 && adminIds.length && await uneFois(`devoirs-prets-${p.day}`)) {
       await sendPushInternal({ userIds: adminIds, title: '🤖 Les devoirs de la semaine sont prêts', body: 'Pré-remplis pour chaque élève, selon où il en est. Relis, puis donne-les au groupe en 1 appui.', data: { url: '/?open=todo&cahier=1&donnerGroupe=1' } }).catch((e) => console.error(e));
       bilan.devoirs_prets = 'proposé';

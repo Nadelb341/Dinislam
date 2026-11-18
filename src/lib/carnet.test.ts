@@ -37,21 +37,6 @@ describe('carnet de liaison', () => {
   });
 });
 
-describe('bilan de la semaine', () => {
-  it('texte et proposition le mardi à 16 h', async () => {
-    const { texteBilanSemaine, bilanAProposer, cleSemaine } = await import('./bilanSemaine');
-    const t = texteBilanSemaine('Réda Ben', { devoirsDonnes: 3, devoirsFaits: 3, lignes: 4, lecons: [], sourates: ['Al-Fil'], invocations: [] });
-    expect(t).toContain('Bilan de la semaine de Réda');
-    expect(t).toContain('💎 Devoirs faits : 3 / 3');
-    expect(t).toContain('📖 Sourate validée : Al-Fil');
-    expect(t).toContain('bravo');
-    expect(bilanAProposer(new Date(2026, 10, 17, 15, 0), null)).toBe(false); // mardi 15 h
-    expect(bilanAProposer(new Date(2026, 10, 17, 16, 5), null)).toBe(true);  // mardi 16 h
-    expect(bilanAProposer(new Date(2026, 10, 18, 9, 0), cleSemaine(new Date(2026, 10, 18)))).toBe(false); // déjà fait
-    expect(bilanAProposer(new Date(2026, 10, 16, 20, 0), null)).toBe(false); // lundi
-  });
-});
-
 describe('carnet côté élève', () => {
   it('à lire déplié ; lu → historique (le plus récent en tête) ; signature attendue reste en haut', async () => {
     const { separerPourEleve } = await import('./carnet');
