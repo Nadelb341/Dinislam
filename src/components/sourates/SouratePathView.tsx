@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Lock, Check } from 'lucide-react';
+import { BulleTuEsIci } from '@/components/shared/BulleTuEsIci';
 import charGirlReading from '@/assets/char-girl-reading.png';
 import charBoyPraying from '@/assets/char-boy-praying.png';
 import charBoyChapelet from '@/assets/char-boy-chapelet.png';
@@ -237,6 +238,8 @@ const SouratePathView = ({
           const isCurrent = i === currentIndex;
           const isGift = GIFT_SOURATE_NUMBERS.has(node.sourate.number);
           const isAyatKursi = node.sourate.number === 1000;
+          // ✦ Bulle « Tu es ici » au-dessus de la sourate en cours (Nadia, 2026-11-18)
+          const bulle = isCurrent && accessible && !isValidated;
 
           return (
             <div
@@ -250,8 +253,9 @@ const SouratePathView = ({
               }}
             >
               {/* Gift badge */}
+              {bulle && <BulleTuEsIci onClick={() => onSourateClick(node.sourate)} />}
               {isGift && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                <div className={cn('absolute z-10', bulle ? '-top-1 -right-4' : '-top-4 left-1/2 -translate-x-1/2')}>
                   <span className="text-xl leading-none drop-shadow-sm">🎁</span>
                 </div>
               )}

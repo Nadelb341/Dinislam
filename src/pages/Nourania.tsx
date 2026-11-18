@@ -21,6 +21,8 @@ import { extractYoutubeVideoId } from '@/utils/youtube';
 import { YoutubePlayer } from '@/utils/youtube';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
+import NouraniaPathView from '@/components/nourania/NouraniaPathView';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 const Nourania = () => {
@@ -263,9 +265,9 @@ const Nourania = () => {
     mutationFn: async (lessonId: string) => {
       if (!user?.id) throw new Error('Non connecté');
 
-      const isAdminUnlocked = adminUnlocks.includes(lessonId);
-
-      if (isAdminUnlocked || isOver20) {
+      // 2026-11-18 (Nadia) : les points ne viennent que de SA validation → une leçon ouverte à la main (🔓) passe aussi
+      // par une demande pour un enfant (la base le garantit aussi : garde_validation). Les adultes valident seuls.
+      if (isOver20) {
         // Auto-validation directe sans passer par l'admin
         const { data: existing } = await supabase
           .from('user_nourania_progress')
@@ -445,9 +447,21 @@ const Nourania = () => {
           </div>
         )}
 
-        {/* Lessons List */}
+        {/* 🌙 Parcours des leçons en serpentin (Nadia, 2026-11-18) : toucher une leçon l'ouvre dans une fenêtre */}
+        <NouraniaPathView
+          lessons={lessons}
+          etat={(lesson, index) => ({ validee: isLessonValidated(lesson.id), enAttente: isLessonPendingValidation(lesson.id), ouverte: isLessonUnlocked(index) })}
+          onLessonClick={(_, index) => handleLessonClick(lessons[index], index)}
+        />
+
+        {/* Leçon ouverte : même contenu qu'avant (vidéos, PDF, audio, valider…), dans une fenêtre */}
+        <Dialog open={!!expandedLesson && lessons.some((l) => l.id === expandedLesson)} onOpenChange={(open) => { if (!open) setExpandedLesson(null); }}>
+          <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto p-3 pt-12 sm:p-4 sm:pt-12">
+          <DialogTitle className="sr-only">Leçon Nourania</DialogTitle>
+          <DialogDescription className="sr-only">Contenu de la leçon ouverte</DialogDescription>
         <div className="space-y-3">
           {lessons.map((lesson, index) => {
+            if (expandedLesson !== lesson.id) return null;
             const isValidated = isLessonValidated(lesson.id);
             const isPending = isLessonPendingValidation(lesson.id);
             const unlocked = isLessonUnlocked(index);
@@ -456,7 +470,6 @@ const Nourania = () => {
 
             return (
               <div
-                id={`lesson-${lesson.id}`}
                 key={lesson.id}
                 className={cn(
                   'module-card rounded-2xl overflow-hidden transition-all duration-300 animate-slide-up',
@@ -465,7 +478,7 @@ const Nourania = () => {
                   !unlocked && 'opacity-60',
                   isExpanded && 'shadow-elevated'
                 )}
-                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                style={{ animationFillMode: 'both' }}
               >
                 {/* Lesson Header */}
                 <div
@@ -658,6 +671,8 @@ const Nourania = () => {
             );
           })}
         </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Unlock Dialog */}
