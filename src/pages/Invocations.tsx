@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
+import { audioExt } from '@/hooks/useAudioRecorder';
+import { logEchecAudio } from '@/lib/crashLog';
+import { errorMessage } from '@/lib/utils';
 import { withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,8 +54,10 @@ interface InvocationDetailDialogProps {
   validationRequest: Tables<'invocation_validation_requests'> | null | undefined;
   onClose: () => void;
   onMarkMemorized: (invocationId: number, isMemorized: boolean) => void;
-  onRequestValidation: (invocationId: number) => void;
+  onRequestValidation: (invocationId: number, audio: Blob | null) => void;
   isRequestingValidation: boolean;
+  /** 🎙️ Élève de moins de 20 ans : un audio de sa récitation est obligatoire pour demander la validation (Nadia, 2026-11-18) */
+  audioObligatoire: boolean;
 }
 
 const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
@@ -62,7 +69,9 @@ const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
   }
 };
 
-const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onMarkMemorized, onRequestValidation, isRequestingValidation }: InvocationDetailDialogProps) => {
+const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onMarkMemorized, onRequestValidation, isRequestingValidation, audioObligatoire }: InvocationDetailDialogProps) => {
+  const [audio, setAudio] = useState<Blob | null>(null);
+  const garderAudio = useCallback((b: Blob | null) => setAudio(b), []);
   const isMemorized = progress?.is_memorized ?? false;
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
@@ -123,18 +132,14 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                   <Video className="h-3.5 w-3.5 text-white/80 flex-shrink-0" />
                   <p className="text-xs text-white/90 font-medium">{voirEntiere ? 'Vidéo entière' : "Apprendre l'invocation"}</p>
                 </div>
-                <div className="aspect-video bg-black">
-                  <video
-                    key={voirEntiere ? 'entiere' : 'extrait'}
-                    src={voirEntiere && videoEntiere ? videoEntiere : videoAppli}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    autoPlay={voirEntiere}
-                    controlsList="nodownload"
-                    className="w-full h-full"
-                  />
-                </div>
+                <LecteurVideo
+                  key={voirEntiere ? 'entiere' : 'extrait'}
+                  src={voirEntiere && videoEntiere ? videoEntiere : videoAppli}
+                  autoPlay={voirEntiere}
+                  controlsList="nodownload"
+                  className="aspect-video rounded-none"
+                  videoClassName="h-full"
+                />
               </div>
             )}
 
@@ -185,9 +190,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 {contents.map((content) => (
                   <div key={content.id} className="border border-border rounded-xl overflow-hidden">
                     {content.content_type === 'video' && (
-                      <div className="aspect-video">
-                        <video src={content.file_url} controls preload="none" className="w-full h-full" controlsList="nodownload" />
-                      </div>
+                      <LecteurVideo src={content.file_url} preload="none" controlsList="nodownload" className="aspect-video" videoClassName="h-full" />
                     )}
                     {content.content_type === 'image' && (
                       <img src={content.file_url} alt={content.file_name} className="w-full h-auto object-contain" loading="lazy" />
@@ -247,11 +250,23 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 <Clock className="h-5 w-5" />
                 Validation en attente...
               </div>
+            ) : audioObligatoire ? (
+              <div className="space-y-2">
+                <EnregistreurAudio key={`${invocation.id}-${validationRequest?.status ?? 'aucune'}`} label="Enregistre ta récitation : ton professeur l'écoutera pour la valider" onChange={garderAudio} />
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => onRequestValidation(invocation.id, audio)}
+                  disabled={isRequestingValidation || !audio}
+                >
+                  {isRequestingValidation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {audio ? 'Envoyer ma récitation' : 'Enregistre-toi d\'abord 🎙️'}
+                </Button>
+              </div>
             ) : (
               <Button
                 className="w-full gap-2"
                 variant="outline"
-                onClick={() => onRequestValidation(invocation.id)}
+                onClick={() => onRequestValidation(invocation.id, null)}
                 disabled={isRequestingValidation}
               >
                 <Send className="h-4 w-4" />
@@ -388,7 +403,7 @@ const Invocations = () => {
   });
 
   const requestValidationMutation = useMutation({
-    mutationFn: async (invocationId: number) => {
+    mutationFn: async ({ invocationId, audio }: { invocationId: number; audio: Blob | null }) => {
       if (!user) throw new Error('Non connecté');
 
       if (isOver20) {
@@ -425,9 +440,15 @@ const Invocations = () => {
         .eq('status', 'pending')
         .limit(1);
       if (alreadyPending && alreadyPending.length > 0) throw new Error('Demande déjà envoyée');
+      // 🎙️ Audio obligatoire (Nadia, 2026-11-18) : déposé dans l'espace privé des récitations (dossier de l'élève)
+      if (!audio) throw new Error('Audio manquant');
+      const chemin = `${user.id}/invocation-${invocationId}/${Date.now()}.${audioExt(audio)}`;
+      const { error: upErr } = await supabase.storage.from('recitations').upload(chemin, audio, { contentType: audio.type || 'audio/mp4', upsert: false });
+      if (upErr) { void logEchecAudio('envoi', upErr, `invocation ${invocationId}`); throw upErr; }
+      const audioUrl = supabase.storage.from('recitations').getPublicUrl(chemin).data.publicUrl;
       const { error } = await supabase
         .from('invocation_validation_requests')
-        .insert({ user_id: user.id, invocation_id: invocationId });
+        .insert({ user_id: user.id, invocation_id: invocationId, audio_url: audioUrl });
       if (error) throw error;
 
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).maybeSingle();
@@ -435,8 +456,8 @@ const Invocations = () => {
       const firstName = profile?.full_name?.split(' ')[0] || 'Un élève';
       const invocName = invoc?.title_french || 'une invocation';
       sendPushNotification({
-        title: '📝 Nouvelle demande de validation', category: 'adm_valid',
-        body: `${firstName} demande la validation de ${invocName}`,
+        title: '🎙️ Nouvelle récitation d\'invocation', category: 'adm_valid',
+        body: `${firstName} t'a envoyé sa récitation de ${invocName}`,
         type: 'admin',
         data: { url: '/admin?section=invocations-validations' },
       });
@@ -449,12 +470,13 @@ const Invocations = () => {
       if (result?.autoValidated) {
         toast.success(withName(user, '✅ Invocation validée, bravo {prenom} !'));
       } else {
-        toast.success(withName(user, '📩 Demande de validation envoyée, {prenom} !'));
+        toast.success(withName(user, '✅ Bravo {prenom}, ta récitation est envoyée à ton professeur ! Il va l\'écouter 🎧'));
       }
     },
     onError: (err: Error) => {
       if (err.message === 'Demande déjà envoyée') toast.info('Ta demande est déjà envoyée, ton enseignant va la regarder.');
-      else toast.error('Erreur lors de la validation');
+      else if (err.message === 'Audio manquant') toast.error('Enregistre d\'abord ta récitation 🎙️ : elle est obligatoire.');
+      else toast.error(`${navigator.onLine ? '' : '📡 Pas de connexion Internet. '}Ta récitation n'est pas partie : ${errorMessage(err) || 'erreur inconnue'}. Ton enregistrement est gardé, réessaie.`, { duration: 12000 });
     },
   });
 
@@ -618,8 +640,9 @@ const Invocations = () => {
           validationRequest={getCardValidationRequest(selectedInvocation.id)}
           onClose={() => setSelectedInvocation(null)}
           onMarkMemorized={(id, mem) => toggleMemorizedMutation.mutate({ invocationId: id, isMemorized: mem })}
-          onRequestValidation={(id) => requestValidationMutation.mutate(id)}
+          onRequestValidation={(id, audio) => requestValidationMutation.mutate({ invocationId: id, audio })}
           isRequestingValidation={requestValidationMutation.isPending}
+          audioObligatoire={!isAdmin && !isOver20}
         />
       )}
     </AppLayout>

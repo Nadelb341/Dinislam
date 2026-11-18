@@ -1,4 +1,6 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 /**
  * 👻 Mode fantôme (demande de Nadia, 2026-11-05) : l'enseignante entre dans le compte d'un élève et agit
@@ -63,4 +65,24 @@ export async function quitterFantome(): Promise<void> {
   // Session de l'enseignante plus valable : on quitte seulement CE téléphone (l'élève reste connecté chez lui)
   await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   window.location.assign('/auth');
+}
+
+/**
+ * 👻 Agir avec le VRAI compte de l'enseignante pendant le mode fantôme (Nadia, 2026-11-18 : une ligne Nourania cochée
+ * en mode fantôme = validée définitivement par elle). Un 2ᵉ client, sans rien enregistrer sur l'appareil, ouvre sa session
+ * gardée de côté ; si les jetons sont renouvelés au passage, les nouveaux remplacent les anciens (« Revenir à mon compte »
+ * marche toujours).
+ */
+export async function avecSessionEnseignante<T>(action: (c: SupabaseClient<Database>) => Promise<T>): Promise<T> {
+  const f = lireFantome();
+  if (!f) throw new Error('Tu n\'es pas en mode fantôme.');
+  const c = createClient<Database>(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'dinislam-fantome-enseignante' },
+  });
+  const { data, error } = await c.auth.setSession(f.retour);
+  if (error || !data.session) throw new Error('Ta session d\'enseignante a expiré : reviens à ton compte, puis réessaie.');
+  if (data.session.refresh_token !== f.retour.refresh_token) {
+    try { localStorage.setItem(CLE, JSON.stringify({ ...f, retour: { access_token: data.session.access_token, refresh_token: data.session.refresh_token } })); } catch { /* rien */ }
+  }
+  return action(c);
 }

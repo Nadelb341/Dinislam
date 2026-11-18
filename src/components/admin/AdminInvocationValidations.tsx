@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, Clock, ArrowLeft, User } from 'lucide-react';
 import { useEffect } from 'react';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
+import { AudioPrive } from '@/components/shared/FichiersPrives';
 
 interface AdminInvocationValidationsProps {
   onBack: () => void;
@@ -225,6 +226,12 @@ const AdminInvocationValidations = ({ onBack }: AdminInvocationValidationsProps)
                     </Button>
                   </div>
                 </div>
+                {/* 🎙️ Récitation envoyée par l'élève (obligatoire depuis le 18/11) */}
+                {req.audio_url ? (
+                  <AudioPrive src={req.audio_url} controls preload="auto" className="mt-3 w-full" />
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">Ancienne demande, envoyée sans audio.</p>
+                )}
               </CardContent>
             </Card>
           ))}

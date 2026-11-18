@@ -5,6 +5,7 @@ import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
+import { avecSessionEnseignante, estEnModeFantome } from '@/lib/modeFantome';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
@@ -97,7 +98,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
   const { data: faites = [] } = useQuery({
     queryKey: cleFaites,
     enabled: !!user && !!lessonId,
-    queryFn: async () => ((await supabase.from('nourania_lignes_faites').select('id, ligne, valide_le').eq('user_id', user!.id).eq('lesson_id', lessonId!)).data || []) as { id: string; ligne: number; valide_le?: string | null }[],
+    queryFn: async () => ((await supabase.from('nourania_lignes_faites').select('id, ligne, valide_le, definitif').eq('user_id', user!.id).eq('lesson_id', lessonId!)).data || []) as { id: string; ligne: number; valide_le?: string | null; definitif?: boolean }[],
   });
   // ✅ Leçon déjà validée (Nadia, 2026-11-15) : toutes ses lignes sont « éclaircies », même jamais cochées. Rien n'est verrouillé.
   const { data: leconValidee = false } = useQuery({
@@ -105,10 +106,35 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
     enabled: !!user && !!lessonId,
     queryFn: async () => !!(await supabase.from('user_nourania_progress').select('is_validated').eq('user_id', user!.id).eq('lesson_id', lessonId!).maybeSingle()).data?.is_validated,
   });
+  // 👻 Mode fantôme (Nadia, 2026-11-18) : c'est l'enseignante qui coche → la ligne est validée DÉFINITIVEMENT, avec SA session
+  const fantome = estEnModeFantome();
+  const validerEnFantome = async (n: number) => {
+    if (!user || !lessonId) return;
+    const deja = faites.find((f) => f.ligne === n);
+    try {
+      await avecSessionEnseignante(async (c) => {
+        const { data: moi } = await c.auth.getUser();
+        const maintenant = new Date().toISOString();
+        const { error } = deja
+          ? await c.from('nourania_lignes_faites').update({ valide_le: deja.valide_le ?? maintenant, valide_par: moi.user?.id ?? null, definitif: true }).eq('id', deja.id)
+          : await c.from('nourania_lignes_faites').insert({ user_id: user.id, lesson_id: lessonId, content_id: contentId ?? null, ligne: n, valide_le: maintenant, valide_par: moi.user?.id ?? null, definitif: true });
+        if (error) throw error;
+      });
+      toast.success(`⭐ Ligne ${n} validée définitivement`);
+    } catch (e) {
+      toast.error(/fetch|network/i.test(errorMessage(e)) ? '📡 Nécessite Internet' : errorMessage(e));
+    }
+    void queryClient.invalidateQueries({ queryKey: ['nourania-lignes-faites'] });
+  };
   const basculerLigne = async (n: number) => {
     if (!user || !lessonId) return;
     const deja = faites.find((f) => f.ligne === n);
     try {
+      if (deja?.valide_le && !deja.definitif && !leconValidee) {
+        // 🟠 Validée en RÉVISION : à revoir avec le professeur au cours du mercredi
+        toast(`🟠 Ligne ${n} : ton professeur l'a validée, vous la revoyez ensemble au prochain cours`);
+        return;
+      }
       if (deja && (deja.valide_le || leconValidee)) {
         // Validée par le professeur : on ne la décoche plus (elle reste lisible, rien n'est verrouillé)
         toast.success(`✅ Ligne ${n} validée par ton professeur`);
@@ -328,22 +354,26 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                         }
                         const on = allumee === idx;
                         const faite = n != null ? faites.find((f) => f.ligne === n) : undefined;
-                        // ⏳ cochée par l'élève, en attente ; ✅ validée par le professeur (ou leçon validée) = ligne éclaircie
-                        const validee = n != null && (leconValidee || !!faite?.valide_le);
+                        // ⏳ cochée par l'élève, en attente ; 🟠 validée en révision (à revoir le mercredi) ;
+                        // ✅ validée définitivement par le professeur (ou leçon validée) = ligne éclaircie
+                        const validee = n != null && (leconValidee || (!!faite?.valide_le && !!faite.definitif));
+                        const revision = n != null && !validee && !!faite?.valide_le;
                         const coche = validee || !!faite;
-                        const attente = coche && !validee;
+                        const attente = coche && !validee && !revision;
                         const carre = Math.round(Math.min(30, Math.max(20, margeGauche - 8)));
                         return (
                           <div key={idx} className="contents">
                           {cocher && n != null && (
                             <button type="button" aria-pressed={coche}
-                              aria-label={validee ? `Ligne ${n} validée par ton professeur` : attente ? `Ligne ${n} cochée, en attente de validation : toucher pour décocher` : `Cocher la ligne ${n}`}
-                              title={validee ? 'Validée par ton professeur' : attente ? 'En attente de validation' : undefined}
-                              onClick={() => (coche ? void basculerLigne(n) : askValidation(`Ligne ${n} travaillée ?`, `La ligne ${n} sera cochée ✅ et envoyée à ton professeur pour validation.`, () => void basculerLigne(n)))}
+                              aria-label={validee ? `Ligne ${n} validée par ton professeur` : revision ? `Ligne ${n} validée en révision, à revoir avec ton professeur` : attente ? `Ligne ${n} cochée, en attente de validation : toucher pour décocher` : `Cocher la ligne ${n}`}
+                              title={validee ? 'Validée par ton professeur' : revision ? 'À revoir avec ton professeur' : attente ? 'En attente de validation' : undefined}
+                              onClick={() => (fantome && !validee
+                                ? askValidation(`Valider définitivement la ligne ${n} ?`, `Tu es en mode fantôme : la ligne ${n} sera validée par toi, comme une vraie validation (elle s'éclaircit).`, () => void validerEnFantome(n))
+                                : coche ? void basculerLigne(n) : askValidation(`Ligne ${n} travaillée ?`, `La ligne ${n} sera cochée ✅ et envoyée à ton professeur pour validation.`, () => void basculerLigne(n)))}
                               className={cn('pointer-events-auto absolute grid place-items-center rounded-md border-2 font-extrabold text-white shadow-sm transition-colors',
-                                validee ? 'bg-emerald-500 border-emerald-600' : attente ? 'bg-amber-400 border-amber-500' : 'bg-white/90 border-sky-500')}
+                                validee ? 'bg-emerald-500 border-emerald-600' : revision ? 'bg-orange-200 border-orange-300 text-orange-700' : attente ? 'bg-amber-400 border-amber-500' : 'bg-white/90 border-sky-500')}
                               style={{ left: -margeGauche + Math.max(2, (margeGauche - carre) / 2), top: `calc(${(l.t + l.b) / 2}% - ${carre / 2}px)`, width: carre, height: carre, fontSize: carre * (attente ? 0.5 : 0.65) }}>
-                              {validee ? '✓' : attente ? '⏳' : ''}
+                              {validee || revision ? '✓' : attente ? '⏳' : ''}
                             </button>
                           )}
                           <button
@@ -353,7 +383,7 @@ const PdfDocument = ({ fileUrl, contentId, lessonId, lessonTitle, lignes, lignes
                             onClick={() => setAllumee(on ? null : idx)}
                             className={cn(
                               'pointer-events-auto absolute left-[1.2%] rounded-[4px] transition-colors duration-200',
-                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : validee ? 'bg-white/50' : 'bg-transparent',
+                              on ? 'bg-yellow-300/35 outline outline-[3px] -outline-offset-[3px] outline-amber-400' : validee ? 'bg-white/50' : revision ? 'bg-orange-200/35' : 'bg-transparent',
                             )}
                             style={{ ...zone, right: `${100 - BORD_TABLEAU}%` }}
                           >

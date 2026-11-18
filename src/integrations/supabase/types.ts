@@ -2009,6 +2009,7 @@ export type Database = {
       }
       invocation_validation_requests: {
         Row: {
+          audio_url: string | null
           created_at: string | null
           id: string
           invocation_id: number
@@ -2018,6 +2019,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           invocation_id: number
@@ -2027,6 +2029,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audio_url?: string | null
           created_at?: string | null
           id?: string
           invocation_id?: number
@@ -2759,9 +2762,9 @@ export type Database = {
         ]
       }
       nourania_lignes_faites: {
-        Row: { content_id: string | null; created_at: string; id: string; lesson_id: string; ligne: number; user_id: string; valide_le: string | null; valide_par: string | null }
-        Insert: { content_id?: string | null; created_at?: string; id?: string; lesson_id: string; ligne: number; user_id: string; valide_le?: string | null; valide_par?: string | null }
-        Update: { content_id?: string | null; created_at?: string; id?: string; lesson_id?: string; ligne?: number; user_id?: string; valide_le?: string | null; valide_par?: string | null }
+        Row: { content_id: string | null; created_at: string; definitif: boolean; id: string; lesson_id: string; ligne: number; user_id: string; valide_le: string | null; valide_par: string | null }
+        Insert: { content_id?: string | null; created_at?: string; definitif?: boolean; id?: string; lesson_id: string; ligne: number; user_id: string; valide_le?: string | null; valide_par?: string | null }
+        Update: { content_id?: string | null; created_at?: string; definitif?: boolean; id?: string; lesson_id?: string; ligne?: number; user_id?: string; valide_le?: string | null; valide_par?: string | null }
         Relationships: []
       }
       nourania_lessons: {
