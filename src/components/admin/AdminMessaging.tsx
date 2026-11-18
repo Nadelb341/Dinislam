@@ -83,6 +83,8 @@ const AdminMessaging = React.forwardRef<HTMLDivElement>((_, ref) => {
           lastMessage: lastMsg.message, lastMessageDate: lastMsg.created_at, unreadCount,
         });
       }
+      // ✉️ Non lus en tête (2026-11-18), puis le reste ; le dernier arrivé en haut dans chaque partie
+      conversationList.sort((a, b) => Number(b.unreadCount > 0) - Number(a.unreadCount > 0) || (b.lastMessageDate || '').localeCompare(a.lastMessageDate || ''));
       return conversationList;
     },
   });

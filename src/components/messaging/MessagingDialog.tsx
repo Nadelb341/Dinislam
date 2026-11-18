@@ -145,14 +145,17 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
     if (SpeechRecognitionAPI) {
       recognitionRef.current = new SpeechRecognitionAPI();
       recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+      recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'fr-FR';
-      recognitionRef.current.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
-        let transcript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+      // Seulement les NOUVELLES phrases, ajoutées à la fin de ce qui est écrit (2026-11-18 : avant, tout ce qui avait été dit
+      // depuis le début remplaçait le message → un texte effacé revenait)
+      recognitionRef.current.onresult = (event: { resultIndex?: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => {
+        let nouveau = '';
+        for (let i = event.resultIndex ?? 0; i < event.results.length; i++) {
+          if (event.results[i].isFinal !== false) nouveau += event.results[i][0].transcript;
         }
-        setMessage(transcript);
+        nouveau = nouveau.trim();
+        if (nouveau) setMessage((m) => (m.trim() ? `${m.replace(/\s+$/, '')} ${nouveau}` : nouveau));
       };
       recognitionRef.current.onerror = () => setIsRecording(false);
       recognitionRef.current.onend = () => setIsRecording(false);

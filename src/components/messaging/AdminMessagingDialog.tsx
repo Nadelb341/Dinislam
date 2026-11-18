@@ -190,8 +190,9 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
           unreadCount: msgs.filter(m => m.sender_type === 'user' && !m.is_read).length,
         });
       }
-      // Dernier message arrivé en haut, jusqu'au plus ancien (demande de Nadia, 2026-10-26)
-      list.sort((a, b) => (b.lastMessageDate || '').localeCompare(a.lastMessageDate || ''));
+      // ✉️ Messages NON LUS en tête de liste (Nadia, 2026-11-18), puis tout le reste ; dans chaque partie, le dernier arrivé
+      // en haut jusqu'au plus ancien (demande du 2026-10-26)
+      list.sort((a, b) => Number(b.unreadCount > 0) - Number(a.unreadCount > 0) || (b.lastMessageDate || '').localeCompare(a.lastMessageDate || ''));
       return list;
     },
     enabled: open,

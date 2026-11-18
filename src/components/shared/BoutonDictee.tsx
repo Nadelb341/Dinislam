@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  * sans réseau, le bouton le dit (« 📡 Nécessite Internet ») au lieu d'échouer en silence. Caché si l'appareil ne sait pas faire.
  */
 type Reco = { lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onresult: ((e: { resultIndex?: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
   onerror: ((e: { error: string }) => void) | null; onend: (() => void) | null };
 const RecoClasse = (): (new () => Reco) | null => {
   if (typeof window === 'undefined') return null;
@@ -33,7 +33,9 @@ export function BoutonDictee({ onTexte, className, langue = 'fr-FR' }: { onTexte
       r.lang = langue; r.interimResults = false; r.continuous = true;
       r.onresult = (e) => {
         const morceaux: string[] = [];
-        for (let i = 0; i < e.results.length; i++) if (e.results[i].isFinal) morceaux.push(e.results[i][0].transcript);
+        // Seulement les NOUVEAUX morceaux (depuis resultIndex) : avant, tout ce qui avait été dit depuis le début revenait à
+        // chaque phrase → un texte effacé réapparaissait (Nadia, 2026-11-18)
+        for (let i = e.resultIndex ?? 0; i < e.results.length; i++) if (e.results[i].isFinal) morceaux.push(e.results[i][0].transcript);
         const t = morceaux.join(' ').trim();
         if (t) cb.current(t);
       };
