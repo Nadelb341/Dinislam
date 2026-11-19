@@ -11,7 +11,7 @@ import { useMesEnfants, type EnfantEspace } from '@/hooks/useMesEnfants';
 import { useHolidays } from '@/hooks/useGroupCourse';
 import { codeOuvert, estAdulteParentPossible, prenomDe } from '@/lib/espaceParents';
 import { matiereOf } from '@/lib/devoirMatieres';
-import { aRattraper, horairePour, heureDeRendu, rangement, type Decision } from '@/lib/rotationDevoirs';
+import { horairePour, heureDeRendu, rangement } from '@/lib/rotationDevoirs';
 import type { GroupSchedule } from '@/lib/groupCourse';
 import { titrePeriode, type BilanSnapshot } from '@/lib/bilanTrimestriel';
 import { cn, errorMessage } from '@/lib/utils';
@@ -148,10 +148,10 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
   const lignesCahier = (cahier?.devoirs ?? []).map((d) => {
     const h = horairePour(d.group_id, cahier!.groups, cahier!.horaires, holidays);
     const ligne = { id: d.id, created_at: d.created_at, visible_a: d.visible_a, date_limite: d.date_limite };
-    const fait = !!d.statut && d.statut !== 'a_refaire';
     const rang = rangement(ligne, h, holidays);
-    return { ...d, fait, rang, rendu: heureDeRendu(ligne, h, holidays), rattraper: aRattraper(ligne, fait, rang, undefined as Decision | undefined) };
-  }).filter((d) => d.rang === 'semaine' || d.rattraper);
+    return { ...d, rang, rendu: heureDeRendu(ligne, h, holidays) };
+  // 2026-11-19 (Nadia) : seulement la semaine en cours ; un devoir pas fait disparaît (l'historique reste côté enseignante)
+  }).filter((d) => d.rang === 'semaine');
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -202,7 +202,7 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
                     <span className="text-lg">{matiereOf(d.type).emoji}</span>
                     <span className="flex-1 min-w-0">
                       <span className="block cahier-main text-lg leading-6 [overflow-wrap:anywhere]">{d.titre}</span>
-                      <span className="block text-[11px] text-muted-foreground">{d.rattraper ? '🔁 à rattraper' : `pour le ${d.rendu.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`}</span>
+                      <span className="block text-[11px] text-muted-foreground">{`pour le ${d.rendu.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`}</span>
                     </span>
                     <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[11px] font-extrabold', d.statut === 'corrige' ? 'bg-emerald-100 text-emerald-800' : d.statut === 'rendu' ? 'bg-orange-100 text-orange-800' : 'bg-amber-100 text-amber-800')}>
                       {d.statut === 'corrige' ? '💎 validé' : d.statut === 'rendu' ? '🟠 envoyé' : d.statut === 'a_refaire' ? '🔄 à refaire' : 'à faire'}

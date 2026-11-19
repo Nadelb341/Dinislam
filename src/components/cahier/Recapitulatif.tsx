@@ -177,7 +177,7 @@ export default function Recapitulatif({ groupId, groupName, memberIds, onBack }:
       )}
 
       {/* 📜 Historique (2026-11-05, demande de Nadia) : une sous-carte par élève du groupe → son cahier complet
-          (cette semaine, semaine passée, à rattraper, historique), en lecture seule */}
+          (cette semaine, semaine passée, historique), en lecture seule, côté enseignante seulement */}
       {calc && (
         <section className="rounded-2xl border-2 border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/30 p-3">
           <h3 className="flex items-center justify-between gap-2 font-bold text-sm text-violet-900 dark:text-violet-100">

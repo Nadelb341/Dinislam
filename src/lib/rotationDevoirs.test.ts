@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aRattraper, coursPasses, heureDeRendu, rangement } from './rotationDevoirs';
+import { coursPasses, heureDeRendu, rangement } from './rotationDevoirs';
 
 const mercredi14h = { weekday: 3, start_time: '14:00:00' };
 const toussaint = [{ label: 'Toussaint', start_date: '2026-10-17', end_date: '2026-11-01' }];
@@ -23,12 +23,6 @@ describe('rotation des devoirs', () => {
   it('une date à rendre plus lointaine repousse la rotation', () => {
     const loin = { ...devoir, date_limite: new Date(2026, 10, 18, 14, 0).toISOString() };
     expect(heureDeRendu(loin, mercredi14h, []).getTime()).toBe(new Date(2026, 10, 18, 14, 0).getTime());
-  });
-  it('à rattraper : pas fait, semaine finie, sauf si rangé dans l\'historique', () => {
-    expect(aRattraper(devoir, false, 'passee', undefined)).toBe(true);
-    expect(aRattraper(devoir, false, 'passee', 'historique')).toBe(false);
-    expect(aRattraper(devoir, true, 'passee', undefined)).toBe(false);
-    expect(aRattraper(devoir, false, 'semaine', undefined)).toBe(false);
   });
   it('la bande de semaines liste tous les cours passés', () => {
     const c = coursPasses(mercredi14h, toussaint, new Date(2026, 9, 1), new Date(2026, 10, 12));

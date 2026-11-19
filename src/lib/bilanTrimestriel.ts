@@ -324,7 +324,7 @@ export function guideAuto(s: BilanSnapshot, girl: boolean, prochaineSourate: str
   if (s.comportement.bavarde >= 2) travailler.push(`Rester ${g('concentré', 'concentrée')} en cours`);
   if (travailler.some((t) => t.startsWith("99 noms"))) maison.push('10 minutes de révision des noms le soir');
   maison.push('Vérifier le cahier de texte la veille du cours');
-  if (s.devoirs.pasFaits) maison.push('Faire les devoirs « à rattraper » en premier');
+  if (s.devoirs.pasFaits) maison.push('Faire ses devoirs chaque semaine, avant le cours');
   if (prochaineSourate) objectif.push(`Apprendre la sourate ${prochaineSourate}`);
   objectif.push(s.devoirs.donnes ? 'Faire tous les devoirs, à l\'heure' : 'Venir à chaque cours');
   if (!forts.length) forts.push('Des efforts à encourager');

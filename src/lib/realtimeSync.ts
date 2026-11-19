@@ -67,8 +67,6 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   attendance_records: ['attendance-records', 'all-attendance', 'my-attendance', 'attendance-message', 'bilan-trimestriel', 'student-engagement'],
   // 🔧 Apparence de l'appli (titre de l'accueil), 2026-10-29
   app_appearance: ['app-appearance'],
-  // 🔄 Rotation des devoirs : choix « à rattraper / historique » du professeur (2026-10-27)
-  devoir_decisions: ['admin-devoirs', 'weekly-program', 'weekly-program-admin', 'bilans', 'cahier-classe'],
   // 📓 Cahier par groupe (2026-11-04) : réglages des lignes, qui a écouté / ouvert, modèles
   group_devoir_settings: ['group-devoir-settings'],
   devoir_vues: ['devoir-vues'],

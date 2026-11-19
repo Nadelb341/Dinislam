@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
-import { cleCours, compteARebours, jourCourt, type Decision, type Rangement } from '@/lib/rotationDevoirs';
+import { cleCours, compteARebours, jourCourt, type Rangement } from '@/lib/rotationDevoirs';
 
 /** Un devoir vu pour UN élève, déjà rangé par la rotation */
 export interface LigneProf {
@@ -15,9 +15,7 @@ export interface LigneProf {
   fait: boolean;
   rang: Rangement;
   heureRendu: Date;
-  rattraper: boolean;
   retard: boolean;
-  decision?: Decision;
   /** 2026-11-04 : emoji d'une ligne personnelle ; consigne écoutée / document ouvert (null = pas d'audio / pas de document) */
   emoji?: string;
   ecoute?: boolean | null;
@@ -39,10 +37,10 @@ function pastille(l: LigneProf, passe: boolean) {
 
 /**
  * 📚 Devoirs du groupe côté professeur, avec la rotation à l'heure du cours (2026-10-27, mêmes choix que l'élève) :
- * bandeau à l'heure du cours, boîte « 🔁 À rattraper dans le groupe », onglets Cette semaine · Semaine passée (bilan, idée 1)
- * · Historique (bande de semaines + par matière), « 🔁 Redonner » un devoir pas fait (idée 3).
+ * bandeau à l'heure du cours, onglets Cette semaine · Semaine passée (bilan, idée 1) · Historique (bande de semaines + par matière).
+ * 2026-11-19 (Nadia) : plus de rattrapage (ni « À rattraper », ni « Redonner ») : un devoir pas fait reste à sa semaine, ici seulement.
  */
-export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDecision, onDelete, onModifier, onDonner, onValider, formulaire, ouvrirEleveId, aUnBrouillon }: {
+export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, onDelete, onModifier, onDonner, onValider, formulaire, ouvrirEleveId, aUnBrouillon }: {
   /** 📝 Idée 4 : l'élève a un brouillon de devoirs pas encore donnés */
   aUnBrouillon?: (eleveId: string) => boolean;
   /** 📚 2026-11-11 (Nadia, maquette A) : le formulaire des nouveaux devoirs de l'élève, dans sa carte (onglet « Cette semaine ») */
@@ -53,7 +51,6 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   lignes: LigneProf[];
   prochainCours: Date | null;
   coursHistorique: Date[];
-  onDecision: (items: { devoirId: string; studentId: string }[], decision: Decision) => void;
   onDelete: (devoirId: string, titre: string) => void;
   /** ✏️ 2026-11-11 (Nadia) : modifier un devoir déjà donné */
   onModifier?: (devoirId: string, eleveId: string) => void;
@@ -74,7 +71,6 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
   const bande = useRef<HTMLDivElement>(null);
   const nom = (id: string) => eleves.find((e) => e.user_id === id)?.full_name || 'Élève';
 
-  const rattraper = lignes.filter((l) => l.rattraper);
   const semaine = lignes.filter((l) => l.rang === 'semaine');
   const passee = lignes.filter((l) => l.rang === 'passee');
   const historique = lignes.filter((l) => l.rang === 'historique');
@@ -105,15 +101,8 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
           {l.ecoute != null && <span className={cn('mt-0.5 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', l.ecoute ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-muted text-muted-foreground')}>{l.ecoute ? '🎧 consigne écoutée' : '🎧 pas encore écoutée'}</span>}
           {l.ouvert != null && <span className={cn('mt-0.5 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', l.ouvert ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200' : 'bg-muted text-muted-foreground')}>{l.ouvert ? '📎 document ouvert' : '📎 pas encore ouvert'}</span>}
           <span className={cn('mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', p.c)}>{p.t}</span>
-          {l.rattraper && <span className="mt-0.5 ml-1 inline-block rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-0.5 text-[11px] font-bold text-red-800 dark:text-red-200">🔁 à rattraper</span>}
           {l.visibleLe && <span className="mt-0.5 ml-1 inline-block rounded-full bg-sky-100 dark:bg-sky-950/40 px-2 py-0.5 text-[11px] font-bold text-sky-800 dark:text-sky-200">🕑 visible {jourCourt(l.visibleLe)} à {l.visibleLe.getHours()} h{l.visibleLe.getMinutes() ? String(l.visibleLe.getMinutes()).padStart(2, '0') : ''}</span>}
-          {l.decision === 'historique' && !l.fait && <span className="mt-0.5 ml-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">📚 rangé</span>}
         </div>
-        {/* Idée 3 : redonner un devoir pas fait (il remonte dans « À rattraper » chez l'élève) */}
-        {passe && !l.fait && !l.rattraper && (
-          <button type="button" onClick={() => onDecision([{ devoirId: l.devoirId, studentId: l.eleveId }], 'rattraper')}
-            className="shrink-0 rounded-full border border-sky-300 bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 text-[11px] font-extrabold text-sky-800 dark:text-sky-200">🔁 Redonner</button>
-        )}
         {onModifier && (
           <button type="button" onClick={() => onModifier(l.devoirId, l.eleveId)} aria-label="Modifier ce devoir"
             className="shrink-0 h-8 w-8 grid place-items-center rounded-lg text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/40"><Pencil className="h-4 w-4" /></button>
@@ -174,10 +163,7 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
     const toutFait = avec.filter((e) => passee.filter((l) => l.eleveId === e.user_id).every((l) => l.fait));
     const aValider = passee.filter((l) => l.statut === 'rendu').length;
     const pasFait = avec.filter((e) => !toutFait.includes(e));
-    // Un devoir pas fait par plusieurs élèves : « Redonner à tous » d'un coup
-    const parDevoir = new Map<string, LigneProf[]>();
-    passee.filter((l) => !l.fait && !l.rattraper).forEach((l) => parDevoir.set(l.devoirId, [...(parDevoir.get(l.devoirId) || []), l]));
-    return { avec, toutFait, aValider, pasFait, parDevoir };
+    return { avec, toutFait, aValider, pasFait };
   })();
 
   const onglets: { k: Onglet; t: string; n?: number }[] = [
@@ -216,20 +202,6 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
         );
       })()}
 
-      {rattraper.length > 0 && (
-        <div className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/20 dark:border-red-800 p-3 space-y-1.5">
-          <p className="text-sm font-extrabold text-red-800 dark:text-red-200">🔁 À rattraper dans le groupe ({rattraper.length})</p>
-          {rattraper.sort((a, b) => a.heureRendu.getTime() - b.heureRendu.getTime()).map((l) => (
-            <div key={`${l.devoirId}-${l.eleveId}`} className="flex items-center gap-2 rounded-xl bg-card/90 px-2.5 py-1.5">
-              <span className="flex-1 min-w-0 text-sm [overflow-wrap:anywhere]"><b>{nom(l.eleveId)}</b> · {matiereOf(l.type).emoji} <span className="cahier-main text-base">{l.titre}</span>
-                <span className="block text-[11px] text-muted-foreground">Cours du {jourCourt(l.heureRendu)}{l.statut === 'a_refaire' ? ' · 🔄 à refaire' : ''}</span></span>
-              <button type="button" onClick={() => onDecision([{ devoirId: l.devoirId, studentId: l.eleveId }], 'historique')}
-                className="shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold text-muted-foreground bg-card">📚 Ranger</button>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div role="tablist" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {onglets.map((o) => (
           <button key={o.k} type="button" role="tab" aria-selected={onglet === o.k} onClick={() => setOnglet(o.k)}
@@ -261,12 +233,6 @@ export function RotationProf({ eleves, lignes, prochainCours, coursHistorique, o
                 {bilan.aValider > 0 && <span className="rounded-full bg-orange-100 text-orange-800 px-2.5 py-0.5">🟠 {bilan.aValider} à valider</span>}
               </div>
               {bilan.pasFait.length > 0 && <p className="text-xs font-semibold text-red-800 dark:text-red-200 [overflow-wrap:anywhere]">❌ Pas tout fait : {bilan.pasFait.map((e) => e.full_name).join(', ')}</p>}
-              {[...bilan.parDevoir.values()].filter((ls) => ls.length > 1).map((ls) => (
-                <button key={ls[0].devoirId} type="button" onClick={() => onDecision(ls.map((l) => ({ devoirId: l.devoirId, studentId: l.eleveId })), 'rattraper')}
-                  className="w-full rounded-lg border border-sky-300 bg-card px-2.5 py-1.5 text-left text-xs font-bold text-sky-800 dark:text-sky-200 [overflow-wrap:anywhere]">
-                  🔁 Redonner « {ls[0].titre} » aux {ls.length} élèves qui ne l'ont pas fait
-                </button>
-              ))}
             </div>
           )}
           {parEleve(passee, true)}

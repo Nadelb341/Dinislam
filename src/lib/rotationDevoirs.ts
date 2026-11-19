@@ -6,18 +6,15 @@
  *  - avant cette heure : onglet « Cette semaine » ;
  *  - de cette heure jusqu'au cours suivant : onglet « Semaine passée » (grisé) ;
  *  - ensuite : « Historique » (bande de semaines).
- * Un devoir obligatoire pas fait (donné depuis le 26/10/2026) monte dans « 🔁 À rattraper » jusqu'à ce qu'il soit fait,
- * sauf si le professeur l'a rangé dans l'historique (table devoir_decisions).
+ * 2026-11-19 (Nadia) : plus de « devoirs à rattraper ». Un devoir pas fait disparaît chez l'élève à la fin de sa semaine
+ * et reste seulement dans l'historique de l'élève, côté enseignante.
  */
 import { nextCourse, type GroupSchedule, type Holiday } from './groupCourse';
 
 /** Groupe sans heure réglée : mercredi 14 h par défaut (choix de Nadia) */
 export const COURS_PAR_DEFAUT: Omit<GroupSchedule, 'group_id'> = { weekday: 3, start_time: '14:00:00' };
-/** Règle « devoir obligatoire » : seulement pour les devoirs donnés à partir de cette date */
-export const DEBUT_OBLIGATOIRE = '2026-10-26';
 
 export type Rangement = 'semaine' | 'passee' | 'historique';
-export type Decision = 'rattraper' | 'historique';
 
 export interface DevoirRotation {
   id: string;
@@ -52,14 +49,6 @@ export function rangement(d: DevoirRotation, s: Omit<GroupSchedule, 'group_id'>,
   if (now < rendu) return 'semaine';
   return now < coursApres(s, holidays, rendu) ? 'passee' : 'historique';
 }
-
-/** Le devoir est soumis à la règle « obligatoire » (sinon il part simplement dans l'historique « pas fait ») */
-export const estObligatoire = (d: DevoirRotation, arriveeEleve?: string | null) =>
-  d.created_at >= DEBUT_OBLIGATOIRE && (!arriveeEleve || d.created_at >= arriveeEleve);
-
-/** Pas fait + semaine terminée + obligatoire + pas rangé par le professeur → boîte « À rattraper » */
-export const aRattraper = (d: DevoirRotation, fait: boolean, rang: Rangement, decision: Decision | undefined, arriveeEleve?: string | null) =>
-  !fait && rang !== 'semaine' && decision !== 'historique' && estObligatoire(d, arriveeEleve);
 
 /** Fait (pour l'élève) dès qu'il l'a envoyé ; « à refaire » = pas fait */
 export const estFaitRange = (d: { rendu: boolean; statut_rendu: string | null }) => d.rendu && d.statut_rendu !== 'a_refaire';

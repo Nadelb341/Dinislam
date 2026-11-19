@@ -20,7 +20,7 @@ import { marquerVue } from "@/lib/devoirVues";
 import { PretPourLeCours } from "./CahierDuJour";
 import { CahierRotation, type DevoirRange } from "./CahierRotation";
 import { useHolidays } from "@/hooks/useGroupCourse";
-import { aRattraper, coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from "@/lib/rotationDevoirs";
+import { coursApres, coursPasses, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard } from "@/lib/rotationDevoirs";
 import type { GroupSchedule } from "@/lib/groupCourse";
 import { Encadre } from "@/components/home/Encadre";
 import { useReglagesEncadrements } from "@/lib/encadrements";
@@ -57,7 +57,6 @@ type Devoir = {
   group_id: string | null;
   visible_a: string | null;
   rendu_at: string | null;
-  decision?: Decision;
 };
 
 /** Un devoir est fait (pour l'élève) dès qu'il l'a envoyé : en attente de validation ou validé ; « à refaire » = à faire */
@@ -154,7 +153,7 @@ function DetailLecture({ devoir }: { devoir: Devoir }) {
 /**
  * 📚 Cahier de texte de l'élève.
  * - Élève (2026-11-05, demande de Nadia) : SEULEMENT les devoirs de cette semaine (ni « Semaine passée », ni
- *   « Historique », ni « À rattraper »).
+ *   « Historique » ; plus de « À rattraper » depuis le 19/11).
  * - `eleveId` : l'enseignante regarde l'historique COMPLET d'un élève (Récapitulatif › 📜 Historique), en lecture seule.
  * - 2026-11-11 : le mode fantôme montre la même chose que l'élève (cette semaine seulement).
  */
@@ -167,7 +166,7 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
   const [devoirs, setDevoirs] = useState<Devoir[]>([]);
   const [devoirsTermines, setDevoirsTermines] = useState<Devoir[]>([]);
   const [loading, setLoading] = useState(true);
-  const [contexte, setContexte] = useState<{ gIds: string[]; horaires: GroupSchedule[]; arrivee: string | null }>({ gIds: [], horaires: [], arrivee: null });
+  const [contexte, setContexte] = useState<{ gIds: string[]; horaires: GroupSchedule[] }>({ gIds: [], horaires: [] });
   const { data: holidays = [] } = useHolidays();
   // L'heure avance toute seule : à l'heure du cours, les devoirs changent d'onglet sans recharger
   const [now, setNow] = useState(() => new Date());
@@ -224,13 +223,11 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
     const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', uid);
     const travailles = new Set((checks || []).map((c) => c.devoir_id));
     const { data: steps } = await supabase.from('devoir_steps').select('devoir_id, step').eq('student_id', uid);
-    // 🔄 Rotation : heures de cours de ses groupes, choix du professeur (à rattraper / historique), date d'arrivée
-    const [{ data: horaires }, { data: decisions }, { data: profil }] = await Promise.all([
+    // 🔄 Rotation : heures de cours de ses groupes
+    const [{ data: horaires }] = await Promise.all([
       gIds.length ? supabase.from('group_schedules').select('group_id, weekday, start_time').in('group_id', gIds) : Promise.resolve({ data: [] as GroupSchedule[] }),
-      supabase.from('devoir_decisions').select('devoir_id, decision').eq('student_id', uid),
-      supabase.from('profiles').select('created_at').eq('user_id', uid).maybeSingle(),
     ]);
-    setContexte({ gIds, horaires: (horaires || []) as GroupSchedule[], arrivee: profil?.created_at ?? null });
+    setContexte({ gIds, horaires: (horaires || []) as GroupSchedule[] });
 
     // L'enseignante voit tout (même les devoirs programmés) : on ne garde que ce que l'élève voit
     const visibles = (data || []).filter((d) => !eleveId || !d.visible_a || new Date(d.visible_a) <= new Date());
@@ -260,7 +257,6 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
         group_id: d.group_id ?? null,
         visible_a: d.visible_a ?? null,
         rendu_at: rendu?.rendu_at ?? null,
-        decision: decisions?.find((x) => x.devoir_id === d.id)?.decision as Decision | undefined,
       };
     });
 
@@ -274,7 +270,7 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
     chargerDevoirs();
   }, [chargerDevoirs]);
   // 🔄 En direct : nouveau devoir, devoir modifié/supprimé, changement de groupe
-  useRealtimeRefresh(['devoirs', 'devoirs_rendus', 'student_group_members', 'devoir_checks', 'devoir_steps', 'devoir_decisions', 'group_schedules'], () => { void chargerDevoirs(); }, !!user);
+  useRealtimeRefresh(['devoirs', 'devoirs_rendus', 'student_group_members', 'devoir_checks', 'devoir_steps', 'group_schedules'], () => { void chargerDevoirs(); }, !!user);
 
   // 💎 Étape d'un devoir : le diamant se remplit ; ensuite l'élève touche « Je valide mon devoir »
   const handleEtape = async (devoirId: string, step: number, value: boolean) => {
@@ -306,7 +302,7 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
     const ligneR = { id: d.id, created_at: d.cree_le, visible_a: d.visible_a, date_limite: d.date_limite };
     const heureRendu = heureDeRendu(ligneR, horaire, holidays);
     const rang = rangement(ligneR, horaire, holidays, now);
-    return { ...d, rang, heureRendu, rattraper: aRattraper(ligneR, estFait(d), rang, d.decision, contexte.arrivee), retard: renduEnRetard(d.rendu_at, heureRendu) };
+    return { ...d, rang, heureRendu, retard: renduEnRetard(d.rendu_at, heureRendu) };
   });
   const horairePrincipal = horairePour(null, contexte.gIds, contexte.horaires, holidays);
   const prochainCours = coursApres(horairePrincipal, holidays, now);
@@ -315,8 +311,8 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
   const coursHisto = coursPasses(horairePrincipal, holidays, premier, now).slice(0, -1);
 
   // Devoirs pas encore faits (cochés ou audio envoyé), comme les diamants
-  // Seulement ce qui compte encore : la semaine en cours + « À rattraper » (l'historique « pas fait » n'est plus compté)
-  const enCours = ranges.filter((d) => !estFait(d) && (d.rang === 'semaine' || (!simple && d.rattraper)));
+  // Seulement la semaine en cours (2026-11-19 : un devoir pas fait disparaît à la fin de sa semaine, plus de rattrapage)
+  const enCours = ranges.filter((d) => !estFait(d) && d.rang === 'semaine');
   const totalAFaire = enCours.length;
   const toutAJour = totalAFaire === 0 && diamondsLeft === 0;
 

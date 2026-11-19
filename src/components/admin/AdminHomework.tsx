@@ -1,5 +1,5 @@
 import { TextareaDictee } from '@/components/shared/TextareaDictee';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,8 +20,7 @@ import { useGroupCourse } from '@/hooks/useGroupCourse';
 import { courseAfter, courseLabel, toLocalInput, type GroupSchedule } from '@/lib/groupCourse';
 import { useHolidays } from '@/hooks/useGroupCourse';
 import { RotationProf, type LigneProf } from '@/components/cahier/RotationProf';
-import { DecisionsDialog } from '@/components/cahier/DecisionsDialog';
-import { aRattraper, coursApres, coursPasses, COURS_PAR_DEFAUT, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard, type Decision } from '@/lib/rotationDevoirs';
+import { coursApres, coursPasses, COURS_PAR_DEFAUT, donneLe, heureDeRendu, horairePour, rangement, renduEnRetard } from '@/lib/rotationDevoirs';
 import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
 import { deposerAudioProf } from '@/lib/audioProf';
 import { AudioPrive } from '@/components/shared/FichiersPrives';
@@ -158,7 +157,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
     },
   });
 
-  // 🔄 Rotation à l'heure du cours (2026-10-27) : heures de cours de tous les groupes, vacances, choix « à rattraper / historique »
+  // 🔄 Rotation à l'heure du cours (2026-10-27) : heures de cours de tous les groupes, vacances
   const { data: horaires = [] } = useQuery({
     queryKey: ['group-course', 'all-schedules'],
     queryFn: async () => {
@@ -167,13 +166,6 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
     },
   });
   const { data: holidays = [] } = useHolidays();
-  const { data: decisions = [], isSuccess: decisionsChargees } = useQuery({
-    queryKey: ['admin-devoirs', 'decisions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('devoir_decisions').select('devoir_id, student_id, decision');
-      return data || [];
-    },
-  });
   const [now, setNow] = useState(() => new Date());
   const { data: reglagesGroupe } = useReglagesDevoirsGroupe(groupeId ?? null);
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60000); return () => clearInterval(t); }, []);
@@ -204,17 +196,15 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
       // Corbeille d'abord : si elle échoue, rien n'est supprimé
       if (devoir && user?.id) {
         // Les audios rendus et les cases « J'ai travaillé » partent avec le devoir (suppression en cascade) : gardés avec lui dans la corbeille
-        const [{ data: checksRows }, { data: rendusRows }, { data: stepsRows }, { data: decisionsRows }] = await Promise.all([
+        const [{ data: checksRows }, { data: rendusRows }, { data: stepsRows }] = await Promise.all([
           supabase.from('devoir_checks').select('*').eq('devoir_id', id),
           supabase.from('devoirs_rendus').select('*').eq('devoir_id', id),
           supabase.from('devoir_steps').select('*').eq('devoir_id', id),
-          supabase.from('devoir_decisions').select('*').eq('devoir_id', id),
         ]);
         const children = [
           ...(rendusRows?.length ? [{ table: 'devoirs_rendus', rows: rendusRows }] : []),
           ...(checksRows?.length ? [{ table: 'devoir_checks', rows: checksRows }] : []),
           ...(stepsRows?.length ? [{ table: 'devoir_steps', rows: stepsRows }] : []),
-          ...(decisionsRows?.length ? [{ table: 'devoir_decisions', rows: decisionsRows }] : []),
         ];
         // Copie = la vraie ligne de la table (sans les noms ajoutés pour l'affichage, sinon la restauration échoue)
         const { student_name, group_name, ...row } = devoir;
@@ -314,7 +304,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
     setQuand((q) => (q.date_limite ? q : { ...q, date_limite: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T18:00` }));
   }, [prochainCours, quand.date_limite]);
 
-  // 🔄 Chaque devoir de chaque élève, rangé : Cette semaine / Semaine passée / Historique / À rattraper
+  // 🔄 Chaque devoir de chaque élève, rangé : Cette semaine / Semaine passée / Historique
   const groupesDe = (id: string) => memberships.filter((m) => m.user_id === id).map((m) => m.group_id);
   const lignesProf: LigneProf[] = devoirsParEleve.flatMap(({ eleve, devoirsEleve }) => devoirsEleve.map((d) => {
     const horaire = horairePour(d.group_id ?? groupeId, groupesDe(eleve.user_id), horaires, holidays);
@@ -323,12 +313,10 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
     const heureRendu = heureDeRendu(ligneR, horaire, holidays);
     const rang = rangement(ligneR, horaire, holidays, now);
     const fait = !!r && r.statut !== 'a_refaire';
-    const decision = decisions.find((x) => x.devoir_id === d.id && x.student_id === eleve.user_id)?.decision as Decision | undefined;
-    const arrivee = (eleve as { created_at?: string | null }).created_at ?? null;
     return {
       eleveId: eleve.user_id, devoirId: d.id, titre: d.titre, type: d.type, statut: r?.statut ?? null, renduAt: r?.rendu_at ?? null,
       visibleLe: d.visible_a && new Date(d.visible_a) > now ? new Date(d.visible_a) : null,
-      fait, rang, heureRendu, decision, rattraper: aRattraper(ligneR, fait, rang, decision, arrivee), retard: renduEnRetard(r?.rendu_at, heureRendu),
+      fait, rang, heureRendu, retard: renduEnRetard(r?.rendu_at, heureRendu),
       emoji: d.matiere_emoji ?? undefined,
       ecoute: d.consigne_audio_url ? aVu(d.id, eleve.user_id, 'audio') : null,
       ouvert: asPJ(d.pieces_jointes).length ? aVu(d.id, eleve.user_id, 'document') : null,
@@ -341,36 +329,6 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
   const coursHisto = coursPasses(horaireVu, holidays, premierDevoir, now).slice(0, -1);
   // 🕑 Idée 2 : heure où les devoirs préparés à l'avance apparaissent (début du prochain cours) et leur date à rendre
   const heureVisible = prochainCoursVu;
-
-  // 📋 Devoirs précédents pas faits sur lesquels Nadia n'a pas encore choisi (rattraper ou historique)
-  const nonDecides = lignesProf.filter((l) => l.rattraper && !l.decision);
-  const [decisionsOuvert, setDecisionsOuvert] = useState(false);
-  const decisionsDemandees = useRef(false);
-  useEffect(() => {
-    // Ouvert depuis « Distribuer les devoirs » d'un groupe : la liste s'affiche d'abord, une fois par ouverture
-    if (!groupeId || decisionsDemandees.current || !decisionsChargees || !nonDecides.length) return;
-    decisionsDemandees.current = true;
-    setDecisionsOuvert(true);
-  }, [groupeId, decisionsChargees, nonDecides.length]);
-
-  const enregistrerDecisions = useMutation({
-    mutationFn: async (choix: { devoirId: string; studentId: string; decision: Decision }[]) => {
-      if (!choix.length) return;
-      const { error } = await supabase.from('devoir_decisions').upsert(
-        choix.map((c) => ({ devoir_id: c.devoirId, student_id: c.studentId, decision: c.decision, decided_at: new Date().toISOString(), decided_by: user?.id ?? null })),
-        { onConflict: 'devoir_id,student_id' });
-      if (error) throw error;
-    },
-    onSuccess: (_d, choix) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-devoirs', 'decisions'] });
-      queryClient.invalidateQueries({ queryKey: ['weekly-program'] });
-      const r = choix.filter((c) => c.decision === 'rattraper').length;
-      toast.success(choix.length === 1 ? (r ? '🔁 Devoir redonné : il est en haut du cahier de l\'élève' : '📚 Rangé dans l\'historique') : `✅ Choix enregistrés : ${r} à rattraper, ${choix.length - r} dans l'historique`);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const fermerDecisions = () => setDecisionsOuvert(false);
 
   const toggleEleveRendu = (id: string) =>
     setElevesRendusOuverts(prev => ({ ...prev, [id]: !prev[id] }));
@@ -450,7 +408,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
             </div>
           );
         })()}
-        {/* 🔄 Rotation à l'heure du cours (2026-10-27) : onglets, « À rattraper », bilan, historique. Depuis un groupe : TOUS ses élèves */}
+        {/* 🔄 Rotation à l'heure du cours (2026-10-27) : onglets, bilan, historique. Depuis un groupe : TOUS ses élèves */}
         <RotationProf
           eleves={devoirsParEleve.map(({ eleve }) => eleve)}
           ouvrirEleveId={eleveAOuvrir}
@@ -469,14 +427,6 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
             );
           }}
           lignes={lignesProf} prochainCours={prochainCoursVu} coursHistorique={coursHisto}
-          onDecision={(items, decision) => {
-            enregistrerDecisions.mutate(items.map((it) => ({ ...it, decision })));
-            // Idée 3 : l'élève est prévenu qu'un devoir lui est redonné
-            if (decision === 'rattraper') {
-              const titre = lignesProf.find((l) => l.devoirId === items[0]?.devoirId)?.titre || '';
-              sendPushNotification({ userIds: [...new Set(items.map((it) => it.studentId))], title: '🔁 {prenom}, un devoir à rattraper', category: 'hw_new', body: `« ${titre} » est en haut de ton cahier de texte`, data: { url: '/?open=devoirs' } });
-            }
-          }}
           onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
           onModifier={(id, eleveId) => setDevoirAModifier({ id, eleveId })}
           onDonner={() => setEleveAOuvrir(elevesVus[0]?.user_id ?? null)}
@@ -626,21 +576,6 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* 📋 Devoirs précédents pas faits : à rattraper ou historique (demande de Nadia, 2026-10-27) */}
-      <DecisionsDialog open={decisionsOuvert} items={nonDecides}
-        nom={(id) => eleves.find((e) => e.user_id === id)?.full_name || 'Élève'}
-        onClose={fermerDecisions}
-        onSave={(choix) => {
-          enregistrerDecisions.mutate(choix);
-          // 🔔 2026-11-18 : comme depuis la rotation, l'élève sait qu'un devoir lui est redonné
-          const aRattraper = choix.filter((c) => c.decision === 'rattraper');
-          for (const eleveId of new Set(aRattraper.map((c) => c.studentId))) {
-            const n = aRattraper.filter((c) => c.studentId === eleveId).length;
-            sendPushNotification({ userId: eleveId, title: '🔁 {prenom}, un devoir à rattraper', category: 'hw_new', body: n > 1 ? `${n} devoirs sont en haut de ton cahier de texte` : 'Il est en haut de ton cahier de texte', data: { url: '/?open=devoirs' } });
-          }
-          fermerDecisions();
-        }} />
 
       {groupeId && <CopierDevoirsDialog open={copierOuvert} onClose={() => setCopierOuvert(false)} groupeId={groupeId} groupeNom={nomGroupe ?? 'Groupe'} groupes={groupes} devoirs={devoirs} memberships={memberships} />}
       {validationDialog}

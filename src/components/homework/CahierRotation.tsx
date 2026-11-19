@@ -17,7 +17,6 @@ export interface DevoirRange {
   rang: Rangement;
   /** Heure du cours où ce devoir est attendu */
   heureRendu: Date;
-  rattraper: boolean;
   retard: boolean;
   /** 2026-11-04 : ligne personnelle (emoji / nom), consigne audio et documents du professeur */
   matiere_label?: string | null;
@@ -43,12 +42,13 @@ function etat(d: DevoirRange, passe: boolean) {
 /**
  * 📓 Cahier de texte en 3 onglets (proposition B, 2026-10-27) : « Cette semaine » (ouvert par défaut) · « Semaine passée » (grisé)
  * · « Historique » (bande de semaines à faire glisser, proposition C, + filtre par matière, idée 6).
- * Les devoirs sont écrits à la main (proposition D). Les devoirs pas faits montent dans « 🔁 À rattraper » (proposition E).
+ * Les devoirs sont écrits à la main (proposition D). 2026-11-19 (Nadia) : plus de « À rattraper » : un devoir pas fait reste
+ * simplement à sa semaine (« Semaine passée », puis « Historique »), visible seulement par l'enseignante.
  * Le même composant sert au professeur (`renderLigne` / `entete` adaptés).
  */
 export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, coursHistorique, vide, simple = false }: {
   devoirs: DevoirRange[];
-  /** 🧒 Élèves (demande de Nadia, 2026-11-05) : SEULEMENT « Cette semaine » — ni onglets, ni « À rattraper ».
+  /** 🧒 Élèves (demande de Nadia, 2026-11-05) : SEULEMENT « Cette semaine », sans onglets.
    *  Le passé reste pour l'enseignante (Récapitulatif › 📜 Historique, mode fantôme). */
   simple?: boolean;
   renderDetail: (d: DevoirRange) => React.ReactNode;
@@ -68,12 +68,10 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
   const bande = useRef<HTMLDivElement>(null);
   const now = new Date();
 
-  const rattraper = simple ? [] : devoirs.filter((d) => d.rattraper);
   const semaine = devoirs.filter((d) => d.rang === 'semaine');
-  const passee = devoirs.filter((d) => d.rang === 'passee' && !d.rattraper);
-  const historique = devoirs.filter((d) => d.rang === 'historique' && !d.rattraper);
+  const passee = devoirs.filter((d) => d.rang === 'passee');
+  const historique = devoirs.filter((d) => d.rang === 'historique');
   const pasFaitsPassee = passee.filter((d) => !estFaitRange(d)).length;
-  const montesEnHaut = devoirs.filter((d) => d.rang === 'passee' && d.rattraper).length;
 
   // 📅 Bande de semaines : tous les cours passés (même sans devoir) + ceux des devoirs rangés
   const semaines = useMemo(() => {
@@ -157,20 +155,6 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
 
   return (
     <div className="space-y-3">
-      {/* 🔁 À rattraper (proposition E) : reste en haut jusqu'à ce que ce soit fait */}
-      {!simple && rattraper.length > 0 && (
-        <div className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/30 dark:to-amber-950/20 dark:border-red-800 p-3 space-y-2">
-          <p className="text-sm font-extrabold text-red-800 dark:text-red-200">🔁 À rattraper ({rattraper.length})</p>
-          <p className="text-[11px] font-semibold text-red-700/80 dark:text-red-300/80">Ces devoirs restent ici jusqu'à ce qu'ils soient faits 💪</p>
-          {rattraper.sort((a, b) => a.heureRendu.getTime() - b.heureRendu.getTime()).map((d) => (
-            <div key={d.id} className="space-y-0.5">
-              <p className="text-[11px] font-bold text-red-700 dark:text-red-300">📅 Du cours du {jourCourt(d.heureRendu)}</p>
-              {ligne(d, false)}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Les 3 onglets (proposition B) */}
       {!simple && <div role="tablist" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {onglets.map((o) => (
@@ -200,13 +184,8 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
 
         {onglet === 'passee' && (
           <>
-            {montesEnHaut > 0 && (
-              <p className="rounded-lg bg-red-50 dark:bg-red-950/30 px-2.5 py-1.5 text-[11px] font-bold text-red-800 dark:text-red-200">
-                🔁 {montesEnHaut} devoir{montesEnHaut > 1 ? 's' : ''} pas fait{montesEnHaut > 1 ? 's sont' : ' est'} en haut, dans « À rattraper »
-              </p>
-            )}
             {passee.length ? parCours(passee, (c) => `Cours du ${jourLong(c)}`, true)
-              : !montesEnHaut && <p className="cahier-main text-lg leading-8 text-muted-foreground">Rien pour la semaine passée</p>}
+              : <p className="cahier-main text-lg leading-8 text-muted-foreground">Rien pour la semaine passée</p>}
           </>
         )}
 
