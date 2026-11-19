@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UsersRound, Plus, Trash2, Loader2, Lock } from 'lucide-react';
+import { Plus, Trash2, Loader2, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useParentLock } from '@/hooks/useParentLock';
+import { BoutonEntete } from '@/components/layout/IconeEntete';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 
 const STORAGE_KEY = 'dini_saved_accounts';
@@ -117,15 +118,14 @@ const AccountSwitcher = () => {
     <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={() => setOpen(true)} />
     <Dialog open={open} onOpenChange={(v) => { if (v && locked) { setGateOpen(true); return; } setOpen(v); if (!v) { setSwitchEmail(null); setPassword(''); setShowAdd(false); } }}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+        <BoutonEntete
+          nom="comptes"
+          className={locked ? 'opacity-60' : ''}
           aria-label={locked ? 'Changer de compte (réservé aux parents)' : 'Changer de compte'}
+          title="Comptes"
         >
-          <UsersRound className="h-5 w-5" />
-          {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
-        </Button>
+          {locked && <Lock className="absolute bottom-0.5 right-0.5 z-[2] h-3 w-3 text-white drop-shadow" />}
+        </BoutonEntete>
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>

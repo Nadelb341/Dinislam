@@ -931,3 +931,22 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 @keyframes cadre-halo { 0%, 100% { box-shadow: 0 0 0 0 var(--cadre-doux), 0 0 8px var(--cadre); } 50% { box-shadow: 0 0 0 calc(6px * var(--ep, 1)) var(--cadre-doux), 0 0 22px var(--cadre); } }
 @media (prefers-reduced-motion: reduce) { .cadre-halo { animation: none; box-shadow: 0 0 0 5px var(--cadre-doux), 0 0 16px var(--cadre); } }
 
+
+/* 🎛️ Icônes de l'en-tête « Applis d'iPhone » + lueur (Nadia, 2026-11-19 ; composant IconeEntete.tsx).
+   Téléphone : bouton 36 px, carré 30 px → 10 icônes = 360 px, tiennent sur un iPhone de 375 px. */
+.icone-entete{position:relative;display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;padding:0;border:0;background:transparent;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.icone-entete:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.icone-entete-corps{display:grid;place-items:center;transition:transform .12s ease}
+.icone-entete .icone-appli{width:30px;height:30px;display:block;filter:drop-shadow(0 0 5px var(--lueur)) drop-shadow(0 1px 1.5px rgba(0,0,0,.25))}
+.icone-entete:active .icone-entete-corps{transform:scale(.88)}
+.icone-entete-corps.rebond{animation:entete-rebond .38s ease-out}
+.icone-entete-corps.tourne .icone-dessin{transform-box:view-box;transform-origin:12px 12px;animation:entete-tourne .45s ease-in-out}
+@keyframes entete-rebond{0%{transform:scale(.86)}55%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes entete-tourne{to{transform:rotate(360deg)}}
+/* Compteurs brillants (idée 4) */
+.pastille-brillante{z-index:2;background-image:radial-gradient(circle at 35% 28%,rgba(255,255,255,.55) 0,rgba(255,255,255,0) 55%);box-shadow:0 0 6px currentColor,0 0 8px rgba(255,80,60,.55)}
+@media (min-width:640px){
+  .icone-entete{width:40px;height:40px;flex-basis:40px}
+  .icone-entete .icone-appli{width:33px;height:33px}
+}
+@media (prefers-reduced-motion:reduce){.icone-entete-corps.rebond,.icone-entete-corps.tourne .icone-dessin{animation:none}.icone-entete:active .icone-entete-corps{transform:none}}

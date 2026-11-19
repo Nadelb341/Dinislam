@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useSaisonActive, type Saison } from '@/lib/saisons';
-import { sonHarpe, sonCristalHiver, sonFroissementDore, sonCarillonChaud, sonGazouillis } from '@/lib/sonSaison';
+import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
 import { OBJETS_SAISON, objetSvg, type ObjetSaison } from './dessinsPromeneurs';
 import { FeuArtificeDore, type ThemeFeu } from './FeuArtificeDore';
@@ -44,10 +44,10 @@ function cibleAuHasard(e: Etat, larg: number, haut: number) {
 type Config = { cle: string; svg: string; vb: [number, number]; larg: number; haut: number; mode: Mode; son: () => void; theme: ThemeFeu; label: string; classe: string };
 
 const OBJET_DE: Record<Exclude<Saison, 'ramadan'>, { objet: ObjetSaison; mode: Mode; son: () => void; label: string }> = {
-  hiver: { objet: 'bonhomme', mode: 'sautille', son: sonCristalHiver, label: 'Le bonhomme de neige : touche-le pour un feu d\'artifice !' },
-  automne: { objet: 'feuille', mode: 'tournoie', son: sonFroissementDore, label: 'La feuille dorée : touche-la pour un feu d\'artifice !' },
-  ete: { objet: 'soleil', mode: 'soleil', son: sonCarillonChaud, label: 'Le soleil : touche-le pour un feu d\'artifice !' },
-  printemps: { objet: 'oiseau', mode: 'vole', son: sonGazouillis, label: 'L\'oiseau : touche-le pour un feu d\'artifice !' },
+  hiver: { objet: 'bonhomme', mode: 'sautille', son: sonHarpeEtoiles, label: 'Le bonhomme de neige : touche-le pour un feu d\'artifice !' },
+  automne: { objet: 'feuille', mode: 'tournoie', son: sonHarpeEtoiles, label: 'La feuille dorée : touche-la pour un feu d\'artifice !' },
+  ete: { objet: 'soleil', mode: 'soleil', son: sonHarpeEtoiles, label: 'Le soleil : touche-le pour un feu d\'artifice !' },
+  printemps: { objet: 'oiseau', mode: 'vole', son: sonHarpeEtoiles, label: 'L\'oiseau : touche-le pour un feu d\'artifice !' },
 };
 
 /** Choisit l'objet de la saison en cours (le nom reste « TapisPromeneur » : AppLayout l'affiche déjà) */
@@ -59,7 +59,7 @@ export function TapisPromeneur() {
     if (!saison) return null;
     if (saison === 'ramadan') {
       const [w, h] = COMPAGNONS.tapis.vb;
-      return { cle: 'tapis', svg: compagnonSvg('tapis', 'promeneur'), vb: [w, h], larg: 75, haut: 40, mode: 'tapis', son: sonHarpe, theme: 'ramadan', label: 'Le tapis volant : touche-le pour un feu d\'artifice !', classe: 'tapis-promeneur' };
+      return { cle: 'tapis', svg: compagnonSvg('tapis', 'promeneur'), vb: [w, h], larg: 75, haut: 40, mode: 'tapis', son: sonHarpeEtoiles, theme: 'ramadan', label: 'Le tapis volant : touche-le pour un feu d\'artifice !', classe: 'tapis-promeneur' };
     }
     const o = OBJET_DE[saison];
     const d = OBJETS_SAISON[o.objet];

@@ -2,7 +2,8 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
-import { Home, Mail, CalendarCheck, Shield, Check, BarChart3, Trophy, RotateCw } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { BoutonEntete, PASTILLE } from '@/components/layout/IconeEntete';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -107,10 +108,9 @@ const Header = ({
           <div className="flex items-center gap-0 sm:gap-1 [&>button]:h-9 [&>button]:w-9 sm:[&>button]:h-10 sm:[&>button]:w-10">
             <UserSettingsDialog />
             <AccountSwitcher />
-            <Button variant="ghost" size="icon" onClick={handleOpenMessaging} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-              <Mail className="h-5 w-5" />
+            <BoutonEntete nom="messages" onClick={handleOpenMessaging} aria-label="Messages" title="Messages">
               {unreadCount > 0 && (
-                <Badge className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-orange-500 border-2 border-primary ${hasNewMessage ? 'animate-pulse' : ''}`}>
+                <Badge className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-orange-500 border-2 border-primary ${PASTILLE} ${hasNewMessage ? 'animate-pulse' : ''}`}>
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
@@ -120,7 +120,7 @@ const Header = ({
                 draftKey={isAdmin ? ['dinislam_admin_new_msg', 'dinislam_admin_group_msg', 'dinislam_admin_reply_'] : user ? `messaging_student_${user.id}` : null}
                 className="absolute -bottom-0.5 -right-0.5 text-[10px]"
               />
-            </Button>
+            </BoutonEntete>
             <Button
               variant="ghost" size="icon"
               onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')}
@@ -129,51 +129,41 @@ const Header = ({
             >
               <ZoomIcon />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/classement')} className="text-primary-foreground hover:bg-primary-foreground/10">
-              <Trophy className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/attendance')} className="text-primary-foreground hover:bg-primary-foreground/10">
-              <CalendarCheck className="h-5 w-5" />
-            </Button>
+            <BoutonEntete nom="classement" onClick={() => navigate('/classement')} aria-label="Classement" title="Classement" />
+            <BoutonEntete nom="presence" onClick={() => navigate('/attendance')} aria-label="Présence" title="Présence" />
             {/* Admin: monitoring icon */}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/monitoring')} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-                <BarChart3 className="h-5 w-5" />
+              <BoutonEntete nom="suivi" onClick={() => navigate('/monitoring')} aria-label="Suivi" title="Suivi">
                 {monitoringErrors > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
+                  <Badge className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse ${PASTILLE}`}>
                     {monitoringErrors > 9 ? '9+' : monitoringErrors}
                   </Badge>
                 )}
-              </Button>
+              </BoutonEntete>
             )}
             {/* Admin: shield icon with dynamic badge, navigates directly to /admin */}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => setShowAdminModal(true)} className="text-primary-foreground hover:bg-primary-foreground/10 relative">
-                <Shield className="h-5 w-5" />
+              <BoutonEntete nom="bouclier" onClick={() => setShowAdminModal(true)} aria-label="Bouclier" title="Bouclier">
                 {shieldTotal > 0 ? (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse">
+                  <Badge className={`absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 border-2 border-primary animate-pulse ${PASTILLE}`}>
                     {shieldTotal > 9 ? '9+' : shieldTotal}
                   </Badge>
                 ) : (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-primary flex items-center justify-center">
+                  <span className={`absolute -top-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-primary flex items-center justify-center ${PASTILLE}`}>
                     <Check className="h-3 w-3 text-white" />
                   </span>
                 )}
-              </Button>
+              </BoutonEntete>
             )}
             {/* 🔄 Actualiser la page en cours (Nadia, 2026-11-18). Sans réseau : on ne recharge pas (l'appli resterait utilisable, mais rien de neuf à chercher) */}
-            <Button variant="ghost" size="icon" title="Actualiser" aria-label="Actualiser la page"
+            {/* La flèche fait un tour (idée 3, 2026-11-19), puis la page se recharge */}
+            <BoutonEntete nom="actualiser" title="Actualiser" aria-label="Actualiser la page"
               onClick={() => {
-                if (navigator.onLine) { window.location.reload(); return; }
+                if (navigator.onLine) { window.setTimeout(() => window.location.reload(), 450); return; }
                 toast('📡 Pas de connexion Internet : tu vois les dernières données gardées sur l\'appareil.');
-              }}
-              className="text-primary-foreground hover:bg-primary-foreground/10 active:[&>svg]:rotate-180 [&>svg]:transition-transform">
-              <RotateCw className="h-5 w-5" />
-            </Button>
+              }} />
             {!isHome && (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Home className="h-5 w-5" />
-              </Button>
+              <BoutonEntete nom="accueil" onClick={() => navigate('/')} aria-label="Accueil" title="Accueil" />
             )}
           </div>
         </div>

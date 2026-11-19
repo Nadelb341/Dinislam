@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { authErrorFr, rememberPassword } from '@/lib/rememberPassword';
-import { Settings, Loader2, LogOut, CalendarIcon, Bell, Trash2, Lock } from 'lucide-react';
+import { Loader2, LogOut, CalendarIcon, Bell, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useParentLock } from '@/hooks/useParentLock';
+import { BoutonEntete, PASTILLE } from '@/components/layout/IconeEntete';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
 import type { TablesUpdate } from '@/integrations/supabase/types';
@@ -220,21 +221,20 @@ const UserSettingsDialog = () => {
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
+      <BoutonEntete
+        nom="reglages"
         onClick={requestOpen}
-        className={`relative text-primary-foreground hover:bg-primary-foreground/10 ${locked ? 'opacity-60' : ''}`}
+        className={locked ? 'opacity-60' : ''}
         aria-label={locked ? 'Paramètres (réservé aux parents)' : 'Paramètres'}
+        title="Paramètres"
       >
-        <Settings className="h-5 w-5" />
-        {locked && <Lock className="absolute bottom-0.5 right-0.5 h-3 w-3" />}
+        {locked && <Lock className="absolute bottom-0.5 right-0.5 z-[2] h-3 w-3 text-white drop-shadow" />}
         {bilansNonLus > 0 && !isAdmin && (
-          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1" aria-label={`${bilansNonLus} nouveau bilan`}>
+          <span className={`absolute -top-1 -right-1 z-[2] bg-destructive text-destructive-foreground text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1 ${PASTILLE}`} aria-label={`${bilansNonLus} nouveau bilan`}>
             {bilansNonLus > 99 ? '99+' : bilansNonLus}
           </span>
         )}
-      </Button>
+      </BoutonEntete>
       <ParentGateDialog open={gateOpen} onOpenChange={setGateOpen} onUnlock={unlock} onUnlockCode={unlockWithCode} onSuccess={handleOpen} />
 
       <Dialog open={open} onOpenChange={setOpen}>
