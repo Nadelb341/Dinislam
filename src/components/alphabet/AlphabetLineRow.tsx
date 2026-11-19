@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { AudioPrive } from '@/components/shared/FichiersPrives';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, RotateCcw, Send, Loader2 } from 'lucide-react';
+import { Mic } from 'lucide-react';
+import { ActionsEnregistrement, BoutonEnregistrer, ROUGE_ENREGISTRER } from '@/components/shared/BoutonEnregistrer';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { playableUrl } from '@/lib/alphabetAudio';
 import { LINE_TONES, hasLowHamza, type LetterLine } from '@/lib/alphabetLines';
@@ -78,7 +79,7 @@ export function AlphabetLineRow({ line, index, modelUrl, latest, canRecord, send
         )}
         {canRecord && (
           <Button
-            type="button" size="icon" className="shrink-0 h-9 w-9 rounded-full"
+            type="button" size="icon" className={`shrink-0 h-10 w-10 rounded-full ${ROUGE_ENREGISTRER}`}
             onClick={() => setOpen((o) => !o)} aria-label={`M'enregistrer : ${line.title}`}
           >
             <Mic className="h-4 w-4" />
@@ -96,29 +97,17 @@ export function AlphabetLineRow({ line, index, modelUrl, latest, canRecord, send
       </div>
 
       {open && canRecord && (
-        <div className="rounded-xl bg-card p-2.5 space-y-2">
+        <div className="rounded-xl bg-card p-2.5">
+          {/* Même bouton rouge que partout (BoutonEnregistrer, Nadia 2026-11-19) */}
           {!rec.blob ? (
-            rec.recording ? (
-              <Button type="button" variant="destructive" className="w-full gap-2" onClick={rec.stop}>
-                <Square className="h-4 w-4" /> Arrêter ({rec.seconds} s)
-              </Button>
-            ) : (
-              <Button type="button" className="w-full gap-2" onClick={rec.start}>
-                <Mic className="h-4 w-4" /> Lis la ligne à voix haute
-              </Button>
-            )
+            <BoutonEnregistrer enregistrement={rec.recording} secondes={rec.seconds} onCommencer={() => void rec.start()} onArreter={rec.stop} libelle="Lis la ligne à voix haute" className="w-full" />
           ) : (
-            <>
-              <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" className="gap-1" onClick={rec.reset} disabled={sending}>
-                  <RotateCcw className="h-4 w-4" /> Recommencer
-                </Button>
-                <Button type="button" className="gap-1" onClick={send} disabled={sending}>
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Envoyer
-                </Button>
-              </div>
-            </>
+            <ActionsEnregistrement
+              apercu={<AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-10" />}
+              onEnvoyer={() => void send()}
+              onRefaire={rec.reset}
+              envoi={sending}
+            />
           )}
         </div>
       )}

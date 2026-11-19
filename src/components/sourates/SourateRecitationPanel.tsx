@@ -7,7 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Upload, MessageSquare, Trash2 } from 'lucide-react';
+import { MessageSquare, Trash2 } from 'lucide-react';
+import { ActionsEnregistrement, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -34,8 +35,9 @@ interface SourateRecitationPanelProps {
 /** Classes selon l'ambiance de la carte (règle « jamais d'appli fade », 2026-10-23) */
 const THEMES = {
   rose: {
-    box: 'rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20 p-4 space-y-3',
-    title: 'text-sm font-semibold text-foreground flex items-center gap-2',
+    // Même cadre que BlocEnregistrer (bouton « Enregistrer » identique partout, Nadia 2026-11-19)
+    box: 'rounded-2xl border-2 border-red-200 bg-red-50/70 p-4 space-y-3 dark:border-red-900/60 dark:bg-red-950/25',
+    title: 'text-base font-bold text-foreground flex flex-wrap items-center gap-2',
     record: 'bg-rose-500 hover:bg-rose-600 text-white gap-2',
     field: 'w-full text-sm border rounded-lg p-2 resize-none bg-background',
     send: 'gap-2 flex-1',
@@ -47,7 +49,7 @@ const THEMES = {
   },
   night: {
     box: 'rounded-xl border border-amber-500/40 bg-gradient-to-br from-[hsl(222_55%_11%)] to-[hsl(222_65%_7%)] p-4 space-y-3 shadow-[0_0_24px_rgba(217,119,6,0.12)]',
-    title: 'text-sm font-bold text-amber-400 flex flex-wrap items-center gap-2',
+    title: 'text-base font-bold text-amber-400 flex flex-wrap items-center gap-2',
     record: 'gap-2 text-white border-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
     field: 'w-full text-sm rounded-lg p-2 resize-none bg-[hsl(222_50%_9%)] text-white placeholder:text-white/40 border border-amber-500/30',
     send: 'gap-2 flex-1 text-white border-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500',
@@ -271,7 +273,6 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
     }
   };
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
   return (
     <div className={t.box}>
@@ -280,32 +281,16 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
         {optional && <span className="text-xs font-normal opacity-75">(optionnel)</span>}
       </p>
 
-      {/* Recorder */}
+      {/* Recorder : bouton rouge identique partout (BoutonEnregistrer) */}
       {!recorded ? (
-        <div className="flex items-center gap-3">
-          {!recording ? (
-            <Button
-              size="sm"
-              onClick={startRecording}
-              className={t.record}
-            >
-              <Mic className="h-4 w-4" />
-              Commencer l'enregistrement
-            </Button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-sm font-mono text-red-600">{formatTime(seconds)}</span>
-              <Button size="sm" variant="outline" onClick={stopRecording} className="gap-2">
-                <MicOff className="h-4 w-4" />
-                Arrêter
-              </Button>
-            </div>
-          )}
-        </div>
+        <BoutonEnregistrer enregistrement={recording} secondes={seconds} onCommencer={() => void startRecording()} onArreter={stopRecording} />
       ) : (
-        <div className="space-y-3">
-          <audio src={recordedUrl!} controls preload="auto" className="w-full" />
+        <ActionsEnregistrement
+          apercu={<audio src={recordedUrl!} controls preload="auto" className="w-full" />}
+          onEnvoyer={() => void uploadRecitation()}
+          onRefaire={resetRecording}
+          envoi={uploading}
+        >
           <textarea
             value={comment}
             onChange={e => changeComment(e.target.value)}
@@ -313,21 +298,7 @@ const SourateRecitationPanel = ({ sourateId, allahNameId, sourateName, theme = '
             className={t.field}
             rows={2}
           />
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={uploadRecitation}
-              disabled={uploading}
-              className={t.send}
-            >
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Envoi...' : 'Envoyer à l\'enseignant'}
-            </Button>
-            <Button size="sm" variant="outline" onClick={resetRecording} disabled={uploading} className={t.again}>
-              Recommencer
-            </Button>
-          </div>
-        </div>
+        </ActionsEnregistrement>
       )}
 
       {/* Past recitations */}

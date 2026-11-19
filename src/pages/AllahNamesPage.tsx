@@ -376,23 +376,7 @@ const AllahNamesPage = () => {
                 <p className="text-base text-white/75">{selected.name_french}</p>
               </div>
 
-              {/* Prononciation : écouter, puis répéter */}
-              {getMedia('audio') && (
-                <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.3)' }}>
-                  <p className="text-sm font-bold" style={{ color: 'hsl(38 92% 62%)' }}>🔊 Écoute bien, puis répète</p>
-                  <audio key={getMedia('audio')!.file_url} controls preload="none" className="w-full">
-                    <source src={getMedia('audio')!.file_url} />
-                  </audio>
-                </div>
-              )}
-
-              {selected.explanation && (
-                <div className="rounded-xl p-4" style={{ background: 'rgba(217,119,6,0.07)', border: '1px solid rgba(217,119,6,0.18)' }}>
-                  <p className="text-xs font-bold mb-2" style={{ color: 'hsl(38 92% 58%)' }}>Explication</p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'hsl(222 15% 72%)' }}>{selected.explanation}</p>
-                </div>
-              )}
-
+              {/* 🎙️ Enregistrement en HAUT, juste sous le nom : même place que dans les sourates (Nadia, 2026-11-19) */}
               {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
               {isAdmin && (
                 <div className="rounded-xl p-3 text-sm" style={{ background: 'rgba(217,119,6,0.07)', border: '1px dashed rgba(217,119,6,0.35)', color: 'hsl(222 15% 78%)' }}>
@@ -428,6 +412,24 @@ const AllahNamesPage = () => {
               {/* 20 ans et plus : ils valident seuls (le nom suivant s'ouvre), l'audio est facultatif (2026-10-23) */}
               {!isAdmin && !needsAudio && (
                 <SourateRecitationPanel allahNameId={selected.id} sourateName={selected.transliteration || selected.name_french} theme="night" optional />
+              )}
+
+
+              {/* Prononciation : écouter, puis répéter */}
+              {getMedia('audio') && (
+                <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.3)' }}>
+                  <p className="text-sm font-bold" style={{ color: 'hsl(38 92% 62%)' }}>🔊 Écoute bien, puis répète</p>
+                  <audio key={getMedia('audio')!.file_url} controls preload="none" className="w-full">
+                    <source src={getMedia('audio')!.file_url} />
+                  </audio>
+                </div>
+              )}
+
+              {selected.explanation && (
+                <div className="rounded-xl p-4" style={{ background: 'rgba(217,119,6,0.07)', border: '1px solid rgba(217,119,6,0.18)' }}>
+                  <p className="text-xs font-bold mb-2" style={{ color: 'hsl(38 92% 58%)' }}>Explication</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'hsl(222 15% 72%)' }}>{selected.explanation}</p>
+                </div>
               )}
 
               {/* Media */}

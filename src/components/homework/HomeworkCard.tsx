@@ -6,11 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { CheckCircle2, Clock, BookOpen, Sparkles, Hand, BookMarked, Moon, ExternalLink, FileText, Video, Music, Upload, Loader2, Mic, Square, Image as ImageIcon, FolderOpen, Play, Trash2, Send, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Clock, BookOpen, Sparkles, Hand, BookMarked, Moon, ExternalLink, FileText, Video, Music, Upload, Loader2, Image as ImageIcon, FolderOpen, Play, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, errorMessage } from '@/lib/utils';
 import { compressDocument } from '@/lib/compressImage';
 import { audioExt } from '@/hooks/useAudioRecorder';
+import { ActionsEnregistrement, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
 import { AudioApercu } from '@/components/shared/AudioApercu';
 import { AudioPrive } from '@/components/shared/FichiersPrives';
 
@@ -240,11 +241,6 @@ const HomeworkCard = () => {
     if (renderDialogId) startRecording(renderDialogId);
   };
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
 
   const pendingAssignments = assignments?.filter(a => a.status === 'pending') || [];
   const completedAssignments = assignments?.filter(a => a.status === 'completed') || [];
@@ -445,60 +441,23 @@ const HomeworkCard = () => {
             <DialogDescription className="text-center text-xs">Choisissez le type de fichier à envoyer</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            {/* Audio preview (after recording, before sending) */}
+            {/* 🎙️ En premier, même bouton rouge que partout (BoutonEnregistrer, Nadia 2026-11-19) */}
             {pendingAudioUrl ? (
-              <div className="space-y-2 p-3 bg-muted/50 rounded-xl">
-                <p className="text-xs font-semibold text-foreground text-center">🎙️ Aperçu de l'enregistrement</p>
-                <AudioApercu blob={pendingAudioBlob} dataUrl={null} className="w-full h-10" />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1"
-                    onClick={clearPendingAudio}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    Supprimer
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1"
-                    onClick={reRecord}
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Refaire
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 gap-1 bg-green-500 hover:bg-green-600 text-white"
-                    onClick={confirmSendAudio}
-                    disabled={isSendingAudio}
-                  >
-                    {isSendingAudio ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    Envoyer
-                  </Button>
-                </div>
-              </div>
-            ) : isRecording ? (
-              <Button
-                variant="destructive"
-                className="w-full justify-start gap-3 h-12 text-sm"
-                onClick={stopRecording}
+              <ActionsEnregistrement
+                apercu={<AudioApercu blob={pendingAudioBlob} dataUrl={null} className="w-full h-10" />}
+                onEnvoyer={confirmSendAudio}
+                onRefaire={reRecord}
+                envoi={isSendingAudio}
+                libelleEnvoyer="Envoyer"
               >
-                <Square className="h-5 w-5 fill-current" />
-                <span>Arrêter l'enregistrement</span>
-                <span className="ml-auto font-mono text-xs">{formatTime(recordingTime)}</span>
-              </Button>
+                <button type="button" onClick={clearPendingAudio} disabled={isSendingAudio}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-destructive">
+                  <Trash2 className="h-3.5 w-3.5" /> Supprimer cet enregistrement
+                </button>
+              </ActionsEnregistrement>
             ) : (
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 h-12 text-sm"
-                onClick={() => renderDialogId && startRecording(renderDialogId)}
-              >
-                <Mic className="h-5 w-5 text-red-500" />
-                <span>Enregistrer un audio</span>
-              </Button>
+              <BoutonEnregistrer enregistrement={isRecording} secondes={recordingTime} className="w-full"
+                onCommencer={() => { if (renderDialogId) void startRecording(renderDialogId); }} onArreter={stopRecording} libelle="Enregistrer un audio" />
             )}
 
             {/* Photo library */}

@@ -1,7 +1,8 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { EnregistreurAudio } from '@/components/cahier/EnregistreurAudio';
-import { audioExt } from '@/hooks/useAudioRecorder';
+import { useState, useEffect, useRef } from 'react';
+import { ActionsEnregistrement, BlocEnregistrer, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
+import { AudioApercu } from '@/components/shared/AudioApercu';
+import { audioExt, useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { logEchecAudio } from '@/lib/crashLog';
 import { errorMessage } from '@/lib/utils';
 import { withName } from '@/lib/encouragements';
@@ -13,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand, Film, Undo2 } from 'lucide-react';
+import { Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand, Film, Undo2 } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
 import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
@@ -71,8 +72,10 @@ const getYoutubeEmbedUrl = (watchUrl: string): string | null => {
 };
 
 const InvocationDetailDialog = ({ invocation, contents, progress, validationRequest, onClose, onRequestValidation, isRequestingValidation, audioObligatoire, apercuAdmin }: InvocationDetailDialogProps) => {
-  const [audio, setAudio] = useState<Blob | null>(null);
-  const garderAudio = useCallback((b: Blob | null) => setAudio(b), []);
+  // Enregistrement de la récitation (gardé tant que la demande n'est pas partie ; effacé quand elle change d'état)
+  const rec = useAudioRecorder();
+  const resetRec = rec.reset;
+  useEffect(() => { resetRec(); }, [invocation.id, validationRequest?.status, resetRec]);
   const isValidated = progress?.is_validated ?? false;
   const isRefused = validationRequest?.status === 'refused';
   const enrichment = getInvocationEnrichment(invocation.title_french);
@@ -124,6 +127,61 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
           </div>
 
           <div className="p-5 space-y-4 pb-8">
+
+            {/* 🎙️ Envoi de la récitation / validation EN HAUT, juste sous le titre : même place que dans les sourates (Nadia, 2026-11-19) */}
+            {/* Refusé */}
+            {isRefused && !isValidated && (
+              <div className="flex items-center justify-center gap-2 py-2 text-destructive font-medium text-sm">
+                <XCircle className="h-5 w-5" />
+                Refusée — réessayez
+              </div>
+            )}
+
+            {/* Bouton validation */}
+            {isValidated ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-green-600 dark:text-green-400 font-medium">
+                <Check className="h-5 w-5" />
+                Validée par l'enseignant ✅
+              </div>
+            ) : validationRequest?.status === 'pending' ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-amber-600 dark:text-amber-400 font-medium">
+                <Clock className="h-5 w-5" />
+                Validation en attente...
+              </div>
+            ) : audioObligatoire ? (
+              <BlocEnregistrer titre="Envoyer ma récitation" sousTitre="Ton professeur l'écoutera pour valider l'invocation.">
+                {!rec.blob ? (
+                  <BoutonEnregistrer enregistrement={rec.recording} secondes={rec.seconds} onCommencer={() => void rec.start()} onArreter={rec.stop} />
+                ) : (
+                  <ActionsEnregistrement
+                    apercu={<AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="h-10 w-full" />}
+                    onEnvoyer={() => onRequestValidation(invocation.id, rec.blob)}
+                    onRefaire={rec.reset}
+                    envoi={isRequestingValidation}
+                    libelleEnvoyer="Envoyer ma récitation"
+                  />
+                )}
+              </BlocEnregistrer>
+            ) : (
+              <div className="space-y-2">
+              {apercuAdmin && (
+                <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50/60 dark:bg-orange-950/20 p-2.5 text-xs text-orange-900 dark:text-orange-200 space-y-1">
+                  <p className="font-bold">👀 Ce que voit ici un élève de moins de 20 ans :</p>
+                  <p>🎙️ « Enregistre ta récitation » → réécouter / refaire → « Envoyer ma récitation ». Tu l'écoutes dans bouclier › Invocations à valider.</p>
+                  <p className="opacity-80">Toi et les élèves de 20 ans et plus, vous validez directement avec le bouton ci-dessous.</p>
+                </div>
+              )}
+              <Button
+                className="w-full gap-2"
+                variant="outline"
+                onClick={() => askValidation('Valider cette invocation ?', `« ${invocation.title_french} » sera validée.`, () => onRequestValidation(invocation.id, null))}
+                disabled={isRequestingValidation}
+              >
+                <Send className="h-4 w-4" />
+                Valider l'invocation
+              </Button>
+              </div>
+            )}
 
             {/* Vidéo de l'appli (extrait ou vidéo entière) — gardée sur l'appareil après la 1re lecture */}
             {videoAppli && (
@@ -218,57 +276,6 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
               </div>
             )}
 
-            {/* Refusé */}
-            {isRefused && !isValidated && (
-              <div className="flex items-center justify-center gap-2 py-2 text-destructive font-medium text-sm">
-                <XCircle className="h-5 w-5" />
-                Refusée — réessayez
-              </div>
-            )}
-
-            {/* Bouton validation */}
-            {isValidated ? (
-              <div className="flex items-center justify-center gap-2 py-2 text-green-600 dark:text-green-400 font-medium">
-                <Check className="h-5 w-5" />
-                Validée par l'enseignant ✅
-              </div>
-            ) : validationRequest?.status === 'pending' ? (
-              <div className="flex items-center justify-center gap-2 py-2 text-amber-600 dark:text-amber-400 font-medium">
-                <Clock className="h-5 w-5" />
-                Validation en attente...
-              </div>
-            ) : audioObligatoire ? (
-              <div className="space-y-2">
-                <EnregistreurAudio key={`${invocation.id}-${validationRequest?.status ?? 'aucune'}`} label="Enregistre ta récitation : ton professeur l'écoutera pour la valider" onChange={garderAudio} />
-                <Button
-                  className="w-full gap-2"
-                  onClick={() => onRequestValidation(invocation.id, audio)}
-                  disabled={isRequestingValidation || !audio}
-                >
-                  {isRequestingValidation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {audio ? 'Envoyer ma récitation' : 'Enregistre-toi d\'abord 🎙️'}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-              {apercuAdmin && (
-                <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50/60 dark:bg-orange-950/20 p-2.5 text-xs text-orange-900 dark:text-orange-200 space-y-1">
-                  <p className="font-bold">👀 Ce que voit ici un élève de moins de 20 ans :</p>
-                  <p>🎙️ « Enregistre ta récitation » → réécouter / refaire → « Envoyer ma récitation ». Tu l'écoutes dans bouclier › Invocations à valider.</p>
-                  <p className="opacity-80">Toi et les élèves de 20 ans et plus, vous validez directement avec le bouton ci-dessous.</p>
-                </div>
-              )}
-              <Button
-                className="w-full gap-2"
-                variant="outline"
-                onClick={() => askValidation('Valider cette invocation ?', `« ${invocation.title_french} » sera validée.`, () => onRequestValidation(invocation.id, null))}
-                disabled={isRequestingValidation}
-              >
-                <Send className="h-4 w-4" />
-                Valider l'invocation
-              </Button>
-              </div>
-            )}
           </div>
         </div>
 

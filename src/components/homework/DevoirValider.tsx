@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Mic, Square, RotateCcw, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { ActionsEnregistrement, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
@@ -139,21 +140,16 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
         ) : (
           <div className="rounded-xl border-2 border-emerald-500 p-2.5 space-y-2">
             <p className="text-xs font-bold text-emerald-800 dark:text-emerald-200">🎙️ Ton professeur demande un audio pour ce devoir</p>
+            {/* Même bouton rouge que partout (BoutonEnregistrer, Nadia 2026-11-19) */}
             {!rec.blob ? (
-              rec.recording
-                ? <button type="button" onClick={rec.stop} className="w-full rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-bold flex items-center justify-center gap-2"><Square className="h-4 w-4" /> Arrêter ({rec.seconds} s)</button>
-                : <button type="button" onClick={() => void rec.start()} className="w-full rounded-xl bg-orange-500 text-white px-4 py-2 text-sm font-bold flex items-center justify-center gap-2"><Mic className="h-4 w-4" /> Enregistrer</button>
+              <BoutonEnregistrer enregistrement={rec.recording} secondes={rec.seconds} onCommencer={() => void rec.start()} onArreter={rec.stop} className="w-full" />
             ) : (
-              <>
-                <AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-9" />
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={rec.reset} disabled={sending} className="rounded-xl border px-3 py-2 text-sm font-bold flex items-center justify-center gap-1"><RotateCcw className="h-4 w-4" /> Recommencer</button>
-                  <button type="button" disabled={sending} onClick={() => askValidation('Envoyer ton devoir ?', `« ${devoir.titre} » et ton audio partent chez ton professeur.`, () => void envoyer(rec.blob))}
-                    className="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-bold flex items-center justify-center gap-1">
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : '📨'} Envoyer
-                  </button>
-                </div>
-              </>
+              <ActionsEnregistrement
+                apercu={<AudioApercu blob={rec.blob} dataUrl={rec.previewUrl} className="w-full h-10" />}
+                onEnvoyer={() => askValidation('Envoyer ton devoir ?', `« ${devoir.titre} » et ton audio partent chez ton professeur.`, () => void envoyer(rec.blob))}
+                onRefaire={rec.reset}
+                envoi={sending}
+              />
             )}
           </div>
         )
