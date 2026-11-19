@@ -1,3 +1,4 @@
+import PresenceEnClasse from '@/components/home/PresenceEnClasse';
 import { useVillePriere } from '@/hooks/useVillePriere';
 import { carteOuverte } from '@/hooks/useCartesVisibles';
 import { accesDe, fermerATous, ouvrirATous, textePeriode } from '@/lib/cartesAcces';
@@ -483,6 +484,8 @@ const handleModuleClick = (mod) => {
           {/* Prochaine Prière — version compacte sur 2 lignes (2026-11-04) :
               ligne 1 = date + hégire + prochaine prière + ville, ligne 2 = les 5 horaires (la prochaine est entourée) */}
           {/* Les deux cartes côte à côte sur tablette/ordinateur, l'une sous l'autre sur téléphone (trop étroit) — 2026-11-05 */}
+          {/* 📋 Présence en classe (2026-11-19) : la ligne de l'élève, toujours visible, juste au-dessus de Prière / Hadith */}
+          {!isAdmin && <SilentBoundary name="Présence en classe"><PresenceEnClasse /></SilentBoundary>}
           <div className="grid gap-4 sm:grid-cols-2 items-stretch">
           <Encadre carte="priere">
           <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-indigo-300 dark:border-indigo-700 flex flex-col">
