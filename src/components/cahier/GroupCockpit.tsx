@@ -10,7 +10,7 @@ import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { courseAfter, courseLabel, inDays, WEEKDAYS, type CahierVue } from '@/lib/groupCourse';
 import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { errorMessage, cn } from '@/lib/utils';
-import type { AdminTask, TodoGroup } from '@/lib/adminTasks';
+import { isLate, type AdminTask, type TodoGroup } from '@/lib/adminTasks';
 import type { WeeklyProgram } from '@/lib/weeklyProgram';
 import { useNavigate } from 'react-router-dom';
 import { CartesGroupe } from './CartesGroupe';
@@ -24,11 +24,13 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
  * ① Avant le cours · ② Pendant (Mode cours, « Ce qu'on a vu », dupliquer la séance) · ③ Après (distribuer les devoirs, niveaux) · 🗂️ Mémo,
  * et les boutons 📊 Tableau de la classe, 📋 Récapitulatif, 📊 Bilan trimestriel (raccourci vers le bouclier).
  */
-export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoOpen }: {
+export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoOpen, onAllerMemo }: {
   group: TodoGroup; tasks: AdminTask[];
   onOpen: (vue: CahierVue) => void;
   onCourseMode: () => void;
   onMemo: () => void; memoOpen: boolean;
+  /** 🔴 Pastille du mémo touchée : ouvrir le mémo et descendre jusqu'aux lignes */
+  onAllerMemo: () => void;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -109,6 +111,8 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
   const pct = semaine && semaine.total ? Math.round((semaine.done / semaine.total) * 100) : 0;
   const aPreparer = tasks.filter((t) => !t.done && t.to_prepare).length;
   const aApporter = tasks.filter((t) => !t.done && t.to_bring).length;
+  const lignesMemo = tasks.filter((t) => !t.done).length;
+  const aValider = semaine?.aValider ?? 0;
 
   return (
     <div className="space-y-2.5">
@@ -149,6 +153,11 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
       {/* ① ② ③ 🗂️ — ⋮ Modifier / Renommer / Supprimer et appui long pour les ranger (2026-11-05) */}
       <CartesGroupe contenu={{
         avant: {
+          // 🟠 Même pastille que sur la carte du groupe (2026-11-21) : un toucher = le tableau, sur les cases à valider
+          pastille: aValider > 0 ? (
+            <button type="button" onClick={() => onOpen('tableau')} aria-label={`${aValider} devoir(s) à valider : ouvrir le tableau`}
+              className="shrink-0 h-[22px] px-1.5 rounded-full text-[11px] font-bold flex items-center bg-orange-500 text-white">🟠 {aValider}</button>
+          ) : null,
           phrase: `${semaine?.aValider ?? 0} devoir${(semaine?.aValider ?? 0) > 1 ? 's' : ''} à valider · ${aPreparer} à préparer`,
           boutons: <button type="button" onClick={() => onOpen('tableau')} className="mt-auto rounded-xl bg-emerald-600 text-white py-2 text-xs font-extrabold">🎙️ Valider les devoirs</button>,
         },
@@ -173,6 +182,11 @@ export function GroupCockpit({ group, tasks, onOpen, onCourseMode, onMemo, memoO
           </>),
         },
         memo: {
+          // 🔴 Même pastille que sur la carte du groupe : les lignes notées dans le mémo
+          pastille: lignesMemo > 0 ? (
+            <button type="button" onClick={onAllerMemo} aria-label={`${lignesMemo} ligne(s) dans le mémo : l'ouvrir`}
+              className={cn('shrink-0 min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-bold grid place-items-center bg-destructive text-destructive-foreground', tasks.some(isLate) && 'animate-pulse')}>{lignesMemo}</button>
+          ) : null,
           phrase: 'Prochain cours, à préparer, à apporter, notes et fichiers',
           boutons: <button type="button" onClick={onMemo} className={cn('mt-auto rounded-xl py-2 text-xs font-extrabold text-white', memoOpen ? 'bg-violet-800' : 'bg-violet-600')}>{memoOpen ? '▲ Fermer le mémo' : '▼ Ouvrir le mémo'}</button>,
         },

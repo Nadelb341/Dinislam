@@ -112,9 +112,11 @@ interface Props {
   onClose: () => void;
   /** Ouvrir directement le cahier de texte du groupe (raccourci du bouclier, notification, brouillon de devoir) */
   openCahier?: boolean;
+  /** 🔴🟠 Pastille touchée sur la carte du groupe (2026-11-21) : ouvrir le mémo, ou le tableau sur les devoirs à valider */
+  aller?: 'memo' | 'valider' | null;
 }
 
-export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahier = false }: Props) {
+export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahier = false, aller = null }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
@@ -141,6 +143,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
   // 🗂️ Mémo (les 4 onglets) : ouvert ou fermé, retenu sur l'appareil
   const [memoOpen, setMemoOpenState] = useState(() => { try { return localStorage.getItem('dinislam_cahier_memo') !== '0'; } catch { return true; } });
   const setMemoOpen = (v: boolean) => { setMemoOpenState(v); try { localStorage.setItem('dinislam_cahier_memo', v ? '1' : '0'); } catch { /* stockage indisponible */ } };
+  const memoRef = useRef<HTMLDivElement>(null);
   const [spoken, setSpoken] = useState<string | null>(null);
   const [homeworkFor, setHomeworkFor] = useState<AdminTask | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -169,10 +172,18 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
     setOptions(EMPTY_OPTIONS);
     setShowOptions(false);
     setShowOld(false);
-    setKind('cours');
+    // 🔴 Le mémo s'ouvre sur le 1er onglet qui contient des lignes (2026-11-21)
+    const ouvertes = tasks.filter((t) => !t.done);
+    setKind(ouvertes.some((t) => t.next_course && !t.to_bring) ? 'cours' : ouvertes.some((t) => t.to_prepare) ? 'preparer'
+      : ouvertes.some((t) => t.to_bring) ? 'apporter' : ouvertes.length ? 'note' : 'cours');
     setSpoken(null);
-    setVue(openCahier ? 'devoirs' : null);
-  }, [group, openCahier]);
+    setVue(openCahier ? 'devoirs' : aller === 'valider' ? 'tableau' : null);
+    if (aller === 'memo') {
+      setMemoOpen(true);
+      setTimeout(() => memoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seulement à l'ouverture du groupe (pas à chaque ligne ajoutée)
+  }, [group, openCahier, aller]);
   useEffect(() => {
     if (!draftKey) return;
     if (text.trim()) saveDraft(draftKey, text); else clearDraft(draftKey);
@@ -563,20 +574,21 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
 
           {/* 📓 Déroulé du cours (proposition D) ; les écrans du cahier s'ouvrent à la place (← Retour pour revenir) */}
           {vue === null ? (
-            <GroupCockpit group={group} tasks={tasks} onOpen={(v) => { if (v === 'devoirs') setCahierKey((k) => k + 1); setVue(v); }}
-              onCourseMode={() => setCourseOpen(true)} memoOpen={memoOpen} onMemo={() => setMemoOpen(!memoOpen)} />
+            <GroupCockpit group={{ ...group, memberIds: groupStudents.map((x) => x.user_id) }} tasks={tasks} onOpen={(v) => { if (v === 'devoirs') setCahierKey((k) => k + 1); setVue(v); }}
+              onCourseMode={() => setCourseOpen(true)} memoOpen={memoOpen} onMemo={() => setMemoOpen(!memoOpen)}
+              onAllerMemo={() => { setMemoOpen(true); setTimeout(() => memoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} />
           ) : (
             <div className="rounded-2xl border border-border p-2">
               {vue === 'devoirs' && <AdminHomework key={cahierKey} onBack={() => { setVue(null); setEleveDuDevoir(null); }} groupeId={group.id} ouvrirEleveId={eleveDuDevoir} />}
               {vue === 'reglages' && group.id && <ReglagesDevoirsGroupe groupId={group.id} groupName={group.name} open onClose={() => setVue(null)} />}
-              {vue === 'tableau' && <TableauClasse groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
+              {vue === 'tableau' && <TableauClasse groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} montrerAValider />}
               {vue === 'recap' && <Recapitulatif groupId={group.id} groupName={group.name} memberIds={groupStudents.map((x) => x.user_id)} onBack={() => setVue(null)} />}
             </div>
           )}
 
           {vue === null && memoOpen && (<>
           {/* Les 4 onglets de couleur */}
-          <div role="tablist" className="grid grid-cols-4 gap-1">
+          <div ref={memoRef} role="tablist" className="scroll-mt-4 grid grid-cols-4 gap-1">
             {KINDS.map((k) => {
               const count = k.key === 'cours' ? course.todo.length : k.key === 'preparer' ? toPrepare.length : k.key === 'apporter' ? course.bring.length : open.length;
               const active = kind === k.key;
@@ -591,7 +603,7 @@ export function AdminTodoGroupDialog({ group, tasks, students, onClose, openCahi
                 >
                   <span className="text-xl leading-none">{k.icon}</span>
                   <span className="text-[12px] font-bold leading-tight text-center">{k.label}</span>
-                  {count > 0 && <span className="rounded-full bg-card px-1.5 text-[10px] font-bold">{count}</span>}
+                  {count > 0 && <span className="min-w-[20px] rounded-full bg-destructive px-1.5 text-[11px] font-bold text-destructive-foreground">{count}</span>}
                 </button>
               );
             })}

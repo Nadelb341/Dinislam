@@ -27,6 +27,9 @@ export function AdminTodoCard() {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
   const [openId, setOpenId] = useState<string | null | undefined>(undefined); // undefined = aucun, null = Général
+  // 🔴🟠 Pastille touchée (Nadia, 2026-11-21) : le groupe s'ouvre à l'endroit exact (mémo ou devoirs à valider)
+  const [aller, setAller] = useState<'memo' | 'valider' | null>(null);
+  const ouvrir = (id: string | null, ou: 'memo' | 'valider' | null = null) => { setAller(ou); setOpenId(id); };
   const resumeChecked = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -151,7 +154,7 @@ export function AdminTodoCard() {
               <button
                 key={g.id ?? 'general'}
                 type="button"
-                onClick={() => setOpenId(g.id)}
+                onClick={() => ouvrir(g.id)}
                 ref={dragRef}
                 style={dragStyle}
                 {...dragAttrs}
@@ -163,13 +166,21 @@ export function AdminTodoCard() {
                   <span className="flex items-start gap-1.5">
                     <span className="flex-1 min-w-0 text-[13px] font-bold leading-tight text-foreground [overflow-wrap:anywhere]">{g.name}</span>
                     <DraftDot draftKey={draftKeyOf(g.id)} />
+                    {/* Pastilles touchables : on va directement à l'endroit concerné */}
                     {aValiderDe(g) > 0 && (
-                      <span className="shrink-0 h-[18px] px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center bg-orange-500 text-white" title="Devoirs envoyés à valider">
+                      <span role="button" tabIndex={0} aria-label={`${aValiderDe(g)} devoir(s) à valider : ouvrir le tableau`}
+                        onClick={(e) => { e.stopPropagation(); ouvrir(g.id, 'valider'); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); ouvrir(g.id, 'valider'); } }}
+                        className="shrink-0 h-[22px] px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center bg-orange-500 text-white" title="Devoirs envoyés à valider">
                         🟠 {aValiderDe(g)}
                       </span>
                     )}
                     {open.length > 0 && (
-                      <span className={`shrink-0 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${late ? 'animate-pulse' : ''}`}>
+                      <span role="button" tabIndex={0} aria-label={`${open.length} ligne(s) dans le mémo : l'ouvrir`}
+                        onClick={(e) => { e.stopPropagation(); ouvrir(g.id, 'memo'); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); ouvrir(g.id, 'memo'); } }}
+                        className={`shrink-0 min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-bold flex items-center justify-center bg-destructive text-destructive-foreground ${late ? 'animate-pulse' : ''}`}
+                        title="Lignes notées dans le mémo">
                         {open.length}
                       </span>
                     )}
@@ -227,8 +238,9 @@ export function AdminTodoCard() {
         group={openGroup}
         tasks={openGroup ? tasksOf(openGroup.id) : []}
         students={students}
-        onClose={() => { setOpenId(undefined); setOpenCahier(false); }}
+        onClose={() => { setOpenId(undefined); setOpenCahier(false); setAller(null); }}
         openCahier={openCahier}
+        aller={aller}
       />
     </section>
   );

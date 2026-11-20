@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,9 @@ import {
   type CahierDevoir, type CahierEleve, type EtatCase,
 } from './useCahierClasse';
 
-type Props = { groupId: string | null; groupName: string; memberIds: string[]; onBack: () => void };
+type Props = { groupId: string | null; groupName: string; memberIds: string[]; onBack: () => void;
+  /** 🟠 Arrivée depuis une pastille orange (2026-11-21) : on va jusqu'à la 1re case « à valider », qui clignote */
+  montrerAValider?: boolean };
 type ItemProgramme = { done?: boolean };
 
 const CASE: Record<EtatCase, { emoji: string; cls: string; label: string }> = {
@@ -45,7 +47,9 @@ function titreCourt(titre: string, label: string) {
 }
 
 /** 📊 Proposition « C » choisie par Nadia (2026-10-26) : élèves × devoirs du groupe, une case par devoir. */
-export default function TableauClasse({ groupId, groupName, memberIds, onBack }: Props) {
+export default function TableauClasse({ groupId, groupName, memberIds, onBack, montrerAValider = false }: Props) {
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [clignote, setClignote] = useState(false);
   const { calc, isLoading, error } = useCahierClasse(groupId, memberIds);
   const [cellule, setCellule] = useState<{ eleve: CahierEleve; devoir: CahierDevoir } | null>(null);
   const [encourage, setEncourage] = useState<{ eleves: CahierEleve[]; apercu: string } | null>(null);
@@ -126,6 +130,19 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
     return { concernes, valides, aValider, retard, enAttente };
   }, [calc]);
 
+  // 🟠 Une seule fois, dès que le tableau est prêt : défilement jusqu'à la 1re case à valider (en haut ET de côté)
+  const dejaMontre = useRef(false);
+  useEffect(() => {
+    if (!montrerAValider || dejaMontre.current || !resume?.aValider) return;
+    dejaMontre.current = true;
+    const t = setTimeout(() => {
+      tableRef.current?.querySelector('[data-a-valider]')?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      setClignote(true);
+      setTimeout(() => setClignote(false), 4000);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [montrerAValider, resume?.aValider]);
+
   const demanderEncouragement = (eleves: CahierEleve[]) => {
     if (!eleves.length) return;
     setEncourage({ eleves, apercu: messageEncouragement(eleves[0].full_name, eleves[0].gender) });
@@ -199,7 +216,7 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
           )}
 
           {calc.eleves.length > 0 && calc.colonnes.length > 0 && (
-            <div className="overflow-x-auto rounded-2xl border-2 border-red-100 dark:border-red-950 bg-white dark:bg-[#1c1212]">
+            <div ref={tableRef} className="overflow-x-auto rounded-2xl border-2 border-red-100 dark:border-red-950 bg-white dark:bg-[#1c1212]">
               <table className="border-separate border-spacing-0 text-sm">
                 <thead>
                   <tr>
@@ -246,7 +263,8 @@ export default function TableauClasse({ groupId, groupName, memberIds, onBack }:
                                 <button
                                   type="button"
                                   onClick={() => setCellule({ eleve: e, devoir: d })}
-                                  className={`w-full min-h-[2.25rem] rounded-lg text-base transition-transform active:scale-95 ${c.cls}`}
+                                  data-a-valider={etat === 'rendu' ? '' : undefined}
+                                  className={`w-full min-h-[2.25rem] rounded-lg text-base transition-transform active:scale-95 ${c.cls} ${clignote && etat === 'rendu' ? 'animate-pulse ring-4 ring-orange-500' : ''}`}
                                   aria-label={`${prenomOf(e.full_name)}, ${d.titre} : ${c.label}`}
                                 >{c.emoji}</button>
                               ) : (

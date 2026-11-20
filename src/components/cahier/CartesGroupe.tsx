@@ -22,7 +22,7 @@ import {
  * 🗂️ Les cartes d'un groupe du Cahier de texte (2026-11-05, demande de Nadia) : ⋮ Modifier / Renommer / Supprimer,
  * appui long + glisser pour les ranger, numéros ①②③ remis à jour selon l'ordre. Réglages communs à tous les groupes.
  */
-export function CartesGroupe({ contenu }: { contenu: Record<CleCarte, { phrase: ReactNode; boutons: ReactNode }> }) {
+export function CartesGroupe({ contenu }: { contenu: Record<CleCarte, { phrase: ReactNode; boutons: ReactNode; pastille?: ReactNode }> }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: r } = useReglagesCartesCahier();
@@ -86,6 +86,7 @@ export function CartesGroupe({ contenu }: { contenu: Record<CleCarte, { phrase: 
                 className={`rounded-2xl border bg-card p-2.5 flex flex-col gap-1.5 touch-manipulation ${isDragging ? 'opacity-40 ring-2 ring-sky-400' : ''}`}>
                 <div className="flex items-start gap-1">
                   <p className="flex-1 min-w-0 text-sm font-extrabold [overflow-wrap:anywhere]">{nomComplet(k)}</p>
+                  {contenu[k].pastille}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" aria-label={`Options de la carte ${titreDe(r, k)}`} onPointerDown={(e) => e.stopPropagation()}
