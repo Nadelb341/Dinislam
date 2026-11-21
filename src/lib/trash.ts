@@ -12,7 +12,7 @@ export type TrashItemType =
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
-  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu";
+  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour";
 
 export interface TrashItem {
   id: string;
@@ -39,6 +39,8 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   alphabet_particularite_bloc: "alphabet_particularite_blocs",
   alphabet_petits_video: "alphabet_petits_videos",
   zone_contenu: "zones_contenu",
+  // 🕊️ Hadith du jour de l'accueil (2026-11-21)
+  hadith_du_jour: "hadiths_du_jour",
   allah_name: "allah_names",
   allah_name_media: "allah_name_media",
   invocation: "invocations",
