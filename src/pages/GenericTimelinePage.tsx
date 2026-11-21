@@ -150,7 +150,7 @@ const GenericTimelinePage = () => {
     cardContents.some((c) => c.card_id === cardId);
 
   return (
-    <AppLayout title={config.title}>
+    <AppLayout title={module?.title || config.title}>
       <div className="p-4 space-y-0 pb-28">
         {/* Header */}
         <div

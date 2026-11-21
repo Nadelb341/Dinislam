@@ -1,4 +1,6 @@
 import PresenceEnClasse from '@/components/home/PresenceEnClasse';
+import { ModifierCarteDialog, type CarteAModifier } from '@/components/admin/ModifierCarteDialog';
+import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useVillePriere } from '@/hooks/useVillePriere';
 import { carteOuverte } from '@/hooks/useCartesVisibles';
 import { accesDe, fermerATous, ouvrirATous, textePeriode } from '@/lib/cartesAcces';
@@ -254,6 +256,8 @@ const Index = () => {
 
   // Dialog visibilité
   const [visibilityTarget, setVisibilityTarget] = useState<{ id: string; title: string } | null>(null);
+  // ✏️ « Modifier la carte » (2026-11-21) : titre, titre arabe, petite phrase, image
+  const [carteAModifier, setCarteAModifier] = useState<CarteAModifier | null>(null);
   // 📨 Convocations (ouverte aussi depuis la notification « Convocations envoyées » : /?convocations=1)
   const [convocationsOuvert, setConvocationsOuvert] = useState(false);
   const [paramsConv, setParamsConv] = useSearchParams();
@@ -660,7 +664,7 @@ const handleModuleClick = (mod) => {
                     {/* Icon */}
                     <div className="relative z-10">
                       {mod.image_url ?
-                      <img src={mod.image_url} alt={mod.title} className="w-14 h-14 rounded-2xl object-cover shadow-lg mx-auto mb-2" loading="lazy" width={56} height={56} /> :
+                      <ImageCadree src={mod.image_url} alt={mod.title} cadrages={(mod as { image_cadrage?: unknown }).image_cadrage} emplacement="carte" className="w-14 h-14 rounded-2xl shadow-lg mx-auto mb-2" /> :
                       <div
                         className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-2"
                         style={{ backgroundColor: fallback?.bgColor || '#f3f4f6' }}>
@@ -703,6 +707,9 @@ const handleModuleClick = (mod) => {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setCarteAModifier(mod); }}>
+                            <span className="mr-2">✏️</span><span className="font-semibold">Modifier la carte</span>
+                          </DropdownMenuItem>
                           {(() => {
                             const screens = mod.builtin_path ? ADMIN_SCREENS[mod.builtin_path] : undefined;
                             const manage = screens ? adminScreenUrl(screens.manage) : !mod.is_builtin ? `/admin?section=generic-module-manage&module=${mod.id}` : null;
@@ -761,6 +768,8 @@ const handleModuleClick = (mod) => {
 
         </div>
       </AppLayout>
+
+      {isAdmin && <ModifierCarteDialog carte={carteAModifier} onClose={() => setCarteAModifier(null)} />}
 
       {/* Dialog visibilité module */}
       <ModuleVisibilityDialog

@@ -1,4 +1,5 @@
 import { rangParcours } from '@/lib/souratesPrecedentes';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { withName } from '@/lib/encouragements';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,6 +150,7 @@ const SOURATES_ORDERED = [...SOURATES_DATA].sort((a, b) => rangParcours(b.number
 const GIFT_SOURATE_NUMBERS = new Set([105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]);
 
 const SouratesPage = () => {
+  const titrePage = useTitreCarte('/sourates', 'Sourates');
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const { fireSuccess, fireConfetti } = useConfetti();
@@ -480,7 +482,7 @@ const SouratesPage = () => {
   const overallProgress = Math.round((validatedCount / totalSourates) * 100);
 
   return (
-    <AppLayout title="Sourates">
+    <AppLayout title={titrePage}>
       <div className="p-4 space-y-4">
         {/* Progress Overview */}
         <div className="bg-card rounded-2xl p-4 shadow-card border border-border">

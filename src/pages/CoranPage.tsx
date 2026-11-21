@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
@@ -44,6 +45,7 @@ const TABS: { id: Tab; emoji: string; label: string; admin?: boolean }[] = [
 const nameOf = (n: number) => SOURATES_DATA.find((s) => s.number === n)?.name_french.split(' (')[0] ?? '';
 
 const CoranPage = () => {
+  const titrePage = useTitreCarte('/coran', 'Coran');
   const { isAdmin, user } = useAuth();
   const [params, setParams] = useSearchParams();
   // « Commencer mon travail » d'un devoir : ?item=<page du Coran 1..604> → lecteur ouvert sur cette page, onglet Lire
@@ -175,7 +177,7 @@ const CoranPage = () => {
   );
 
   return (
-    <AppLayout title="Coran">
+    <AppLayout title={titrePage}>
       <div className="p-3 md:p-6 space-y-4 max-w-5xl mx-auto">
         {/* En-tête de la carte : couleurs de la couverture (bordeaux et or) */}
         <div className="rounded-2xl overflow-hidden shadow-sm bg-gradient-to-br from-[#7a1d22] to-[#561216] text-white">

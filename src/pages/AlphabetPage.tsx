@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 const AlphabetPage = () => {
+  const titrePage = useTitreCarte('/alphabet', 'Alphabet');
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
   const ageReady = useIsOver20Ready();
@@ -325,7 +327,7 @@ const AlphabetPage = () => {
   });
 
   return (
-    <AppLayout title="Alphabet">
+    <AppLayout title={titrePage}>
       <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
         {/* 🔤 Les 3 onglets du haut (2026-11-21) ; ✏️ = « Affiché à » (enseignante) */}
         {ongletsVisibles && (isAdmin || ongletsVisibles.length > 1) && (

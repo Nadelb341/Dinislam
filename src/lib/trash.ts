@@ -12,7 +12,7 @@ export type TrashItemType =
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
-  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video";
+  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image";
 
 export interface TrashItem {
   id: string;
@@ -24,7 +24,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image">, string> = {
   convocation_modele: "convocation_modeles",
   convocation_programmation: "convocation_programmations",
   carnet_message: "carnet_messages",
@@ -150,6 +150,21 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
       if (!ok) return false;
     }
     const { error } = await supabase.from("alphabet_letters").update(field === "audio_vowels_url" ? { audio_vowels_url: d.audio_url } : { audio_url: d.audio_url }).eq("id", d.letter_id);
+    if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 🖼️ Image d'une carte de l'accueil remplacée ou retirée (2026-11-21) : on la remet, celle en place part à son tour dans la corbeille
+  if (item.item_type === "carte_image") {
+    const d = item.item_data as { module_id?: string; image_url?: string; image_cadrage?: Json } | null;
+    if (!d?.module_id || !d.image_url) return false;
+    const { data: carte } = await supabase.from("learning_modules").select("title, image_url").eq("id", d.module_id).maybeSingle();
+    if (!carte) return false;
+    if (carte.image_url && carte.image_url !== d.image_url) {
+      const ok = await moveToTrash(item.user_id, "carte_image", d.module_id, item.label, { module_id: d.module_id, image_url: carte.image_url, image_cadrage: null });
+      if (!ok) return false;
+    }
+    const { error } = await supabase.from("learning_modules").update({ image_url: d.image_url, image_cadrage: d.image_cadrage ?? null } as never).eq("id", d.module_id);
     if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;

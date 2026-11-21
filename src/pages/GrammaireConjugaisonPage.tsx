@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +43,7 @@ const COLORS = [
 ];
 
 const GrammaireConjugaisonPage = () => {
+  const titrePage = useTitreCarte('/grammaire', 'Grammaire & Conjugaison');
   const { user } = useAuth();
   const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
   const [activeTab, setActiveTab]             = useState<TabId>('lecon');
@@ -212,7 +214,7 @@ const GrammaireConjugaisonPage = () => {
   let globalChapterIndex = 0;
 
   return (
-    <AppLayout title="Grammaire & Conjugaison">
+    <AppLayout title={titrePage}>
       <div className="p-4 pb-28">
 
         {/* Header */}

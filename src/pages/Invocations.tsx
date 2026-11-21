@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useState, useEffect, useRef } from 'react';
 import { ActionsEnregistrement, BlocEnregistrer, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
 import { AudioApercu } from '@/components/shared/AudioApercu';
@@ -293,6 +294,7 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
 };
 
 const Invocations = () => {
+  const titrePage = useTitreCarte('/invocations', 'Invocations');
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const isOver20 = useIsOver20();
@@ -504,7 +506,7 @@ const Invocations = () => {
   });
 
   return (
-    <AppLayout title="Invocations">
+    <AppLayout title={titrePage}>
       <div className="p-4 space-y-4">
         {/* Header stats */}
         <div className="bg-card rounded-2xl p-4 border border-border flex items-center justify-between">

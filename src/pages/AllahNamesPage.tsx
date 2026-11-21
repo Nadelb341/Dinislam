@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useState, useEffect } from 'react';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
@@ -18,6 +19,7 @@ import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
 const AllahNamesPage = () => {
+  const titrePage = useTitreCarte('/allah-names', '99 Noms d\'Allah');
   const { user, isAdmin } = useAuth();
   const isOver20 = useIsOver20();
   const ageReady = useIsOver20Ready();
@@ -175,7 +177,7 @@ const AllahNamesPage = () => {
   });
 
   return (
-    <AppLayout title="99 Noms d'Allah">
+    <AppLayout title={titrePage}>
       <div
         className="min-h-screen relative"
         style={{ background: 'linear-gradient(180deg, hsl(222 60% 8%) 0%, hsl(222 75% 5%) 100%)' }}
