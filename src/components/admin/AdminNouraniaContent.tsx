@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Eye, EyeOff, UserCheck, FolderOpen, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, UserCheck, FolderOpen, Loader2, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { trashThenDelete } from '@/lib/trash';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
@@ -13,6 +13,7 @@ import ContentUploadTabs from './ContentUploadTabs';
 import ContentItemCard, { ContentType } from './ContentItemCard';
 import AdminCommentaireLecon from './AdminCommentaireLecon';
 import ValiderPourEleve from './ValiderPourEleve';
+import { ModifierLeconDialog, type LeconAModifier } from '@/components/nourania/ModifierLecon';
 import { compressDocument } from '@/lib/compressImage';
 import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
@@ -28,16 +29,25 @@ interface NouraniaLessonCardProps {
   profiles: { user_id: string; full_name: string | null; email: string | null }[];
   handleUploadFile: (lessonId: string, file: File, targetUserId?: string) => Promise<void>;
   handleUploadAudio: (lessonId: string, file: File, targetUserId?: string) => Promise<void>;
+  onModifier: (lesson: LeconAModifier) => void;
 }
 
-function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, handleUploadFile, handleAddYoutube, handleUploadAudio, isUploading, profiles }: NouraniaLessonCardProps) {
+function NouraniaLessonCard({ lesson, lessonContents, mapContentType, setDeleteContentId, updateTitleMutation, deleteMutation, handleUploadFile, handleAddYoutube, handleUploadAudio, isUploading, profiles, onModifier }: NouraniaLessonCardProps) {
   const [targetStudent, setTargetStudent] = useState<string>('');
   return (
     <Card key={lesson.id}>
       <CardContent className="p-4 space-y-3">
-        <div>
-          <p className="font-bold">Leçon {lesson.lesson_number}</p>
-          <p className="text-sm text-muted-foreground">{lesson.title_french}</p>
+        <div className="flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">Leçon {lesson.lesson_number}</p>
+            <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{lesson.title_french}</p>
+            {lesson.title_arabic && <p className="text-sm text-muted-foreground font-arabic [overflow-wrap:anywhere]" dir="rtl">{lesson.title_arabic}</p>}
+          </div>
+          {/* ✏️ Modifier le titre, le titre arabe et la description de la leçon (2026-11-21) */}
+          <Button variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Modifier la leçon" onClick={() => onModifier(lesson)}>
+            <Pencil className="h-4 w-4" />
+            <span className="hidden sm:inline">Modifier la leçon</span>
+          </Button>
         </div>
         <AdminCommentaireLecon leconId={lesson.id} />
         {lessonContents.length > 0 && (
@@ -107,6 +117,7 @@ const AdminNouraniaContent = () => {
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
+  const [leconAModifier, setLeconAModifier] = useState<LeconAModifier | null>(null);
 
 
   const { data: lessons = [] } = useQuery({
@@ -363,10 +374,12 @@ const AdminNouraniaContent = () => {
               handleUploadAudio={handleUploadAudio}
               isUploading={isUploading}
               profiles={profiles}
+              onModifier={setLeconAModifier}
             />
           );
         })}
       </div>
+      <ModifierLeconDialog lecon={leconAModifier} onClose={() => setLeconAModifier(null)} />
       <ConfirmDeleteDialog
         open={!!deleteContentId}
         onOpenChange={(open) => !open && setDeleteContentId(null)}

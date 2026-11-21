@@ -22,6 +22,7 @@ import { YoutubePlayer } from '@/utils/youtube';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
 import NouraniaPathView from '@/components/nourania/NouraniaPathView';
+import { ModifierLeconDialog, BoutonModifierLecon, type LeconAModifier } from '@/components/nourania/ModifierLecon';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -36,6 +37,8 @@ const Nourania = () => {
   const lessonParam = searchParams.get('lesson');
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [unlockDialog, setUnlockDialog] = useState<{ open: boolean; lessonNumber: number; lessonId: string } | null>(null);
+  // ✏️ Enseignante : leçon en cours de modification (titre, titre arabe, description)
+  const [leconAModifier, setLeconAModifier] = useState<LeconAModifier | null>(null);
 
   // Fetch lessons
   const { data: lessons = [], isFetched: lessonsFetched } = useQuery({
@@ -454,6 +457,8 @@ const Nourania = () => {
           onLessonClick={(_, index) => handleLessonClick(lessons[index], index)}
         />
 
+        {isAdmin && <ModifierLeconDialog lecon={leconAModifier} onClose={() => setLeconAModifier(null)} />}
+
         {/* Leçon ouverte : même contenu qu'avant (vidéos, PDF, audio, valider…), dans une fenêtre */}
         <Dialog open={!!expandedLesson && lessons.some((l) => l.id === expandedLesson)} onOpenChange={(open) => { if (!open) setExpandedLesson(null); }}>
           <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto p-3 pt-12 sm:p-4 sm:pt-12">
@@ -512,6 +517,9 @@ const Nourania = () => {
                     <p className="font-arabic text-lg text-foreground [overflow-wrap:anywhere]">{lesson.title_arabic}</p>
                     <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{lesson.title_french}</p>
                   </div>
+
+                  {/* ✏️ Modifier la leçon : enseignante seulement (2026-11-21) */}
+                  {isAdmin && <BoutonModifierLecon onClick={() => setLeconAModifier(lesson)} />}
 
                   {/* Status */}
                   {isValidated ? (
