@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles, sonPlop } from '@/lib/sonSaison';
 import type { Tables } from '@/integrations/supabase/types';
+import { couverture, traceValide } from '@/lib/traceLettre';
 
 /**
  * 🎮 Onglet « Jeux » de la carte d'une lettre, côté tout-petits (Nadia, 2026-11-21).
@@ -108,53 +109,106 @@ function Bulles({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; 
   );
 }
 
-/** ✍️ Trace la lettre du doigt par-dessus la grande lettre pâle ; ⭐ quand c'est fini (jamais noté) */
+/**
+ * ✍️ Trace la lettre du doigt par-dessus la grande lettre pâle. Validé TOUT SEUL (Nadia, 2026-11-21) dès que l'enfant a fait
+ * la forme de la lettre ET ses points, même s'il dépasse beaucoup : chaque morceau de la lettre (le corps, chaque point)
+ * doit être « couvert » par le trait, avec une large tolérance autour. Puis le Bravo doré, comme pour les bulles.
+ */
+const PAS = 4; // 1 case de calcul = 4 px
+type Pt = readonly [number, number];
+
 function Trace({ lettre, retour }: { lettre: Lettre; retour: () => void }) {
   const cadre = useRef<HTMLCanvasElement>(null);
   const dessine = useRef(false);
+  const traits = useRef<Pt[][]>([]);
+  const taille = useRef({ w: 0, h: 0 });
+  const valide = useRef(false);
   const [couleur, setCouleur] = useState(TEINTES[0]);
+  const [gagne, setGagne] = useState(false);
 
+  const police = (h: number, w: number, k = 1) => `${(Math.min(w, h) * 0.75) / k}px "Amiri", "Noto Naskh Arabic", serif`;
   const preparer = () => {
     const c = cadre.current; if (!c) return;
     const r = c.getBoundingClientRect();
+    taille.current = { w: r.width, h: r.height };
+    traits.current = []; valide.current = false; setGagne(false);
     c.width = r.width * devicePixelRatio; c.height = r.height * devicePixelRatio;
     const ctx = c.getContext('2d'); if (!ctx) return;
     ctx.scale(devicePixelRatio, devicePixelRatio);
     ctx.clearRect(0, 0, r.width, r.height);
     ctx.fillStyle = 'rgba(15, 23, 42, 0.12)';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `${Math.min(r.width, r.height) * 0.75}px "Amiri", "Noto Naskh Arabic", serif`;
+    ctx.font = police(r.height, r.width);
     ctx.fillText(lettre.letter_arabic, r.width / 2, r.height / 2);
   };
   useEffect(() => { preparer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Vérifie : chaque morceau de la lettre couvert à 60 % (corps) / 45 % (points), avec une marge large autour du trait
+  const verifier = () => {
+    if (valide.current || !traits.current.length) return;
+    const { w, h } = taille.current;
+    const gw = Math.ceil(w / PAS), gh = Math.ceil(h / PAS);
+    const toile = (dessin: (g: CanvasRenderingContext2D) => void) => {
+      const c = document.createElement('canvas'); c.width = gw; c.height = gh;
+      const g = c.getContext('2d'); if (!g) return null;
+      dessin(g);
+      const d = g.getImageData(0, 0, gw, gh).data;
+      const t = new Uint8Array(gw * gh);
+      for (let i = 0; i < t.length; i++) t[i] = d[i * 4 + 3] > 90 ? 1 : 0;
+      return t;
+    };
+    const masque = toile((g) => { g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = police(h, w, PAS); g.fillText(lettre.letter_arabic, gw / 2, gh / 2); });
+    const marge = Math.min(w, h) * 0.75 * 0.09; // tolérance : l'enfant peut dépasser largement
+    const encre = toile((g) => {
+      g.strokeStyle = '#000'; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = (22 + 2 * marge) / PAS;
+      for (const t of traits.current) {
+        g.beginPath(); g.moveTo(t[0][0] / PAS, t[0][1] / PAS);
+        for (const [x, y] of t.slice(1)) g.lineTo(x / PAS, y / PAS);
+        if (t.length === 1) g.lineTo(t[0][0] / PAS + 0.1, t[0][1] / PAS);
+        g.stroke();
+      }
+    });
+    if (!masque || !encre) return;
+    const parts = couverture(masque, encre, gw, gh);
+    // Le plus grand morceau = le corps de la lettre ; les autres = ses points (ou sa hamza)
+    const ok = traceValide(parts);
+    if (ok) {
+      valide.current = true; setGagne(true);
+      bravo(lettre); jouer(lettre.audio_url);
+      setTimeout(() => preparer(), 4000);
+    }
+  };
+
   const point = (e: React.PointerEvent<HTMLCanvasElement>) => { const r = e.currentTarget.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; };
   const debut = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (valide.current) return;
     const ctx = e.currentTarget.getContext('2d'); if (!ctx) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dessine.current = true;
-    const [x, y] = point(e);
+    const p = point(e);
+    traits.current.push([p]);
     ctx.strokeStyle = couleur; ctx.lineWidth = 22; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0] + 0.1, p[1]); ctx.stroke();
   };
   const bouge = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!dessine.current) return;
     const ctx = e.currentTarget.getContext('2d'); if (!ctx) return;
-    const [x, y] = point(e); ctx.lineTo(x, y); ctx.stroke();
+    const p = point(e); traits.current.at(-1)?.push(p); ctx.lineTo(p[0], p[1]); ctx.stroke();
   };
+  const fin = () => { if (!dessine.current) return; dessine.current = false; verifier(); };
 
   return (
     <div className="absolute inset-0 flex flex-col bg-amber-50 dark:bg-amber-950" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 88px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
       <Retour retour={retour} />
       <canvas ref={cadre} className="flex-1 min-h-0 w-full touch-none" aria-label={`Trace ${lettre.name_french}`}
-        onPointerDown={debut} onPointerMove={bouge} onPointerUp={() => { dessine.current = false; }} onPointerCancel={() => { dessine.current = false; }} />
+        onPointerDown={debut} onPointerMove={bouge} onPointerUp={fin} onPointerCancel={fin} />
+      {gagne && <p className="absolute inset-x-0 top-24 text-center text-7xl animate-bounce pointer-events-none">🌟👏🌟</p>}
       <div className="flex items-center justify-center gap-3 px-4 pt-3">
         {TEINTES.slice(0, 4).map((t) => (
           <button key={t} type="button" aria-label="Couleur" onClick={() => setCouleur(t)}
             className={`h-14 w-14 rounded-full shadow ${couleur === t ? 'ring-4 ring-slate-800 dark:ring-white' : ''}`} style={{ background: t }} />
         ))}
         <button type="button" aria-label="Effacer" onClick={preparer} className="h-14 w-14 rounded-full bg-white shadow text-3xl grid place-items-center">🧽</button>
-        <button type="button" aria-label="Fini" onClick={() => { bravo(lettre); jouer(lettre.audio_url); }} className="h-16 w-16 rounded-full bg-yellow-300 shadow-lg text-4xl grid place-items-center">⭐</button>
       </div>
     </div>
   );

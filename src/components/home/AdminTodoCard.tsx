@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuestionsAlphabet } from '@/hooks/useQuestionsAlphabet';
 import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
@@ -122,6 +123,8 @@ export function AdminTodoCard() {
   const groupIds = useMemo(() => new Set(groups.map((g) => g.id)), [groups]);
   const tasksOf = (id: string | null) => tasks.filter((t) => (id === null ? !t.group_id || !groupIds.has(t.group_id) : t.group_id === id));
 
+  // 💬 Questions d'élèves sans réponse (Lettres particulières de l'Alphabet) : pastille 🔴 qui mène à la leçon
+  const { data: questions = [] } = useQuestionsAlphabet(true);
   const openCount = tasks.filter((t) => !t.done).length;
   const lateCount = tasks.filter(isLate).length;
 
@@ -218,6 +221,7 @@ export function AdminTodoCard() {
           </span>
         )}
         {lateCount > 0 && <span className="text-xs font-semibold text-destructive">{lateCount} en retard</span>}
+        {questions.length > 0 && <span className="h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center bg-destructive text-destructive-foreground animate-pulse">💬 {questions.length}</span>}
         <ChevronDown className={`ms-auto h-5 w-5 text-muted-foreground transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`} />
       </button>
 
@@ -228,6 +232,21 @@ export function AdminTodoCard() {
             onDragStart={() => { try { navigator.vibrate?.(15); } catch { /* rien */ } }}
             renderItem={(g, dragProps) => carteGroupe(g, dragProps)} />
           {carteGroupe({ ...GENERAL, memberIds: [] })}
+        </div>
+      )}
+
+      {/* 💬 Questions d'élèves sans réponse : un toucher ouvre la leçon, à l'espace commentaires */}
+      {!collapsed && questions.length > 0 && (
+        <div className="mx-3 mb-3 rounded-xl border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-2.5 space-y-1.5">
+          <p className="text-sm font-bold">🔴 {questions.length} question{questions.length > 1 ? 's' : ''} d'élève sans réponse</p>
+          {questions.slice(0, 5).map((q) => (
+            <button key={q.id} type="button" onClick={() => navigate(`/alphabet?onglet=particularites&fiche=${q.particularite_id}`)}
+              className="w-full text-start rounded-lg bg-card border border-border px-2.5 py-1.5 text-[13px] hover:bg-muted/50">
+              <span className="font-bold">{q.auteur || 'Élève'}</span> · <span className="text-muted-foreground">{q.titre}</span>
+              <span className="block truncate">« {q.texte} »</span>
+            </button>
+          ))}
+          {questions.length > 5 && <p className="text-[11px] text-muted-foreground">+ {questions.length - 5} autre{questions.length - 5 > 1 ? 's' : ''}</p>}
         </div>
       )}
 

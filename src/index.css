@@ -963,3 +963,9 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   0% { transform: translateY(0); }
   100% { transform: translateY(-115vh); }
 }
+
+/* ✨ Reflet qui passe sur le bouton « Teste-toi ! » */
+@keyframes reflet {
+  0%, 55% { transform: translateX(0) skewX(-20deg); }
+  100% { transform: translateX(450%) skewX(-20deg); }
+}

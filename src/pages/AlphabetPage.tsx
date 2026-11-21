@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,6 +79,16 @@ const AlphabetPage = () => {
     setOngletState(o);
     try { localStorage.setItem(ONGLET_KEY, o); } catch { /* stockage indisponible */ }
   };
+  // 🔗 Lien direct vers une leçon des « Lettres particulières » (?onglet=particularites&fiche=…), ex. depuis le cahier de texte
+  const [params, setParams] = useSearchParams();
+  const [ficheDemandee, setFicheDemandee] = useState<string | null>(null);
+  useEffect(() => {
+    const o = params.get('onglet'); const f = params.get('fiche');
+    if (o !== 'particularites' && !f) return;
+    if (o === 'particularites') setOngletState('particularites');
+    if (f) setFicheDemandee(f);
+    setParams({}, { replace: true });
+  }, [params, setParams]);
   // 1er affichage : moins de 6 ans → « Pour les tout-petits » s'il lui est ouvert (idée 11) ; sinon l'onglet retenu, sinon le 1er ouvert
   useEffect(() => {
     if (!ongletsVisibles || (onglet && ongletsVisibles.includes(onglet))) return;
@@ -365,7 +376,7 @@ const AlphabetPage = () => {
           <p className="rounded-2xl p-4 text-center bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">🔒 Ton professeur va bientôt t'ouvrir l'Alphabet. Reviens vite ! 🤲</p>
         )}
 
-        {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} />}
+        {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} ficheInitiale={ficheDemandee} />}
         {onglet === 'petits' && <AlphabetToutPetits letters={letters} unlocked={unlocked} learned={learned} isAdmin={isAdmin} />}
 
         {onglet === 'arabe' && (<>

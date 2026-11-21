@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { FileText, Pencil, Volume2 } from 'lucide-react';
@@ -65,7 +65,7 @@ function VueBloc({ b }: { b: Bloc }) {
   return null;
 }
 
-export function AlphabetParticularites({ isAdmin }: { isAdmin: boolean }) {
+export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: boolean; ficheInitiale?: string | null }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [ouverte, setOuverte] = useState<Particularite | null>(null);
@@ -92,6 +92,17 @@ export function AlphabetParticularites({ isAdmin }: { isAdmin: boolean }) {
     void queryClient.invalidateQueries({ queryKey: ['alphabet-particularite-blocs'] });
   };
   const courante = ouverte ? items.find((i) => i.id === ouverte.id) ?? null : null;
+  // 🔗 Ouverture directe d'une leçon (ex. pastille « question d'élève » du cahier de texte)
+  const dejaOuverte = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ficheInitiale || dejaOuverte.current === ficheInitiale) return;
+    const p = items.find((i) => i.id === ficheInitiale);
+    if (p) {
+      dejaOuverte.current = ficheInitiale; setOuverte(p);
+      // …et on descend jusqu'à l'espace commentaires (la pastille mène à l'endroit exact)
+      setTimeout(() => document.querySelector('[data-commentaires]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600);
+    }
+  }, [ficheInitiale, items]);
   const contenuDe = (id: string) => blocs.some((b) => b.particularite_id === id);
 
   const ranger = async (n: Particularite[]) => {
@@ -316,12 +327,19 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
               <div className="flex justify-start">
                 {avant && <button type="button" onClick={() => onChange(avant)} className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold [overflow-wrap:anywhere]">‹ {avant.titre}</button>}
               </div>
-              <DialogTitle className="text-center text-lg font-extrabold [overflow-wrap:anywhere]">{p.emoji} {p.titre}</DialogTitle>
+              <span />
               <div className="flex justify-end">
                 {apres && <button type="button" onClick={() => onChange(apres)} className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold [overflow-wrap:anywhere]">{apres.titre} ›</button>}
               </div>
             </div>
             <DialogDescription className="sr-only">Vidéo et explications de la particularité</DialogDescription>
+            {/* ✨ Le titre de la leçon : français + arabe côte à côte, dans un joli bandeau (Nadia, 2026-11-21) */}
+            <DialogTitle asChild>
+              <div className={`rounded-3xl bg-gradient-to-br ${c.bandeau} text-white px-4 py-3 shadow-md flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center`}>
+                <span className="text-2xl font-extrabold tracking-wide drop-shadow-sm [overflow-wrap:anywhere]">{p.titre}</span>
+                {p.titre_arabe && <span className="font-arabic text-3xl leading-snug drop-shadow-sm" dir="rtl">{p.titre_arabe}</span>}
+              </div>
+            </DialogTitle>
           </DialogHeader>
 
           {/* 🎬 La vidéo à la place de la grande lettre et du bouton « Écoute la lettre » */}
@@ -344,7 +362,8 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
             </div>
           )}
 
-          {p.titre_arabe && videoHaut && <p className="font-arabic text-3xl text-center" dir="rtl">{p.titre_arabe}</p>}
+          {/* 🎯 L'évaluation, juste sous la vidéo */}
+          <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
 
           {isAdmin ? (
             // ✋ Appui long + glisser pour ranger les zones
@@ -359,9 +378,6 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
                 );
               }} />
           ) : reste.map((b) => <div key={b.id}><VueBloc b={b} /></div>)}
-          {/* 🎯 Évaluation (quiz modifiable) */}
-          <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
-
           {!reste.length && !isAdmin && !videoHaut && (
             <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-center font-semibold">🛠️ En cours de mise à jour pour cette leçon</p>
           )}

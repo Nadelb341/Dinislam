@@ -53,14 +53,27 @@ export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { 
   if (!questions.length && !isAdmin) return null;
 
   return (
-    <div className="rounded-2xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-3 space-y-2">
-      <div className="flex items-center gap-2">
-        <p className="flex-1 font-extrabold">🎯 Évaluation <span className="text-xs font-semibold text-muted-foreground">({questions.length} question{questions.length > 1 ? 's' : ''})</span></p>
-        {questions.length > 0 && <Button size="sm" onClick={() => setJeu(true)}>▶️ Commencer</Button>}
-      </div>
+    <div className="space-y-2">
+      {/* 🎯 Un gros bouton qui donne envie (Nadia, 2026-11-21) */}
+      {questions.length > 0 ? (
+        <button type="button" onClick={() => setJeu(true)}
+          className="group relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 p-[3px] shadow-lg transition-transform active:scale-[0.98]">
+          <span className="flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
+            <span className="text-4xl drop-shadow animate-bounce [animation-duration:2s]">🎯</span>
+            <span className="flex-1 text-start">
+              <span className="block text-lg font-extrabold leading-tight">Teste-toi !</span>
+              <span className="block text-xs font-semibold text-white/85">{questions.length} question{questions.length > 1 ? 's' : ''} · une étape à la fois · ⭐ score à la fin</span>
+            </span>
+            <span className="h-12 w-12 shrink-0 rounded-full bg-white text-violet-700 grid place-items-center text-2xl font-black shadow-md group-hover:scale-110 transition-transform ps-1">▶</span>
+          </span>
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 -start-1/3 w-1/3 skew-x-[-20deg] bg-white/25 animate-[reflet_3s_ease-in-out_infinite]" />
+        </button>
+      ) : isAdmin && <p className="text-sm font-bold">🎯 Évaluation : pas encore de question</p>}
 
       {isAdmin && (
-        <>
+        <details className="rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-2 [&_summary]:cursor-pointer">
+          <summary className="text-sm font-semibold px-1">✏️ Gérer les questions ({questions.length})</summary>
+          <div className="space-y-2 pt-2">
           <SortableCardList items={questions}
             onReorder={(n) => { void enregistrerOrdre('alphabet_quiz_questions', n.map((q) => q.id)).then(rafraichir, (e) => toast.error(errorMessage(e))); }}
             renderItem={(q, drag) => {
@@ -74,7 +87,8 @@ export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { 
               );
             }} />
           <Button size="sm" variant="outline" className="w-full" onClick={() => setEdition('nouvelle')}>➕ Ajouter une question</Button>
-        </>
+          </div>
+        </details>
       )}
 
       {jeu && <Passage questions={questions} titre={titre} onClose={() => setJeu(false)} />}

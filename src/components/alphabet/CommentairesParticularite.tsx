@@ -11,7 +11,7 @@ import { errorMessage } from '@/lib/utils';
 
 /**
  * 💬 Espace commentaires / questions d'une particularité (Nadia, 2026-11-21) : chaque élève pose une question ou commente,
- * l'enseignante (et les autres élèves) répondent dessous. Toute la classe lit. Chacun modifie ou retire SES messages
+ * l'enseignante répond dessous. Chaque élève ne voit que SES messages, les réponses de l'enseignante et ce qu'elle poste pour toute la classe (2026-11-21). Chacun modifie ou retire SES messages
  * (l'enseignante : tous). Retirer → corbeille, avec les réponses. Hors ligne : gardé, envoyé au retour du réseau.
  * Table `alphabet_commentaires` (le prénom est rempli par la base).
  */
@@ -81,8 +81,8 @@ export function CommentairesParticularite({ particuliereId, titre, isAdmin, user
   );
 
   return (
-    <div className="rounded-2xl border-2 border-sky-200 dark:border-sky-800 bg-sky-50/60 dark:bg-sky-950/20 p-3 space-y-2">
-      <p className="font-extrabold">💬 Espace commentaires / questions <span className="text-xs font-semibold text-muted-foreground">({tous.length})</span></p>
+    <div data-commentaires className="scroll-mt-4 rounded-2xl border-2 border-sky-200 dark:border-sky-800 bg-sky-50/60 dark:bg-sky-950/20 p-3 space-y-2">
+      <p className="text-lg font-extrabold">💬 Espace commentaires/questions : <span className="text-xs font-semibold text-muted-foreground">({tous.length})</span></p>
       {!premiers.length && <p className="text-sm text-muted-foreground">Pas encore de message. Une question sur cette leçon ? Écris-la ici 👇</p>}
       {premiers.map((c) => (
         <div key={c.id} className="space-y-1.5">

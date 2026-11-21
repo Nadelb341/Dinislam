@@ -153,6 +153,12 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
           <div className="fixed inset-0 z-[900] flex flex-col" style={{ background: v && lecture.onglet !== 'jeux' ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             {/* 📺 Vidéo / 🎮 Jeux de la lettre */}
             <div className="flex justify-center gap-3 pt-3 relative z-10">
+              {/* ‹ Retour à la liste des lettres (Nadia, 2026-11-21) */}
+              <button type="button" onClick={() => setLecture(null)} aria-label="Retour aux lettres"
+                className="absolute start-4 top-3 h-16 px-4 rounded-full bg-white/90 shadow-lg flex items-center gap-1.5 active:scale-95 transition-transform">
+                <span className="text-4xl font-black text-slate-700 leading-none" dir="ltr">‹</span>
+                <span className="hidden sm:inline font-arabic text-2xl text-slate-800 leading-none" dir="rtl">أ ب ت</span>
+              </button>
               {(['video', 'jeux'] as const).map((o) => (
                 <button key={o} type="button" aria-label={o === 'video' ? 'Vidéo' : 'Jeux'} onClick={() => setLecture({ ...lecture, onglet: o })}
                   className={`h-16 w-20 rounded-3xl text-4xl shadow-lg grid place-items-center transition-transform active:scale-95 ${(lecture.onglet ?? 'video') === o ? 'bg-white ring-4 ring-yellow-300' : 'bg-white/50'}`}>

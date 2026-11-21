@@ -12,7 +12,7 @@ import { raisonAcces, type Acces, type Mode } from '@/lib/cartesAcces';
 export type OngletAlphabet = 'arabe' | 'particularites' | 'petits';
 export const ONGLETS_ALPHABET: { cle: OngletAlphabet; titre: string; emoji: string }[] = [
   { cle: 'arabe', titre: 'Alphabet arabe', emoji: '🔤' },
-  { cle: 'particularites', titre: 'Particularités', emoji: '✨' },
+  { cle: 'particularites', titre: 'Lettres particulières', emoji: '✨' },
   { cle: 'petits', titre: 'Pour les tout-petits', emoji: '🧸' },
 ];
 
