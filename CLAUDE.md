@@ -29,20 +29,25 @@ Règle complète dans le CLAUDE.md global. À chaque réponse, terminer par **«
 
 ### ⚠️ ACTION EN ATTENTE — liste à jour (à rappeler en bas de chaque réponse, NUMÉROTÉE)
 Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très longue, surtout des ✅) est recopiée telle quelle dans `HISTORIQUE.md`, section « Ancienne liste en attente ».
-- ⏳ **🔤 Alphabet en 3 onglets — EN LIGNE le 21/11 (2dc840b), à voir en vrai par Nadia.**
-  - Choix : P2 + E ; idées gardées 1, 2, 3, 5, 6, 7, 8, 9, 11 ; **idée 4 « mode enfant verrouillé » = PLUS TARD** ; idée 10 laissée.
-  - Accès : table `alphabet_onglets`, ✏️ « Affiché à » sur chaque onglet. Départ : petits = Groupe 0 ; arabe = tous les autres groupes + l'élève sans groupe ; particularités = personne.
-  - Particularités : 11 tuiles de départ, entièrement modifiables (titre, arabe, emoji, couleur, ordre, zones texte/image/vidéo/YouTube/PDF/audio, vidéo du haut = 1re zone vidéo).
-  - Tout-petits « télé des houroufs » :
-    - vidéos par lettre (`alphabet_petits_videos`), lettres fermées comme dans l'Alphabet arabe ;
-    - jeu 🎈 « Écoute et touche » sur les lettres validées seulement ;
-    - confettis en lettres arabes, minuteur parents ;
-    - « ✅ Valider une lettre pour un enfant » (ValiderPourEleve genre `alphabet`).
-  - ❓ Questions à Nadia :
-    - (a) les élèves s'enregistrent-ils et demandent-ils une validation dans Particularités ?
-    - (b) qu'est-ce que « le monde des houroufs » (fichiers vidéo à envoyer par ✏️) ?
-  - 📱↔️ Réglage « Téléphone tourné » en place (Paramètres, activé par défaut, manifeste `any`) : ⏳ vérifier les écrans en largeur.
-- ⏳ **✏️ Crayon sur les anciennes cartes (règle du 21/11)** : inventaire fait le 21/11 (aucun titre de carte modifiable ; `ContentUploadTabs` sans images ni texte libre ; Hadith du jour en dur dans `Index.tsx`, etc.). Présenté le 21/11 : https://claude.ai/artifact/8HyzySj1irhkkAzjHRPa5N (14 propositions) → attendre ses choix, puis construire.
+- ✅ **🔤 Alphabet en 3 onglets** (2dc840b puis 5d9e94d, 8138745), vu par Nadia le 21/11 (« parfait »).
+  - Particularités : les élèves REGARDENT seulement (pas de validation).
+  - « 🛠️ En cours de mise à jour pour cette leçon » quand une carte n'a pas encore de contenu (particularités, tout-petits, cartes perso).
+  - Tout-petits : la carte s'ouvre toujours en grand. **11 vidéos PUBLIQUES de la chaîne YouTube officielle « Le monde des Houroufs »** (`UC4sdrDo0pEC5_hqJmmq7AVA`, migration 20261121160000) rangées sur ا ب ت ث ج ح خ د س ع (+ présentation sur ا). Les 28 vidéos complètes sont payantes (Espace Multimédia 15 €, usage strictement personnel, interdit de les mettre dans une autre appli) : jamais copiées.
+  - ✋ Tout se range par appui long + glisser, ENSEIGNANTE SEULE (élèves = même ordre) : onglets (`alphabet_onglets.position`), particularités, zones, vidéos, jeux (`ordre_cartes` + `useOrdreCartes`). Ordre des 28 lettres fixe (ordre de déverrouillage). Plus aucune flèche ⬆️⬇️.
+  - ⏳ Idée 4 « mode enfant verrouillé » = PLUS TARD.
+- ✅ **✏️ Crayon sur les anciennes cartes — les 14 propositions gardées, construites le 21/11** (522af59, 8d94637, 1afb72c, fe12563) :
+  - (1) ⋮ › « ✏️ Modifier la carte » (`ModifierCarteDialog`, titre / arabe / phrase / image + 📐 cadrage `learning_modules.image_cadrage`, ancienne image → corbeille `carte_image`) ;
+  - (2) titres des pages = titre de la carte (`useTitreCarte`) ;
+  - (3) ➕ « Nouvelle carte » pré-remplie d'après une carte modèle (`NouvelleCarteDialog`, sous-cartes recopiables, née cachée) + ➕ dans la Prière (même catégorie/groupe) ; une carte créée se supprime → corbeille avec TOUT ce que la base efface en cascade ;
+  - (4) zones de contenu communes `zones_contenu` + `ZonesContenu.tsx` (cibles : lettre, sourate, nourania, ramadan, nom-allah, invocation, priere, sous-carte, carte) ;
+  - (6) leçons Nourania modifiables dans Nourania (`ModifierLecon.tsx`) ;
+  - (7) Prière : glisser, ➕, 🗑️, renommer un fichier ;
+  - (8) Hadith du jour en base (`hadiths_du_jour`, 40 lignes, `HadithDuJour.tsx`, liste de secours) ;
+  - (9) mots exemples (`alphabet_mots`, `ModifierMotDialog`) ;
+  - (12) invocations : vertu / à savoir / vidéo de départ (`invocation_extras`).
+  - ❓ À demander à Nadia :
+    - (a) supprimer la page orpheline « Ressources » (`/ressources`, table `dashboard_cards` vide, aucun lien) ;
+    - (b) retirer la partie Nourania en double dans `AdminContent.tsx` (carte Prière › Gérer le contenu) ; ⚠️ c'est le seul endroit qui modifie `nourania_lessons.audio_url` (pas lu par la page élève) : garder ce champ ou non ?
 - 🛠️ **Audit TAZ/ZAT/DETTE du 07/11 — reste** (lancé par Nadia le 09/11 : « lance ») : idée 18 sauvegarde hebdomadaire : dépôt PRIVÉ https://github.com/Nadelb341/dinislam-sauvegardes créé le 09/11 (GitHub Actions chaque dimanche 3 h UTC, pg_dump 17 public+auth+storage → gzip → GPG AES-256, 12 dernières semaines, `journal.txt` garde le dépôt actif) → ⏳ Nadia doit ajouter les 2 secrets GitHub `SUPABASE_DB_URL` (adresse « Session pooler » avec mot de passe de la base) et `CHIFFREMENT` (mot de passe qu'elle invente, gardé dans son appli Mots de passe), puis je lance la 1re sauvegarde (Run workflow) et je vérifie le journal ; idée 28 grandes mises à jour (Vite 5→8, React 19, Tailwind 4, React Router 7…) = chantier dédié, demander avant ; `_shared/cors.ts` des 14 fonctions serveur pas fait (gain minime, redéploiement des 14). ✅ faits : 1-17, 19-27 (détail dans HISTORIQUE.md).
 - ✅ 🔤 Alphabet lettre par lettre (en ligne le 11/11, commit 5b33b5c) : vu en vrai par Nadia (fenêtre d'une lettre OK).
 - ✅ 📚 Devoirs élève par élève + 👥 cartes de groupe (en ligne le 11/11, commit 606b7dd) : vus en vrai par Nadia (« parfait »).
