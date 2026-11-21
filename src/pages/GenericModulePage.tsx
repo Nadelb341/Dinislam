@@ -3,8 +3,11 @@
  * (Grammaire, Vocabulaire, Darija, Dictionnaire, Dhikr, Histoires prophètes, Hadiths, etc.)
  */
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import FlashcardPlayer from '@/components/FlashcardPlayer';
@@ -17,6 +20,8 @@ import type { Tables } from '@/integrations/supabase/types';
 
 const GenericModulePage = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
 
   const { data: module } = useQuery({
@@ -103,7 +108,15 @@ const GenericModulePage = () => {
           <h1 className="text-xl font-bold text-foreground">{module?.title}</h1>
           {module?.description && <p className="text-sm text-muted-foreground mt-1">{module.description}</p>}
           <p className="text-xs text-muted-foreground mt-1">{cards.length} carte(s)</p>
+          {isAdmin && moduleId && (
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => navigate(`/admin?section=generic-module-manage&module=${moduleId}`)}>⚙️ Gérer les sous-cartes</Button>
+          )}
         </div>
+
+        {/* ✏️ Zones de contenu de la carte elle-même (texte, images, vidéos, PDF) — 2026-11-21 */}
+        {/* Élèves : « en cours de mise à jour » seulement si la carte n'a encore ni zone ni sous-carte */}
+        {moduleId && <ZonesContenu cible={`carte:${moduleId}`} isAdmin={isAdmin} libelle={module?.title || 'Carte'}
+          vide={!isLoading && cards.length === 0 ? '🛠️ En cours de mise à jour pour cette leçon' : undefined} />}
 
         {/* Cards */}
         {isLoading ? (
@@ -111,11 +124,7 @@ const GenericModulePage = () => {
             {[...Array(6)].map((_, i) => <div key={i} className="h-24 bg-muted animate-pulse rounded-2xl" />)}
           </div>
         ) : cards.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Aucun contenu disponible</p>
-            <p className="text-sm mt-1">L'enseignant ajoutera bientôt des ressources.</p>
-          </div>
+          isAdmin ? <p className="text-center text-sm text-muted-foreground py-4">Pas encore de sous-carte : « ⚙️ Gérer les sous-cartes » pour en ajouter.</p> : null
         ) : (
           <div className="space-y-6">
             {Object.entries(sections).map(([section, sectionCards]) => (
@@ -179,6 +188,8 @@ const GenericModulePage = () => {
                 {selectedCard.section && (
                   <Badge variant="outline">{selectedCard.section}</Badge>
                 )}
+                {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+                <ZonesContenu cible={`sous-carte:${selectedCard.id}`} isAdmin={isAdmin} libelle={selectedCard.title} />
 
                 {selectedFlashcards.length > 0 && (
                   <div className="space-y-3">

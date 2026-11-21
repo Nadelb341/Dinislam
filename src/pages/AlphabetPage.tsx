@@ -13,7 +13,7 @@ import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/h
 import { AlphabetLetterSheet } from '@/components/alphabet/AlphabetLetterSheet';
 import { ReadingGameDialog, type ReadingMode } from '@/components/alphabet/ReadingGameDialog';
 import type { AlphabetSubmission } from '@/components/alphabet/AlphabetLineRow';
-import { ALPHABET_WORDS } from '@/data/alphabetWords';
+import { useMotsAlphabet } from '@/hooks/useMotsAlphabet';
 import { buildLines } from '@/lib/alphabetLines';
 import { AlphabetGameDialog } from '@/components/alphabet/AlphabetGameDialog';
 import { AlphabetUnlockDialog } from '@/components/alphabet/AlphabetUnlockDialog';
@@ -87,6 +87,7 @@ const AlphabetPage = () => {
   }, [ongletsVisibles, onglet, age, isAdmin]);
 
   // ✋ Ordre des jeux (onglet 🎮 Jouer), rangé par l'enseignante
+  const mots = useMotsAlphabet();
   const jeux = useOrdreCartes('alphabet-jeux', GAMES.filter((g) => g.key !== 'lettre'), (g) => g.key);
 
   const rangerOnglets = async (cles: OngletAlphabet[]) => {
@@ -590,7 +591,7 @@ const AlphabetPage = () => {
               <div dir="rtl" className="grid grid-cols-7 gap-1.5">
                 {letters.map((l) => {
                   const got = learned.has(l.id);
-                  const w = ALPHABET_WORDS[l.letter_arabic];
+                  const w = mots[l.letter_arabic];
                   return (
                     <div
                       key={l.id}

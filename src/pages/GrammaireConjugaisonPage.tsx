@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,7 @@ const COLORS = [
 ];
 
 const GrammaireConjugaisonPage = () => {
+  const { isAdmin: estAdminZones } = useAuth();
   const titrePage = useTitreCarte('/grammaire', 'Grammaire & Conjugaison');
   const { user } = useAuth();
   const [selectedCard, setSelectedCard] = useState<Tables<'module_cards'> | null>(null);
@@ -409,6 +411,8 @@ const GrammaireConjugaisonPage = () => {
                   {/* ── LEÇON ── */}
                   {activeTab === 'lecon' && (
                     <>
+                      {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+                      <ZonesContenu cible={`sous-carte:${selectedCard.id}`} isAdmin={estAdminZones} libelle={selectedCard.title} />
                       {selectedCard.description && (
                         <div className="rounded-xl p-4 border" style={{ backgroundColor: color.light, borderColor: color.border }}>
                           <p className="text-sm text-foreground">{selectedCard.description}</p>

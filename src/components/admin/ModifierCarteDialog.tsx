@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { compressPhoto } from '@/lib/compressImage';
-import { moveToTrash } from '@/lib/trash';
+import { collectChildren, moveToTrash, trashThenDelete } from '@/lib/trash';
 import { horsLigne } from '@/lib/alphabetMedias';
 import { errorMessage } from '@/lib/utils';
 
@@ -23,6 +23,8 @@ import { errorMessage } from '@/lib/utils';
  */
 export interface CarteAModifier {
   id: string; title: string; title_arabic: string | null; description: string | null; image_url: string | null; image_cadrage?: unknown;
+  /** Carte de départ de l'appli (Sourates, Nourania…) : jamais supprimable */
+  is_builtin?: boolean | null;
 }
 
 export function ModifierCarteDialog({ carte, onClose }: { carte: CarteAModifier | null; onClose: () => void }) {
@@ -36,6 +38,7 @@ export function ModifierCarteDialog({ carte, onClose }: { carte: CarteAModifier 
   const [saving, setSaving] = useState(false);
   const [cadrer, setCadrer] = useState(false);
   const [retirer, setRetirer] = useState(false);
+  const [supprimer, setSupprimer] = useState(false);
   const fichier = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -81,6 +84,30 @@ export function ModifierCarteDialog({ carte, onClose }: { carte: CarteAModifier 
       setImage(null);
       toast.success('🗑️ Image dans la corbeille (Paramètres)');
       rafraichir();
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
+
+  // 🗑️ Carte créée par l'enseignante : corbeille avec ses sous-cartes (restaurable)
+  const supprimerCarte = async () => {
+    if (!carte || !user) return;
+    try {
+      const { data: ligne } = await supabase.from('learning_modules').select('*').eq('id', carte.id).single();
+      // Tout ce que la base efface avec la carte est copié AVANT, dans l'ordre de restauration (sous-cartes puis leur contenu)
+      const sousCartes = await collectChildren('module_cards', 'module_id', [carte.id]);
+      const ids = sousCartes.rows.map((r) => String(r.id));
+      const enfants = [
+        sousCartes,
+        await collectChildren('module_card_content', 'card_id', ids),
+        await collectChildren('module_flashcards', 'module_card_id', ids),
+        await collectChildren('module_content', 'module_id', [carte.id]),
+        await collectChildren('module_visibility', 'module_id', [carte.id]),
+        await collectChildren('module_visits', 'module_id', [carte.id]),
+        await collectChildren('cartes_journal', 'module_id', [carte.id]),
+      ];
+      await trashThenDelete({ userId: user.id, type: 'learning_module', id: carte.id, label: `${carte.title} (carte de l'accueil)`, data: ligne ?? carte,
+        children: enfants, remove: () => supabase.from('learning_modules').delete().eq('id', carte.id) });
+      toast.success('🗑️ Carte dans la corbeille (Paramètres)');
+      rafraichir(); onClose();
     } catch (e) { toast.error(errorMessage(e)); }
   };
 
@@ -130,6 +157,11 @@ export function ModifierCarteDialog({ carte, onClose }: { carte: CarteAModifier 
         </div>
 
         <Button type="button" disabled={saving} onClick={() => void enregistrer()}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>
+        {carte && carte.is_builtin === false && (
+          <Button type="button" variant="ghost" className="text-destructive" onClick={() => setSupprimer(true)}>🗑️ Supprimer la carte</Button>
+        )}
+        <ConfirmDeleteDialog open={supprimer} onOpenChange={setSupprimer} onConfirm={() => { setSupprimer(false); void supprimerCarte(); }}
+          title={`Supprimer la carte « ${carte?.title ?? ''} » ?`} description="Elle ira dans la corbeille de Paramètres avec ses sous-cartes ; tu pourras la restaurer." />
 
         {cadrer && carte && image && (
           <Cadreur open onClose={() => setCadrer(false)} src={image} table="learning_modules" id={carte.id} valeur={carte.image_cadrage}

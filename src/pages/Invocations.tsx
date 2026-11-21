@@ -1,4 +1,7 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { TextareaDictee } from '@/components/shared/TextareaDictee';
+import { ecrireOuGarder } from '@/lib/fileHorsLigne';
+import { untypedDb } from '@/lib/untypedDb';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useState, useEffect, useRef } from 'react';
@@ -84,9 +87,22 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
   const { askValidation, validationDialog } = useConfirmValidation();
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
   // Vidéo de l'appli (canal Telegram, 2026-11-08) en priorité ; YouTube seulement pour les cartes qui n'en ont pas
-  const videoAppli = enrichment?.video ?? null;
-  const videoEntiere = enrichment?.videoEntiere ?? null;
-  const embedUrl = !videoAppli && enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
+  // ✏️ Vertu, « À savoir » et vidéo de départ modifiables par l'enseignante (table invocation_extras, 2026-11-21)
+  const { data: extras } = useQuery({
+    queryKey: ['invocation-extras', invocation.id],
+    queryFn: async () => {
+      const { data, error } = await untypedDb.from('invocation_extras').select('vertu, a_savoir, masquer_video').eq('invocation_id', invocation.id).maybeSingle();
+      if (error) throw error;
+      return data as { vertu: string | null; a_savoir: string | null; masquer_video: boolean } | null;
+    },
+  });
+  const [reglerExtras, setReglerExtras] = useState(false);
+  const videoMasquee = !!extras?.masquer_video;
+  const vertu = extras?.vertu ?? enrichment?.virtue ?? '';
+  const aSavoir = extras?.a_savoir ?? enrichment?.extra ?? '';
+  const videoAppli = videoMasquee ? null : enrichment?.video ?? null;
+  const videoEntiere = videoMasquee ? null : enrichment?.videoEntiere ?? null;
+  const embedUrl = !videoMasquee && !videoAppli && enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
   const [voirEntiere, setVoirEntiere] = useState(false);
   const lecteurRef = useRef<HTMLDivElement>(null);
   const basculerVideo = () => {
@@ -223,23 +239,32 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
             {/* Textes : celui de la vidéo + « autre invocation » — modifiables / supprimables par l'enseignante */}
             <InvocationTextes invocation={invocation} enrichment={enrichment} />
 
+            {/* ✏️ Enseignante : vertu, « À savoir » et vidéo de départ */}
+            {apercuAdmin && (
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setReglerExtras(true)}>✏️ Vertu, « À savoir » et vidéo de départ</Button>
+            )}
+            {reglerExtras && (
+              <ReglagesInvocation invocationId={invocation.id} defaut={{ vertu: enrichment?.virtue ?? '', aSavoir: enrichment?.extra ?? '', aUneVideo: !!(enrichment?.video || enrichment?.videoUrl) }}
+                actuel={extras ?? null} onClose={() => setReglerExtras(false)} />
+            )}
+
             {/* Vertu */}
-            {enrichment?.virtue && (
+            {vertu && (
               <div className="rounded-xl p-4 border" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
                 <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-2 flex items-center gap-1">
                   ✨ Vertu
                 </p>
-                <p className="text-sm text-green-800 leading-relaxed">{enrichment.virtue}</p>
+                <p className="text-sm text-green-800 leading-relaxed whitespace-pre-wrap">{vertu}</p>
               </div>
             )}
 
             {/* Info complémentaire (ex: si on oublie) */}
-            {enrichment?.extra && (
+            {aSavoir && (
               <div className="rounded-xl p-4 border" style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
                 <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2 flex items-center gap-1">
                   💡 À savoir
                 </p>
-                <p className="text-sm text-blue-800 leading-relaxed">{enrichment.extra}</p>
+                <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">{aSavoir}</p>
               </div>
             )}
 
@@ -634,3 +659,44 @@ const Invocations = () => {
 };
 
 export default Invocations;
+
+/** ✏️ Réglages d'une invocation (2026-11-21) : vertu, « À savoir », vidéo de départ montrée ou non ; « ↩️ Textes de départ » */
+function ReglagesInvocation({ invocationId, defaut, actuel, onClose }: {
+  invocationId: number; defaut: { vertu: string; aSavoir: string; aUneVideo: boolean };
+  actuel: { vertu: string | null; a_savoir: string | null; masquer_video: boolean } | null; onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [vertu, setVertu] = useState(actuel?.vertu ?? defaut.vertu);
+  const [aSavoir, setASavoir] = useState(actuel?.a_savoir ?? defaut.aSavoir);
+  const [video, setVideo] = useState(!actuel?.masquer_video);
+  const enregistrer = async (depart = false) => {
+    const row = depart
+      ? { invocation_id: invocationId, vertu: null, a_savoir: null, masquer_video: false, updated_at: new Date().toISOString() }
+      : { invocation_id: invocationId, vertu: vertu.trim() === defaut.vertu.trim() ? null : vertu.trim(), a_savoir: aSavoir.trim() === defaut.aSavoir.trim() ? null : aSavoir.trim(), masquer_video: !video, updated_at: new Date().toISOString() };
+    try {
+      const r = await ecrireOuGarder({ table: 'invocation_extras', op: 'upsert', rows: [row] });
+      toast.success(r === 'en_attente' ? '📡 Gardé, envoyé au retour du réseau' : depart ? '↩️ Textes de départ remis' : 'Enregistré ✅');
+      void queryClient.invalidateQueries({ queryKey: ['invocation-extras', invocationId] });
+      onClose();
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-sm" level="nested">
+        <DialogHeader><DialogTitle>✏️ Vertu, « À savoir » et vidéo</DialogTitle></DialogHeader>
+        <label className="text-xs font-semibold">✨ Vertu (vide = cachée)</label>
+        <TextareaDictee rows={3} value={vertu} onChange={(e) => setVertu(e.target.value)} />
+        <label className="text-xs font-semibold">💡 À savoir (vide = caché)</label>
+        <TextareaDictee rows={3} value={aSavoir} onChange={(e) => setASavoir(e.target.value)} />
+        {defaut.aUneVideo && (
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={video} onChange={(e) => setVideo(e.target.checked)} /> Montrer la vidéo de départ</label>
+        )}
+        <p className="text-[11px] text-muted-foreground">Pour ajouter d'autres vidéos, images ou textes : « 📎 Image, vidéo, PDF… » plus bas dans la fiche.</p>
+        <div className="flex flex-wrap justify-between gap-2">
+          <Button variant="ghost" onClick={() => void enregistrer(true)}>↩️ Textes de départ</Button>
+          <Button onClick={() => void enregistrer()}>Enregistrer</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

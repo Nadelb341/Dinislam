@@ -3,6 +3,8 @@
  * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Dhikr, Hadiths, Histoires des Prophètes
  */
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useAuth } from '@/contexts/AuthContext';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -65,6 +67,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
 };
 
 const GenericTimelinePage = () => {
+  const { isAdmin: estAdminZones } = useAuth();
   const location = useLocation();
   // Extract slug from path: /module/vocabulaire -> vocabulaire
   const moduleSlug = location.pathname.replace('/module/', '').replace('/', '');
@@ -291,6 +294,8 @@ const GenericTimelinePage = () => {
             </DialogHeader>
 
             <div className="space-y-4">
+              {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+              <ZonesContenu cible={`sous-carte:${selectedCard.id}`} isAdmin={estAdminZones} libelle={selectedCard.title} />
               {selectedCard.description && (
                 <div className="bg-muted/50 border border-border rounded-xl p-4">
                   <p className="text-sm text-foreground">{selectedCard.description}</p>

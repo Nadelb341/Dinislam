@@ -1,4 +1,10 @@
 import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
+import { errorMessage } from '@/lib/utils';
+import { collectChildren, trashThenDelete } from '@/lib/trash';
+import { ecrireOuGarder } from '@/lib/fileHorsLigne';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { Cadreur } from '@/components/shared/Cadreur';
@@ -6,7 +12,6 @@ import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { trashThenDelete } from '@/lib/trash';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useOpenItemFromUrl, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
@@ -66,6 +71,8 @@ const PrayerModuleCards = () => {
   const [aCadrer, setACadrer] = useState<Tables<'prayer_cards'> | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteContentId, setDeleteContentId] = useState<string | null>(null);
+  const [renommage, setRenommage] = useState<{ id: string; nom: string } | null>(null);
+  const [supprimerCarteOuverte, setSupprimerCarteOuverte] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -198,18 +205,51 @@ const PrayerModuleCards = () => {
     updateCardMutation.mutate({ id: cardId, image_url: data.publicUrl });
   };
 
-  const moveCard = useMutation({
-    mutationFn: async ({ cardId, direction }: { cardId: string; direction: 'up' | 'down' }) => {
-      const sorted = [...groupCards].sort((a, b) => a.display_order - b.display_order);
-      const idx = sorted.findIndex(c => c.id === cardId);
-      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= sorted.length) return;
-      const a = sorted[idx], b = sorted[swapIdx];
-      await supabase.from('prayer_cards').update({ display_order: b.display_order }).eq('id', a.id);
-      await supabase.from('prayer_cards').update({ display_order: a.display_order }).eq('id', b.id);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['prayer-cards'] }),
-  });
+  const rangerCartes = async (n: Tables<'prayer_cards'>[]) => {
+    queryClient.setQueryData<Tables<'prayer_cards'>[]>(['prayer-cards'], (old) => (old || []).map((c) => { const i = n.findIndex((x) => x.id === c.id); return i === -1 ? c : { ...c, display_order: (i + 1) * 10 }; }));
+    try {
+      for (const [i, c] of n.entries()) await ecrireOuGarder({ table: 'prayer_cards', op: 'update', id: c.id, values: { display_order: (i + 1) * 10 } });
+      toast.success('✋ Ordre enregistré (les élèves voient le même)');
+    } catch (e) { toast.error(errorMessage(e)); }
+    queryClient.invalidateQueries({ queryKey: ['prayer-cards'] });
+  };
+
+  // ➕ Nouvelle carte : même catégorie et même groupe que ses voisines, placée à la fin ; la fenêtre « Modifier » s'ouvre tout de suite
+  const nouvelleCarte = async () => {
+    const voisine = groupCards[0] ?? cards[0];
+    if (!voisine) { toast.error('Aucune carte modèle trouvée'); return; }
+    const ordre = Math.max(0, ...groupCards.map((c) => c.display_order ?? 0)) + 10;
+    const { data, error } = await supabase.from('prayer_cards').insert({
+      category_id: voisine.category_id, group_key: effectiveActiveGroup, title: 'Nouvelle carte', title_french: 'Nouvelle carte', title_arabic: '', display_order: ordre,
+    }).select('*').single();
+    if (error || !data) { toast.error(errorMessage(error)); return; }
+    await queryClient.invalidateQueries({ queryKey: ['prayer-cards'] });
+    setEditingCard(data); setEditTitle(data.title ?? '');
+    toast.success('➕ Carte ajoutée : donne-lui un titre et une image');
+  };
+
+  // 🗑️ Supprimer une carte : elle va dans la corbeille avec ses fichiers (restaurable)
+  const supprimerCarte = async (card: Tables<'prayer_cards'>) => {
+    if (!user) return;
+    try {
+      const enfants = await collectChildren('prayer_card_content', 'card_id', [card.id]);
+      await trashThenDelete({ userId: user.id, type: 'prayer_card', id: card.id, label: `${card.title || 'Carte'} (Prière)`, data: card,
+        children: [enfants], remove: () => supabase.from('prayer_cards').delete().eq('id', card.id) });
+      setEditingCard(null);
+      queryClient.invalidateQueries({ queryKey: ['prayer-cards'] });
+      toast.success('🗑️ Carte dans la corbeille (Paramètres)');
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
+
+  // ✏️ Renommer un fichier d'une carte
+  const renommerFichier = async (id: string, nom: string) => {
+    if (!nom.trim()) return;
+    try {
+      const r = await ecrireOuGarder({ table: 'prayer_card_content', op: 'update', id, values: { file_name: nom.trim() } });
+      toast.success(r === 'en_attente' ? '📡 Gardé, envoyé au retour du réseau' : 'Renommé ✅');
+      queryClient.invalidateQueries({ queryKey: ['prayer-card-content', selectedCard?.id] });
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
 
   const handleViewContent = (url: string) => window.open(url, '_blank');
   const handleDownloadContent = async (url: string, filename: string) => {
@@ -256,13 +296,18 @@ const PrayerModuleCards = () => {
         </p>
       )}
 
-      {/* Cards grid */}
+      {/* Cards grid — ✋ enseignante : appui long + glisser pour ranger (2026-11-21, plus de flèches) */}
       <div className="grid grid-cols-2 gap-3">
-        {groupCards.sort((a, b) => a.display_order - b.display_order).map((card, index) => (
+        {(() => {
+          const tries = [...groupCards].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+          const tuile = (card: Tables<'prayer_cards'>, index: number, drag?: DragItemProps) => {
+            const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+            return (
           <div
             key={card.id}
-            className="module-card rounded-xl overflow-hidden cursor-pointer hover:shadow-elevated transition-all animate-slide-up"
-            style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}
+            ref={ref} {...attrs}
+            className={cn('module-card rounded-xl overflow-hidden cursor-pointer hover:shadow-elevated transition-all animate-slide-up touch-manipulation', isDragging && 'opacity-50')}
+            style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both', ...style }}
             onClick={() => setSelectedCard(card)}
           >
             {card.image_url ? (
@@ -279,14 +324,24 @@ const PrayerModuleCards = () => {
             </div>
             {isAdmin && (
               <div className="flex justify-center gap-1 pb-2" onClick={e => e.stopPropagation()}>
-                <button onClick={() => moveCard.mutate({ cardId: card.id, direction: 'up' })} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">↑</button>
-                <button onClick={() => moveCard.mutate({ cardId: card.id, direction: 'down' })} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">↓</button>
                 <button onClick={() => { setEditingCard(card); setEditTitle(card.title); }} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"><Edit2 className="h-3 w-3 inline" /></button>
                 {card.image_url && <button onClick={() => setACadrer(card)} aria-label="Cadrer la photo" className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">📐</button>}
               </div>
             )}
           </div>
-        ))}
+            );
+          };
+          return isAdmin
+            ? <SortableCardList items={tries} strategy={rectSortingStrategy} onReorder={(n) => void rangerCartes(n)} renderItem={(c, d) => tuile(c, tries.indexOf(c), d)} />
+            : tries.map((c, i) => tuile(c, i));
+        })()}
+        {/* ➕ Nouvelle sous-carte, pré-remplie d'après les cartes voisines du même groupe (2026-11-21) */}
+        {isAdmin && (
+          <button type="button" onClick={() => void nouvelleCarte()}
+            className="rounded-xl border-2 border-dashed border-primary/50 text-primary font-bold text-sm min-h-[120px] grid place-items-center hover:bg-primary/5">
+            ➕ Nouvelle carte
+          </button>
+        )}
       </div>
 
       {/* 📐 Cadrer la photo d'une carte (2026-11-18) */}
@@ -302,6 +357,8 @@ const PrayerModuleCards = () => {
           <DialogHeader>
             <DialogTitle className="text-lg">{selectedCard?.title}</DialogTitle>
           </DialogHeader>
+          {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+          {selectedCard && <ZonesContenu cible={`priere:${selectedCard.id}`} isAdmin={isAdmin} libelle={selectedCard.title} />}
           {isAdmin && (
             <div className="space-y-2">
               <input ref={fileInputRef} type="file" className="hidden" accept="video/*,audio/*,application/pdf,image/*"
@@ -318,8 +375,19 @@ const PrayerModuleCards = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       {getContentIcon(item.content_type)}
-                      <span className="text-sm font-medium truncate">{item.file_name}</span>
+                      {renommage?.id === item.id ? (
+                        <Input autoFocus value={renommage.nom} className="h-8" aria-label="Nom du fichier"
+                          onChange={(e) => setRenommage({ id: item.id, nom: e.target.value })}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void renommerFichier(item.id, renommage.nom); setRenommage(null); } if (e.key === 'Escape') setRenommage(null); }}
+                          onBlur={() => { void renommerFichier(item.id, renommage.nom); setRenommage(null); }} />
+                      ) : <span className="text-sm font-medium [overflow-wrap:anywhere]">{item.file_name}</span>}
                     </div>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Renommer"
+                        onClick={() => setRenommage({ id: item.id, nom: item.file_name })}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {isAdmin && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={() => setDeleteContentId(item.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -366,6 +434,10 @@ const PrayerModuleCards = () => {
             <Button className="w-full" onClick={() => updateCardMutation.mutate({ id: editingCard.id, title: editTitle })} disabled={updateCardMutation.isPending}>
               Enregistrer
             </Button>
+            <Button variant="ghost" className="w-full text-destructive" onClick={() => setSupprimerCarteOuverte(true)}>🗑️ Supprimer cette carte</Button>
+            <ConfirmDeleteDialog open={supprimerCarteOuverte} onOpenChange={setSupprimerCarteOuverte}
+              onConfirm={() => { setSupprimerCarteOuverte(false); if (editingCard) void supprimerCarte(editingCard); }}
+              title="Supprimer cette carte ?" description="Elle ira dans la corbeille de Paramètres avec ses fichiers ; tu pourras la restaurer." />
           </div>
         </DialogContent>
       </Dialog>

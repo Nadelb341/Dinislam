@@ -1,4 +1,5 @@
 import PresenceEnClasse from '@/components/home/PresenceEnClasse';
+import { NouvelleCarteDialog } from '@/components/admin/NouvelleCarteDialog';
 import { ModifierCarteDialog, type CarteAModifier } from '@/components/admin/ModifierCarteDialog';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useVillePriere } from '@/hooks/useVillePriere';
@@ -209,6 +210,7 @@ const Index = () => {
   const [visibilityTarget, setVisibilityTarget] = useState<{ id: string; title: string } | null>(null);
   // ✏️ « Modifier la carte » (2026-11-21) : titre, titre arabe, petite phrase, image
   const [carteAModifier, setCarteAModifier] = useState<CarteAModifier | null>(null);
+  const [nouvelleCarte, setNouvelleCarte] = useState(false);
   // 📨 Convocations (ouverte aussi depuis la notification « Convocations envoyées » : /?convocations=1)
   const [convocationsOuvert, setConvocationsOuvert] = useState(false);
   const [paramsConv, setParamsConv] = useSearchParams();
@@ -688,12 +690,21 @@ const handleModuleClick = (mod) => {
                 ? <SortableCardList items={visibleModules} strategy={rectSortingStrategy} onReorder={reorderModules} onDragStart={() => { try { navigator.vibrate?.(15); } catch { /* pas de vibration (iPhone) */ } }} renderItem={(mod, dp) => renderModule(mod, visibleModules.indexOf(mod), dp)} />
                 : visibleModules.map((mod, index) => renderModule(mod, index));
             })()}
+            {/* ➕ Nouvelle carte, pré-remplie d'après une carte modèle (2026-11-21) */}
+            {isAdmin && (
+              <button type="button" onClick={() => setNouvelleCarte(true)}
+                className="rounded-2xl border-2 border-dashed border-primary/50 text-primary font-bold text-sm min-h-[140px] grid place-items-center hover:bg-primary/5">
+                ➕ Nouvelle carte
+              </button>
+            )}
           </div>
 
         </div>
       </AppLayout>
 
       {isAdmin && <ModifierCarteDialog carte={carteAModifier} onClose={() => setCarteAModifier(null)} />}
+      {isAdmin && <NouvelleCarteDialog open={nouvelleCarte} modules={modules || []} onClose={() => setNouvelleCarte(false)}
+        onCreee={(m) => { refetchModules(); setCarteAModifier(m); }} />}
 
       {/* Dialog visibilité module */}
       <ModuleVisibilityDialog

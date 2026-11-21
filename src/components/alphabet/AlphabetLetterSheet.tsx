@@ -23,7 +23,9 @@ import { buildLines, type LineKey } from '@/lib/alphabetLines';
 import { uploadAlphabetAudio } from '@/lib/alphabetAudio';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { errorMessage } from '@/lib/utils';
-import { ALPHABET_WORDS, wordSynthUrl } from '@/data/alphabetWords';
+import { wordSynthUrl } from '@/data/alphabetWords';
+import { useMotsAlphabet } from '@/hooks/useMotsAlphabet';
+import { ModifierMotDialog } from './ModifierMotDialog';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Letter = Tables<'alphabet_letters'>;
@@ -60,8 +62,15 @@ export function AlphabetLetterSheet({
   const [showTracer, setShowTracer] = useState(false);
 
   const lines = useMemo(() => buildLines(letter), [letter]);
-  const word = ALPHABET_WORDS[letter.letter_arabic];
-  const playWord = () => { new Audio(models.get(`${letter.id}:mot`) ?? wordSynthUrl(letter.letter_arabic)).play().catch(() => {}); };
+  // ✏️ Mot exemple : celui choisi par l'enseignante (alphabet_mots), sinon celui de départ (2026-11-21)
+  const mots = useMotsAlphabet();
+  const word = mots[letter.letter_arabic];
+  const [modifMot, setModifMot] = useState(false);
+  const playWord = () => {
+    const url = models.get(`${letter.id}:mot`) ?? (word?.modifie ? null : wordSynthUrl(letter.letter_arabic));
+    if (!url) { toast('🔊 Pas encore de voix pour ce mot'); return; }
+    new Audio(url).play().catch(() => {});
+  };
   const age = useMyAge();
   const [previewDotted, setPreviewDotted] = useState(false);
   // Idée 6 : pointillés à suivre pour les moins de 6 ans (l'enseignante peut les voir avec l'interrupteur)
@@ -222,6 +231,9 @@ export function AlphabetLetterSheet({
                   onClick={playWord}>
                   🔊
                 </Button>
+                {isAdmin && (
+                  <Button type="button" size="icon" variant="outline" className="rounded-full shrink-0" aria-label="Modifier le mot" onClick={() => setModifMot(true)}>✏️</Button>
+                )}
               </div>
               {isAdmin && !models.get(`${letter.id}:mot`) && (
                 <p className="text-xs text-muted-foreground">🔊 = voix de synthèse en attendant la tienne : enregistre ton modèle ci-dessous pour la remplacer.</p>
@@ -290,6 +302,7 @@ export function AlphabetLetterSheet({
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
         {validationDialog}
+        {isAdmin && <ModifierMotDialog lettre={modifMot ? letter.letter_arabic : null} mot={word ?? null} onClose={() => setModifMot(false)} />}
       </DialogContent>
     </Dialog>
   );

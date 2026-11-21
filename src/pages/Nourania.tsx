@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState, useEffect, useRef } from 'react';
 import { personalize, withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -543,6 +544,8 @@ const Nourania = () => {
                 {/* Expanded Content */}
                 {isExpanded && unlocked && (
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
+                    {/* ✏️ Zones de contenu de la leçon (texte, images, vidéos, PDF) — 2026-11-21 */}
+                    <ZonesContenu cible={`nourania:${lesson.id}`} isAdmin={isAdmin} libelle={`Nourania, leçon ${lesson.lesson_number}`} />
                     {/* Personal teacher comment */}
                     {(() => {
                       const personalComment = personalComments.find((c) => c.lecon_id === lesson.id);
