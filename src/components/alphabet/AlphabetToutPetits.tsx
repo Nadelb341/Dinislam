@@ -271,7 +271,7 @@ function JeuEcouteTouche({ lettres, onClose }: { lettres: Lettre[]; onClose: () 
   );
 }
 
-/** ✏️ Vidéos d'une lettre (enseignante) : ajouter (fichier ou YouTube), ranger, retirer (corbeille) */
+/** ✏️ Vidéos d'une lettre (enseignante) : ajouter (fichier ou YouTube), ranger (appui long + glisser), retirer (corbeille) */
 function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
   lettre: Lettre; videos: VideoPetit[]; userId: string | null; onClose: () => void; rafraichir: () => void;
 }) {
@@ -293,16 +293,6 @@ function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
       await ajouter({ url: r.url, type: 'video', nom: r.nom });
     } catch (e) { toast.error(errorMessage(e)); } finally { setEnvoi(false); }
   };
-  const deplacer = async (v: VideoPetit, sens: -1 | 1) => {
-    const i = videos.findIndex((x) => x.id === v.id);
-    const w = videos[i + sens];
-    if (!w) return;
-    try {
-      await ecrireOuGarder({ table: 'alphabet_petits_videos', op: 'update', id: v.id, values: { position: v.position === w.position ? w.position + sens : w.position } });
-      await ecrireOuGarder({ table: 'alphabet_petits_videos', op: 'update', id: w.id, values: { position: v.position } });
-      rafraichir();
-    } catch (e) { toast.error(errorMessage(e)); }
-  };
   const retirer = async (v: VideoPetit) => {
     if (!userId) return;
     try {
@@ -318,9 +308,9 @@ function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>🎬 Vidéos de <span className="font-arabic text-2xl">{lettre.letter_arabic}</span> ({lettre.name_french})</DialogTitle>
-          <DialogDescription>La 1re vidéo passe quand l'enfant touche la lettre ; ⏭️ pour les suivantes.</DialogDescription>
+          <DialogDescription>La 1re vidéo passe quand l'enfant touche la lettre ; ⏭️ pour les suivantes. ✋ Appui long puis glisser pour les ranger.</DialogDescription>
         </DialogHeader>
-        {/* ✋ Appui long + glisser pour ranger (ou ⬆️⬇️) */}
+        {/* ✋ Appui long + glisser pour ranger */}
         <SortableCardList items={videos} onReorder={(n) => { void enregistrerOrdre('alphabet_petits_videos', n.map((x) => x.id)).then(rafraichir, (e) => toast.error(errorMessage(e))); }}
           renderItem={(v, drag) => {
             const { ref, style, isDragging, ...attrs } = drag;
@@ -330,8 +320,6 @@ function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
             {v.type === 'youtube' ? <SafeYoutubeEmbed embedUrl={v.url} title={v.nom || 'Vidéo'} /> : <LecteurVideo src={v.url} controlsList="nodownload" />}
             <div className="flex items-center gap-1">
               <span className="flex-1 min-w-0 text-xs font-semibold [overflow-wrap:anywhere]">{i + 1}. {v.nom || 'Vidéo'}</span>
-              <Button size="sm" variant="outline" disabled={i === 0} onClick={() => void deplacer(v, -1)} aria-label="Monter">⬆️</Button>
-              <Button size="sm" variant="outline" disabled={i === videos.length - 1} onClick={() => void deplacer(v, 1)} aria-label="Descendre">⬇️</Button>
               <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(v)} aria-label="Retirer">🗑️</Button>
             </div>
           </div>

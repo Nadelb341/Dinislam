@@ -24,8 +24,8 @@ import { errorMessage } from '@/lib/utils';
 /**
  * ✨ Onglet « Particularités » de l'Alphabet (Nadia, 2026-11-21, choix P2) : des tuiles (Tanouine, Chadda, Soukoune…)
  * comme la grille des lettres ; la fiche s'ouvre avec une VIDÉO en haut (à la place de la grande lettre + « Écoute »).
- * ✏️ Nadia garde la main sur TOUT : ajouter / modifier / supprimer une particularité (titre, titre arabe, emoji, couleur, ordre)
- * et, dans la fiche, des zones de contenu (texte, images, vidéos, lien YouTube, PDF, audio) à ranger dans l'ordre voulu.
+ * ✏️ Nadia garde la main sur TOUT : ajouter / modifier / supprimer une particularité (titre, titre arabe, emoji, couleur ; ✋ appui long + glisser pour ranger)
+ * et, dans la fiche, des zones de contenu (texte, images, vidéos, lien YouTube, PDF, audio) à ranger par appui long + glisser.
  * Toute suppression passe par la corbeille (Paramètres). Hors ligne : textes gardés et envoyés au retour du réseau.
  */
 export interface Particularite { id: string; titre: string; titre_arabe: string | null; emoji: string | null; couleur: string | null; position: number }
@@ -168,7 +168,6 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
   const [couleur, setCouleur] = useState(p?.couleur ?? 'sky');
   const [saving, setSaving] = useState(false);
   const [supprimer, setSupprimer] = useState(false);
-  const rang = p ? items.findIndex((i) => i.id === p.id) : -1;
 
   const enregistrer = async () => {
     if (!titre.trim()) { toast.error('Écris un titre'); return; }
@@ -181,19 +180,6 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
       toast.success(r === 'en_attente' ? '📡 Gardé sur cet appareil, envoyé au retour du réseau' : p ? 'Modifiée ✅' : 'Particularité ajoutée ✅');
       rafraichir(); onClose();
     } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
-  };
-
-  // Monter / descendre : on échange la place avec la voisine
-  const deplacer = async (sens: -1 | 1) => {
-    if (!p) return;
-    const voisine = items[rang + sens];
-    if (!voisine) return;
-    try {
-      const a = p.position === voisine.position ? voisine.position + sens : voisine.position;
-      await ecrireOuGarder({ table: 'alphabet_particularites', op: 'update', id: p.id, values: { position: a } });
-      await ecrireOuGarder({ table: 'alphabet_particularites', op: 'update', id: voisine.id, values: { position: p.position } });
-      rafraichir(); onClose();
-    } catch (e) { toast.error(errorMessage(e)); }
   };
 
   const mettreCorbeille = async () => {
@@ -230,12 +216,6 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
               className={`h-8 w-8 rounded-full ${c.pastille} ${couleur === k ? 'ring-4 ring-offset-2 ring-primary' : ''}`} />
           ))}
         </div>
-        {p && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" disabled={rang <= 0} onClick={() => void deplacer(-1)}>⬆️ Avant</Button>
-            <Button type="button" variant="outline" disabled={rang >= items.length - 1} onClick={() => void deplacer(1)}>⬇️ Après</Button>
-          </div>
-        )}
         <div className="flex flex-wrap justify-between gap-2 pt-1">
           {p && <Button type="button" variant="ghost" className="text-destructive" onClick={() => setSupprimer(true)}>🗑️ Supprimer</Button>}
           <Button type="button" className="ms-auto" disabled={saving} onClick={() => void enregistrer()}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>
@@ -302,17 +282,6 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
     const ids = [...(videoHaut ? [videoHaut.id] : []), ...n.map((b) => b.id)];
     try { await enregistrerOrdre('alphabet_particularite_blocs', ids); rafraichir(); } catch (e) { toast.error(errorMessage(e)); }
   };
-  const deplacer = async (b: Bloc, sens: -1 | 1) => {
-    const i = reste.findIndex((x) => x.id === b.id);
-    const v = reste[i + sens];
-    if (!v) return;
-    try {
-      const a = b.position === v.position ? v.position + sens : v.position;
-      await ecrireOuGarder({ table: 'alphabet_particularite_blocs', op: 'update', id: b.id, values: { position: a } });
-      await ecrireOuGarder({ table: 'alphabet_particularite_blocs', op: 'update', id: v.id, values: { position: b.position } });
-      rafraichir();
-    } catch (e) { toast.error(errorMessage(e)); }
-  };
   const mettreCorbeille = async (b: Bloc) => {
     if (!userId) return;
     try {
@@ -324,11 +293,9 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
     } catch (e) { toast.error(errorMessage(e)); }
   };
 
-  const outils = (b: Bloc, i: number, n: number) => isAdmin && (
+  const outils = (b: Bloc) => isAdmin && (
     <div className="flex flex-wrap gap-1 justify-end">
       {b.kind === 'texte' && <Button size="sm" variant="outline" onClick={() => { setModifTexte(b); setTexte(b.texte || ''); setAjout('texte'); }}>✏️ Modifier</Button>}
-      <Button size="sm" variant="outline" disabled={i === 0} onClick={() => void deplacer(b, -1)} aria-label="Monter">⬆️</Button>
-      <Button size="sm" variant="outline" disabled={i === n - 1} onClick={() => void deplacer(b, 1)} aria-label="Descendre">⬇️</Button>
       <Button size="sm" variant="outline" className="text-destructive" onClick={() => setASupprimer(b)} aria-label="Supprimer">🗑️</Button>
     </div>
   );
@@ -373,15 +340,14 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
           {p.titre_arabe && videoHaut && <p className="font-arabic text-3xl text-center" dir="rtl">{p.titre_arabe}</p>}
 
           {isAdmin ? (
-            // ✋ Appui long + glisser pour ranger les zones (en plus de ⬆️⬇️)
+            // ✋ Appui long + glisser pour ranger les zones
             <SortableCardList items={reste} onReorder={(n) => void rangerZones(n)}
               renderItem={(b, drag) => {
                 const { ref, style, isDragging, ...attrs } = drag;
-                const i = reste.findIndex((x) => x.id === b.id);
                 return (
                   <div key={b.id} ref={ref} style={style} {...attrs} className={`space-y-1.5 rounded-xl touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
                     <VueBloc b={b} />
-                    {outils(b, i, reste.length)}
+                    {outils(b)}
                   </div>
                 );
               }} />
