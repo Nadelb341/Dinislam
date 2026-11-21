@@ -42,6 +42,7 @@ import { useParentLock } from '@/hooks/useParentLock';
 import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
 import { choisirSonFeu, jouerSonFeu, lireSonFeu, SONS_FEU, type ChoixSonFeu } from '@/lib/sonFeu';
+import { blocageDisponible, choisirEcranTourne, ecranTourneActive } from '@/lib/ecranTourne';
 import { couperDecor, decorCoupe, saisonDuJour, useReglagesSaisons, NOM_SAISON, SAISONS_PRETES } from '@/lib/saisons';
 
 function CarteDecorSaison() {
@@ -57,6 +58,27 @@ function CarteDecorSaison() {
           <span className="block text-xs text-muted-foreground">Arbre, feuilles qui tombent, cheminée et images sur les cartes de l'accueil</span>
         </Label>
         <Switch id="deco-saison" checked={!coupe} onCheckedChange={(v) => { couperDecor(!v); setCoupe(!v); }} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** 📱↔️ Téléphone tourné (Nadia, 2026-11-21, toutes les applis) : chacun choisit sur son appareil */
+function CarteEcranTourne() {
+  const [actif, setActif] = useState(ecranTourneActive());
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="ecran-tourne" className="min-w-0 cursor-pointer">
+            <span className="block font-bold">📱↔️ Téléphone tourné (en largeur)</span>
+            <span className="block text-xs text-muted-foreground">L'appli suit le téléphone ou la tablette quand on le tourne. Coupé : elle reste en hauteur.</span>
+          </Label>
+          <Switch id="ecran-tourne" checked={actif} onCheckedChange={(v) => { choisirEcranTourne(v); setActif(v); }} />
+        </div>
+        {!actif && !blocageDisponible() && (
+          <p className="text-[11px] text-muted-foreground">Sur iPhone et iPad, pour rester en hauteur, active aussi le cadenas de rotation 🔒 dans le Centre de contrôle (Apple ne laisse pas l'appli le faire).</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -94,6 +116,9 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   prayer_card_content: 'Contenu prière',
   sourate_content: 'Contenu sourate',
   alphabet_content: 'Contenu alphabet',
+  alphabet_particularite: 'Particularité (Alphabet)',
+  alphabet_particularite_bloc: 'Contenu d\'une particularité',
+  alphabet_petits_video: 'Vidéo des tout-petits',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',
@@ -387,6 +412,7 @@ const Settings = () => {
         {/* « Panneau d'administration » retiré le 2026-10-27 : le Tableau de bord n'existe plus (menu ⋮ de chaque carte de l'accueil) */}
 
         {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
+        <SilentBoundary name="Téléphone tourné"><CarteEcranTourne /></SilentBoundary>
         <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
         </>)}
 

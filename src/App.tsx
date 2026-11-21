@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useSwNavigate } from "@/hooks/useSwNavigate";
 import { Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect } from 'react';
+import { useEcranTourne } from '@/lib/ecranTourne';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import RealtimeSync from '@/components/RealtimeSync';
 import DevoirEnCours from '@/components/homework/DevoirEnCours';
@@ -140,6 +141,9 @@ const AppRoutes = () => {
   );
 };
 
+// 📱↔️ Réglage « téléphone tourné » de cet appareil (Paramètres, 2026-11-21)
+const EcranTourne = () => { useEcranTourne(); return null; };
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -149,6 +153,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <RealtimeSync />
+            <EcranTourne />
             <DevoirEnCours />
             <AppRoutes />
           </AuthProvider>

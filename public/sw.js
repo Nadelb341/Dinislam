@@ -277,6 +277,13 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(imageResponse(event, request));
     return;
   }
+  // 🎬 Vidéos envoyées dans le stockage public (Alphabet : particularités, tout-petits… — 2026-11-21) : même règle que
+  // les vidéos de l'appli → gardées sur l'appareil dès la 1re lecture, regardables sans réseau. Chaque envoi a un nom unique.
+  if (request.destination === 'video' && url.hostname.indexOf('.supabase.co') !== -1 &&
+      url.pathname.indexOf('/storage/v1/object/public/') === 0) {
+    event.respondWith(videoResponse(event, request, url.href));
+    return;
+  }
   // 🔒🖼️ Images PRIVÉES (lien signé ?token=…, pièces jointes du carnet, photos des devoirs) — 2026-11-12 :
   // le jeton change toutes les heures, donc on les garde sous leur chemin SANS le jeton. Réseau d'abord (4 s) ;
   // si le lien a expiré, si la signature a échoué (adresse sans jeton) ou sans réseau : la copie déjà vue sur cet appareil.

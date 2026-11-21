@@ -950,3 +950,10 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   .icone-entete .icone-appli{width:33px;height:33px}
 }
 @media (prefers-reduced-motion:reduce){.icone-entete-corps.rebond,.icone-entete-corps.tourne .icone-dessin{animation:none}.icone-entete:active .icone-entete-corps{transform:none}}
+
+/* 🧸 Tout-petits (2026-11-21) : la lettre touchée par erreur se dandine gentiment (jamais de « raté ») */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}

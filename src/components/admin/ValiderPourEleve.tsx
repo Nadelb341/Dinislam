@@ -23,11 +23,19 @@ import {
  */
 export type ElementAValider = { id: string; libelle: string };
 type Eleve = { user_id: string; full_name: string | null; email: string | null };
-export type GenreValidation = 'nourania' | 'invocation';
+export type GenreValidation = 'nourania' | 'invocation' | 'alphabet';
 const CONFIG = {
   nourania: { table: 'user_nourania_progress', cle: 'lesson_id', demandes: 'nourania_validation_requests', titre: 'Valider des leçons pour un élève', nom: 'leçon', une: 'cette leçon', valide: (t: string) => ({ is_validated: true, is_completed: true, progress_percentage: 100, completed_at: t }), annule: { is_validated: false } },
   invocation: { table: 'user_invocation_progress', cle: 'invocation_id', demandes: 'invocation_validation_requests', titre: 'Valider des invocations pour un élève', nom: 'invocation', une: 'cette invocation', valide: (t: string) => ({ is_validated: true, is_memorized: true, is_completed: true, completed_at: t }), annule: { is_validated: false, is_memorized: false } },
+  // 🔤 2026-11-21 (onglet « Pour les tout-petits ») : valider une lettre pour un enfant qui ne s'enregistre pas encore
+  alphabet: { table: 'user_alphabet_progress', cle: 'letter_id', demandes: 'alphabet_submissions', titre: 'Valider des lettres pour un élève', nom: 'lettre', une: 'cette lettre', valide: (t: string) => ({ is_validated: true, is_completed: true, completed_at: t }), annule: { is_validated: false, is_completed: false } },
 } as const;
+/** Ce qui change d'une carte à l'autre pour la demande de l'élève et la notification */
+const DEMANDE: Record<GenreValidation, { eleve: string; accepte: string; carte: string; url: string; final?: boolean }> = {
+  nourania: { eleve: 'user_id', accepte: 'approved', carte: 'Nourania', url: '/nourania' },
+  invocation: { eleve: 'user_id', accepte: 'approved', carte: 'Invocation', url: '/invocations' },
+  alphabet: { eleve: 'student_id', accepte: 'validated', carte: 'Alphabet', url: '/alphabet', final: true },
+};
 
 export default function ValiderPourEleve({ genre, elements, profiles }: { genre: GenreValidation; elements: ElementAValider[]; profiles: Eleve[] }) {
   const cfg = CONFIG[genre];
@@ -42,7 +50,7 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
   const [busy, setBusy] = useState(false);
 
   const { data: validees = [], refetch } = useQuery({
-    queryKey: [genre === 'nourania' ? 'nourania-progress' : 'invocation-progress', eleve, 'admin-validation'],
+    queryKey: [`${genre}-progress`, eleve, 'admin-validation'],
     enabled: !!eleve,
     queryFn: async () => {
       const { data, error } = await db.from(cfg.table).select(cfg.cle).eq('user_id', eleve!).eq('is_validated', true);
@@ -54,11 +62,13 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
   const nomEleve = nomChoisi || profiles.find((p) => p.user_id === eleve)?.full_name || 'Élève';
   const rafraichir = () => {
     void refetch();
-    queryClient.invalidateQueries({ queryKey: [genre === 'nourania' ? 'nourania-progress' : 'invocation-progress'] });
-    queryClient.invalidateQueries({ queryKey: [genre === 'nourania' ? 'admin-nourania-validations' : 'admin-invocation-validations'] });
+    queryClient.invalidateQueries({ queryKey: [`${genre}-progress`] });
+    queryClient.invalidateQueries({ queryKey: [`admin-${genre}-validations`] });
+    if (genre === 'alphabet') for (const k of ['user-alphabet-progress-page', 'alphabet-classe', 'admin-alphabet-grid']) queryClient.invalidateQueries({ queryKey: [k] });
   };
 
-  const idDe = (e: ElementAValider) => (genre === 'invocation' ? Number(e.id) : e.id);
+  const idDe = (e: ElementAValider) => (genre === 'nourania' ? e.id : Number(e.id));
+  const dm = DEMANDE[genre];
 
   const valider = async () => {
     const v = aValider; setAValider(null);
@@ -73,11 +83,13 @@ export default function ValiderPourEleve({ genre, elements, profiles }: { genre:
         : await db.from(cfg.table).insert({ user_id: eleve, [cfg.cle]: idDe(v), ...cfg.valide(maintenant) } as never);
       if (error) throw error;
       // Une demande de validation encore en attente pour cet élément : acceptée (elle ne reste pas dans « à corriger »)
-      await db.from(cfg.demandes).update({ status: 'approved', reviewed_at: maintenant, reviewed_by: user?.id } as never)
-        .eq('user_id', eleve).eq(cfg.cle, idDe(v)).eq('status', 'pending');
+      let demande = db.from(cfg.demandes).update({ status: dm.accepte, reviewed_at: maintenant, ...(genre === 'alphabet' ? {} : { reviewed_by: user?.id }) } as never)
+        .eq(dm.eleve, eleve).eq(cfg.cle, idDe(v)).eq('status', 'pending');
+      if (dm.final) demande = demande.eq('kind', 'final');
+      await demande;
       // 🔔 2026-11-18 (Nadia : tout ce que j'envoie aux élèves doit les prévenir)
       sendPushNotification({ userId: eleve, category: 'rec', title: '✅ {prenom}, ton professeur a validé !',
-        body: `${genre === 'nourania' ? 'Nourania' : 'Invocation'} : ${v.libelle} ✨`, data: { url: genre === 'nourania' ? '/nourania' : '/invocations' } });
+        body: `${dm.carte} : ${v.libelle} ✨`, data: { url: dm.url } });
       toast.success(`✅ ${v.libelle} : validée pour ${nomEleve} (verte chez lui, points ajoutés)`);
       rafraichir();
     } catch {

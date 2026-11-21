@@ -43,6 +43,11 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   alphabet_submissions: ['alphabet-classe', 'admin-alphabet-grid', 'admin-alphabet-submissions', 'alphabet-submissions'],
   alphabet_group_unlocks: ['admin-alphabet-grid', 'alphabet-group-unlocks', 'alphabet-classe', 'alphabet-student-summary', 'alphabet-unlock-student'],
   alphabet_content: ['admin-alphabet-contents', 'alphabet-contents-page'],
+  // 🔤 Alphabet en 3 onglets (2026-11-21)
+  alphabet_onglets: ['alphabet-onglets'],
+  alphabet_particularites: ['alphabet-particularites'],
+  alphabet_particularite_blocs: ['alphabet-particularite-blocs'],
+  alphabet_petits_videos: ['alphabet-petits-videos'],
   alphabet_game_scores: ['alphabet-game-scores', 'alphabet-student-summary'],
   alphabet_letters: ['admin-alphabet-grid', 'admin-alphabet-letters', 'admin-alphabet-submissions', 'admin-dashboard-stats', 'admin-module-progress', 'alphabet-letters-page', 'alphabet-student-summary', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
   alphabet_line_models: ['alphabet-line-models'],

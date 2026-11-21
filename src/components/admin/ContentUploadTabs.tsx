@@ -14,6 +14,9 @@ interface ContentUploadTabsProps {
   onUploadAudio: (file: File) => void;
   isUploading?: boolean;
   disabled?: boolean;
+  /** Fichiers acceptés dans l'onglet 📄 Fichier (par défaut : PDF et Word) et son libellé */
+  accept?: string;
+  libelleFichier?: string;
 }
 
 export const convertYoutubeToEmbed = (url: string): string | null => {
@@ -36,6 +39,8 @@ const ContentUploadTabs = ({
   onUploadAudio,
   isUploading = false,
   disabled = false,
+  accept = '.pdf,.doc,.docx',
+  libelleFichier = 'Ajouter un fichier (PDF, DOC)',
 }: ContentUploadTabsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -77,7 +82,7 @@ const ContentUploadTabs = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept={accept}
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -90,7 +95,7 @@ const ContentUploadTabs = ({
           {isUploading ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Téléversement...</>
           ) : (
-            <><Upload className="h-4 w-4 mr-2" />Ajouter un fichier (PDF, DOC)</>
+            <><Upload className="h-4 w-4 mr-2" />{libelleFichier}</>
           )}
         </Button>
       </TabsContent>

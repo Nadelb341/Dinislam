@@ -21,6 +21,18 @@ import { computeUnlocked, gameStatus, GAMES, READING_GAMES, type GameKey, type A
 import { AlphabetLettreAcces } from '@/components/alphabet/AlphabetLettreAcces';
 import { useLettresEnAttente } from '@/hooks/useAlphabetClasse';
 import type { Tables } from '@/integrations/supabase/types';
+import { Pencil } from 'lucide-react';
+import { useMyAge } from '@/hooks/useMyAge';
+import { ONGLETS_ALPHABET, useOngletsAlphabet, type OngletAlphabet } from '@/lib/alphabetOnglets';
+import { AccesOngletDialog } from '@/components/alphabet/AccesOngletDialog';
+import { AlphabetParticularites } from '@/components/alphabet/AlphabetParticularites';
+import { AlphabetToutPetits } from '@/components/alphabet/AlphabetToutPetits';
+
+// 🔤 Les 3 grands onglets (2026-11-21) : celui choisi est retenu sur l'appareil
+const ONGLET_KEY = 'dinislam_alphabet_onglet';
+const lireOnglet = (): OngletAlphabet | null => {
+  try { const v = localStorage.getItem(ONGLET_KEY); return v === 'arabe' || v === 'particularites' || v === 'petits' ? v : null; } catch { return null; }
+};
 
 type Tab = 'apprendre' | 'jouer' | 'progres';
 const TAB_KEY = 'dinislam_alphabet_tab';
@@ -49,6 +61,23 @@ const AlphabetPage = () => {
   // 🔤 Enseignante : toucher une lettre = « qui a cette lettre ? » (maquette B du 2026-11-11)
   const [lettreAcces, setLettreAcces] = useState<Tables<'alphabet_letters'> | null>(null);
   const [reading, setReading] = useState<{ mode: ReadingMode; letters: AlphabetLetterLite[] } | null>(null);
+
+  // 🔤 Onglets du haut (Nadia, 2026-11-21) : chacun a son « ✏️ Affiché à » ; l'élève ne voit que les siens
+  const { lignes: lignesOnglets, visibles: ongletsVisibles } = useOngletsAlphabet();
+  const age = useMyAge();
+  const [onglet, setOngletState] = useState<OngletAlphabet | null>(null);
+  const [accesOnglet, setAccesOnglet] = useState<OngletAlphabet | null>(null);
+  const setOnglet = (o: OngletAlphabet) => {
+    setOngletState(o);
+    try { localStorage.setItem(ONGLET_KEY, o); } catch { /* stockage indisponible */ }
+  };
+  // 1er affichage : moins de 6 ans → « Pour les tout-petits » s'il lui est ouvert (idée 11) ; sinon l'onglet retenu, sinon le 1er ouvert
+  useEffect(() => {
+    if (!ongletsVisibles || (onglet && ongletsVisibles.includes(onglet))) return;
+    const retenu = lireOnglet();
+    const petit = !isAdmin && age !== null && age < 6 && ongletsVisibles.includes('petits');
+    setOngletState(petit ? 'petits' : retenu && ongletsVisibles.includes(retenu) ? retenu : ongletsVisibles[0] ?? null);
+  }, [ongletsVisibles, onglet, age, isAdmin]);
 
   const setTab = (t: Tab) => {
     setTabState(t);
@@ -280,8 +309,37 @@ const AlphabetPage = () => {
   });
 
   return (
-    <AppLayout title="Alphabet Arabe">
+    <AppLayout title="Alphabet">
       <div className="p-4 md:p-6 space-y-4 max-w-3xl mx-auto">
+        {/* 🔤 Les 3 onglets du haut (2026-11-21) ; ✏️ = « Affiché à » (enseignante) */}
+        {ongletsVisibles && (isAdmin || ongletsVisibles.length > 1) && (
+          <div role="tablist" className={`grid gap-1.5 rounded-2xl bg-gradient-to-r from-amber-100 via-sky-100 to-pink-100 dark:from-amber-950/40 dark:via-sky-950/40 dark:to-pink-950/40 p-1.5`}
+            style={{ gridTemplateColumns: `repeat(${ONGLETS_ALPHABET.filter((o) => ongletsVisibles.includes(o.cle)).length}, minmax(0, 1fr))` }}>
+            {ONGLETS_ALPHABET.filter((o) => ongletsVisibles.includes(o.cle)).map((o) => (
+              <div key={o.cle} className="relative min-w-0">
+                <button type="button" role="tab" aria-selected={onglet === o.cle} onClick={() => setOnglet(o.cle)}
+                  className={`w-full min-w-0 rounded-xl px-1 pt-2 pb-1.5 flex flex-col items-center gap-0.5 font-bold transition-all ${onglet === o.cle ? 'bg-card shadow-md text-foreground' : 'text-muted-foreground'}`}>
+                  <span className="text-xl leading-none">{o.emoji}</span>
+                  <FitText className="text-[13px] w-full">{o.titre}</FitText>
+                </button>
+                {isAdmin && (
+                  <button type="button" onClick={() => setAccesOnglet(o.cle)} aria-label={`Affiché à : ${o.titre}`} title="Affiché à…"
+                    className="absolute -top-1 -end-1 h-7 w-7 grid place-items-center rounded-full bg-card border border-border shadow-sm">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {ongletsVisibles && !ongletsVisibles.length && (
+          <p className="rounded-2xl p-4 text-center bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">🔒 Ton professeur va bientôt t'ouvrir l'Alphabet. Reviens vite ! 🤲</p>
+        )}
+
+        {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} />}
+        {onglet === 'petits' && <AlphabetToutPetits letters={letters} unlocked={unlocked} learned={learned} isAdmin={isAdmin} />}
+
+        {onglet === 'arabe' && (<>
         {/* En-tête */}
         <div className="bg-card rounded-2xl p-4 border border-border space-y-3">
           <div className="flex items-center justify-between gap-3">
@@ -543,6 +601,8 @@ const AlphabetPage = () => {
           </div>
         )}
 
+        </>)}
+
         {/* Fiche d'une lettre */}
         {selectedLetter && (
           <AlphabetLetterSheet
@@ -562,6 +622,7 @@ const AlphabetPage = () => {
           />
         )}
 
+        {isAdmin && <AccesOngletDialog cle={accesOnglet} lignes={lignesOnglets} onClose={() => setAccesOnglet(null)} />}
         <ReadingGameDialog mode={reading?.mode ?? null} letters={reading?.letters ?? []} allLetters={letters} onClose={() => setReading(null)} />
         <AlphabetGameDialog game={game} letters={letters} pool={reviewPool} learned={learnedForGames} onClose={() => setGame(null)} />
         {isAdmin && <AlphabetUnlockDialog open={unlockOpen} onOpenChange={setUnlockOpen} letters={letters} />}
