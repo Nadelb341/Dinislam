@@ -1,0 +1,210 @@
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { untypedDb } from '@/lib/untypedDb';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
+import { SortableCardList } from '@/components/shared/SortableCardList';
+import { ecrireOuGarder } from '@/lib/fileHorsLigne';
+import { trashThenDelete } from '@/lib/trash';
+import { enregistrerOrdre } from '@/lib/alphabetMedias';
+import { confettiLettres } from '@/lib/confettiLettres';
+import { sonHarpeEtoiles } from '@/lib/sonSaison';
+import { errorMessage } from '@/lib/utils';
+
+/**
+ * 🎯 Évaluation d'une particularité (Nadia, 2026-11-21) : une question à la fois, réponses mélangées, correction tout de suite.
+ * Enseignante : ➕ ajouter, ✏️ modifier, ✋ appui long + glisser pour ranger, 🗑️ retirer (corbeille). Table `alphabet_quiz_questions`.
+ * Hors ligne : les questions déjà vues restent jouables ; les modifications sont gardées et envoyées au retour du réseau.
+ */
+export interface Question { id: string; question: string; arabe: string | null; choix: string[]; bonne: number; explication: string | null; position: number }
+
+const melanger = <T,>(t: T[]) => [...t].sort(() => Math.random() - 0.5);
+
+export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { particuliereId: string; titre: string; isAdmin: boolean; userId: string | null }) {
+  const queryClient = useQueryClient();
+  const [jeu, setJeu] = useState(false);
+  const [edition, setEdition] = useState<Question | 'nouvelle' | null>(null);
+  const [aRetirer, setARetirer] = useState<Question | null>(null);
+  const cle = ['alphabet-quiz', particuliereId];
+  const { data: questions = [] } = useQuery({
+    queryKey: cle,
+    queryFn: async () => {
+      const { data, error } = await untypedDb.from('alphabet_quiz_questions').select('id, question, arabe, choix, bonne, explication, position')
+        .eq('particularite_id', particuliereId).order('position').order('created_at');
+      if (error) throw error;
+      return (data || []) as Question[];
+    },
+  });
+  const rafraichir = () => void queryClient.invalidateQueries({ queryKey: cle });
+
+  const retirer = async (q: Question) => {
+    if (!userId) return;
+    try {
+      await trashThenDelete({ userId, type: 'alphabet_quiz_question', id: q.id, label: `Question « ${q.question} » (${titre})`,
+        data: { ...q, particularite_id: particuliereId }, remove: () => untypedDb.from('alphabet_quiz_questions').delete().eq('id', q.id) });
+      toast.success('🗑️ Question dans la corbeille (Paramètres)');
+      rafraichir();
+    } catch (e) { toast.error(errorMessage(e)); }
+  };
+
+  if (!questions.length && !isAdmin) return null;
+
+  return (
+    <div className="rounded-2xl border-2 border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <p className="flex-1 font-extrabold">🎯 Évaluation <span className="text-xs font-semibold text-muted-foreground">({questions.length} question{questions.length > 1 ? 's' : ''})</span></p>
+        {questions.length > 0 && <Button size="sm" onClick={() => setJeu(true)}>▶️ Commencer</Button>}
+      </div>
+
+      {isAdmin && (
+        <>
+          <SortableCardList items={questions}
+            onReorder={(n) => { void enregistrerOrdre('alphabet_quiz_questions', n.map((q) => q.id)).then(rafraichir, (e) => toast.error(errorMessage(e))); }}
+            renderItem={(q, drag) => {
+              const { ref, style, isDragging, ...attrs } = drag;
+              return (
+                <div key={q.id} ref={ref} style={style} {...attrs} className={`flex items-center gap-2 rounded-xl bg-card border border-border p-2 touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
+                  <p className="flex-1 min-w-0 text-sm [overflow-wrap:anywhere]">{q.question} {q.arabe && <span className="font-arabic text-base" dir="rtl">{q.arabe}</span>}</p>
+                  <Button size="sm" variant="outline" onClick={() => setEdition(q)} aria-label="Modifier">✏️</Button>
+                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(q)} aria-label="Retirer">🗑️</Button>
+                </div>
+              );
+            }} />
+          <Button size="sm" variant="outline" className="w-full" onClick={() => setEdition('nouvelle')}>➕ Ajouter une question</Button>
+        </>
+      )}
+
+      {jeu && <Passage questions={questions} titre={titre} onClose={() => setJeu(false)} />}
+      {edition && <EditionQuestion q={edition === 'nouvelle' ? null : edition} particuliereId={particuliereId}
+        position={Math.max(0, ...questions.map((q) => q.position)) + 10} onClose={() => setEdition(null)} rafraichir={rafraichir} />}
+      <ConfirmDeleteDialog open={!!aRetirer} onOpenChange={(o) => !o && setARetirer(null)}
+        onConfirm={() => { const q = aRetirer; setARetirer(null); if (q) void retirer(q); }}
+        title="Retirer cette question ?" description="Elle ira dans la corbeille de Paramètres, tu pourras la restaurer." />
+    </div>
+  );
+}
+
+/** Le passage de l'évaluation : étape par étape, barre de progression, score à la fin */
+function Passage({ questions, titre, onClose }: { questions: Question[]; titre: string; onClose: () => void }) {
+  const ordre = useMemo(() => questions.map((q) => ({ q, choix: melanger(q.choix.map((texte, i) => ({ texte, bon: i === q.bonne }))) })), [questions]);
+  const [etape, setEtape] = useState(0);
+  const [reponse, setReponse] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const fini = etape >= ordre.length;
+  const cur = ordre[etape];
+
+  const choisir = (i: number) => {
+    if (reponse !== null) return;
+    setReponse(i);
+    if (cur.choix[i].bon) setScore((s) => s + 1);
+  };
+  const suivant = () => {
+    const n = etape + 1;
+    setEtape(n); setReponse(null);
+    if (n >= ordre.length) { confettiLettres(); sonHarpeEtoiles(); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md" level="nested">
+        <DialogHeader>
+          <DialogTitle>🎯 {titre}</DialogTitle>
+          <DialogDescription>{fini ? 'Résultat' : `Étape ${etape + 1} sur ${ordre.length}`}</DialogDescription>
+        </DialogHeader>
+        <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-violet-500 transition-all" style={{ width: `${(Math.min(etape, ordre.length) / ordre.length) * 100}%` }} /></div>
+        {fini ? (
+          <div className="text-center space-y-3 py-2">
+            <p className="text-6xl">{score === ordre.length ? '🏆' : score >= ordre.length / 2 ? '🌟' : '💪'}</p>
+            <p className="text-2xl font-extrabold">{score} / {ordre.length}</p>
+            <p className="text-sm text-muted-foreground">{score === ordre.length ? 'Parfait, bravo !' : score >= ordre.length / 2 ? 'Très bien ! Encore un petit effort.' : 'Regarde encore la vidéo, puis réessaie.'}</p>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" onClick={() => { setEtape(0); setScore(0); setReponse(null); }}>🔁 Recommencer</Button>
+              <Button onClick={onClose}>Fermer</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="font-bold text-lg [overflow-wrap:anywhere]">{cur.q.question}</p>
+            {cur.q.arabe && <p className="font-arabic text-5xl text-center leading-snug" dir="rtl">{cur.q.arabe}</p>}
+            <div className="grid gap-2">
+              {cur.choix.map((c, i) => {
+                const etat = reponse === null ? '' : c.bon ? 'bg-emerald-100 border-emerald-500 dark:bg-emerald-950/40' : reponse === i ? 'bg-red-100 border-red-500 dark:bg-red-950/40' : 'opacity-60';
+                return (
+                  <button key={i} type="button" onClick={() => choisir(i)} dir="auto"
+                    className={`rounded-xl border-2 border-border p-3 text-start font-semibold [overflow-wrap:anywhere] ${/[؀-ۿ]/.test(c.texte) ? 'font-arabic text-2xl text-center' : ''} ${etat}`}>
+                    {reponse !== null && c.bon ? '✅ ' : reponse === i ? '❌ ' : ''}{c.texte}
+                  </button>
+                );
+              })}
+            </div>
+            {reponse !== null && (
+              <>
+                {cur.q.explication && <p className="rounded-xl bg-muted p-3 text-sm">💡 {cur.q.explication}</p>}
+                <Button className="w-full" onClick={suivant}>{etape + 1 < ordre.length ? 'Question suivante ›' : 'Voir mon résultat'}</Button>
+              </>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** ✏️ Ajouter / modifier une question (2 à 4 réponses, on coche la bonne) */
+function EditionQuestion({ q, particuliereId, position, onClose, rafraichir }: {
+  q: Question | null; particuliereId: string; position: number; onClose: () => void; rafraichir: () => void;
+}) {
+  const [question, setQuestion] = useState(q?.question ?? '');
+  const [arabe, setArabe] = useState(q?.arabe ?? '');
+  const [choix, setChoix] = useState<string[]>(q?.choix ?? ['', '', '', '']);
+  const [bonne, setBonne] = useState(q?.bonne ?? 0);
+  const [explication, setExplication] = useState(q?.explication ?? '');
+  const [saving, setSaving] = useState(false);
+
+  const enregistrer = async () => {
+    const remplis = choix.map((c, i) => ({ c: c.trim(), i })).filter((x) => x.c);
+    if (!question.trim()) { toast.error('Écris la question'); return; }
+    if (remplis.length < 2) { toast.error('Il faut au moins 2 réponses'); return; }
+    if (!remplis.some((x) => x.i === bonne)) { toast.error('Coche la bonne réponse'); return; }
+    const values = { question: question.trim(), arabe: arabe.trim() || null, choix: remplis.map((x) => x.c), bonne: remplis.findIndex((x) => x.i === bonne), explication: explication.trim() || null };
+    setSaving(true);
+    try {
+      const r = q
+        ? await ecrireOuGarder({ table: 'alphabet_quiz_questions', op: 'update', id: q.id, values })
+        : await ecrireOuGarder({ table: 'alphabet_quiz_questions', op: 'insert', rows: [{ ...values, particularite_id: particuliereId, position }] });
+      toast.success(r === 'en_attente' ? '📡 Gardé sur cet appareil, envoyé au retour du réseau' : q ? 'Question modifiée ✅' : 'Question ajoutée ✅');
+      rafraichir(); onClose();
+    } catch (e) { toast.error(errorMessage(e)); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto" level="nested">
+        <DialogHeader>
+          <DialogTitle>{q ? '✏️ Modifier la question' : '➕ Nouvelle question'}</DialogTitle>
+          <DialogDescription>Coche la bonne réponse. Les réponses sont mélangées pour les élèves.</DialogDescription>
+        </DialogHeader>
+        <label className="text-xs font-semibold" htmlFor="qz-q">Question</label>
+        <Input id="qz-q" value={question} onChange={(e) => setQuestion(e.target.value)} />
+        <label className="text-xs font-semibold" htmlFor="qz-a">Mot ou signe en arabe, en grand (facultatif)</label>
+        <Input id="qz-a" dir="rtl" className="font-arabic text-xl" value={arabe} onChange={(e) => setArabe(e.target.value)} />
+        <p className="text-xs font-semibold">Réponses (2 à 4)</p>
+        {choix.map((c, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input type="radio" name="qz-bonne" className="h-5 w-5" checked={bonne === i} onChange={() => setBonne(i)} aria-label={`Bonne réponse ${i + 1}`} />
+            <Input dir="auto" value={c} placeholder={`Réponse ${i + 1}${i >= 2 ? ' (facultatif)' : ''}`}
+              onChange={(e) => setChoix((t) => t.map((x, j) => (j === i ? e.target.value : x)))}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
+          </div>
+        ))}
+        {choix.length < 4 && <Button size="sm" variant="ghost" onClick={() => setChoix((t) => [...t, ''])}>➕ Une réponse de plus</Button>}
+        <label className="text-xs font-semibold" htmlFor="qz-e">Petite explication après la réponse (facultatif)</label>
+        <Input id="qz-e" value={explication} onChange={(e) => setExplication(e.target.value)} />
+        <Button disabled={saving} onClick={() => void enregistrer()}>{saving ? 'Enregistrement…' : '💾 Enregistrer'}</Button>
+      </DialogContent>
+    </Dialog>
+  );
+}

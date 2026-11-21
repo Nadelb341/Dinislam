@@ -19,6 +19,7 @@ import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { errorMessage } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
+import { JeuxDeLaLettre } from './JeuxDeLaLettre';
 
 /**
  * 🧸 Onglet « Pour les tout-petits » (1 à 5 ans) de l'Alphabet (Nadia, 2026-11-21, disposition « E · La télé des houroufs ») :
@@ -44,7 +45,7 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [lecture, setLecture] = useState<{ lettre: Lettre; i: number } | null>(null);
+  const [lecture, setLecture] = useState<{ lettre: Lettre; i: number; onglet?: 'video' | 'jeux' } | null>(null);
   const [edition, setEdition] = useState<Lettre | null>(null);
   const [jeu, setJeu] = useState(false);
   const [minuteurOuvert, setMinuteurOuvert] = useState(false);
@@ -85,6 +86,8 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
     setLecture({ lettre: l, i: 0 });
   };
   const validees = useMemo(() => letters.filter((l) => learned.has(l.id) && l.audio_url), [letters, learned]);
+  // 🎮 Jeux de la carte : lettres déjà connues de l'enfant (pour l'enseignante : toutes, pour essayer)
+  const connues = useMemo(() => (isAdmin ? letters : letters.filter((l) => learned.has(l.id))), [letters, learned, isAdmin]);
 
   return (
     <div className="space-y-3">
@@ -147,9 +150,18 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
         const v = liste[lecture.i] ?? null;
         const i = letters.findIndex((x) => x.id === lecture.lettre.id);
         return (
-          <div className="fixed inset-0 z-[900] flex flex-col" style={{ background: v ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-            <div className="flex-1 min-h-0 grid place-items-center p-4">
-              {v ? (v.type === 'youtube'
+          <div className="fixed inset-0 z-[900] flex flex-col" style={{ background: v && lecture.onglet !== 'jeux' ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            {/* 📺 Vidéo / 🎮 Jeux de la lettre */}
+            <div className="flex justify-center gap-3 pt-3 relative z-10">
+              {(['video', 'jeux'] as const).map((o) => (
+                <button key={o} type="button" aria-label={o === 'video' ? 'Vidéo' : 'Jeux'} onClick={() => setLecture({ ...lecture, onglet: o })}
+                  className={`h-16 w-20 rounded-3xl text-4xl shadow-lg grid place-items-center transition-transform active:scale-95 ${(lecture.onglet ?? 'video') === o ? 'bg-white ring-4 ring-yellow-300' : 'bg-white/50'}`}>
+                  {o === 'video' ? '📺' : '🎮'}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 min-h-0 grid place-items-center p-4 relative">
+              {lecture.onglet === 'jeux' ? <JeuxDeLaLettre key={lecture.lettre.id} lettre={lecture.lettre} connues={connues} /> : v ? (v.type === 'youtube'
                 ? <div className="w-full max-w-3xl"><SafeYoutubeEmbed embedUrl={v.url} title={v.nom || lecture.lettre.name_french} /></div>
                 : <LecteurVideo key={v.id} src={v.url} autoPlay playsInline controlsList="nodownload" className="max-h-full"
                     onEnded={() => { confettiLettres([lecture.lettre.letter_arabic]); sonHarpeEtoiles(); }} />)
@@ -170,9 +182,9 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
                 )}
             </div>
             <button type="button" onClick={() => setLecture(null)} aria-label="Fermer"
-              className="absolute end-4 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
-            {liste.length > 1 && (
-              <button type="button" onClick={() => setLecture({ lettre: lecture.lettre, i: (lecture.i + 1) % liste.length })} aria-label="Vidéo suivante"
+              className="absolute end-4 z-20 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
+            {liste.length > 1 && lecture.onglet !== 'jeux' && (
+              <button type="button" onClick={() => setLecture({ ...lecture, i: (lecture.i + 1) % liste.length })} aria-label="Vidéo suivante"
                 className="absolute start-4 h-16 w-16 rounded-full bg-white/90 text-3xl shadow-xl grid place-items-center" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>⏭️</button>
             )}
           </div>

@@ -124,6 +124,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   zone_contenu: 'Zone de contenu (texte, image, vidéo…)',
   prayer_card: 'Carte de la Prière',
   alphabet_mot: 'Mot exemple (Alphabet)',
+  alphabet_quiz_question: 'Question d\'évaluation (Alphabet)',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',

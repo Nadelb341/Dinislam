@@ -957,3 +957,9 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   25% { transform: rotate(-8deg); }
   75% { transform: rotate(8deg); }
 }
+
+/* 🫧 Bulles des tout-petits (jeu « Attrape la lettre ») */
+@keyframes bulle-monte {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-115vh); }
+}

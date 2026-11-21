@@ -20,6 +20,7 @@ import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne, type KindMedia } f
 import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage } from '@/lib/utils';
+import { QuizParticularite } from './QuizParticularite';
 
 /**
  * ✨ Onglet « Particularités » de l'Alphabet (Nadia, 2026-11-21, choix P2) : des tuiles (Tanouine, Chadda, Soukoune…)
@@ -186,8 +187,9 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
     if (!p || !userId) return;
     try {
       const enfants = await collectChildren('alphabet_particularite_blocs', 'particularite_id', [p.id]);
+      const questions = await collectChildren('alphabet_quiz_questions', 'particularite_id', [p.id]);
       await trashThenDelete({ userId, type: 'alphabet_particularite', id: p.id, label: `${p.titre} (particularité de l'Alphabet)`, data: p,
-        children: [enfants], remove: () => untypedDb.from('alphabet_particularites').delete().eq('id', p.id) });
+        children: [enfants, questions], remove: () => untypedDb.from('alphabet_particularites').delete().eq('id', p.id) });
       toast.success('🗑️ Dans la corbeille (Paramètres › Corbeille pour la remettre)');
       rafraichir(); onClose();
     } catch (e) { toast.error(errorMessage(e)); }
@@ -352,6 +354,9 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
                 );
               }} />
           ) : reste.map((b) => <div key={b.id}><VueBloc b={b} /></div>)}
+          {/* 🎯 Évaluation (quiz modifiable) */}
+          <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
+
           {!reste.length && !isAdmin && !videoHaut && (
             <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-center font-semibold">🛠️ En cours de mise à jour pour cette leçon</p>
           )}
