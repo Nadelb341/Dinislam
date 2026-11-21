@@ -16,7 +16,7 @@ export const ONGLETS_ALPHABET: { cle: OngletAlphabet; titre: string; emoji: stri
   { cle: 'petits', titre: 'Pour les tout-petits', emoji: '🧸' },
 ];
 
-export interface LigneOnglet { cle: OngletAlphabet; mode: Mode; group_ids: string[]; user_ids: string[] }
+export interface LigneOnglet { cle: OngletAlphabet; mode: Mode; group_ids: string[]; user_ids: string[]; position?: number }
 
 export const accesOnglet = (l: LigneOnglet | undefined): Acces =>
   l ? { mode: l.mode, groupes: l.group_ids || [], eleves: l.user_ids || [] } : { mode: 'tous', groupes: [], eleves: [] };
@@ -28,7 +28,7 @@ export function useOngletsAlphabet() {
     queryKey: ['alphabet-onglets'],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('alphabet_onglets').select('cle, mode, group_ids, user_ids');
+      const { data, error } = await untypedDb.from('alphabet_onglets').select('cle, mode, group_ids, user_ids, position');
       if (error) throw error;
       return (data || []) as LigneOnglet[];
     },
@@ -42,7 +42,10 @@ export function useOngletsAlphabet() {
   const lignes = lignesLues ?? (erreurLignes ? [] : undefined);
   const mesGroupes = groupesLus ?? (erreurGroupes ? [] : undefined);
   const pret = !!lignes && (isAdmin || !!mesGroupes);
-  const visibles: OngletAlphabet[] | null = !pret ? null : ONGLETS_ALPHABET.map((o) => o.cle).filter((cle) =>
+  // Ordre choisi par l'enseignante (position), sinon l'ordre de départ
+  const rang = (cle: OngletAlphabet) => lignes?.find((l) => l.cle === cle)?.position ?? (ONGLETS_ALPHABET.findIndex((o) => o.cle === cle) + 1) * 10;
+  const ordre = [...ONGLETS_ALPHABET].sort((a, b) => rang(a.cle) - rang(b.cle));
+  const visibles: OngletAlphabet[] | null = !pret ? null : ordre.map((o) => o.cle).filter((cle) =>
     isAdmin || raisonAcces(accesOnglet(lignes!.find((l) => l.cle === cle)), user?.id ?? '', mesGroupes || []) !== null);
-  return { lignes: lignes || [], visibles };
+  return { lignes: lignes || [], visibles, ordre };
 }

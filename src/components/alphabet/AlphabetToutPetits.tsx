@@ -13,7 +13,8 @@ import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
-import { envoyerFichierAlphabet, horsLigne } from '@/lib/alphabetMedias';
+import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne } from '@/lib/alphabetMedias';
+import { SortableCardList } from '@/components/shared/SortableCardList';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { errorMessage } from '@/lib/utils';
@@ -78,9 +79,10 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
 
   const ouvrir = (l: Lettre) => {
     const ouverte = isAdmin || unlocked.has(l.id);
-    if (!ouverte) { jouerUrl(null); return; }
-    jouerUrl(l.audio_url);
-    if (videosDe(l.id).length) setLecture({ lettre: l, i: 0 });
+    if (!ouverte) return;
+    // La carte s'ouvre toujours en grand (2026-11-21) : vidéos s'il y en a, sinon la lettre + « en cours de mise à jour »
+    if (!videosDe(l.id).length) jouerUrl(l.audio_url);
+    setLecture({ lettre: l, i: 0 });
   };
   const validees = useMemo(() => letters.filter((l) => learned.has(l.id) && l.audio_url), [letters, learned]);
 
@@ -139,18 +141,33 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
         })}
       </div>
 
-      {/* 🎬 Vidéo en plein écran */}
+      {/* 🎬 La carte de la lettre en plein écran : vidéo(s), ou la lettre et « en cours de mise à jour » */}
       {lecture && (() => {
         const liste = videosDe(lecture.lettre.id);
-        const v = liste[lecture.i];
-        if (!v) return null;
+        const v = liste[lecture.i] ?? null;
+        const i = letters.findIndex((x) => x.id === lecture.lettre.id);
         return (
-          <div className="fixed inset-0 z-[900] bg-black flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-            <div className="flex-1 min-h-0 grid place-items-center">
-              {v.type === 'youtube'
-                ? <div className="w-full"><SafeYoutubeEmbed embedUrl={v.url} title={v.nom || lecture.lettre.name_french} /></div>
+          <div className="fixed inset-0 z-[900] flex flex-col" style={{ background: v ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className="flex-1 min-h-0 grid place-items-center p-4">
+              {v ? (v.type === 'youtube'
+                ? <div className="w-full max-w-3xl"><SafeYoutubeEmbed embedUrl={v.url} title={v.nom || lecture.lettre.name_french} /></div>
                 : <LecteurVideo key={v.id} src={v.url} autoPlay playsInline controlsList="nodownload" className="max-h-full"
-                    onEnded={() => { confettiLettres([lecture.lettre.letter_arabic]); sonHarpeEtoiles(); }} />}
+                    onEnded={() => { confettiLettres([lecture.lettre.letter_arabic]); sonHarpeEtoiles(); }} />)
+                : (
+                  <div className="text-center text-white space-y-6">
+                    <button type="button" onClick={() => jouerUrl(lecture.lettre.audio_url)} aria-label={`Écouter ${lecture.lettre.name_french}`}
+                      className="font-arabic text-[11rem] leading-none drop-shadow-xl animate-[wiggle_1.2s_ease-in-out]">{lecture.lettre.letter_arabic}</button>
+                    {lecture.lettre.audio_url && (
+                      <button type="button" onClick={() => jouerUrl(lecture.lettre.audio_url)} aria-label="Écouter"
+                        className="mx-auto h-24 w-24 rounded-full bg-white/90 text-5xl grid place-items-center shadow-xl">🔊</button>
+                    )}
+                    <p className="rounded-2xl bg-white/20 px-5 py-3 text-lg font-bold">🛠️ En cours de mise à jour pour cette leçon</p>
+                    {isAdmin && (
+                      <button type="button" onClick={() => { setEdition(lecture.lettre); setLecture(null); }}
+                        className="rounded-full bg-white text-slate-900 px-5 py-2.5 font-bold">✏️ Ajouter une vidéo</button>
+                    )}
+                  </div>
+                )}
             </div>
             <button type="button" onClick={() => setLecture(null)} aria-label="Fermer"
               className="absolute end-4 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
@@ -303,8 +320,13 @@ function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
           <DialogTitle>🎬 Vidéos de <span className="font-arabic text-2xl">{lettre.letter_arabic}</span> ({lettre.name_french})</DialogTitle>
           <DialogDescription>La 1re vidéo passe quand l'enfant touche la lettre ; ⏭️ pour les suivantes.</DialogDescription>
         </DialogHeader>
-        {videos.map((v, i) => (
-          <div key={v.id} className="rounded-xl border border-border p-2 space-y-1.5">
+        {/* ✋ Appui long + glisser pour ranger (ou ⬆️⬇️) */}
+        <SortableCardList items={videos} onReorder={(n) => { void enregistrerOrdre('alphabet_petits_videos', n.map((x) => x.id)).then(rafraichir, (e) => toast.error(errorMessage(e))); }}
+          renderItem={(v, drag) => {
+            const { ref, style, isDragging, ...attrs } = drag;
+            const i = videos.findIndex((x) => x.id === v.id);
+            return (
+          <div key={v.id} ref={ref} style={style} {...attrs} className={`rounded-xl border border-border p-2 space-y-1.5 touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
             {v.type === 'youtube' ? <SafeYoutubeEmbed embedUrl={v.url} title={v.nom || 'Vidéo'} /> : <LecteurVideo src={v.url} controlsList="nodownload" />}
             <div className="flex items-center gap-1">
               <span className="flex-1 min-w-0 text-xs font-semibold [overflow-wrap:anywhere]">{i + 1}. {v.nom || 'Vidéo'}</span>
@@ -313,7 +335,8 @@ function VideosDeLaLettre({ lettre, videos, userId, onClose, rafraichir }: {
               <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(v)} aria-label="Retirer">🗑️</Button>
             </div>
           </div>
-        ))}
+        );
+          }} />
         {!videos.length && <p className="text-sm text-muted-foreground">Pas encore de vidéo pour cette lettre.</p>}
         <ContentUploadTabs isUploading={envoi} accept="video/*" libelleFichier="Choisir une vidéo"
           onUploadFile={(f) => void envoyer(f)}

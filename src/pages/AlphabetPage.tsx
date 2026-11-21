@@ -23,7 +23,12 @@ import { useLettresEnAttente } from '@/hooks/useAlphabetClasse';
 import type { Tables } from '@/integrations/supabase/types';
 import { Pencil } from 'lucide-react';
 import { useMyAge } from '@/hooks/useMyAge';
-import { ONGLETS_ALPHABET, useOngletsAlphabet, type OngletAlphabet } from '@/lib/alphabetOnglets';
+import { useOrdreCartes } from '@/hooks/useOrdreCartes';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { useOngletsAlphabet, type OngletAlphabet } from '@/lib/alphabetOnglets';
+import { enregistrerOrdre } from '@/lib/alphabetMedias';
+import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
+import { horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { AccesOngletDialog } from '@/components/alphabet/AccesOngletDialog';
 import { AlphabetParticularites } from '@/components/alphabet/AlphabetParticularites';
 import { AlphabetToutPetits } from '@/components/alphabet/AlphabetToutPetits';
@@ -63,7 +68,7 @@ const AlphabetPage = () => {
   const [reading, setReading] = useState<{ mode: ReadingMode; letters: AlphabetLetterLite[] } | null>(null);
 
   // 🔤 Onglets du haut (Nadia, 2026-11-21) : chacun a son « ✏️ Affiché à » ; l'élève ne voit que les siens
-  const { lignes: lignesOnglets, visibles: ongletsVisibles } = useOngletsAlphabet();
+  const { lignes: lignesOnglets, visibles: ongletsVisibles, ordre: ordreOnglets } = useOngletsAlphabet();
   const age = useMyAge();
   const [onglet, setOngletState] = useState<OngletAlphabet | null>(null);
   const [accesOnglet, setAccesOnglet] = useState<OngletAlphabet | null>(null);
@@ -78,6 +83,17 @@ const AlphabetPage = () => {
     const petit = !isAdmin && age !== null && age < 6 && ongletsVisibles.includes('petits');
     setOngletState(petit ? 'petits' : retenu && ongletsVisibles.includes(retenu) ? retenu : ongletsVisibles[0] ?? null);
   }, [ongletsVisibles, onglet, age, isAdmin]);
+
+  // ✋ Ordre des jeux (onglet 🎮 Jouer), rangé par l'enseignante
+  const jeux = useOrdreCartes('alphabet-jeux', GAMES.filter((g) => g.key !== 'lettre'), (g) => g.key);
+
+  const rangerOnglets = async (cles: OngletAlphabet[]) => {
+    queryClient.setQueryData<typeof lignesOnglets>(['alphabet-onglets'], (old) => (old || []).map((l) => ({ ...l, position: (cles.indexOf(l.cle) + 1) * 10 })));
+    try {
+      const r = await enregistrerOrdre('alphabet_onglets', cles, 'cle');
+      toast.success(r === 'en_attente' ? '📡 Ordre gardé, envoyé au retour du réseau' : '✋ Ordre des onglets enregistré (les élèves voient le même)');
+    } catch (e) { toast.error((e as Error).message); void queryClient.invalidateQueries({ queryKey: ['alphabet-onglets'] }); }
+  };
 
   const setTab = (t: Tab) => {
     setTabState(t);
@@ -314,22 +330,32 @@ const AlphabetPage = () => {
         {/* 🔤 Les 3 onglets du haut (2026-11-21) ; ✏️ = « Affiché à » (enseignante) */}
         {ongletsVisibles && (isAdmin || ongletsVisibles.length > 1) && (
           <div role="tablist" className={`grid gap-1.5 rounded-2xl bg-gradient-to-r from-amber-100 via-sky-100 to-pink-100 dark:from-amber-950/40 dark:via-sky-950/40 dark:to-pink-950/40 p-1.5`}
-            style={{ gridTemplateColumns: `repeat(${ONGLETS_ALPHABET.filter((o) => ongletsVisibles.includes(o.cle)).length}, minmax(0, 1fr))` }}>
-            {ONGLETS_ALPHABET.filter((o) => ongletsVisibles.includes(o.cle)).map((o) => (
-              <div key={o.cle} className="relative min-w-0">
+            style={{ gridTemplateColumns: `repeat(${ongletsVisibles.length}, minmax(0, 1fr))` }}>
+            {(() => {
+              const liste = ordreOnglets.filter((o) => ongletsVisibles.includes(o.cle)).map((o) => ({ ...o, id: o.cle }));
+              const rendu = (o: (typeof liste)[number], drag?: DragItemProps) => {
+                const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+                return (
+              <div key={o.cle} ref={ref} style={style} {...attrs} className={`relative min-w-0 touch-manipulation ${isDragging ? 'opacity-50' : ''}`}>
                 <button type="button" role="tab" aria-selected={onglet === o.cle} onClick={() => setOnglet(o.cle)}
                   className={`w-full min-w-0 rounded-xl px-1 pt-2 pb-1.5 flex flex-col items-center gap-0.5 font-bold transition-all ${onglet === o.cle ? 'bg-card shadow-md text-foreground' : 'text-muted-foreground'}`}>
                   <span className="text-xl leading-none">{o.emoji}</span>
                   <FitText className="text-[13px] w-full">{o.titre}</FitText>
                 </button>
                 {isAdmin && (
-                  <button type="button" onClick={() => setAccesOnglet(o.cle)} aria-label={`Affiché à : ${o.titre}`} title="Affiché à…"
+                  <button type="button" onClick={() => setAccesOnglet(o.cle)} onPointerDown={(e) => e.stopPropagation()} aria-label={`Affiché à : ${o.titre}`} title="Affiché à…"
                     className="absolute -top-1 -end-1 h-7 w-7 grid place-items-center rounded-full bg-card border border-border shadow-sm">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
-            ))}
+            );
+              };
+              // ✋ Enseignante : appui long + glisser pour ranger les onglets (les élèves voient le même ordre)
+              return isAdmin
+                ? <SortableCardList items={liste} strategy={horizontalListSortingStrategy} onReorder={(n) => void rangerOnglets(n.map((x) => x.cle))} renderItem={(o, d) => rendu(o, d)} />
+                : liste.map((o) => rendu(o));
+            })()}
           </div>
         )}
         {ongletsVisibles && !ongletsVisibles.length && (
@@ -468,20 +494,24 @@ const AlphabetPage = () => {
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground px-1">🔁 Révision : les jeux utilisent toutes les lettres que ton prof a déjà validées.</p>
             <div className="grid grid-cols-2 gap-2.5">
-              {GAMES.filter((g) => g.key !== 'lettre').map((g, i, list) => {
+              {(() => {
+                const tuileJeu = (g: (typeof jeux.ranges)[number], drag?: DragItemProps) => {
+                const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+                const list = jeux.ranges; const i = list.findIndex((x) => x.key === g.key);
                 const st = gameStatus(g.key, letters, learnedForGames, false);
                 const best = bestByGame(g.key);
                 const last = i === list.length - 1;
                 return (
                   <button
                     key={g.key}
+                    ref={ref} style={style} {...attrs}
                     type="button"
                     onClick={() => {
                       if (!st.open) { toast(`🔒 ${st.hint}`); return; }
                       if (READING_GAMES.includes(g.key)) setReading({ mode: g.key as ReadingMode, letters: reviewPool });
                       else setGame(g.key);
                     }}
-                    className={`rounded-2xl border-2 p-3 text-start flex flex-col gap-0.5 min-w-0 transition-all active:scale-95 ${last ? 'col-span-2' : ''} ${
+                    className={`rounded-2xl border-2 p-3 text-start flex flex-col gap-0.5 min-w-0 transition-all active:scale-95 touch-manipulation ${isDragging ? 'opacity-50' : ''} ${last ? 'col-span-2' : ''} ${
                       st.open ? g.tile : 'border-dashed border-border bg-transparent opacity-70'
                     }`}
                   >
@@ -495,7 +525,12 @@ const AlphabetPage = () => {
                     </span>
                   </button>
                 );
-              })}
+              };
+                // ✋ Enseignante : appui long + glisser pour ranger les jeux (les élèves voient le même ordre)
+                return isAdmin
+                  ? <SortableCardList items={jeux.ranges.map((g) => ({ ...g, id: g.key }))} strategy={rectSortingStrategy} onReorder={(n) => void jeux.ranger(n)} renderItem={(g, d) => tuileJeu(g, d)} />
+                  : jeux.ranges.map((g) => tuileJeu(g));
+              })()}
             </div>
 
             {toReview.length > 0 && (

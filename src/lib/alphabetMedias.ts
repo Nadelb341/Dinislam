@@ -30,3 +30,17 @@ export async function envoyerFichierAlphabet(file: File, dossier: string): Promi
 }
 
 export const horsLigne = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
+/**
+ * ✋ Nouvel ordre après un glisser-déposer (Nadia, 2026-11-21 : dans Dinislam, SEULE l'enseignante range les cartes ;
+ * les élèves voient exactement son ordre). Positions 10, 20, 30… ; hors ligne : gardé puis envoyé.
+ */
+export async function enregistrerOrdre(table: string, ids: string[], cle = 'id') {
+  const { ecrireOuGarder } = await import('@/lib/fileHorsLigne');
+  let attente = false;
+  for (const [i, id] of ids.entries()) {
+    const r = await ecrireOuGarder({ table, op: 'update', id, col: cle, values: { position: (i + 1) * 10 } });
+    if (r === 'en_attente') attente = true;
+  }
+  return attente ? 'en_attente' : 'ok';
+}

@@ -16,7 +16,9 @@ import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { collectChildren, trashThenDelete } from '@/lib/trash';
-import { envoyerFichierAlphabet, horsLigne, type KindMedia } from '@/lib/alphabetMedias';
+import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne, type KindMedia } from '@/lib/alphabetMedias';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage } from '@/lib/utils';
 
 /**
@@ -88,32 +90,52 @@ export function AlphabetParticularites({ isAdmin }: { isAdmin: boolean }) {
     void queryClient.invalidateQueries({ queryKey: ['alphabet-particularite-blocs'] });
   };
   const courante = ouverte ? items.find((i) => i.id === ouverte.id) ?? null : null;
+  const contenuDe = (id: string) => blocs.some((b) => b.particularite_id === id);
+
+  const ranger = async (n: Particularite[]) => {
+    queryClient.setQueryData(['alphabet-particularites'], n.map((p, i) => ({ ...p, position: (i + 1) * 10 })));
+    try {
+      const r = await enregistrerOrdre('alphabet_particularites', n.map((p) => p.id));
+      toast.success(r === 'en_attente' ? '📡 Ordre gardé, envoyé au retour du réseau' : '✋ Ordre enregistré (les élèves voient le même)');
+    } catch (e) { toast.error(errorMessage(e)); rafraichir(); }
+  };
+
+  const tuile = (p: Particularite, drag?: DragItemProps) => {
+    const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+    return (
+      <div key={p.id} ref={ref} style={style} {...attrs} className={`relative touch-manipulation ${isDragging ? 'opacity-40' : ''}`}>
+        <button type="button" onClick={() => setOuverte(p)}
+          className={`w-full min-h-[112px] rounded-2xl border-2 p-2.5 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 ${couleurDe(p.couleur).tuile}`}>
+          <span className="text-2xl leading-none">{p.emoji || '✨'}</span>
+          {p.titre_arabe && <span className="font-arabic text-2xl leading-snug" dir="rtl">{p.titre_arabe}</span>}
+          <span className="text-xs font-bold [overflow-wrap:anywhere]">{p.titre}</span>
+          {!contenuDe(p.id) && <span className="text-[10px] text-muted-foreground">🛠️ En cours de mise à jour</span>}
+        </button>
+        {isAdmin && (
+          <button type="button" onClick={() => setEdition(p)} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${p.titre}`}
+            className="absolute top-1 end-1 h-8 w-8 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground px-1">
-        {isAdmin ? '👆 Touche une particularité pour la voir · ✏️ pour la modifier (titre, couleur, ordre, suppression).' : '👆 Touche une particularité pour regarder sa vidéo.'}
+        {isAdmin ? '👆 Touche une particularité pour la voir · ✏️ pour la modifier · ✋ appui long puis glisser pour la ranger.' : '👆 Touche une particularité pour regarder sa vidéo.'}
       </p>
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-2xl" />)}</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {items.map((p) => (
-            <div key={p.id} className="relative">
-              <button type="button" onClick={() => setOuverte(p)}
-                className={`w-full min-h-[112px] rounded-2xl border-2 p-2.5 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 ${couleurDe(p.couleur).tuile}`}>
-                <span className="text-2xl leading-none">{p.emoji || '✨'}</span>
-                {p.titre_arabe && <span className="font-arabic text-2xl leading-snug" dir="rtl">{p.titre_arabe}</span>}
-                <span className="text-xs font-bold [overflow-wrap:anywhere]">{p.titre}</span>
-              </button>
-              {isAdmin && (
-                <button type="button" onClick={() => setEdition(p)} aria-label={`Modifier ${p.titre}`}
-                  className="absolute top-1 end-1 h-8 w-8 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border">
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+          {isAdmin ? (
+            // ✋ Appui long + glisser pour ranger (enseignante seulement) : les élèves voient le même ordre
+            <SortableCardList items={items} strategy={rectSortingStrategy} onReorder={(n) => void ranger(n)}
+              onDragStart={() => { try { navigator.vibrate?.(15); } catch { /* rien */ } }}
+              renderItem={(p, drag) => tuile(p, drag)} />
+          ) : items.map((p) => tuile(p))}
           {isAdmin && (
             <button type="button" onClick={() => setEdition('nouvelle')}
               className="min-h-[112px] rounded-2xl border-2 border-dashed border-primary/50 text-primary font-bold text-sm grid place-items-center hover:bg-primary/5">
@@ -275,6 +297,11 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
       setTexte(''); setModifTexte(null); setAjout(null);
     } catch (e) { toast.error(errorMessage(e)); }
   };
+  const rangerZones = async (n: Bloc[]) => {
+    // La vidéo du haut garde sa place en tête
+    const ids = [...(videoHaut ? [videoHaut.id] : []), ...n.map((b) => b.id)];
+    try { await enregistrerOrdre('alphabet_particularite_blocs', ids); rafraichir(); } catch (e) { toast.error(errorMessage(e)); }
+  };
   const deplacer = async (b: Bloc, sens: -1 | 1) => {
     const i = reste.findIndex((x) => x.id === b.id);
     const v = reste[i + sens];
@@ -338,20 +365,30 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
             <div className={`rounded-3xl bg-gradient-to-br ${c.bandeau} text-white p-5 text-center shadow-md space-y-1`}>
               <p className="text-5xl">{p.emoji || '✨'}</p>
               {p.titre_arabe && <p className="font-arabic text-4xl leading-snug" dir="rtl">{p.titre_arabe}</p>}
-              {!isAdmin && <p className="text-sm text-white/90">La vidéo arrive bientôt 🎬</p>}
+              {!isAdmin && reste.length > 0 && <p className="text-sm text-white/90">La vidéo arrive bientôt 🎬</p>}
               {isAdmin && <button type="button" onClick={() => setAjout('video_haut')} className="mt-2 rounded-full bg-white/90 text-slate-900 px-4 py-2 text-sm font-bold">🎬 Ajouter la vidéo du haut</button>}
             </div>
           )}
 
           {p.titre_arabe && videoHaut && <p className="font-arabic text-3xl text-center" dir="rtl">{p.titre_arabe}</p>}
 
-          {reste.map((b, i) => (
-            <div key={b.id} className="space-y-1.5">
-              <VueBloc b={b} />
-              {outils(b, i, reste.length)}
-            </div>
-          ))}
-          {!reste.length && !isAdmin && !videoHaut && <p className="text-sm text-center text-muted-foreground">Rien ici pour le moment.</p>}
+          {isAdmin ? (
+            // ✋ Appui long + glisser pour ranger les zones (en plus de ⬆️⬇️)
+            <SortableCardList items={reste} onReorder={(n) => void rangerZones(n)}
+              renderItem={(b, drag) => {
+                const { ref, style, isDragging, ...attrs } = drag;
+                const i = reste.findIndex((x) => x.id === b.id);
+                return (
+                  <div key={b.id} ref={ref} style={style} {...attrs} className={`space-y-1.5 rounded-xl touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
+                    <VueBloc b={b} />
+                    {outils(b, i, reste.length)}
+                  </div>
+                );
+              }} />
+          ) : reste.map((b) => <div key={b.id}><VueBloc b={b} /></div>)}
+          {!reste.length && !isAdmin && !videoHaut && (
+            <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-center font-semibold">🛠️ En cours de mise à jour pour cette leçon</p>
+          )}
 
           {isAdmin && (ajout ? (
             <div className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
