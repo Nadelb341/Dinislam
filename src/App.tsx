@@ -57,7 +57,6 @@ const Priere = lazy(() => import("./pages/Priere"));
 const Ramadan = lazy(() => import("./pages/Ramadan"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Settings = lazy(() => import("./pages/Settings"));
-const Ressources = lazy(() => import("./pages/Ressources"));
 const Classement = lazy(() => import("./pages/Classement"));
 const Attendance = lazy(() => import("./pages/Attendance"));
 const AlphabetPage = lazy(() => import("./pages/AlphabetPage"));
@@ -118,7 +117,6 @@ const AppRoutes = () => {
         <Route path="/nourania" element={<ProtectedRoute><Nourania /></ProtectedRoute>} />
         <Route path="/priere" element={<ProtectedRoute><Priere /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        <Route path="/ressources" element={<ProtectedRoute><Ressources /></ProtectedRoute>} />
         <Route path="/monitoring" element={<ProtectedRoute><Monitoring /></ProtectedRoute>} />
         <Route path="/classement" element={<ProtectedRoute><Classement /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

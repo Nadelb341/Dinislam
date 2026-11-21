@@ -62,8 +62,6 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   alphabet_trace_stars: ['alphabet-student-summary', 'alphabet-trace-stars'],
   app_versions: ['app-versions'],
   attendance_sessions: ['attendance-sessions', 'all-attendance'],
-  dashboard_card_visibility: ['card-visibility', 'user-dynamic-cards'],
-  dashboard_cards: ['admin-dynamic-cards', 'user-dynamic-cards'],
   // Un devoir donné / modifié / supprimé change aussi les diamants du chemin de la semaine (2026-10-26)
   devoirs: ['admin-devoirs', 'admin-devoirs-rendus', 'admin-homework-badges', 'weekly-program', 'weekly-program-admin', 'student-engagement', 'bilans', 'devoir-en-cours', 'cahier-classe'],
   // Audio envoyé ou corrigé : le diamant suit

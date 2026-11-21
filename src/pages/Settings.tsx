@@ -137,7 +137,6 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   ramadan_day_activity: 'Activité Ramadan',
   module_card: 'Carte de module',
   flashcard: 'Flashcard',
-  dashboard_card: 'Carte tableau de bord',
   admin_conversation: 'Conversation assistant',
   student_group: 'Groupe d\'élèves',
   scheduled_notification: 'Notification programmée',

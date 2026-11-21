@@ -8,7 +8,7 @@ export type TrashItemType =
   | "learning_module" | "module_content" | "prayer_card_content" | "sourate_content" | "alphabet_content"
   | "allah_name" | "allah_name_media" | "invocation" | "invocation_content" | "devoir"
   | "nourania_lesson_content" | "ramadan_day_video" | "ramadan_quiz" | "ramadan_day_activity"
-  | "module_card" | "flashcard" | "dashboard_card" | "admin_conversation"
+  | "module_card" | "flashcard" | "admin_conversation"
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
@@ -56,7 +56,6 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   ramadan_day_activity: "ramadan_day_activities",
   module_card: "module_cards",
   flashcard: "module_flashcards",
-  dashboard_card: "dashboard_cards",
   admin_conversation: "admin_conversations",
   student_group: "student_groups",
   scheduled_notification: "scheduled_notifications",
