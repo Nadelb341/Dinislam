@@ -1,4 +1,6 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { useAuth } from '@/contexts/AuthContext';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NPM_VERSETS } from './npmVersets';
 import { getCdnAudioUrl } from './cdnAudio';
@@ -215,6 +217,7 @@ const SourateDetailDialog = ({
   needsRecitation = false,
 }: SourateDetailDialogProps) => {
   const { verses, loading: versesLoading } = useQuranVerses(open ? sourate.number : null);
+  const { isAdmin: estAdminZones } = useAuth();
   const { askValidation, validationDialog } = useConfirmValidation();
   const [versetsAudio, setVersetsAudio] = useState<Tables<'sourate_versets_audio'>[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -600,6 +603,9 @@ const SourateDetailDialog = ({
               Une fenêtre s'ouvre → choisir "Enregistrer en PDF" ou "Imprimer"
             </p>
           </div>
+
+          {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+          <ZonesContenu cible={`sourate:${sourate.number}`} isAdmin={estAdminZones} libelle={`Sourate ${sourate.number}`} />
 
           {/* Récitation complète — Sheikh El Houssary */}
           {(() => {

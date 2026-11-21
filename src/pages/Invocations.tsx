@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useState, useEffect, useRef } from 'react';
 import { ActionsEnregistrement, BlocEnregistrer, BoutonEnregistrer } from '@/components/shared/BoutonEnregistrer';
@@ -241,6 +242,9 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                 <p className="text-sm text-blue-800 leading-relaxed">{enrichment.extra}</p>
               </div>
             )}
+
+            {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+            <ZonesContenu cible={`invocation:${invocation.id}`} isAdmin={apercuAdmin} libelle={invocation.title_french || 'Invocation'} />
 
             {/* Médias ajoutés par l'admin */}
             {contents.length > 0 && (

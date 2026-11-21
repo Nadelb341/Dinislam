@@ -120,6 +120,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   alphabet_particularite_bloc: 'Contenu d\'une particularité',
   alphabet_petits_video: 'Vidéo des tout-petits',
   carte_image: 'Image d\'une carte',
+  zone_contenu: 'Zone de contenu (texte, image, vidéo…)',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',

@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { withName } from '@/lib/encouragements';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +62,7 @@ const RamadanDayDialog = ({
   onSubmitQuiz,
   onSaveQuizResponse,
 }: RamadanDayDialogProps) => {
-  const { user } = useAuth();
+  const { user, isAdmin: estAdminZones } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('video');
   const [isTrainingMode, setIsTrainingMode] = useState(false);
@@ -662,6 +663,8 @@ const RamadanDayDialog = ({
           ) : step === 'activities' ? (
             /* Activities step */
             <div className="space-y-4 animate-fade-in">
+              {/* ✏️ Zones de contenu du jour (texte, images, vidéos, PDF) — 2026-11-21 */}
+              <ZonesContenu cible={`ramadan:${dayNumber}`} isAdmin={estAdminZones} libelle={`Ramadan, jour ${dayNumber}`} />
               <div className="text-center space-y-1">
                 <h3 className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { withName } from '@/lib/encouragements';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -273,6 +274,8 @@ export function AlphabetLetterSheet({
           )}
 
           {/* Ressources ajoutées par le professeur (📎 Ajouter une ressource, 2026-10-27) */}
+          {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+          <ZonesContenu cible={`lettre:${letter.id}`} isAdmin={isAdmin} libelle={`Lettre ${letter.name_french}`} />
           <AlphabetLetterResources letterId={letter.id} contents={contents} isAdmin={isAdmin} />
 
           {/* Mot du prof */}

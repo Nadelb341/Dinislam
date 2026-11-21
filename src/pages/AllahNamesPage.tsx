@@ -1,4 +1,5 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { useState, useEffect } from 'react';
@@ -385,6 +386,9 @@ const AllahNamesPage = () => {
                   🎙️ Ici, l'élève voit le bouton pour t'envoyer son audio de ce nom. Ta validation (bouclier › « 99 noms d'Allah à valider ») ouvre le nom suivant.
                 </div>
               )}
+
+              {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+              <ZonesContenu cible={`nom-allah:${selected.id}`} isAdmin={isAdmin} libelle={selected.name_french} />
 
               {/* Validation button */}
               {!isAdmin && (
