@@ -21,6 +21,7 @@ import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage } from '@/lib/utils';
 import { QuizParticularite } from './QuizParticularite';
+import { CommentairesParticularite } from './CommentairesParticularite';
 
 /**
  * ✨ Onglet « Particularités » de l'Alphabet (Nadia, 2026-11-21, choix P2) : des tuiles (Tanouine, Chadda, Soukoune…)
@@ -188,8 +189,12 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
     try {
       const enfants = await collectChildren('alphabet_particularite_blocs', 'particularite_id', [p.id]);
       const questions = await collectChildren('alphabet_quiz_questions', 'particularite_id', [p.id]);
+      // Les messages : d'abord les questions, puis leurs réponses (ordre de restauration)
+      const messages = await collectChildren('alphabet_commentaires', 'particularite_id', [p.id]);
+      const messagesPremiers = { table: messages.table, rows: messages.rows.filter((m) => !m.parent_id) };
+      const messagesReponses = { table: messages.table, rows: messages.rows.filter((m) => m.parent_id) };
       await trashThenDelete({ userId, type: 'alphabet_particularite', id: p.id, label: `${p.titre} (particularité de l'Alphabet)`, data: p,
-        children: [enfants, questions], remove: () => untypedDb.from('alphabet_particularites').delete().eq('id', p.id) });
+        children: [enfants, questions, messagesPremiers, messagesReponses], remove: () => untypedDb.from('alphabet_particularites').delete().eq('id', p.id) });
       toast.success('🗑️ Dans la corbeille (Paramètres › Corbeille pour la remettre)');
       rafraichir(); onClose();
     } catch (e) { toast.error(errorMessage(e)); }
@@ -391,6 +396,9 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
               <Button type="button" variant="outline" onClick={() => setAjout('fichier')}>📎 Image, vidéo, PDF…</Button>
             </div>
           ))}
+
+          {/* 💬 Commentaires / questions de la leçon (élèves et enseignante) */}
+          <CommentairesParticularite key={`c-${p.id}`} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
         <ConfirmDeleteDialog open={!!aSupprimer} onOpenChange={(o) => !o && setASupprimer(null)}

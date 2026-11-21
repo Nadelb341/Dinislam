@@ -125,6 +125,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   prayer_card: 'Carte de la Prière',
   alphabet_mot: 'Mot exemple (Alphabet)',
   alphabet_quiz_question: 'Question d\'évaluation (Alphabet)',
+  alphabet_commentaire: 'Commentaire / question (Alphabet)',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',

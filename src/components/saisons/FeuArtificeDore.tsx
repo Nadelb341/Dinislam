@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
  * Dessiné dans un canevas (rapide même sur un vieux téléphone, rien à télécharger, marche hors ligne). Rien de cliquable :
  * l'écran reste utilisable pendant le feu d'artifice. Un léger voile sombre fait briller l'or, puis disparaît.
  */
-type Grain = { x: number; y: number; vx: number; vy: number; vie: number; max: number; t: number; k: 'or' | 'etoile' | 'lune' | 'bokeh'; rot: number; vr: number; ph: number };
+type Grain = { x: number; y: number; vx: number; vy: number; vie: number; max: number; t: number; k: 'or' | 'etoile' | 'lune' | 'bokeh'; rot: number; vr: number; ph: number; idx?: number };
 type Ruban = { x: number; y: number; vy: number; vx: number; ph: number; long: number; larg: number };
 
 function sprite(taille: number, dessin: (g: CanvasRenderingContext2D, s: number) => void) {
@@ -20,17 +20,29 @@ function sprite(taille: number, dessin: (g: CanvasRenderingContext2D, s: number)
 }
 
 /** 🎨 Couleurs du feu d'artifice selon la saison (2026-11-18 : un objet qui se promène dans chaque saison) */
-export type ThemeFeu = 'ramadan' | 'hiver' | 'automne' | 'ete' | 'printemps';
-type Palette = { lueur: [string, string, string, string]; etoile: [string, string, string]; special: [string, string]; ruban: [string, string, string, string]; voile: string; forme: 'lune' | 'flocon' | 'feuille' | 'soleil' | 'fleur' };
+export type ThemeFeu = 'ramadan' | 'hiver' | 'automne' | 'ete' | 'printemps' | 'lettres';
+type Palette = { lueur: [string, string, string, string]; etoile: [string, string, string]; special: [string, string]; ruban: [string, string, string, string]; voile: string; forme: 'lune' | 'flocon' | 'feuille' | 'soleil' | 'fleur' | 'lettre' };
 const PALETTES: Record<ThemeFeu, Palette> = {
   ramadan: { lueur: ['rgba(255,255,240,1)', 'rgba(255,236,150,1)', 'rgba(255,200,80,.45)', 'rgba(255,190,60,0)'], etoile: ['#fff6cf', '#ffd76a', '#e0a92a'], special: ['#fff4c4', '#e9b739'], ruban: ['#fff1b8', '#e0b23a', '#b8891c', '#8a6414'], voile: '18,14,34', forme: 'lune' },
   hiver: { lueur: ['rgba(255,255,255,1)', 'rgba(214,240,255,1)', 'rgba(140,200,255,.45)', 'rgba(120,180,255,0)'], etoile: ['#ffffff', '#cfeaff', '#7fb8ec'], special: ['#ffffff', '#a9d6ff'], ruban: ['#ffffff', '#bfe2ff', '#7fb0e0', '#4f7fb5'], voile: '12,24,52', forme: 'flocon' },
   automne: { lueur: ['rgba(255,250,230,1)', 'rgba(255,214,130,1)', 'rgba(240,140,50,.45)', 'rgba(220,110,40,0)'], etoile: ['#fff2c8', '#ffc25a', '#d9771f'], special: ['#ffd36b', '#c8611a'], ruban: ['#ffe6a8', '#e8962e', '#b0581a', '#7d3a10'], voile: '34,18,10', forme: 'feuille' },
   ete: { lueur: ['rgba(255,255,235,1)', 'rgba(255,240,140,1)', 'rgba(255,190,70,.45)', 'rgba(255,170,40,0)'], etoile: ['#fffbd6', '#ffe066', '#ffa726'], special: ['#fff3a0', '#ffb300'], ruban: ['#fff6b0', '#ffd23f', '#ff9f1c', '#e07a00'], voile: '20,30,50', forme: 'soleil' },
+  // 🔤 Bravo des lettres (Nadia, 2026-11-21) : même or que la feuille dorée, avec de GRANDES LETTRES ARABES dorées + « Bravo ! »
+  lettres: { lueur: ['rgba(255,255,240,1)', 'rgba(255,236,150,1)', 'rgba(255,200,80,.45)', 'rgba(255,190,60,0)'], etoile: ['#fff6cf', '#ffd76a', '#e0a92a'], special: ['#fff4c4', '#d99a1c'], ruban: ['#fff1b8', '#e0b23a', '#b8891c', '#8a6414'], voile: '26,16,6', forme: 'lettre' },
   printemps: { lueur: ['rgba(255,255,255,1)', 'rgba(255,214,236,1)', 'rgba(140,190,255,.45)', 'rgba(120,170,255,0)'], etoile: ['#ffffff', '#ffd0e8', '#7aa8f0'], special: ['#ffe1f0', '#ff8fc2'], ruban: ['#ffe3f1', '#ff9cc9', '#6f9be6', '#3f6fc0'], voile: '24,22,48', forme: 'fleur' },
 };
 
-export function FeuArtificeDore({ duree, onFin, theme = 'ramadan' }: { duree: number; onFin: () => void; theme?: ThemeFeu }) {
+const LETTRES_OR = ['ا', 'ب', 'ت', 'ج', 'د', 'ر', 'س', 'ع', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
+
+export function FeuArtificeDore({ duree, onFin, theme = 'ramadan', lettres, bravo, auDessus }: {
+  duree: number; onFin: () => void; theme?: ThemeFeu;
+  /** Thème « lettres » : les lettres à faire pleuvoir en plus (ex. la lettre de l'enfant) */
+  lettres?: string[];
+  /** Grand texte doré au milieu (ex. « Bravo ! ») */
+  bravo?: string;
+  /** Au-dessus des écrans plein écran (jeux des tout-petits) */
+  auDessus?: boolean;
+}) {
   const pal = PALETTES[theme];
   const ref = useRef<HTMLCanvasElement>(null);
   const finRef = useRef(onFin);
@@ -93,6 +105,15 @@ export function FeuArtificeDore({ duree, onFin, theme = 'ramadan' }: { duree: nu
       }
     });
 
+    // 🔤 Grandes lettres dorées (thème « lettres ») : la lettre de l'enfant revient plus souvent
+    const listeLettres = pal.forme === 'lettre' ? [...LETTRES_OR, ...(lettres ?? []), ...(lettres ?? []), ...(lettres ?? []), ...(lettres ?? [])] : [];
+    const spritesLettres = listeLettres.map((l) => sprite(128, (g, s) => {
+      g.drawImage(lueur, 0, 0, s, s);
+      g.font = `bold ${s * .62}px "Amiri", "Noto Naskh Arabic", serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      const lg = g.createLinearGradient(0, s * .15, s, s * .85); lg.addColorStop(0, '#fff6cf'); lg.addColorStop(.45, '#ffd76a'); lg.addColorStop(1, '#c4860f');
+      g.lineWidth = s * .03; g.strokeStyle = 'rgba(120,70,0,.55)'; g.strokeText(l, s / 2, s / 2);
+      g.fillStyle = lg; g.fillText(l, s / 2, s / 2);
+    }));
     const grains: Grain[] = [];
     const rubans: Ruban[] = [];
     const ajouter = (g: Omit<Grain, 'vie' | 't'>) => grains.push({ ...g, vie: 0, t: 0 });
@@ -107,7 +128,9 @@ export function FeuArtificeDore({ duree, onFin, theme = 'ramadan' }: { duree: nu
         const a = Math.random() * Math.PI * 2, v = hasard(60, 180);
         ajouter({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, max: hasard(1.6, 2.6), k: 'etoile', rot: Math.random() * 6, vr: hasard(-2, 2), ph: Math.random() * 6 });
       }
-      if (Math.random() < .7) ajouter({ x, y, vx: hasard(-60, 60), vy: hasard(-90, -20), max: hasard(2, 3), k: 'lune', rot: hasard(-.6, .6), vr: hasard(-.8, .8), ph: 0 });
+      if (spritesLettres.length) {
+        for (let i = 0; i < 2; i++) ajouter({ x, y, vx: hasard(-110, 110), vy: hasard(-160, -40), max: hasard(2, 3), k: 'lune', rot: hasard(-.4, .4), vr: hasard(-.6, .6), ph: 0, idx: Math.floor(Math.random() * spritesLettres.length) });
+      } else if (Math.random() < .7) ajouter({ x, y, vx: hasard(-60, 60), vy: hasard(-90, -20), max: hasard(2, 3), k: 'lune', rot: hasard(-.6, .6), vr: hasard(-.8, .8), ph: 0 });
     };
     // Au départ : la grande nuée de paillettes au milieu (comme sur l'image) + des lumières floues partout
     const nuee = () => {
@@ -187,17 +210,28 @@ export function FeuArtificeDore({ duree, onFin, theme = 'ramadan' }: { duree: nu
           ctx.globalAlpha = a * .4;
           ctx.drawImage(lueur, g.x - s / 2, g.y - s / 2, s, s);
         } else {
-          const img = g.k === 'etoile' ? etoile : lune;
-          const s = (g.k === 'etoile' ? 34 : 44) * (.7 + .3 * scint);
+          const img = g.k === 'etoile' ? etoile : g.idx !== undefined ? spritesLettres[g.idx] : lune;
+          const s = (g.k === 'etoile' ? 34 : g.idx !== undefined ? 96 : 44) * (.7 + .3 * scint);
           ctx.globalAlpha = a;
           ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.rot); ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
         }
+      }
+      // « Bravo ! » en grand, doré, qui respire
+      if (bravo) {
+        const taille = Math.min(W * .18, 110) * (1 + .05 * Math.sin(t * 5)) * Math.min(1, t / .35);
+        ctx.globalAlpha = voile;
+        ctx.font = `900 ${taille}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const lg = ctx.createLinearGradient(0, H * .3, 0, H * .45); lg.addColorStop(0, '#fff6cf'); lg.addColorStop(.5, '#ffd76a'); lg.addColorStop(1, '#c4860f');
+        ctx.shadowColor = 'rgba(255,200,60,.9)'; ctx.shadowBlur = 24;
+        ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(110,60,0,.7)'; ctx.strokeText(bravo, W / 2, H * .38);
+        ctx.fillStyle = lg; ctx.fillText(bravo, W / 2, H * .38);
+        ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
     };
     raf = requestAnimationFrame(tour);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', taille); };
-  }, [duree, pal]);
+  }, [duree, pal, lettres, bravo]);
 
-  return createPortal(<canvas ref={ref} aria-hidden className="pointer-events-none fixed inset-0 z-[90] h-full w-full" />, document.body);
+  return createPortal(<canvas ref={ref} aria-hidden className={`pointer-events-none fixed inset-0 h-full w-full ${auDessus ? 'z-[9999]' : 'z-[90]'}`} />, document.body);
 }

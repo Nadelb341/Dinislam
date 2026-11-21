@@ -12,7 +12,7 @@ export type TrashItemType =
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
-  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question";
+  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire";
 
 export interface TrashItem {
   id: string;
@@ -42,6 +42,7 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   prayer_card: "prayer_cards",
   alphabet_mot: "alphabet_mots",
   alphabet_quiz_question: "alphabet_quiz_questions",
+  alphabet_commentaire: "alphabet_commentaires",
   // 🕊️ Hadith du jour de l'accueil (2026-11-21)
   hadith_du_jour: "hadiths_du_jour",
   allah_name: "allah_names",

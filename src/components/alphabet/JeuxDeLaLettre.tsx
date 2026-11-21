@@ -5,8 +5,8 @@ import type { Tables } from '@/integrations/supabase/types';
 
 /**
  * 🎮 Onglet « Jeux » de la carte d'une lettre, côté tout-petits (Nadia, 2026-11-21).
- * Tous les jeux tournent autour de LA lettre de la carte. Les autres lettres utilisées sont seulement celles
- * que l'enfant connaît déjà (validées par Nadia) : plus il en connaît, plus les jeux s'enrichissent.
+ * Tous les jeux tournent autour de LA lettre de la carte, mélangée avec TOUTES les autres lettres de l'alphabet
+ * (Nadia, 2026-11-21 : « il a ouvert le BA, les jeux tournent autour du BA mais mélangé avec toutes les autres lettres »).
  * Jamais de « raté » : une mauvaise réponse fait bouger la carte et redit le son de la bonne lettre.
  * Tout marche sans Internet (lettres dessinées par l'appli, sons déjà gardés sur l'appareil).
  */
@@ -22,7 +22,7 @@ function jouer(url: string | null | undefined) {
 function melanger<T>(t: T[]): T[] { return [...t].sort(() => Math.random() - 0.5); }
 function bravo(l: Lettre) { confettiLettres([l.letter_arabic]); sonHarpeEtoiles(); }
 
-/** Lettres connues pour les jeux : jusqu'à `max` autres lettres validées, tirées au hasard */
+/** Jusqu'à `max` autres lettres de l'alphabet, tirées au hasard */
 function autresConnues(lettre: Lettre, connues: Lettre[], max: number) {
   return melanger(connues.filter((c) => c.id !== lettre.id)).slice(0, max);
 }
@@ -37,10 +37,10 @@ export function JeuxDeLaLettre({ lettre, connues }: { lettre: Lettre; connues: L
     { id: 'paires', emoji: '🃏', nom: 'Les paires', ouvert: nbAutres >= 1, fond: 'from-pink-300 to-fuchsia-500' },
   ];
 
-  if (jeu === 'bulles') return <Bulles lettre={lettre} autres={autresConnues(lettre, connues, 3)} retour={() => setJeu(null)} />;
+  if (jeu === 'bulles') return <Bulles lettre={lettre} autres={connues.filter((c) => c.id !== lettre.id)} retour={() => setJeu(null)} />;
   if (jeu === 'trace') return <Trace lettre={lettre} retour={() => setJeu(null)} />;
   if (jeu === 'trouve') return <Trouve lettre={lettre} connues={connues} retour={() => setJeu(null)} />;
-  if (jeu === 'paires') return <Paires lettre={lettre} autres={autresConnues(lettre, connues, 2)} retour={() => setJeu(null)} />;
+  if (jeu === 'paires') return <Paires lettre={lettre} autres={connues.filter((c) => c.id !== lettre.id)} retour={() => setJeu(null)} />;
 
   return (
     <div className="w-full max-w-xl space-y-3">
@@ -52,7 +52,6 @@ export function JeuxDeLaLettre({ lettre, connues }: { lettre: Lettre; connues: L
           </button>
         ))}
       </div>
-      {nbAutres === 0 && <p className="text-center text-sm font-semibold text-white/90">🔒 Deux jeux s'ouvrent dès qu'une 2e lettre est validée.</p>}
     </div>
   );
 }
@@ -60,7 +59,9 @@ export function JeuxDeLaLettre({ lettre, connues }: { lettre: Lettre; connues: L
 function Retour({ retour }: { retour: () => void }) {
   return (
     <button type="button" onClick={retour} aria-label="Retour aux jeux"
-      className="absolute start-4 h-16 w-16 rounded-full bg-white/90 text-3xl shadow-xl grid place-items-center z-10" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>🎮</button>
+      className="absolute start-4 h-16 px-4 rounded-full bg-white/90 text-3xl shadow-xl flex items-center gap-1 z-10" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
+      <span className="text-4xl font-black text-slate-700 leading-none" dir="ltr">‹</span>🎮
+    </button>
   );
 }
 
@@ -68,7 +69,8 @@ function Retour({ retour }: { retour: () => void }) {
 function Bulles({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; retour: () => void }) {
   const fabriquer = () => {
     const bonnes = Array.from({ length: 5 }, () => lettre);
-    const pieges = autres.length ? Array.from({ length: 4 }, (_, i) => autres[i % autres.length]) : [];
+    // 5 bulles de SA lettre + 5 bulles d'autres lettres tirées au hasard dans tout l'alphabet (changent à chaque partie)
+    const pieges = melanger(autres).slice(0, 5);
     return melanger([...bonnes, ...pieges]).map((l, i) => ({ cle: `${Date.now()}-${i}`, l, x: 6 + ((i * 37) % 78), duree: 7 + (i % 4) * 1.6, delai: i * 0.9, teinte: TEINTES[i % TEINTES.length] }));
   };
   const [bulles, setBulles] = useState(fabriquer);
@@ -191,7 +193,7 @@ function Trouve({ lettre, connues, retour }: { lettre: Lettre; connues: Lettre[]
 
 /** 🃏 Les paires : retourne 2 cartes ; LA lettre + 1 ou 2 lettres connues (4 ou 6 cartes) */
 function Paires({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; retour: () => void }) {
-  const distribuer = () => melanger([lettre, ...autres].flatMap((l) => [l, l])).map((l, i) => ({ cle: i, l }));
+  const distribuer = () => melanger([lettre, ...melanger(autres).slice(0, 2)].flatMap((l) => [l, l])).map((l, i) => ({ cle: i, l }));
   const [cartes, setCartes] = useState(distribuer);
   const [vues, setVues] = useState<number[]>([]);
   const [trouvees, setTrouvees] = useState<Set<number>>(new Set());

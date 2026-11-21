@@ -86,8 +86,8 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
     setLecture({ lettre: l, i: 0 });
   };
   const validees = useMemo(() => letters.filter((l) => learned.has(l.id) && l.audio_url), [letters, learned]);
-  // 🎮 Jeux de la carte : lettres déjà connues de l'enfant (pour l'enseignante : toutes, pour essayer)
-  const connues = useMemo(() => (isAdmin ? letters : letters.filter((l) => learned.has(l.id))), [letters, learned, isAdmin]);
+  // 🎮 Jeux de la carte : la lettre ouverte, mélangée avec TOUTES les autres lettres de l'alphabet (Nadia, 2026-11-21)
+  const connues = letters;
 
   return (
     <div className="space-y-3">

@@ -54,6 +54,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   zones_contenu: ['zones-contenu'],
   alphabet_mots: ['alphabet-mots'],
   alphabet_quiz_questions: ['alphabet-quiz'],
+  alphabet_commentaires: ['alphabet-commentaires'],
   invocation_extras: ['invocation-extras'],
   alphabet_game_scores: ['alphabet-game-scores', 'alphabet-student-summary'],
   alphabet_letters: ['admin-alphabet-grid', 'admin-alphabet-letters', 'admin-alphabet-submissions', 'admin-dashboard-stats', 'admin-module-progress', 'alphabet-letters-page', 'alphabet-student-summary', 'fully-unlocked-students', 'student-progress', 'student-progress-details', 'user-progress', 'weekly-program', 'weekly-program-admin'],
