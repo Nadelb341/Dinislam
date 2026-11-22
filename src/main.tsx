@@ -24,7 +24,9 @@ import { installMoodToasts } from "./lib/moodToasts";
 import { rechargerUneFois } from "./lib/miseAJour";
 
 // 🔄 Un morceau de l'appli introuvable après une mise en ligne : on recharge sur la nouvelle version (2026-10-30)
-window.addEventListener("vite:preloadError", (event) => { event.preventDefault(); rechargerUneFois(); });
+// ⚠️ 22/11 : on n'« avale » l'erreur QUE si on recharge vraiment ; sinon elle remonte (l'écran « Nouvelle version » répare la
+// mémoire de l'appareil). Avant, elle était avalée à chaque fois : la page recevait « rien » et plantait en boucle (Test 3).
+window.addEventListener("vite:preloadError", (event) => { if (rechargerUneFois()) event.preventDefault(); });
 
 // Émojis selon le ton, le sujet et la saison sur tous les petits messages (2026-10-19)
 installMoodToasts();

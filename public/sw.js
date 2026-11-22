@@ -58,6 +58,15 @@ function clean(response) {
   });
 }
 
+// 🛡️ 22/11 (Test 3 bloqué sur « Nouvelle version de l'appli… ») : un fichier /assets/ ne doit JAMAIS être une page HTML.
+// Pendant une mise en ligne, un fichier manquant pouvait revenir comme la page d'accueil (code 200) : gardé en mémoire,
+// ce morceau de l'appli restait cassé sur l'appareil, même après « Recharger ».
+function estFauxFichier(path, response) {
+  if (!response || path.indexOf('/assets/') !== 0) return false;
+  var t = (response.headers && response.headers.get('content-type')) || '';
+  return t.indexOf('text/html') !== -1;
+}
+
 // Dernière personne connectée sur cet appareil : secours hors ligne quand le jeton a expiré.
 function getLastUser() {
   return caches.open(META_CACHE).then(function(c) { return c.match('/__last_user'); })
@@ -83,9 +92,9 @@ self.addEventListener('install', function(event) {
       return Promise.all(urls.map(function(u) {
         var reuse = u.indexOf('/assets/') === 0 ? caches.match(u) : Promise.resolve(null);
         return reuse.then(function(old) {
-          if (old) return cache.put(u, old);
+          if (old && !estFauxFichier(u, old)) return cache.put(u, old);
           return fetch(new Request(u, { cache: 'reload' })).then(function(res) {
-          if (!res || !res.ok) return;
+          if (!res || !res.ok || estFauxFichier(u, res)) return;
             return clean(res).then(function(r) { return cache.put(u, r); });
           });
         }).catch(function() { /* réessayé à la prochaine visite */ });
@@ -253,8 +262,14 @@ self.addEventListener('fetch', function(event) {
         request.headers.has('range') || request.destination === 'audio' || request.destination === 'video') return;
     event.respondWith(
       fromCache(request).then(function(cached) {
+        if (cached && estFauxFichier(p, cached)) {
+          // Faux fichier gardé par erreur : on l'efface et on va le chercher pour de vrai
+          caches.keys().then(function(ns) { ns.forEach(function(n) { caches.open(n).then(function(c) { c.delete(request, MATCH_OPTS); }); }); });
+          cached = null;
+          request = new Request(request, { cache: 'reload' });
+        }
         var network = fetch(request).then(function(response) {
-          if (response && response.ok && response.type === 'basic') {
+          if (response && response.ok && response.type === 'basic' && !estFauxFichier(p, response)) {
             var copy = response.clone();
             caches.open(RUNTIME_CACHE).then(function(cache) { cache.put(request, copy); });
           }

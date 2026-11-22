@@ -1,6 +1,6 @@
 import React from 'react';
 import { logCrash } from '@/lib/crashLog';
-import { estErreurMiseAJour, rechargerUneFois } from '@/lib/miseAJour';
+import { estErreurMiseAJour, peutReparer, rechargerUneFois, reparerEtRecharger } from '@/lib/miseAJour';
 
 interface Props {
   children: React.ReactNode;
@@ -27,6 +27,8 @@ class ErrorBoundary extends React.Component<Props, State> {
     console.error('ErrorBoundary caught:', error, errorInfo);
     // Nouvelle version en ligne : on recharge sur la nouvelle version au lieu d'afficher le chat qui pleure
     if (estErreurMiseAJour(error) && rechargerUneFois()) return;
+    // Le rechargement n'a pas suffi : la mémoire de l'appareil garde un morceau cassé → on la répare (une fois / 5 min)
+    if (estErreurMiseAJour(error) && peutReparer()) { void reparerEtRecharger(); return; }
     void logCrash(error, errorInfo?.componentStack);
   }
 
@@ -37,7 +39,11 @@ class ErrorBoundary extends React.Component<Props, State> {
           <div className="space-y-3">
             <div className="text-5xl">✨</div>
             <p className="text-lg font-bold text-foreground">Nouvelle version de l'appli…</p>
-            <button type="button" onClick={() => window.location.reload()} className="rounded-xl bg-primary text-primary-foreground px-4 py-2 font-bold">Recharger</button>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">Si rien ne change, touche « Réparer » : l'appli remet sa mémoire à neuf (tes données ne sont pas touchées).</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => void reparerEtRecharger()} className="rounded-xl bg-primary text-primary-foreground px-4 py-2 font-bold">🔄 Réparer et recharger</button>
+              <button type="button" onClick={() => { window.location.href = '/'; }} className="rounded-xl border border-primary text-primary px-4 py-2 font-bold">🏠 Accueil</button>
+            </div>
           </div>
         </div>
       );

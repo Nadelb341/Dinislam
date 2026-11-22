@@ -21,3 +21,29 @@ export function rechargerUneFois(): boolean {
   window.location.reload();
   return true;
 }
+
+/**
+ * 🛠️ Réparer la mémoire de l'appli sur cet appareil (22/11, compte Test 3 bloqué sur « Nouvelle version… ») :
+ * on oublie les fichiers de l'appli gardés en mémoire (JAMAIS les pages du Coran, les vidéos, les images ni les données)
+ * et le service worker, puis on recharge : tout est retéléchargé proprement. Une fois toutes les 5 minutes au plus.
+ */
+const CLE_REPARE = 'dinislam_reparation_maj';
+export function peutReparer(): boolean {
+  try { return Date.now() - Number(localStorage.getItem(CLE_REPARE) || 0) > 5 * 60_000; } catch { return true; }
+}
+export async function reparerEtRecharger() {
+  // Sans réseau : surtout ne rien effacer (l'appli doit rester utilisable hors ligne), on recharge seulement
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) { window.location.reload(); return; }
+  try { localStorage.setItem(CLE_REPARE, String(Date.now())); } catch { /* stockage indisponible */ }
+  try {
+    if ('caches' in window) {
+      const noms = await caches.keys();
+      await Promise.all(noms.filter((n) => /^(dinislam-static-|dinislam-runtime|dini-bismillah-)/.test(n)).map((n) => caches.delete(n)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch { /* on recharge quand même */ }
+  window.location.reload();
+}
