@@ -11,6 +11,8 @@ import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
 import { enregistrerOrdre, horsLigne } from '@/lib/alphabetMedias';
 import { preparerQuiz } from '@/lib/quizVideo';
+import { useDeuxChances } from '@/hooks/useDeuxChances';
+import { MessageReponse } from '@/components/shared/MessageReponse';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { errorMessage } from '@/lib/utils';
@@ -149,65 +151,55 @@ export function QuizParticularite({ particuliereId, titre, titreArabe, video, is
   );
 }
 
-/** Le passage de l'évaluation : étape par étape, barre de progression, score à la fin */
+/** Le passage de l'évaluation : 2 chances par question, passage automatique, score à la fin (règle des quiz du 22/11) */
 function Passage({ questions, titre, onClose }: { questions: Question[]; titre: string; onClose: () => void }) {
   const ordre = useMemo(() => questions.map((q) => ({ q, choix: melanger(q.choix.map((texte, i) => ({ texte, bon: i === q.bonne }))) })), [questions]);
-  const [etape, setEtape] = useState(0);
-  const [reponse, setReponse] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const fini = etape >= ordre.length;
-  const cur = ordre[etape];
-
-  const choisir = (i: number) => {
-    if (reponse !== null) return;
-    setReponse(i);
-    if (cur.choix[i].bon) setScore((s) => s + 1);
-  };
-  const suivant = () => {
-    const n = etape + 1;
-    setEtape(n); setReponse(null);
-    if (n >= ordre.length) { confettiLettres(); sonHarpeEtoiles(); }
-  };
+  const j = useDeuxChances({
+    nb: ordre.length,
+    estBonne: (e, i) => !!ordre[e]?.choix[i]?.bon,
+    texteBonne: (e) => ordre[e]?.choix.find((c) => c.bon)?.texte ?? '',
+    explication: (e) => ordre[e]?.q.explication ?? null,
+  });
+  useEffect(() => { if (j.fini && ordre.length) { confettiLettres(); sonHarpeEtoiles(); } }, [j.fini, ordre.length]);
+  const cur = ordre[j.etape];
+  const score = Math.round(j.score * 10) / 10;
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md" level="nested">
         <DialogHeader>
           <DialogTitle>🎯 {titre}</DialogTitle>
-          <DialogDescription>{fini ? 'Résultat' : `Étape ${etape + 1} sur ${ordre.length}`}</DialogDescription>
+          <DialogDescription>{j.fini ? 'Résultat' : `Étape ${j.etape + 1} sur ${ordre.length}${j.rates.length && !j.message ? ' · 2e chance !' : ''}`}</DialogDescription>
         </DialogHeader>
-        <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-violet-500 transition-all" style={{ width: `${(Math.min(etape, ordre.length) / ordre.length) * 100}%` }} /></div>
-        {fini ? (
+        <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-violet-500 transition-all" style={{ width: `${(Math.min(j.etape, ordre.length) / ordre.length) * 100}%` }} /></div>
+        {j.fini ? (
           <div className="text-center space-y-3 py-2">
             <p className="text-6xl">{score === ordre.length ? '🏆' : score >= ordre.length / 2 ? '🌟' : '💪'}</p>
             <p className="text-2xl font-extrabold">{score} / {ordre.length}</p>
             <p className="text-sm text-muted-foreground">{score === ordre.length ? 'Parfait, bravo !' : score >= ordre.length / 2 ? 'Très bien ! Encore un petit effort.' : 'Regarde encore la vidéo, puis réessaie.'}</p>
             <div className="flex gap-2 justify-center">
-              <Button variant="outline" onClick={() => { setEtape(0); setScore(0); setReponse(null); }}>🔁 Recommencer</Button>
+              <Button variant="outline" onClick={j.recommencer}>🔁 Recommencer</Button>
               <Button onClick={onClose}>Fermer</Button>
             </div>
           </div>
-        ) : (
+        ) : cur && (
           <div className="space-y-3">
             <p className="font-bold text-lg [overflow-wrap:anywhere]">{cur.q.question}</p>
             {cur.q.arabe && <p className="font-arabic text-5xl text-center leading-snug" dir="rtl">{cur.q.arabe}</p>}
             <div className="grid gap-2">
               {cur.choix.map((c, i) => {
-                const etat = reponse === null ? '' : c.bon ? 'bg-emerald-100 border-emerald-500 dark:bg-emerald-950/40' : reponse === i ? 'bg-red-100 border-red-500 dark:bg-red-950/40' : 'opacity-60';
+                const montreBonne = (j.trouve !== null || !!j.message) && c.bon;
+                const rate = j.rates.includes(i);
+                const etat = montreBonne ? 'bg-emerald-100 border-emerald-500 dark:bg-emerald-950/40' : rate ? 'bg-red-100 border-red-500 dark:bg-red-950/40 opacity-70' : '';
                 return (
-                  <button key={i} type="button" onClick={() => choisir(i)} dir="auto"
-                    className={`rounded-xl border-2 border-border p-3 text-start font-semibold [overflow-wrap:anywhere] ${/[؀-ۿ]/.test(c.texte) ? 'font-arabic text-2xl text-center' : ''} ${etat}`}>
-                    {reponse !== null && c.bon ? '✅ ' : reponse === i ? '❌ ' : ''}{c.texte}
+                  <button key={i} type="button" onClick={() => j.toucher(i)} dir="auto" disabled={rate}
+                    className={`rounded-xl border-2 border-border p-3 text-start font-semibold transition-all [overflow-wrap:anywhere] ${/[؀-ۿ]/.test(c.texte) ? 'font-arabic text-2xl text-center' : ''} ${etat}`}>
+                    {montreBonne ? '✅ ' : rate ? '❌ ' : ''}{c.texte}
                   </button>
                 );
               })}
             </div>
-            {reponse !== null && (
-              <>
-                {cur.q.explication && <p className="rounded-xl bg-muted p-3 text-sm">💡 {cur.q.explication}</p>}
-                <Button className="w-full" onClick={suivant}>{etape + 1 < ordre.length ? 'Question suivante ›' : 'Voir mon résultat'}</Button>
-              </>
-            )}
+            {j.message && <MessageReponse m={j.message} onPasser={j.passer} />}
           </div>
         )}
       </DialogContent>

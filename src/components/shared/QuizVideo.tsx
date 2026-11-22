@@ -12,7 +12,9 @@ import { horsLigne } from '@/lib/alphabetMedias';
 import { errorMessage } from '@/lib/utils';
 import { preparerQuiz, type QuestionVideo } from '@/lib/quizVideo';
 import { confettiLettres } from '@/lib/confettiLettres';
-import { sonHarpeEtoiles } from '@/lib/sonSaison';
+import { sonCristal, sonHarpeEtoiles } from '@/lib/sonSaison';
+import { useDeuxChances } from '@/hooks/useDeuxChances';
+import { MessageReponse } from '@/components/shared/MessageReponse';
 import { sonErreur } from '@/lib/sonsErreur';
 import { parler } from '@/lib/petits';
 
@@ -132,37 +134,50 @@ export function QuizVideo({ cible, sujet, video, isAdmin, petits = false }: {
 const melanger = <T,>(t: T[]) => [...t].sort(() => Math.random() - 0.5);
 
 function Partie({ questions, petits, titre, onClose }: { questions: QuestionVideo[]; petits: boolean; titre: string; onClose: () => void }) {
+  // Grands : 2 chances, passage tout seul, message éphémère après la 2e chance (règle du 22/11).
+  // Tout-petits : on continue jusqu'à la bonne réponse (règle du 22/11 pour les petits), avec le même scintillement.
+  const deux = useDeuxChances({
+    nb: questions.length,
+    estBonne: (e, i) => questions[e]?.bonne === i,
+    texteBonne: (e) => questions[e]?.choix[questions[e].bonne] ?? '',
+    explication: (e) => questions[e]?.explication ?? null,
+  });
   const [n, setN] = useState(0);
   const [rates, setRates] = useState<number[]>([]);
   const [trouve, setTrouve] = useState(false);
-  const q = questions[n];
-  const fini = n >= questions.length;
+  const etape = petits ? n : deux.etape;
+  const q = questions[etape];
+  const fini = etape >= questions.length;
   const ordre = useMemo(() => (q ? melanger(q.choix.map((_, i) => i)) : []), [q]);
   useEffect(() => { if (petits && q) parler(q.question, 'fr'); }, [petits, q]);
+  useEffect(() => { if (fini) { confettiLettres(['⭐']); sonHarpeEtoiles(); } }, [fini]);
 
-  const toucher = (i: number) => {
+  const toucherPetit = (i: number) => {
     if (!q || trouve) return;
-    if (petits) parler(q.choix[i], 'fr');
+    parler(q.choix[i], 'fr');
     if (i === q.bonne) {
-      setTrouve(true); sonHarpeEtoiles();
-      setTimeout(() => { setN((x) => x + 1); setRates([]); setTrouve(false); if (n + 1 >= questions.length) confettiLettres(['⭐']); }, 1300);
+      setTrouve(true); sonCristal();
+      setTimeout(() => { setN((x) => x + 1); setRates([]); setTrouve(false); }, 1300);
     } else { sonErreur(); setRates((r) => [...r, i]); }
   };
+  const recommencer = () => { setN(0); setRates([]); setTrouve(false); deux.recommencer(); };
+  const ratesVus = petits ? rates : deux.rates;
+  const bonneVue = petits ? trouve : deux.trouve !== null || !!deux.message;
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto" level="nested">
         <DialogHeader>
           <DialogTitle className="[overflow-wrap:anywhere]">🎯 {titre}</DialogTitle>
-          <DialogDescription>{fini ? 'Bravo !' : `Question ${n + 1} sur ${questions.length}`}</DialogDescription>
+          <DialogDescription>{fini ? 'Bravo !' : `Question ${etape + 1} sur ${questions.length}${!petits && deux.rates.length && !deux.message ? ' · 2e chance !' : ''}`}</DialogDescription>
         </DialogHeader>
-        <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-violet-500 transition-all" style={{ width: `${(Math.min(n, questions.length) / questions.length) * 100}%` }} /></div>
+        <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-violet-500 transition-all" style={{ width: `${(Math.min(etape, questions.length) / questions.length) * 100}%` }} /></div>
         {fini ? (
           <div className="text-center space-y-3 py-3">
             <p className="text-6xl">🏆</p>
-            <p className="text-xl font-extrabold">Tu as trouvé toutes les réponses !</p>
+            <p className="text-xl font-extrabold">{petits ? 'Tu as trouvé toutes les réponses !' : `${Math.round(deux.score * 10) / 10} / ${questions.length}`}</p>
             <div className="flex gap-2 justify-center">
-              <Button variant="outline" onClick={() => { setN(0); setRates([]); }}>🔁 Recommencer</Button>
+              <Button variant="outline" onClick={recommencer}>🔁 Recommencer</Button>
               <Button onClick={onClose}>Fermer</Button>
             </div>
           </div>
@@ -175,16 +190,16 @@ function Partie({ questions, petits, titre, onClose }: { questions: QuestionVide
             {q.arabe && <p className="font-arabic text-3xl text-center" dir="rtl">{q.arabe}</p>}
             <div className="space-y-2">
               {ordre.map((i) => {
-                const rate = rates.includes(i), bon = trouve && i === q.bonne;
+                const rate = ratesVus.includes(i), bon = bonneVue && i === q.bonne;
                 return (
-                  <button key={i} type="button" onClick={() => toucher(i)} aria-label={q.choix[i]}
-                    className={`w-full rounded-2xl border-2 transition-all active:scale-95 text-start font-semibold ${petits ? 'px-4 py-4 text-2xl' : 'px-3 py-2.5'} ${bon ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' : rate ? 'border-border opacity-40' : 'border-border bg-card'}`}>
-                    <span dir="auto" className="[overflow-wrap:anywhere]">{q.choix[i]}</span>
+                  <button key={i} type="button" onClick={() => (petits ? toucherPetit(i) : deux.toucher(i))} aria-label={q.choix[i]} disabled={rate}
+                    className={`w-full rounded-2xl border-2 transition-all active:scale-95 text-start font-semibold ${petits ? 'px-4 py-4 text-2xl' : 'px-3 py-2.5'} ${bon ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' : rate ? 'border-red-300 bg-red-50 dark:bg-red-950/30 opacity-60' : 'border-border bg-card'}`}>
+                    <span dir="auto" className="[overflow-wrap:anywhere]">{bon ? '✅ ' : rate ? '❌ ' : ''}{q.choix[i]}</span>
                   </button>
                 );
               })}
             </div>
-            {trouve && q.explication && <p className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-2 text-sm">✅ {q.explication}</p>}
+            {!petits && deux.message && <MessageReponse m={deux.message} onPasser={deux.passer} />}
           </div>
         )}
       </DialogContent>

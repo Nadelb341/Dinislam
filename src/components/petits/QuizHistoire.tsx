@@ -14,7 +14,7 @@ import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne } from '@/lib/alpha
 import { errorMessage } from '@/lib/utils';
 import { audioExt, useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { confettiLettres } from '@/lib/confettiLettres';
-import { sonHarpeEtoiles } from '@/lib/sonSaison';
+import { sonCristal } from '@/lib/sonSaison';
 import { sonErreur } from '@/lib/sonsErreur';
 import { cleJour, parler } from '@/lib/petits';
 
@@ -67,7 +67,7 @@ export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }:
     const c = q.choix[i];
     if (c.juste) {
       jouer(c.audio_url, c.texte);
-      setTrouve(true); sonHarpeEtoiles(); confettiLettres(['⭐']);
+      setTrouve(true); sonCristal(); confettiLettres(['⭐']);
       setTimeout(() => {
         if (n + 1 < questions.length) { setN(n + 1); setRates([]); setTrouve(false); }
         else { setFini(true); void gagnerEtoile('quiz', ref); }
