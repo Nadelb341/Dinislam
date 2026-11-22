@@ -240,11 +240,16 @@ export function AdminTodoCard() {
         <div className="mx-3 mb-3 rounded-xl border-2 border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-2.5 space-y-1.5">
           <p className="text-sm font-bold">🔴 {questions.length} question{questions.length > 1 ? 's' : ''} d'élève sans réponse</p>
           {questions.slice(0, 5).map((q) => (
-            <button key={q.id} type="button" onClick={() => navigate(`/alphabet?onglet=particularites&fiche=${q.particularite_id}`)}
-              className="w-full text-start rounded-lg bg-card border border-border px-2.5 py-1.5 text-[13px] hover:bg-muted/50">
-              <span className="font-bold">{q.auteur || 'Élève'}</span> · <span className="text-muted-foreground">{q.titre}</span>
-              <span className="block truncate">« {q.texte} »</span>
-            </button>
+            <div key={q.id} className="flex items-center gap-2 rounded-lg bg-card border border-border px-2.5 py-1.5 text-[13px]">
+              <div className="flex-1 min-w-0">
+                {/* Où : la carte, l'onglet et la leçon (Nadia, 2026-11-22) */}
+                <p className="text-[11px] text-muted-foreground [overflow-wrap:anywhere]">Carte 🔤 Alphabet › Lettres particulières › <span className="font-semibold text-foreground">{q.titre}</span></p>
+                <p><span className="font-bold">{q.auteur || 'Élève'}</span> : <span className="[overflow-wrap:anywhere]">« {q.texte.length > 120 ? `${q.texte.slice(0, 120)}…` : q.texte} »</span></p>
+              </div>
+              {/* 💬 Répondre : ouvre la leçon sur ce message, la case de réponse prête */}
+              <button type="button" onClick={() => navigate(`/alphabet?onglet=particularites&fiche=${q.particularite_id}&message=${q.id}`)}
+                className="shrink-0 rounded-full bg-red-500 text-white px-3 py-1.5 text-xs font-bold shadow active:scale-95 transition-transform">💬 Répondre</button>
+            </div>
           ))}
           {questions.length > 5 && <p className="text-[11px] text-muted-foreground">+ {questions.length - 5} autre{questions.length - 5 > 1 ? 's' : ''}</p>}
         </div>

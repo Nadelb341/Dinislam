@@ -81,12 +81,13 @@ const AlphabetPage = () => {
   };
   // 🔗 Lien direct vers une leçon des « Lettres particulières » (?onglet=particularites&fiche=…), ex. depuis le cahier de texte
   const [params, setParams] = useSearchParams();
-  const [ficheDemandee, setFicheDemandee] = useState<string | null>(null);
+  const [ficheDemandee, setFicheDemandee] = useState<{ fiche: string; message: string | null } | null>(null);
   useEffect(() => {
     const o = params.get('onglet'); const f = params.get('fiche');
     if (o !== 'particularites' && !f) return;
     if (o === 'particularites') setOngletState('particularites');
-    if (f) setFicheDemandee(f);
+    // &message=… : « Répondre » du cahier de texte → la leçon s'ouvre sur ce message, prête pour la réponse
+    if (f) setFicheDemandee({ fiche: f, message: params.get('message') });
     setParams({}, { replace: true });
   }, [params, setParams]);
   // 1er affichage : moins de 6 ans → « Pour les tout-petits » s'il lui est ouvert (idée 11) ; sinon l'onglet retenu, sinon le 1er ouvert
@@ -376,7 +377,7 @@ const AlphabetPage = () => {
           <p className="rounded-2xl p-4 text-center bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">🔒 Ton professeur va bientôt t'ouvrir l'Alphabet. Reviens vite ! 🤲</p>
         )}
 
-        {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} ficheInitiale={ficheDemandee} />}
+        {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} ficheInitiale={ficheDemandee?.fiche ?? null} messageInitial={ficheDemandee?.message ?? null} />}
         {onglet === 'petits' && <AlphabetToutPetits letters={letters} unlocked={unlocked} learned={learned} isAdmin={isAdmin} />}
 
         {onglet === 'arabe' && (<>

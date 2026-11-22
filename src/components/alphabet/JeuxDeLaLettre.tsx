@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles, sonPlop } from '@/lib/sonSaison';
 import type { Tables } from '@/integrations/supabase/types';
-import { couverture, traceValide } from '@/lib/traceLettre';
+import { couverture, partPresDeLaLettre, traceValide } from '@/lib/traceLettre';
+import { sonErreur } from '@/lib/sonsErreur';
 
 /**
  * 🎮 Onglet « Jeux » de la carte d'une lettre, côté tout-petits (Nadia, 2026-11-21).
  * Tous les jeux tournent autour de LA lettre de la carte, mélangée avec TOUTES les autres lettres de l'alphabet
  * (Nadia, 2026-11-21 : « il a ouvert le BA, les jeux tournent autour du BA mais mélangé avec toutes les autres lettres »).
- * Jamais de « raté » : une mauvaise réponse fait bouger la carte et redit le son de la bonne lettre.
+ * Jamais de « raté » : une mauvaise réponse joue un son DOUX (choisi par l'enseignante), fait bouger la carte et redit le son de la bonne lettre ;
+ * le jeu continue jusqu'à ce que l'enfant trouve toutes les bonnes réponses (Nadia, 2026-11-22).
  * Tout marche sans Internet (lettres dessinées par l'appli, sons déjà gardés sur l'appareil).
  */
 type Lettre = Tables<'alphabet_letters'>;
@@ -22,6 +24,8 @@ function jouer(url: string | null | undefined) {
 }
 function melanger<T>(t: T[]): T[] { return [...t].sort(() => Math.random() - 0.5); }
 function bravo(l: Lettre) { confettiLettres([l.letter_arabic]); sonHarpeEtoiles(); }
+/** Erreur : le son doux, puis la bonne lettre redite */
+function rate(l: Lettre) { sonErreur(); setTimeout(() => jouer(l.audio_url), 650); }
 
 /** Jusqu'à `max` autres lettres de l'alphabet, tirées au hasard */
 function autresConnues(lettre: Lettre, connues: Lettre[], max: number) {
@@ -89,7 +93,7 @@ function Bulles({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; 
 
   const toucher = (b: (typeof bulles)[number]) => {
     if (b.l.id === lettre.id) { sonPlop(); setEclatees((s) => new Set(s).add(b.cle)); }
-    else { setSecoue(b.cle); setTimeout(() => setSecoue(null), 500); jouer(lettre.audio_url); }
+    else { setSecoue(b.cle); setTimeout(() => setSecoue(null), 500); rate(lettre); }
   };
 
   return (
@@ -111,8 +115,8 @@ function Bulles({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; 
 
 /**
  * ✍️ Trace la lettre du doigt par-dessus la grande lettre pâle. Validé TOUT SEUL (Nadia, 2026-11-21) dès que l'enfant a fait
- * la forme de la lettre ET ses points, même s'il dépasse beaucoup : chaque morceau de la lettre (le corps, chaque point)
- * doit être « couvert » par le trait, avec une large tolérance autour. Puis le Bravo doré, comme pour les bulles.
+ * TOUTE la forme de la lettre ET ses points (2026-11-22 : la moitié ne suffit plus, gribouiller non plus ; dépasser un peu, oui).
+ * Puis le Bravo doré, comme pour les bulles.
  */
 const PAS = 4; // 1 case de calcul = 4 px
 type Pt = readonly [number, number];
@@ -143,7 +147,7 @@ function Trace({ lettre, retour }: { lettre: Lettre; retour: () => void }) {
   };
   useEffect(() => { preparer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Vérifie : chaque morceau de la lettre couvert à 60 % (corps) / 45 % (points), avec une marge large autour du trait
+  // Vérifie : corps couvert à 65 % avec chacune de ses 6 tranches tracée, chaque point à moitié, trait resté près de la lettre
   const verifier = () => {
     if (valide.current || !traits.current.length) return;
     const { w, h } = taille.current;
@@ -158,20 +162,29 @@ function Trace({ lettre, retour }: { lettre: Lettre; retour: () => void }) {
       return t;
     };
     const masque = toile((g) => { g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = police(h, w, PAS); g.fillText(lettre.letter_arabic, gw / 2, gh / 2); });
-    const marge = Math.min(w, h) * 0.75 * 0.09; // tolérance : l'enfant peut dépasser largement
-    const encre = toile((g) => {
-      g.strokeStyle = '#000'; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = (22 + 2 * marge) / PAS;
+    const corpsLettre = Math.min(w, h) * 0.75;
+    const marge = corpsLettre * 0.05; // tolérance : l'enfant peut dépasser un peu (plus serré depuis 2026-11-22)
+    const tracer = (g: CanvasRenderingContext2D, largeur: number) => {
+      g.strokeStyle = '#000'; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = largeur / PAS;
       for (const t of traits.current) {
         g.beginPath(); g.moveTo(t[0][0] / PAS, t[0][1] / PAS);
         for (const [x, y] of t.slice(1)) g.lineTo(x / PAS, y / PAS);
         if (t.length === 1) g.lineTo(t[0][0] / PAS + 0.1, t[0][1] / PAS);
         g.stroke();
       }
+    };
+    const encre = toile((g) => tracer(g, 22 + 2 * marge));
+    const trait = toile((g) => tracer(g, 22));
+    // Zone « près de la lettre » : la lettre élargie d'environ 1/8 de sa taille
+    const zone = toile((g) => {
+      g.fillStyle = '#000'; g.strokeStyle = '#000'; g.lineJoin = 'round'; g.lineWidth = (corpsLettre * 0.25) / PAS;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = police(h, w, PAS);
+      g.fillText(lettre.letter_arabic, gw / 2, gh / 2); g.strokeText(lettre.letter_arabic, gw / 2, gh / 2);
     });
-    if (!masque || !encre) return;
+    if (!masque || !encre || !trait || !zone) return;
     const parts = couverture(masque, encre, gw, gh);
-    // Le plus grand morceau = le corps de la lettre ; les autres = ses points (ou sa hamza)
-    const ok = traceValide(parts);
+    // Chaque bout du corps de la lettre (6 tranches) + chaque point, et pas de gribouillage partout
+    const ok = traceValide(parts) && partPresDeLaLettre(trait, zone) >= 0.55;
     if (ok) {
       valide.current = true; setGagne(true);
       bravo(lettre); jouer(lettre.audio_url);
@@ -225,7 +238,7 @@ function Trouve({ lettre, connues, retour }: { lettre: Lettre; connues: Lettre[]
   const toucher = (l: Lettre) => {
     if (gagne) return;
     if (l.id === lettre.id) { setGagne(true); bravo(lettre); setTimeout(() => { setGagne(false); setChoix(tirer()); }, 2200); }
-    else { setSecoue(l.id); setTimeout(() => setSecoue(null), 500); jouer(lettre.audio_url); }
+    else { setSecoue(l.id); setTimeout(() => setSecoue(null), 500); rate(lettre); }
   };
 
   return (
@@ -271,6 +284,7 @@ function Paires({ lettre, autres, retour }: { lettre: Lettre; autres: Lettre[]; 
       const [a, b] = n.map((k) => cartes[k]);
       setTimeout(() => {
         if (a.l.id === b.l.id) { sonPlop(); setTrouvees((s) => new Set([...s, a.cle, b.cle])); }
+        else sonErreur(); // pas la même lettre : son doux, les cartes se recachent, on continue
         setVues([]);
       }, a.l.id === b.l.id ? 500 : 1100);
     }

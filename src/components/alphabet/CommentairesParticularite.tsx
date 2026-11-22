@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { untypedDb } from '@/lib/untypedDb';
@@ -19,7 +19,11 @@ interface Commentaire { id: string; parent_id: string | null; user_id: string; a
 
 const quand = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export function CommentairesParticularite({ particuliereId, titre, isAdmin, userId }: { particuliereId: string; titre: string; isAdmin: boolean; userId: string | null }) {
+export function CommentairesParticularite({ particuliereId, titre, isAdmin, userId, messageInitial }: {
+  particuliereId: string; titre: string; isAdmin: boolean; userId: string | null;
+  /** « 💬 Répondre » du cahier de texte : ce message est montré, et la case de réponse s'ouvre dessous */
+  messageInitial?: string | null;
+}) {
   const queryClient = useQueryClient();
   const cle = ['alphabet-commentaires', particuliereId];
   const [texte, setTexte] = useState('');
@@ -38,6 +42,22 @@ export function CommentairesParticularite({ particuliereId, titre, isAdmin, user
     },
   });
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: cle });
+  const zoneTexte = useRef<HTMLTextAreaElement>(null);
+  const [surligne, setSurligne] = useState<string | null>(null);
+  const dejaFait = useRef(false);
+  useEffect(() => {
+    if (!messageInitial || dejaFait.current) return;
+    const m = tous.find((c) => c.id === messageInitial);
+    if (!m) return;
+    dejaFait.current = true;
+    const racine = m.parent_id ? tous.find((c) => c.id === m.parent_id) ?? m : m;
+    setReponseA(racine); setModif(null); setTexte(''); setSurligne(m.id);
+    setTimeout(() => {
+      document.querySelector(`[data-msg="${m.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => zoneTexte.current?.focus({ preventScroll: true }), 700);
+    }, 700);
+    setTimeout(() => setSurligne(null), 6000);
+  }, [messageInitial, tous]);
   const premiers = tous.filter((c) => !c.parent_id);
   const reponsesDe = (id: string) => tous.filter((c) => c.parent_id === id);
   const peutGerer = (c: Commentaire) => isAdmin || c.user_id === userId;
@@ -69,7 +89,7 @@ export function CommentairesParticularite({ particuliereId, titre, isAdmin, user
   };
 
   const Bulle = ({ c, reponse }: { c: Commentaire; reponse?: boolean }) => (
-    <div className={`rounded-2xl p-3 space-y-1 ${c.est_admin ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' : 'bg-card border border-border'} ${reponse ? 'ms-6' : ''}`}>
+    <div data-msg={c.id} className={`rounded-2xl p-3 space-y-1 transition-shadow ${surligne === c.id ? 'ring-4 ring-red-400' : ''} ${c.est_admin ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800' : 'bg-card border border-border'} ${reponse ? 'ms-6' : ''}`}>
       <p className="text-xs font-bold">{c.est_admin ? '👩‍🏫' : '🙂'} {c.auteur || 'Élève'} <span className="font-normal text-muted-foreground">· {quand(c.created_at)}{c.updated_at !== c.created_at ? ' · modifié' : ''}</span></p>
       <p dir="auto" className="whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{c.texte}</p>
       <div className="flex flex-wrap gap-1 justify-end">
@@ -97,7 +117,7 @@ export function CommentairesParticularite({ particuliereId, titre, isAdmin, user
             <button type="button" className="text-muted-foreground" onClick={() => { setReponseA(null); setModif(null); setTexte(''); }}>Annuler</button>
           </p>
         )}
-        <TextareaDictee value={texte} onChange={(e) => setTexte(e.target.value)} rows={2} maxLength={2000} placeholder="Ta question ou ton commentaire…"
+        <TextareaDictee ref={zoneTexte} value={texte} onChange={(e) => setTexte(e.target.value)} rows={2} maxLength={2000} placeholder="Ta question ou ton commentaire…"
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void envoyer(); } }} />
         <Button className="w-full" disabled={!texte.trim() || envoi} onClick={() => void envoyer()}>{envoi ? 'Envoi…' : modif ? '💾 Enregistrer' : '📨 Envoyer'}</Button>
       </div>

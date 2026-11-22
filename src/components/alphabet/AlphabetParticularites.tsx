@@ -22,29 +22,30 @@ import { SortableCardList, type DragItemProps } from '@/components/shared/Sortab
 import { errorMessage } from '@/lib/utils';
 import { QuizParticularite } from './QuizParticularite';
 import { CommentairesParticularite } from './CommentairesParticularite';
+import { FormeColoree } from './FormeColoree';
 
 /**
  * ✨ Onglet « Particularités » de l'Alphabet (Nadia, 2026-11-21, choix P2) : des tuiles (Tanouine, Chadda, Soukoune…)
  * comme la grille des lettres ; la fiche s'ouvre avec une VIDÉO en haut (à la place de la grande lettre + « Écoute »).
- * ✏️ Nadia garde la main sur TOUT : ajouter / modifier / supprimer une particularité (titre, titre arabe, emoji, couleur ; ✋ appui long + glisser pour ranger)
+ * ✏️ Nadia garde la main sur TOUT : ajouter / modifier / supprimer une particularité (titre, titre arabe, forme des lettres, couleur ; ✋ appui long + glisser pour ranger)
  * et, dans la fiche, des zones de contenu (texte, images, vidéos, lien YouTube, PDF, audio) à ranger par appui long + glisser.
  * Toute suppression passe par la corbeille (Paramètres). Hors ligne : textes gardés et envoyés au retour du réseau.
  */
-export interface Particularite { id: string; titre: string; titre_arabe: string | null; emoji: string | null; couleur: string | null; position: number }
+export interface Particularite { id: string; titre: string; titre_arabe: string | null; forme: string | null; couleur: string | null; position: number }
 export interface Bloc { id: string; particularite_id: string; kind: KindMedia; texte: string | null; url: string | null; nom: string | null; position: number }
 
-const COULEURS: Record<string, { tuile: string; bandeau: string; pastille: string }> = {
-  sky: { tuile: 'bg-sky-50 border-sky-300 dark:bg-sky-950/30 dark:border-sky-800', bandeau: 'from-sky-400 to-blue-600', pastille: 'bg-sky-400' },
-  rose: { tuile: 'bg-rose-50 border-rose-300 dark:bg-rose-950/30 dark:border-rose-800', bandeau: 'from-rose-400 to-red-600', pastille: 'bg-rose-400' },
-  indigo: { tuile: 'bg-indigo-50 border-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-800', bandeau: 'from-indigo-400 to-indigo-700', pastille: 'bg-indigo-400' },
-  amber: { tuile: 'bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800', bandeau: 'from-amber-400 to-orange-600', pastille: 'bg-amber-400' },
-  emerald: { tuile: 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800', bandeau: 'from-emerald-400 to-teal-600', pastille: 'bg-emerald-400' },
-  violet: { tuile: 'bg-violet-50 border-violet-300 dark:bg-violet-950/30 dark:border-violet-800', bandeau: 'from-violet-400 to-purple-700', pastille: 'bg-violet-400' },
-  pink: { tuile: 'bg-pink-50 border-pink-300 dark:bg-pink-950/30 dark:border-pink-800', bandeau: 'from-pink-400 to-fuchsia-600', pastille: 'bg-pink-400' },
-  teal: { tuile: 'bg-teal-50 border-teal-300 dark:bg-teal-950/30 dark:border-teal-800', bandeau: 'from-teal-400 to-cyan-700', pastille: 'bg-teal-400' },
-  orange: { tuile: 'bg-orange-50 border-orange-300 dark:bg-orange-950/30 dark:border-orange-800', bandeau: 'from-orange-400 to-red-500', pastille: 'bg-orange-400' },
-  yellow: { tuile: 'bg-yellow-50 border-yellow-300 dark:bg-yellow-950/30 dark:border-yellow-800', bandeau: 'from-yellow-400 to-amber-600', pastille: 'bg-yellow-400' },
-  slate: { tuile: 'bg-slate-50 border-slate-300 dark:bg-slate-900/40 dark:border-slate-700', bandeau: 'from-slate-500 to-indigo-900', pastille: 'bg-slate-500' },
+const COULEURS: Record<string, { tuile: string; bandeau: string; pastille: string; accent: string }> = {
+  sky: { tuile: 'bg-sky-50 border-sky-300 dark:bg-sky-950/30 dark:border-sky-800', bandeau: 'from-sky-400 to-blue-600', pastille: 'bg-sky-400', accent: 'text-sky-600 dark:text-sky-300' },
+  rose: { tuile: 'bg-rose-50 border-rose-300 dark:bg-rose-950/30 dark:border-rose-800', bandeau: 'from-rose-400 to-red-600', pastille: 'bg-rose-400', accent: 'text-rose-600 dark:text-rose-300' },
+  indigo: { tuile: 'bg-indigo-50 border-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-800', bandeau: 'from-indigo-400 to-indigo-700', pastille: 'bg-indigo-400', accent: 'text-indigo-600 dark:text-indigo-300' },
+  amber: { tuile: 'bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-800', bandeau: 'from-amber-400 to-orange-600', pastille: 'bg-amber-400', accent: 'text-amber-600 dark:text-amber-300' },
+  emerald: { tuile: 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800', bandeau: 'from-emerald-400 to-teal-600', pastille: 'bg-emerald-400', accent: 'text-emerald-600 dark:text-emerald-300' },
+  violet: { tuile: 'bg-violet-50 border-violet-300 dark:bg-violet-950/30 dark:border-violet-800', bandeau: 'from-violet-400 to-purple-700', pastille: 'bg-violet-400', accent: 'text-violet-600 dark:text-violet-300' },
+  pink: { tuile: 'bg-pink-50 border-pink-300 dark:bg-pink-950/30 dark:border-pink-800', bandeau: 'from-pink-400 to-fuchsia-600', pastille: 'bg-pink-400', accent: 'text-pink-600 dark:text-pink-300' },
+  teal: { tuile: 'bg-teal-50 border-teal-300 dark:bg-teal-950/30 dark:border-teal-800', bandeau: 'from-teal-400 to-cyan-700', pastille: 'bg-teal-400', accent: 'text-teal-600 dark:text-teal-300' },
+  orange: { tuile: 'bg-orange-50 border-orange-300 dark:bg-orange-950/30 dark:border-orange-800', bandeau: 'from-orange-400 to-red-500', pastille: 'bg-orange-400', accent: 'text-orange-600 dark:text-orange-300' },
+  yellow: { tuile: 'bg-yellow-50 border-yellow-300 dark:bg-yellow-950/30 dark:border-yellow-800', bandeau: 'from-yellow-400 to-amber-600', pastille: 'bg-yellow-400', accent: 'text-yellow-600 dark:text-yellow-300' },
+  slate: { tuile: 'bg-slate-50 border-slate-300 dark:bg-slate-900/40 dark:border-slate-700', bandeau: 'from-slate-500 to-indigo-900', pastille: 'bg-slate-500', accent: 'text-slate-500 dark:text-slate-300' },
 };
 const couleurDe = (c: string | null) => COULEURS[c || ''] ?? COULEURS.sky;
 const estVideo = (b: Bloc) => b.kind === 'video' || b.kind === 'youtube';
@@ -65,7 +66,7 @@ function VueBloc({ b }: { b: Bloc }) {
   return null;
 }
 
-export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: boolean; ficheInitiale?: string | null }) {
+export function AlphabetParticularites({ isAdmin, ficheInitiale, messageInitial }: { isAdmin: boolean; ficheInitiale?: string | null; messageInitial?: string | null }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [ouverte, setOuverte] = useState<Particularite | null>(null);
@@ -74,7 +75,7 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: bo
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['alphabet-particularites'],
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('alphabet_particularites').select('id, titre, titre_arabe, emoji, couleur, position').order('position').order('created_at');
+      const { data, error } = await untypedDb.from('alphabet_particularites').select('id, titre, titre_arabe, forme, couleur, position').order('position').order('created_at');
       if (error) throw error;
       return (data || []) as Particularite[];
     },
@@ -99,10 +100,10 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: bo
     const p = items.find((i) => i.id === ficheInitiale);
     if (p) {
       dejaOuverte.current = ficheInitiale; setOuverte(p);
-      // …et on descend jusqu'à l'espace commentaires (la pastille mène à l'endroit exact)
-      setTimeout(() => document.querySelector('[data-commentaires]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600);
+      // …et on descend jusqu'à l'espace commentaires (sauf « Répondre » : le message lui-même s'en charge)
+      if (!messageInitial) setTimeout(() => document.querySelector('[data-commentaires]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600);
     }
-  }, [ficheInitiale, items]);
+  }, [ficheInitiale, messageInitial, items]);
   const contenuDe = (id: string) => blocs.some((b) => b.particularite_id === id);
 
   const ranger = async (n: Particularite[]) => {
@@ -118,10 +119,13 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: bo
     return (
       <div key={p.id} ref={ref} style={style} {...attrs} className={`relative touch-manipulation ${isDragging ? 'opacity-40' : ''}`}>
         <button type="button" onClick={() => setOuverte(p)}
-          className={`w-full min-h-[112px] rounded-2xl border-2 p-2.5 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 ${couleurDe(p.couleur).tuile}`}>
-          <span className="text-2xl leading-none">{p.emoji || '✨'}</span>
-          {p.titre_arabe && <span className="font-arabic text-2xl leading-snug" dir="rtl">{p.titre_arabe}</span>}
-          <span className="text-xs font-bold [overflow-wrap:anywhere]">{p.titre}</span>
+          className={`w-full h-full min-h-[132px] rounded-2xl border-2 p-2.5 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 ${couleurDe(p.couleur).tuile}`}>
+          {/* La forme des lettres de la règle, à la place de l'ancien emoji (Nadia, 2026-11-22) */}
+          {p.forme
+            ? <FormeColoree texte={p.forme} accent={couleurDe(p.couleur).accent} className="text-4xl text-slate-900 dark:text-white" />
+            : p.titre_arabe && <span className="font-arabic text-3xl leading-snug" dir="rtl">{p.titre_arabe}</span>}
+          <span className="text-sm font-bold [overflow-wrap:anywhere]">{p.titre}</span>
+          {p.forme && p.titre_arabe && <span className="font-arabic text-base leading-snug text-muted-foreground" dir="rtl">{p.titre_arabe}</span>}
           {!contenuDe(p.id) && <span className="text-[10px] text-muted-foreground">🛠️ En cours de mise à jour</span>}
         </button>
         {isAdmin && (
@@ -160,7 +164,7 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: bo
       {!isLoading && !items.length && !isAdmin && <p className="text-sm text-center text-muted-foreground py-6">Ton professeur va bientôt ajouter les particularités. 🤲</p>}
 
       {courante && (
-        <FicheParticularite p={courante} items={items} blocs={blocs.filter((b) => b.particularite_id === courante.id)} isAdmin={isAdmin}
+        <FicheParticularite p={courante} items={items} messageInitial={courante.id === ficheInitiale ? messageInitial ?? null : null} blocs={blocs.filter((b) => b.particularite_id === courante.id)} isAdmin={isAdmin}
           userId={user?.id ?? null} onChange={setOuverte} onClose={() => setOuverte(null)} rafraichir={rafraichir} />
       )}
       {isAdmin && edition && (
@@ -171,13 +175,13 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale }: { isAdmin: bo
   );
 }
 
-/** ✏️ Créer / modifier une particularité : titre, titre arabe, emoji, couleur, ordre ; supprimer (corbeille) */
+/** ✏️ Créer / modifier une particularité : titre, titre arabe, forme des lettres, couleur, ordre ; supprimer (corbeille) */
 function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: {
   p: Particularite | null; items: Particularite[]; blocs: Bloc[]; userId: string | null; onClose: () => void; rafraichir: () => void;
 }) {
   const [titre, setTitre] = useState(p?.titre ?? '');
   const [arabe, setArabe] = useState(p?.titre_arabe ?? '');
-  const [emoji, setEmoji] = useState(p?.emoji ?? '✨');
+  const [forme, setForme] = useState(p?.forme ?? '');
   const [couleur, setCouleur] = useState(p?.couleur ?? 'sky');
   const [saving, setSaving] = useState(false);
   const [supprimer, setSupprimer] = useState(false);
@@ -186,7 +190,7 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
     if (!titre.trim()) { toast.error('Écris un titre'); return; }
     setSaving(true);
     try {
-      const valeurs = { titre: titre.trim(), titre_arabe: arabe.trim() || null, emoji: emoji.trim() || null, couleur, updated_at: new Date().toISOString() };
+      const valeurs = { titre: titre.trim(), titre_arabe: arabe.trim() || null, forme: forme.trim() || null, couleur, updated_at: new Date().toISOString() };
       const r = p
         ? await ecrireOuGarder({ table: 'alphabet_particularites', op: 'update', id: p.id, values: valeurs })
         : await ecrireOuGarder({ table: 'alphabet_particularites', op: 'insert', rows: [{ ...valeurs, position: (items.at(-1)?.position ?? 0) + 10 }] });
@@ -223,10 +227,16 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('part-arabe')?.focus(); } }} />
         <label className="text-xs font-semibold" htmlFor="part-arabe">Titre en arabe (facultatif)</label>
         <Input id="part-arabe" dir="rtl" className="font-arabic text-lg" value={arabe} maxLength={60} onChange={(e) => setArabe(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('part-emoji')?.focus(); } }} />
-        <label className="text-xs font-semibold" htmlFor="part-emoji">Emoji</label>
-        <Input id="part-emoji" value={emoji} maxLength={8} onChange={(e) => setEmoji(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('part-forme')?.focus(); } }} />
+        <label className="text-xs font-semibold" htmlFor="part-forme">Forme des lettres sur la tuile</label>
+        <Input id="part-forme" dir="rtl" className="font-arabic text-xl" value={forme} maxLength={60} onChange={(e) => setForme(e.target.value)} placeholder="بَ{ا} بُ{و} بِ{ي}"
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
+        <p className="text-[11px] text-muted-foreground">Ce qui est entre accolades {'{ }'} s'affiche en couleur : une lettre ou un signe (ex. ب{'{'}َ{'}'} = la fatha en couleur).</p>
+        {forme.trim() && (
+          <div className={`rounded-2xl border-2 p-2 grid place-items-center ${couleurDe(couleur).tuile}`}>
+            <FormeColoree texte={forme} accent={couleurDe(couleur).accent} className="text-4xl text-slate-900 dark:text-white" />
+          </div>
+        )}
         <p className="text-xs font-semibold">Couleur</p>
         <div className="flex flex-wrap gap-2">
           {Object.entries(COULEURS).map(([k, c]) => (
@@ -247,8 +257,8 @@ function EditionParticularite({ p, items, blocs, userId, onClose, rafraichir }: 
 }
 
 /** Fiche d'une particularité : vidéo en haut, puis les zones de contenu ; ✏️ tout modifiable pour l'enseignante */
-function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClose, rafraichir }: {
-  p: Particularite; items: Particularite[]; blocs: Bloc[]; isAdmin: boolean; userId: string | null;
+function FicheParticularite({ p, items, messageInitial, blocs, isAdmin, userId, onChange, onClose, rafraichir }: {
+  p: Particularite; items: Particularite[]; messageInitial: string | null; blocs: Bloc[]; isAdmin: boolean; userId: string | null;
   onChange: (p: Particularite) => void; onClose: () => void; rafraichir: () => void;
 }) {
   const { scrollRef, handleScroll, showTop, showBottom, scrollToTop, scrollToBottom } = useScrollToTop();
@@ -322,7 +332,7 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg p-0 overflow-hidden">
         <div ref={scrollRef} onScroll={handleScroll} className="max-h-[88vh] overflow-y-auto p-5 space-y-4">
-          <DialogHeader className="mt-6 space-y-2">
+          <DialogHeader className="mt-6 space-y-2 pr-0">
             <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1">
               <div className="flex justify-start">
                 {avant && <button type="button" onClick={() => onChange(avant)} className="rounded-full bg-muted px-2.5 py-1.5 text-xs font-bold [overflow-wrap:anywhere]">‹ {avant.titre}</button>}
@@ -334,12 +344,15 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
             </div>
             <DialogDescription className="sr-only">Vidéo et explications de la particularité</DialogDescription>
             {/* ✨ Le titre de la leçon : français + arabe côte à côte, dans un joli bandeau (Nadia, 2026-11-21) */}
-            <DialogTitle asChild>
-              <div className={`rounded-3xl bg-gradient-to-br ${c.bandeau} text-white px-4 py-3 shadow-md flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center`}>
-                <span className="text-2xl font-extrabold tracking-wide drop-shadow-sm [overflow-wrap:anywhere]">{p.titre}</span>
-                {p.titre_arabe && <span className="font-arabic text-3xl leading-snug drop-shadow-sm" dir="rtl">{p.titre_arabe}</span>}
-              </div>
-            </DialogTitle>
+            {/* Centré, et le bandeau coloré a juste la taille du titre : du « La… » jusqu'après l'arabe (Nadia, 2026-11-22) */}
+            <div className="flex justify-center">
+              <DialogTitle asChild>
+                <div className={`w-fit max-w-full rounded-3xl bg-gradient-to-br ${c.bandeau} text-white px-5 py-2.5 shadow-md flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-center`}>
+                  <span className="text-2xl font-extrabold tracking-wide drop-shadow-sm [overflow-wrap:anywhere]">{p.titre}</span>
+                  {p.titre_arabe && <span className="font-arabic text-3xl leading-snug drop-shadow-sm px-1" dir="rtl">{p.titre_arabe}</span>}
+                </div>
+              </DialogTitle>
+            </div>
           </DialogHeader>
 
           {/* 🎬 La vidéo à la place de la grande lettre et du bouton « Écoute la lettre » */}
@@ -355,8 +368,9 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
             </div>
           ) : (
             <div className={`rounded-3xl bg-gradient-to-br ${c.bandeau} text-white p-5 text-center shadow-md space-y-1`}>
-              <p className="text-5xl">{p.emoji || '✨'}</p>
-              {p.titre_arabe && <p className="font-arabic text-4xl leading-snug" dir="rtl">{p.titre_arabe}</p>}
+              {p.forme
+                ? <FormeColoree texte={p.forme} accent="text-yellow-200" className="text-6xl" />
+                : p.titre_arabe && <p className="font-arabic text-4xl leading-snug" dir="rtl">{p.titre_arabe}</p>}
               {!isAdmin && reste.length > 0 && <p className="text-sm text-white/90">La vidéo arrive bientôt 🎬</p>}
               {isAdmin && <button type="button" onClick={() => setAjout('video_haut')} className="mt-2 rounded-full bg-white/90 text-slate-900 px-4 py-2 text-sm font-bold">🎬 Ajouter la vidéo du haut</button>}
             </div>
@@ -414,7 +428,7 @@ function FicheParticularite({ p, items, blocs, isAdmin, userId, onChange, onClos
           ))}
 
           {/* 💬 Commentaires / questions de la leçon (élèves et enseignante) */}
-          <CommentairesParticularite key={`c-${p.id}`} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
+          <CommentairesParticularite key={`c-${p.id}`} particuliereId={p.id} messageInitial={messageInitial} titre={p.titre} isAdmin={isAdmin} userId={userId} />
         </div>
         <ScrollButtons showTop={showTop} showBottom={showBottom} onScrollTop={scrollToTop} onScrollBottom={scrollToBottom} position="absolute" />
         <ConfirmDeleteDialog open={!!aSupprimer} onOpenChange={(o) => !o && setASupprimer(null)}
