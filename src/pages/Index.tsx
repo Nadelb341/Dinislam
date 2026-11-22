@@ -1,4 +1,6 @@
 import PresenceEnClasse from '@/components/home/PresenceEnClasse';
+import { useEstGroupe0 } from '@/hooks/usePetits';
+const AccueilPetits = lazy(() => import('@/components/petits/AccueilPetits').then((m) => ({ default: m.AccueilPetits })));
 import { NouvelleCarteDialog } from '@/components/admin/NouvelleCarteDialog';
 import { ModifierCarteDialog, type CarteAModifier } from '@/components/admin/ModifierCarteDialog';
 import { ImageCadree } from '@/components/shared/ImageCadree';
@@ -213,6 +215,11 @@ const Index = () => {
   const [nouvelleCarte, setNouvelleCarte] = useState(false);
   // 📨 Convocations (ouverte aussi depuis la notification « Convocations envoyées » : /?convocations=1)
   const [convocationsOuvert, setConvocationsOuvert] = useState(false);
+  // 🧸 Accueil du Groupe 0 (2026-11-22) : les élèves du Groupe 0 ont leur accueil des petits ; l'enseignante peut le prévisualiser
+  const { data: estGroupe0 = false } = useEstGroupe0(isAdmin ? null : user?.id);
+  const [apercuPetits, setApercuPetits] = useState(() => { try { return localStorage.getItem('dinislam_apercu_petits') === '1'; } catch { return false; } });
+  const basculerApercuPetits = (v: boolean) => { setApercuPetits(v); try { localStorage.setItem('dinislam_apercu_petits', v ? '1' : '0'); } catch { /* stockage indisponible */ } window.scrollTo({ top: 0 }); };
+  const modePetits = isAdmin ? apercuPetits : estGroupe0;
   const [paramsConv, setParamsConv] = useSearchParams();
   useEffect(() => {
     if (paramsConv.get('convocations') !== '1' || !isAdmin) return;
@@ -417,6 +424,25 @@ const handleModuleClick = (mod) => {
               <Suspense fallback={null}><CarnetLiaison isAdmin={isAdmin} /></Suspense>
             </SilentBoundary>
           </Encadre>
+          {/* 🧸 Bouton de l'enseignante : voir l'accueil du Groupe 0 (ou revenir au sien) */}
+          {isAdmin && (
+            <button type="button" onClick={() => basculerApercuPetits(!apercuPetits)}
+              className={`w-full rounded-2xl py-2.5 text-sm font-extrabold shadow-sm border-2 ${apercuPetits ? 'bg-amber-300 border-amber-500 text-slate-900' : 'bg-card border-dashed border-amber-400 text-amber-700 dark:text-amber-300'}`}>
+              {apercuPetits ? '↩️ Revenir à mon accueil (tu vois celui du Groupe 0)' : '🧸 Voir l\'accueil du Groupe 0'}
+            </button>
+          )}
+          {modePetits ? (
+            <>
+              <SilentBoundary name="Annonce bilan"><AnnonceBilan /></SilentBoundary>
+              {!isAdmin && <SilentBoundary name="Convocation"><ConvocationEleve /></SilentBoundary>}
+              <SilentBoundary name="Accueil des petits">
+                <Suspense fallback={<div className="h-64 rounded-3xl bg-muted animate-pulse" />}>
+                  <AccueilPetits isAdmin={isAdmin} userId={user?.id ?? null} prayerTimes={prayerTimes} lettresValidees={isAdmin ? 0 : progress?.alphabet.validated ?? 0} />
+                </Suspense>
+              </SilentBoundary>
+            </>
+          ) : (
+          <>
           {/* 📋 Ma journée (2026-11-12) : tout ce qui attend l'enseignante, un appui y emmène */}
           {isAdmin && <Encadre carte="majournee"><SilentBoundary name="Ma journée"><Suspense fallback={null}><MaJournee /></Suspense></SilentBoundary></Encadre>}
 
@@ -698,6 +724,8 @@ const handleModuleClick = (mod) => {
               </button>
             )}
           </div>
+          </>
+          )}
 
         </div>
       </AppLayout>

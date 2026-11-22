@@ -60,6 +60,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Classement = lazy(() => import("./pages/Classement"));
 const Attendance = lazy(() => import("./pages/Attendance"));
 const AlphabetPage = lazy(() => import("./pages/AlphabetPage"));
+const PetitsPage = lazy(() => import("./pages/PetitsPage"));
 const AllahNamesPage = lazy(() => import("./pages/AllahNamesPage"));
 const GenericModulePage = lazy(() => import("./pages/GenericModulePage"));
 const GrammaireConjugaisonPage = lazy(() => import("./pages/GrammaireConjugaisonPage"));
@@ -113,6 +114,8 @@ const AppRoutes = () => {
         <Route path="/sourates" element={<ProtectedRoute><Sourates /></ProtectedRoute>} />
         <Route path="/ramadan" element={<ProtectedRoute><Ramadan /></ProtectedRoute>} />
         <Route path="/alphabet" element={<ProtectedRoute><AlphabetPage /></ProtectedRoute>} />
+        {/* 🧸 Rubriques de l'accueil du Groupe 0 (2026-11-22) */}
+        <Route path="/petits/:rubrique" element={<ProtectedRoute><PetitsPage /></ProtectedRoute>} />
         <Route path="/invocations" element={<ProtectedRoute><Invocations /></ProtectedRoute>} />
         <Route path="/nourania" element={<ProtectedRoute><Nourania /></ProtectedRoute>} />
         <Route path="/priere" element={<ProtectedRoute><Priere /></ProtectedRoute>} />
