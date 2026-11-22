@@ -1,6 +1,6 @@
 /**
  * GenericTimelinePage — Page élève générique avec design timeline vertical
- * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Dhikr, Hadiths, Histoires des Prophètes
+ * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Dhikr, Hadiths (Histoires des Prophètes : page à part depuis le 22/11)
  */
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,11 +58,6 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     gradientFrom: '#b45309', gradientTo: '#f59e0b',
     dotColor: '#f59e0b', lineColor: '#fde68a',
     badgeColor: '#b45309', title: 'Hadiths', titleArabic: 'الأحاديث النبوية',
-  },
-  'histoires-prophetes': {
-    gradientFrom: '#6d28d9', gradientTo: '#8b5cf6',
-    dotColor: '#8b5cf6', lineColor: '#c4b5fd',
-    badgeColor: '#6d28d9', title: 'Histoires des Prophètes', titleArabic: 'قصص الأنبياء',
   },
 };
 

@@ -43,6 +43,7 @@ import ParentGateDialog from '@/components/settings/ParentGateDialog';
 import { errorMessage } from '@/lib/utils';
 import { choisirSonFeu, jouerSonFeu, lireSonFeu, SONS_FEU, type ChoixSonFeu } from '@/lib/sonFeu';
 import { blocageDisponible, choisirEcranTourne, ecranTourneActive } from '@/lib/ecranTourne';
+import { choisirModeFond, lireModeFond, type ModeFond } from '@/lib/fondsEcran';
 import { couperDecor, decorCoupe, saisonDuJour, useReglagesSaisons, NOM_SAISON, SAISONS_PRETES } from '@/lib/saisons';
 
 function CarteDecorSaison() {
@@ -58,6 +59,25 @@ function CarteDecorSaison() {
           <span className="block text-xs text-muted-foreground">Arbre, feuilles qui tombent, cheminée et images sur les cartes de l'accueil</span>
         </Label>
         <Switch id="deco-saison" checked={!coupe} onCheckedChange={(v) => { couperDecor(!v); setCoupe(!v); }} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** 🖼️ Fond d'écran (Nadia, 2026-11-22) : chacun choisit sur son appareil (animé, fixe ou sans fond, pour la batterie) */
+function CarteFondEcran() {
+  const [mode, setMode] = useState<ModeFond>(lireModeFond());
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-2">
+        <p className="font-bold">🖼️ Fond d'écran</p>
+        <p className="text-xs text-muted-foreground">Le jour, un fond clair ; au Maghrib, il passe doucement à la nuit. « Fixe » ou « Sans fond » économisent la batterie.</p>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Fond d'écran">
+          {([['anime', '✨ Animé'], ['fixe', '🖼️ Fixe'], ['aucun', '⬜ Sans fond']] as const).map(([v, l]) => (
+            <button key={v} type="button" role="radio" aria-checked={mode === v} onClick={() => { choisirModeFond(v); setMode(v); }}
+              className={`rounded-xl border-2 px-2 py-2 text-xs font-bold ${mode === v ? 'border-primary bg-primary/10' : 'border-border bg-card'}`}>{l}</button>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -127,7 +147,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   alphabet_quiz_question: 'Question d\'évaluation (Alphabet)',
   alphabet_commentaire: 'Commentaire / question (Alphabet)',
   petits_fiche: 'Fiche des tout-petits',
-  petits_quiz: 'Question du quiz des histoires (tout-petits)',
+  petits_quiz: 'Question du quiz d\'une histoire',
+  histoire_video: 'Vidéo d\'une histoire',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',
@@ -421,6 +442,7 @@ const Settings = () => {
 
         {/* 🍂 Décorations de saison : l'élève peut les couper pour lui (si l'enseignante l'autorise), 2026-11-03 */}
         <SilentBoundary name="Téléphone tourné"><CarteEcranTourne /></SilentBoundary>
+        <SilentBoundary name="Fond d'écran"><CarteFondEcran /></SilentBoundary>
         <SilentBoundary name="Décorations de saison"><CarteDecorSaison /></SilentBoundary>
         </>)}
 

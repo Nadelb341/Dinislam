@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAccesPetits, useGroupes } from '@/hooks/usePetits';
 import { CARTES_PETITS, libelleAccesPetit, type AccesCartePetit } from '@/lib/petits';
 import { ChoixSonErreur } from './ChoixSonErreur';
+import { ChoixFonds } from '@/components/fonds/ChoixFonds';
 import { AccueilPetits } from './AccueilPetits';
 import type { PrayerTimesData } from '@/hooks/usePrayerTimesCity';
 
@@ -18,6 +19,7 @@ export function GestionPetits({ userId, prayerTimes }: { userId: string | null; 
   const noms = Object.fromEntries(groupes.map((g) => [g.id, g.name]));
   const [carte, setCarte] = useState<(typeof CARTES_PETITS)[number] | null>(null);
   const [son, setSon] = useState(false);
+  const [fonds, setFonds] = useState(false);
   const pub = acces.pub.valeur;
   const cartes = acces.cartes.valeur;
 
@@ -53,6 +55,15 @@ export function GestionPetits({ userId, prayerTimes }: { userId: string | null; 
             );
           })}
         </div>
+      </section>
+
+      {/* 🌅 Le fond d'écran des tout-petits (jour et nuit séparés) */}
+      <section className="rounded-3xl border-2 border-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 p-4 space-y-2">
+        <button type="button" onClick={() => setFonds((v) => !v)} className="w-full flex items-center gap-2 text-start">
+          <span className="flex-1 font-extrabold text-lg">🌅 Fond d'écran des tout-petits</span>
+          <span className="text-xs font-bold">{fonds ? '▲' : '▼'}</span>
+        </button>
+        {fonds && <ChoixFonds qui="petits" />}
       </section>
 
       {/* 3 · Le son de l'erreur */}

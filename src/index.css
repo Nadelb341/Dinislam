@@ -969,3 +969,13 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   0%, 55% { transform: translateX(0) skewX(-20deg); }
   100% { transform: translateX(450%) skewX(-20deg); }
 }
+
+/* 🖼️ Fonds d'écran (Nadia, 2026-11-22) : le fond est derrière la page ; les cartes deviennent légèrement transparentes (effet verre) */
+:root.fond-actif .app-racine { background: transparent; }
+:root.fond-actif .carte-accueil, :root.fond-actif main .bg-card { background-color: hsl(var(--card) / .84); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+@keyframes fond-sc { 50% { opacity: .3; } }
+@keyframes fond-derive { from { translate: -8px 0; } to { translate: 8px 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  :root.fond-anime .fond-scintille { animation: fond-sc 4s ease-in-out infinite; }
+  :root.fond-anime .fond-nuage { animation: fond-derive 24s ease-in-out infinite alternate; }
+}

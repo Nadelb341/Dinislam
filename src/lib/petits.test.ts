@@ -54,3 +54,17 @@ describe('accès des tout-petits', () => {
     expect(libelleAccesPetit({ mode: 'certains' })).toBe('🔒 Fermée');
   });
 });
+
+import { meilleureVoix } from './petits';
+describe('voix la plus douce', () => {
+  it('préfère une voix améliorée de la bonne langue', () => {
+    const v = [
+      { lang: 'ar-SA', name: 'Maged', localService: true },
+      { lang: 'ar-SA', name: 'Laila (Enhanced)', localService: true },
+      { lang: 'fr-FR', name: 'Thomas', localService: true },
+    ];
+    expect(meilleureVoix(v, 'ar')?.name).toBe('Laila (Enhanced)');
+    expect(meilleureVoix(v, 'fr')?.name).toBe('Thomas');
+    expect(meilleureVoix([], 'ar')).toBeNull();
+  });
+});

@@ -21,6 +21,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSaisonActive } from '@/lib/saisons';
 import { DecorPages } from '@/components/saisons/DecorPages';
 import { TapisPromeneur } from '@/components/saisons/TapisPromeneur';
+import { FondEcran } from '@/components/fonds/FondEcran';
 import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
 import { BoutonRetour } from '@/components/layout/BoutonRetour';
 
@@ -62,7 +63,9 @@ const AppLayout = ({
   const { showTop, showBottom, scrollToTop, scrollToBottom } = useWindowScrollToTop();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="app-racine min-h-screen flex flex-col bg-background">
+      {/* 🖼️ Fond d'écran jour / nuit (2026-11-22), derrière tout */}
+      <SilentBoundary name="Fond d'écran"><FondEcran /></SilentBoundary>
       {/* 👻 Mode fantôme : bandeau « Revenir à mon compte » toujours en haut */}
       <SilentBoundary name="Bandeau fantôme"><BandeauFantome /></SilentBoundary>
       <Header title={title} showBack={showBack} />

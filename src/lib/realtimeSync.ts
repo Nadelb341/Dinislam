@@ -59,6 +59,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   petits_fiches: ['petits-fiches'],
   petits_etoiles: ['petits-etoiles'],
   petits_quiz: ['petits-quiz'],
+  histoires_videos: ['histoires-videos'],
   alphabet_petits_ouvertes: ['alphabet-petits-ouvertes'],
   invocation_extras: ['invocation-extras'],
   alphabet_game_scores: ['alphabet-game-scores', 'alphabet-student-summary'],

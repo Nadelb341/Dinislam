@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAccesPetits, useEtoiles, useFichesPetits, useGagnerEtoile, useReglage, type FichePetit } from '@/hooks/usePetits';
 import { ModeInvocations } from '@/components/petits/InvocationsPetits';
 import { QuizHistoire } from '@/components/petits/QuizHistoire';
+import { VideosHistoire } from '@/components/petits/VideosHistoire';
 import { useSonErreurChoisi } from '@/hooks/useSonErreur';
 import { FicheEnGrand } from '@/components/petits/FicheEnGrand';
 import { EditionFichePetit, GererFichesPetits } from '@/components/petits/FichesPetitsAdmin';
@@ -79,7 +80,12 @@ export default function PetitsPage() {
       {ouverte !== null && (
         <FicheEnGrand fiches={fiches} index={ouverte} isAdmin={isAdmin} onIndex={setOuverte} onClose={() => setOuverte(null)}
           etoileDuJour={etoileDuJour} gagner={r?.etoile ? gagner : undefined} onModifier={setEdition}
-          enBas={rubrique === 'histoires' ? (f) => <QuizHistoire key={f.id} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} /> : undefined} />
+          enBas={rubrique === 'histoires' ? (f) => (
+            <div key={f.id} className="space-y-4">
+              <VideosHistoire ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />
+              <QuizHistoire ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />
+            </div>
+          ) : undefined} />
       )}
       {ouverte !== null && r?.mode === 'coran' && fiches[ouverte] && <VersetsMotAMot f={fiches[ouverte]} />}
       {edition && <EditionFichePetit rubrique={edition.rubrique} fiche={edition} fiches={fiches} userId={user?.id ?? null} onClose={() => setEdition(null)} rafraichir={rafraichir} />}

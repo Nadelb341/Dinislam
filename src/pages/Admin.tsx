@@ -36,7 +36,7 @@ import AdminCartesAcces from '@/components/admin/AdminCartesAcces';
  * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
  * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
  */
-type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'histoires-prophetes-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces';
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces';
 
 const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
@@ -46,7 +46,6 @@ const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'dictionnaire-manage': { slug: '/module/dictionnaire', title: 'Dictionnaire' },
   'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
   'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
-  'histoires-prophetes-manage': { slug: '/module/histoires-prophetes', title: 'Histoires des Prophètes' },
 };
 
 const PROGRESS_VIEWS = ['ramadan', 'nourania', 'alphabet', 'invocations', 'sourates', 'prayer'] as const;

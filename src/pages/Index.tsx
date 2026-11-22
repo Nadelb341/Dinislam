@@ -87,7 +87,6 @@ const ADMIN_SCREENS: Record<string, { manage: string; progress?: string; extra?:
   '/module/dictionnaire': { manage: 'dictionnaire-manage' },
   '/module/dhikr': { manage: 'dhikr-manage' },
   '/module/hadiths': { manage: 'hadiths-manage' },
-  '/module/histoires-prophetes': { manage: 'histoires-prophetes-manage' },
 };
 /** 📝 Brouillons pas terminés à l'intérieur de « Gérer le contenu » d'une carte (idée B, 2026-10-27) */
 const manageDraftKeys = (mod: { id: string; builtin_path: string | null }): string[] => {

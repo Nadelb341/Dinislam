@@ -2,7 +2,7 @@
  * 🧸 Accueil du Groupe 0 (Nadia, 2026-11-22 : les 15 idées gardées) : rubriques et petits calculs.
  * Contenu en base (table petits_fiches), modifiable avec le ✏️ ; étoiles dans petits_etoiles.
  */
-export type CleRubrique = 'douas' | 'coran' | 'histoires' | 'cree' | 'piliers' | 'ablutions' | 'priere' | 'manieres' | 'ramadan' | 'aid' | 'phrases' | 'prieres5';
+export type CleRubrique = 'douas' | 'coran' | 'histoires' | 'cree' | 'piliers' | 'ablutions' | 'priere' | 'manieres' | 'ramadan' | 'aid' | 'phrases' | 'prieres5' | 'prophetes';
 export type ModeRubrique = 'imagier' | 'coran' | 'doigts' | 'etapes' | 'autocollants' | 'calendrier';
 
 export interface Rubrique {
@@ -24,6 +24,8 @@ export const RUBRIQUES: Record<CleRubrique, Rubrique> = {
   ramadan: { cle: 'ramadan', titre: 'Ramadan et l\'Aïd', emoji: '🌙', fond: 'from-indigo-400 to-slate-800', mode: 'calendrier' },
   aid: { cle: 'aid', titre: 'L\'Aïd', emoji: '🎉', fond: 'from-yellow-300 to-orange-500', mode: 'imagier' },
   phrases: { cle: 'phrases', titre: 'Les petites phrases du jour', emoji: '💬', fond: 'from-yellow-200 to-amber-400', mode: 'imagier', etoile: 'Je l\'ai dite !' },
+  // 📚 Carte « Histoires des Prophètes » des grands (22/11) : mêmes outils que les histoires des petits (vidéos, quiz)
+  prophetes: { cle: 'prophetes', titre: 'Histoires des Prophètes', emoji: '📚', fond: 'from-violet-400 to-purple-700', mode: 'imagier' },
   prieres5: { cle: 'prieres5', titre: 'Le soleil et les 5 prières', emoji: '☀️', fond: 'from-sky-300 to-amber-300', mode: 'imagier' },
 };
 
@@ -85,14 +87,26 @@ export function luneDuJour(j: number) {
   return '🌘';
 }
 
-/** Lit à voix haute (voix de l'appareil) quand l'enseignante n'a pas encore enregistré sa voix */
+/** La plus douce des voix de l'appareil pour cette langue (voix « améliorées » / naturelles et voix de femme d'abord) */
+export function meilleureVoix(voix: Pick<SpeechSynthesisVoice, 'lang' | 'name' | 'localService'>[], langue: 'ar' | 'fr') {
+  const score = (v: Pick<SpeechSynthesisVoice, 'name' | 'localService'>) =>
+    (/premium|enhanced|amélior|natural|neural|siri/i.test(v.name) ? 6 : 0) + (/google/i.test(v.name) ? 3 : 0)
+    + (/am[ée]lie|audrey|marie|aurélie|denise|eloise|vivienne|laila|mariam|salma|zariyah|amira|hala|fatima|lana|reem|zeina/i.test(v.name) ? 2 : 0)
+    + (v.localService ? 1 : 0);
+  return voix.filter((v) => v.lang.toLowerCase().startsWith(langue)).sort((a, b) => score(b) - score(a))[0] ?? null;
+}
+
+/** Lit à voix haute (voix de l'appareil, la plus douce trouvée) quand l'enseignante n'a pas encore enregistré sa voix */
 export function parler(texte: string, langue: 'ar' | 'fr') {
   try {
     if (!('speechSynthesis' in window) || !texte) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = langue === 'ar' ? 'ar-SA' : 'fr-FR';
-    u.rate = 0.85;
+    const v = meilleureVoix(window.speechSynthesis.getVoices(), langue);
+    if (v) u.voice = v as SpeechSynthesisVoice;
+    u.rate = langue === 'ar' ? 0.72 : 0.85;
+    u.pitch = 1.08;
     window.speechSynthesis.speak(u);
   } catch { /* pas de voix sur cet appareil */ }
 }

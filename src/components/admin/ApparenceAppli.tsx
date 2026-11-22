@@ -16,6 +16,7 @@ import { TitreAppli } from '@/components/home/TitreAppli';
 import { cn, errorMessage } from '@/lib/utils';
 import DecorationsSaisons, { ApercuSaisonTelephone } from '@/components/admin/DecorationsSaisons';
 import EncadrementCartes from '@/components/admin/EncadrementCartes';
+import { ChoixFonds } from '@/components/fonds/ChoixFonds';
 import { TITRE_MODIFICATIONS_GENERALES } from '@/lib/encadrements';
 
 const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } };
@@ -27,16 +28,16 @@ const entree = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'En
  */
 export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
   // 🖼️ 2026-11-18 : « Modifications générales » › « Page d'accueil » › « Encadrement des cartes » (Retour = un niveau au-dessus)
-  const [sousCarte, setSousCarte] = useState<'titre' | 'saisons' | 'general' | 'accueil' | 'cadres' | null>(null);
-  const parent = { titre: null, saisons: null, general: null, accueil: 'general', cadres: 'accueil' } as const;
-  const titreNiveau = sousCarte === 'general' ? `🧩 ${TITRE_MODIFICATIONS_GENERALES}` : sousCarte === 'accueil' ? '🏠 Page d\'accueil' : sousCarte === 'cadres' ? '🖼️ Encadrement des cartes' : null;
+  const [sousCarte, setSousCarte] = useState<'titre' | 'saisons' | 'general' | 'accueil' | 'cadres' | 'fonds' | null>(null);
+  const parent = { titre: null, saisons: null, general: null, accueil: 'general', cadres: 'accueil', fonds: null } as const;
+  const titreNiveau = sousCarte === 'general' ? `🧩 ${TITRE_MODIFICATIONS_GENERALES}` : sousCarte === 'accueil' ? '🏠 Page d\'accueil' : sousCarte === 'cadres' ? '🖼️ Encadrement des cartes' : sousCarte === 'fonds' ? '🌅 Fond d\'écran (les grands)' : null;
   return (
     <div className="space-y-4">
       <Button variant="ghost" onClick={sousCarte ? () => setSousCarte(parent[sousCarte]) : onBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button>
       <h2 className="text-xl font-extrabold">🔧 Apparence appli</h2>
       {titreNiveau && <p className="text-lg font-extrabold">{titreNiveau}</p>}
-      {sousCarte !== 'cadres' && <ApercuSaisonTelephone />}
-      {sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : sousCarte === 'cadres' ? <EncadrementCartes /> : sousCarte === 'general' ? (
+      {sousCarte !== 'cadres' && sousCarte !== 'fonds' && <ApercuSaisonTelephone />}
+      {sousCarte === 'fonds' ? <ChoixFonds qui="grands" /> : sousCarte === 'titre' ? <ReglageTitre /> : sousCarte === 'saisons' ? <DecorationsSaisons /> : sousCarte === 'cadres' ? <EncadrementCartes /> : sousCarte === 'general' ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <button type="button" onClick={() => setSousCarte('accueil')}
             className="rounded-2xl border-2 border-sky-300 bg-gradient-to-br from-sky-50 to-amber-50 dark:from-sky-950/30 dark:to-amber-950/30 p-4 text-left">
@@ -63,6 +64,11 @@ export default function ApparenceAppli({ onBack }: { onBack: () => void }) {
             className="rounded-2xl border-2 border-[#e2c08f] bg-gradient-to-br from-[#fff8ee] to-[#fbe7c8] dark:from-amber-950/30 dark:to-orange-950/20 p-4 text-left">
             <p className="text-lg font-extrabold">🍂 Décorations saisons</p>
             <p className="text-sm text-muted-foreground">L'appli habillée selon la saison : arbre, feuilles qui tombent, cheminée, images sur les cartes, couleurs. « Ambiance neutre » pour tout enlever.</p>
+          </button>
+          <button type="button" onClick={() => setSousCarte('fonds')}
+            className="rounded-2xl border-2 border-indigo-300 bg-gradient-to-br from-sky-100 via-rose-100 to-indigo-200 dark:from-sky-950/30 dark:via-rose-950/20 dark:to-indigo-950/40 p-4 text-left">
+            <p className="text-lg font-extrabold">🌅 Fond d'écran</p>
+            <p className="text-sm text-muted-foreground">Le fond derrière l'appli, le jour et la nuit (à partir du Maghrib), pour tous les élèves sauf les tout-petits. Choisis ceux qui sont actifs.</p>
           </button>
           <button type="button" onClick={() => setSousCarte('general')}
             className="rounded-2xl border-2 border-sky-300 bg-gradient-to-br from-sky-50 to-violet-50 dark:from-sky-950/30 dark:to-violet-950/30 p-4 text-left">
