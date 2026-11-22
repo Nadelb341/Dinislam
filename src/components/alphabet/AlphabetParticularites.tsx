@@ -389,7 +389,7 @@ function FicheParticularite({ p, items, messageInitial, blocs, isAdmin, userId, 
           )}
 
           {/* 🎯 L'évaluation, juste sous la vidéo */}
-          <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} isAdmin={isAdmin} userId={userId} />
+          <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} titreArabe={p.titre_arabe} video={videoHaut?.url ?? null} isAdmin={isAdmin} userId={userId} />
 
           {isAdmin ? (
             // ✋ Appui long + glisser pour ranger les zones

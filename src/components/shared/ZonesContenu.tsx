@@ -11,6 +11,7 @@ import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
+import { QuizVideo } from '@/components/shared/QuizVideo';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
 import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne, type KindMedia } from '@/lib/alphabetMedias';
@@ -103,7 +104,14 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
 
   if (!isAdmin) {
     if (!zones.length) return vide ? <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 text-center font-semibold">{vide}</p> : null;
-    return <div className="space-y-3">{zones.map((z) => <VueZone key={z.id} b={z} />)}</div>;
+    return (
+      <div className="space-y-3">{zones.map((z) => (
+        <div key={z.id} className="space-y-2">
+          <VueZone b={z} />
+          {(z.kind === 'video' || z.kind === 'youtube') && <QuizVideo cible={`zone:${z.id}`} sujet={`${libelle}${z.nom ? ` : ${z.nom}` : ''}`} video={z.kind === 'youtube' ? z.url : null} isAdmin={false} />}
+        </div>
+      ))}</div>
+    );
   }
 
   return (
@@ -115,6 +123,11 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
             return (
               <div key={z.id} ref={ref} style={style} {...attrs} className={`space-y-1.5 rounded-xl touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
                 <VueZone b={z} />
+                {(z.kind === 'video' || z.kind === 'youtube') && (
+                  <div onPointerDown={(e) => e.stopPropagation()}>
+                    <QuizVideo cible={`zone:${z.id}`} sujet={`${libelle}${z.nom ? ` : ${z.nom}` : ''}`} video={z.kind === 'youtube' ? z.url : null} isAdmin />
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-1 justify-end">
                   {z.kind === 'texte' && <Button size="sm" variant="outline" onClick={() => { setModif(z); setTexte(z.texte || ''); setAjout('texte'); }}>✏️ Modifier</Button>}
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(z)} aria-label="Retirer">🗑️</Button>

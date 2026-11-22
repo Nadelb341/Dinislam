@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useCartesAcces } from '@/hooks/useCartesAcces';
+import { optionsFor } from '@/components/admin/CibleSelect';
 import { chargerProchainesEtapes, etapeVisible, type Suggestion } from '@/hooks/useProchainesEtapes';
 import { donnerDevoirs, type ItemDevoir } from '@/lib/devoirsEleve';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +27,33 @@ const MATIERES_GROUPE: { type: string; emoji: string; label: string; audio: bool
 const CLE = 'dinislam_donner_groupe_matieres';
 const lire = () => { try { return JSON.parse(localStorage.getItem(CLE) || 'null') as Record<string, { on: boolean; audio: boolean }> | null; } catch { return null; } };
 const majuscule = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/**
+ * 📍 22/11 (Nadia : « lorsqu'il y a plusieurs choses dans une carte, je dois pouvoir choisir la partie à travailler ») :
+ * une partie précise choisie pour TOUT le groupe (ex. Alphabet › Lettres particulières › La chadda) remplace l'étape automatique.
+ */
+function itemChoisi(m: { type: string }, c: { v: string; l: string }, audio: boolean): ItemDevoir {
+  const lecon = c.v.startsWith('p:') ? c.l.replace(/^✨ Lettres particulières · /, '') : null;
+  const texte = lecon ? `Regarder la leçon « ${lecon} » (Lettres particulières) et faire le « Teste-toi »` : `Travailler : ${c.l}`;
+  return {
+    titre: audio ? `${texte} et m'envoyer un audio 🎙️` : texte, type: m.type, cible: c.v, audio, pj: [], consigne: null,
+    label: null, emoji: null, description: null, lien_lecon: null, etapes: [],
+  };
+}
+
+/** 📍 Le choix d'une partie de la carte, pour tout le groupe */
+function ChoixPartie({ type, valeur, onChange }: { type: string; valeur: { v: string; l: string } | null; onChange: (c: { v: string; l: string } | null) => void }) {
+  const { data: options = [] } = useQuery({ queryKey: ['devoir-cibles', type], queryFn: () => optionsFor(type), staleTime: 10 * 60 * 1000 });
+  if (!options.length) return null;
+  return (
+    <select value={valeur?.v ?? ''} aria-label="Partie de la carte pour tout le groupe"
+      onChange={(e) => { const o = options.find((x) => x.value === e.target.value); onChange(o ? { v: o.value, l: o.label } : null); }}
+      className="max-w-[13rem] rounded-full border border-violet-300 bg-white text-violet-900 px-2 py-0.5 text-[11px] font-bold dark:bg-violet-950 dark:text-violet-100">
+      <option value="">📍 Où il en est (auto)</option>
+      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
 
 /** Le devoir d'un élève pour une matière, d'après sa prochaine étape */
 function itemDepuisEtape(s: Suggestion, audio: boolean): ItemDevoir {
@@ -70,6 +98,8 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   const [retires, setRetires] = useState<Set<string>>(new Set()); // « élève|matière » retirés à la main
   // ✏️ Texte modifié à la main pour un élève et une matière (Nadia, 2026-11-12) ; clé « élève|matière »
   const [textes, setTextes] = useState<Record<string, string>>({});
+  // 📍 Partie choisie pour tout le groupe, par matière (sinon : là où en est chaque élève)
+  const [parties, setParties] = useState<Record<string, { v: string; l: string } | null>>({});
   const [enEdition, setEnEdition] = useState<string | null>(null);
   const [confirmer, setConfirmer] = useState(false);
   const [envoi, setEnvoi] = useState(false);
@@ -90,12 +120,13 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   const plan = eleves.map((e) => {
     const toutes = MATIERES_GROUPE.filter((m) => matieres[m.type]?.on).flatMap((m) => {
       const s = (etapes?.[e.user_id] || []).find((x) => x.type === m.type);
-      if (!s || !etapeVisible(acces, e.user_id, m.type)) return [];
-      const item = itemDepuisEtape(s, !!matieres[m.type]?.audio);
+      const partie = parties[m.type] ?? null;
+      if ((!s && !partie) || !etapeVisible(acces, e.user_id, m.type)) return [];
+      const item = partie ? itemChoisi(m, partie, !!matieres[m.type]?.audio) : itemDepuisEtape(s!, !!matieres[m.type]?.audio);
       const perso = textes[`${e.user_id}|${m.type}`];
       // ✕ (Nadia, 2026-11-18) : une ligne retirée reste visible, barrée, avec « ↩️ Remettre » (avant, elle disparaissait
       // et l'élève affichait « Rien à donner… », comme s'il avait tout validé)
-      return [{ m, item: perso?.trim() ? { ...item, titre: perso.trim() } : item, retiree: retires.has(`${e.user_id}|${m.type}`) }];
+      return [{ m, item: perso?.trim() ? { ...item, titre: perso.trim() } : item, choisi: !!partie, retiree: retires.has(`${e.user_id}|${m.type}`) }];
     });
     const items = toutes.filter((x) => !x.retiree);
     return { e, toutes, items, actif: !exclus.has(e.user_id) && items.length > 0 };
@@ -143,6 +174,7 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                 <button type="button" aria-pressed={v.on} onClick={() => setMatieres((x) => ({ ...x, [m.type]: { ...v, on: !v.on } }))}>{v.on ? '✓ ' : ''}{m.emoji} {m.label}</button>
                 {v.on && <button type="button" aria-pressed={v.audio} aria-label={`Audio demandé pour ${m.label}`} title="Audio demandé"
                   onClick={() => setMatieres((x) => ({ ...x, [m.type]: { ...v, audio: !v.audio } }))} className={cn('rounded-full px-1', v.audio ? 'bg-white/30' : 'opacity-50 line-through')}>🎙️</button>}
+                {v.on && <ChoixPartie type={m.type} valeur={parties[m.type] ?? null} onChange={(c) => setParties((x) => ({ ...x, [m.type]: c }))} />}
               </span>
             );
           })}
@@ -170,7 +202,7 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                       <span className="shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 text-[10px] font-extrabold text-amber-800 dark:text-amber-200">✏️ perso · donné</span>
                     </div>
                   ))}
-                  {p.toutes.map(({ m, item, retiree }) => {
+                  {p.toutes.map(({ m, item, retiree, choisi }) => {
                     const k = `${p.e.user_id}|${m.type}`;
                     if (retiree) return (
                       <div key={m.type} className="flex items-start gap-1.5 ps-6 text-xs">
@@ -191,8 +223,8 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                       ) : (
                         <span className={cn('cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]', !p.actif && 'opacity-60')}>{m.emoji} {item.titre}</span>
                       )}
-                      <span className={cn('shrink-0 rounded-full px-1.5 text-[10px] font-extrabold', textes[k]?.trim() ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200' : 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-200')}>
-                        {textes[k]?.trim() ? '✏️ perso' : '🤖 auto'}
+                      <span className={cn('shrink-0 rounded-full px-1.5 text-[10px] font-extrabold', textes[k]?.trim() ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200' : choisi ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200' : 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-200')}>
+                        {textes[k]?.trim() ? '✏️ perso' : choisi ? '📍 choisi' : '🤖 auto'}
                       </span>
                       <button type="button" aria-label={enEdition === k ? 'Terminer la modification' : `Modifier le devoir ${m.label} de ${p.e.full_name}`}
                         onMouseDown={(ev) => ev.preventDefault()} onClick={() => setEnEdition(enEdition === k ? null : k)} className="shrink-0 text-sm">{enEdition === k ? '✅' : '✏️'}</button>

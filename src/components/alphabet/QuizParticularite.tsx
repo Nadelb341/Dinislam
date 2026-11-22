@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { untypedDb } from '@/lib/untypedDb';
@@ -9,7 +9,8 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList } from '@/components/shared/SortableCardList';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
-import { enregistrerOrdre } from '@/lib/alphabetMedias';
+import { enregistrerOrdre, horsLigne } from '@/lib/alphabetMedias';
+import { preparerQuiz } from '@/lib/quizVideo';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { errorMessage } from '@/lib/utils';
@@ -19,26 +20,62 @@ import { errorMessage } from '@/lib/utils';
  * Enseignante : ➕ ajouter, ✏️ modifier, ✋ appui long + glisser pour ranger, 🗑️ retirer (corbeille). Table `alphabet_quiz_questions`.
  * Hors ligne : les questions déjà vues restent jouables ; les modifications sont gardées et envoyées au retour du réseau.
  */
-export interface Question { id: string; question: string; arabe: string | null; choix: string[]; bonne: number; explication: string | null; position: number }
+export interface Question { id: string; question: string; arabe: string | null; choix: string[]; bonne: number; explication: string | null; position: number; valide?: boolean }
 
 const melanger = <T,>(t: T[]) => [...t].sort(() => Math.random() - 0.5);
 
-export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { particuliereId: string; titre: string; isAdmin: boolean; userId: string | null }) {
+export function QuizParticularite({ particuliereId, titre, titreArabe, video, isAdmin, userId }: {
+  particuliereId: string; titre: string; titreArabe?: string | null;
+  /** La vidéo de la leçon (lien ou fichier) : s'il y en a une et aucune question, le quiz se prépare tout seul (22/11) */
+  video?: string | null;
+  isAdmin: boolean; userId: string | null;
+}) {
   const queryClient = useQueryClient();
   const [jeu, setJeu] = useState(false);
   const [edition, setEdition] = useState<Question | 'nouvelle' | null>(null);
   const [aRetirer, setARetirer] = useState<Question | null>(null);
   const cle = ['alphabet-quiz', particuliereId];
-  const { data: questions = [] } = useQuery({
+  const { data: questions = [], isFetched: charge } = useQuery({
     queryKey: cle,
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('alphabet_quiz_questions').select('id, question, arabe, choix, bonne, explication, position')
+      const { data, error } = await untypedDb.from('alphabet_quiz_questions').select('id, question, arabe, choix, bonne, explication, position, valide')
         .eq('particularite_id', particuliereId).order('position').order('created_at');
       if (error) throw error;
       return (data || []) as Question[];
     },
   });
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: cle });
+  // Élèves : seulement les questions validées ; enseignante : toutes (les brouillons sont signalés)
+  const jouables = isAdmin ? questions : questions.filter((q) => q.valide !== false);
+  const brouillons = questions.filter((q) => q.valide === false);
+
+  // 🪄 Une vidéo et aucune question : l'IA prépare 10 questions (brouillon caché aux élèves), une seule fois par ouverture
+  const [prepa, setPrepa] = useState<'non' | 'encours' | 'erreur'>('non');
+  const tente = useRef(false);
+  const preparer = async () => {
+    if (horsLigne()) { toast.error('📡 Nécessite Internet pour préparer le quiz'); return; }
+    setPrepa('encours');
+    try {
+      const { questions: qs, source } = await preparerQuiz({ sujet: `Leçon de lecture arabe « ${titre}${titreArabe ? ` (${titreArabe})` : ''} » (lettres particulières, tajwid de base)`, video });
+      await ecrireOuGarder({ table: 'alphabet_quiz_questions', op: 'insert', rows: qs.map((q, i) => ({
+        particularite_id: particuliereId, question: q.question, arabe: q.arabe ?? null, choix: q.choix, bonne: q.bonne,
+        explication: q.explication ?? null, position: Math.max(0, ...questions.map((x) => x.position)) + (i + 1) * 10, valide: false })) });
+      toast.success(`🪄 ${qs.length} questions préparées ${source === 'video' ? 'd\'après la vidéo' : 'd\'après le sujet de la leçon'} : relis-les, puis montre-les aux élèves`);
+      setPrepa('non'); rafraichir();
+    } catch (e) { setPrepa('erreur'); toast.error(`Quiz pas préparé : ${errorMessage(e)}`); }
+  };
+  useEffect(() => {
+    if (!isAdmin || !video || !charge || questions.length || tente.current) return;
+    tente.current = true;
+    void preparer();
+  }, [isAdmin, video, charge, questions.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toutValider = async () => {
+    queryClient.setQueryData<Question[]>(cle, (old) => (old || []).map((q) => ({ ...q, valide: true })));
+    try {
+      for (const q of brouillons) await ecrireOuGarder({ table: 'alphabet_quiz_questions', op: 'update', id: q.id, values: { valide: true } });
+      toast.success('✅ Le quiz est visible par les élèves');
+    } catch (e) { toast.error(errorMessage(e)); rafraichir(); }
+  };
 
   const retirer = async (q: Question) => {
     if (!userId) return;
@@ -50,19 +87,30 @@ export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { 
     } catch (e) { toast.error(errorMessage(e)); }
   };
 
-  if (!questions.length && !isAdmin) return null;
+  if (!jouables.length && !isAdmin) return null;
 
   return (
     <div className="space-y-2">
       {/* 🎯 Un gros bouton qui donne envie (Nadia, 2026-11-21) */}
-      {questions.length > 0 ? (
+      {isAdmin && brouillons.length > 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+          <p className="text-sm font-bold">🪄 {brouillons.length} question{brouillons.length > 1 ? 's' : ''} préparée{brouillons.length > 1 ? 's' : ''} automatiquement : cachée{brouillons.length > 1 ? 's' : ''} aux élèves tant que tu ne valides pas.</p>
+          <p className="text-xs text-muted-foreground">Relis-les (▶ « Teste-toi » ou ✏️ Gérer les questions), corrige si besoin, puis :</p>
+          <Button size="sm" onClick={() => void toutValider()}>✅ Montrer ce quiz aux élèves</Button>
+        </div>
+      )}
+      {isAdmin && prepa === 'encours' && <p className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 p-3 text-sm font-semibold">🪄 Je prépare 10 questions sur la vidéo… (quelques secondes)</p>}
+      {isAdmin && !questions.length && prepa !== 'encours' && (
+        <Button size="sm" variant="outline" className="w-full" onClick={() => void preparer()}>🪄 Préparer 10 questions automatiquement{prepa === 'erreur' ? ' (réessayer)' : ''}</Button>
+      )}
+      {jouables.length > 0 ? (
         <button type="button" onClick={() => setJeu(true)}
           className="group relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 p-[3px] shadow-lg transition-transform active:scale-[0.98]">
           <span className="flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
             <span className="text-4xl drop-shadow animate-bounce [animation-duration:2s]">🎯</span>
             <span className="flex-1 text-start">
               <span className="block text-lg font-extrabold leading-tight">Teste-toi !</span>
-              <span className="block text-xs font-semibold text-white/85">{questions.length} question{questions.length > 1 ? 's' : ''} · une étape à la fois · ⭐ score à la fin</span>
+              <span className="block text-xs font-semibold text-white/85">{jouables.length} question{jouables.length > 1 ? 's' : ''} · une étape à la fois · ⭐ score à la fin</span>
             </span>
             <span className="h-12 w-12 shrink-0 rounded-full bg-white text-violet-700 grid place-items-center text-2xl font-black shadow-md group-hover:scale-110 transition-transform ps-1">▶</span>
           </span>
@@ -80,7 +128,7 @@ export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { 
               const { ref, style, isDragging, ...attrs } = drag;
               return (
                 <div key={q.id} ref={ref} style={style} {...attrs} className={`flex items-center gap-2 rounded-xl bg-card border border-border p-2 touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
-                  <p className="flex-1 min-w-0 text-sm [overflow-wrap:anywhere]">{q.question} {q.arabe && <span className="font-arabic text-base" dir="rtl">{q.arabe}</span>}</p>
+                  <p className="flex-1 min-w-0 text-sm [overflow-wrap:anywhere]">{q.valide === false && <span className="me-1 rounded-full bg-amber-200 px-1.5 text-[10px] font-extrabold text-amber-900">brouillon</span>}{q.question} {q.arabe && <span className="font-arabic text-base" dir="rtl">{q.arabe}</span>}</p>
                   <Button size="sm" variant="outline" onClick={() => setEdition(q)} aria-label="Modifier">✏️</Button>
                   <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(q)} aria-label="Retirer">🗑️</Button>
                 </div>
@@ -91,7 +139,7 @@ export function QuizParticularite({ particuliereId, titre, isAdmin, userId }: { 
         </details>
       )}
 
-      {jeu && <Passage questions={questions} titre={titre} onClose={() => setJeu(false)} />}
+      {jeu && <Passage questions={jouables} titre={titre} onClose={() => setJeu(false)} />}
       {edition && <EditionQuestion q={edition === 'nouvelle' ? null : edition} particuliereId={particuliereId}
         position={Math.max(0, ...questions.map((q) => q.position)) + 10} onClose={() => setEdition(null)} rafraichir={rafraichir} />}
       <ConfirmDeleteDialog open={!!aRetirer} onOpenChange={(o) => !o && setARetirer(null)}

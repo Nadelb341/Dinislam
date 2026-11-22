@@ -149,6 +149,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   petits_fiche: 'Fiche des tout-petits',
   petits_quiz: 'Question du quiz d\'une histoire',
   histoire_video: 'Vidéo d\'une histoire',
+  quiz_video: 'Quiz d\'une vidéo',
   allah_name: 'Nom d\'Allah',
   allah_name_media: 'Média (Noms d\'Allah)',
   invocation: 'Invocation',

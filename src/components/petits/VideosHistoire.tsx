@@ -14,6 +14,7 @@ import { trashThenDelete } from '@/lib/trash';
 import { enregistrerOrdre } from '@/lib/alphabetMedias';
 import { errorMessage } from '@/lib/utils';
 import { idYoutube } from '@/lib/youtube';
+import { QuizVideo } from '@/components/shared/QuizVideo';
 
 /**
  * 🎬 Les vidéos d'une histoire (Nadia, 22/11) : vidéos YouTube choisies par l'enseignante, CACHÉES aux élèves au départ ;
@@ -22,10 +23,11 @@ import { idYoutube } from '@/lib/youtube';
  */
 interface VideoHistoire { id: string; youtube_id: string; titre: string | null; chaine: string | null; a_revoir: boolean; visible: boolean; position: number }
 
-export function VideosHistoire({ ficheId, rubrique, titreFiche, isAdmin, entete = '🎬 Les vidéos' }: {
+export function VideosHistoire({ ficheId, rubrique, titreFiche, isAdmin, entete = '🎬 Les vidéos', petits = false }: {
   /** Une histoire… */ ficheId?: string;
   /** …ou toute une carte des tout-petits (ex. « ramadan ») */ rubrique?: string;
   titreFiche: string; isAdmin: boolean; entete?: string;
+  /** Quiz sonore (tout-petits) */ petits?: boolean;
 }) {
   const cible = ficheId ? { col: 'fiche_id', val: ficheId } : { col: 'rubrique', val: rubrique ?? '' };
   const queryClient = useQueryClient();
@@ -87,6 +89,7 @@ export function VideosHistoire({ ficheId, rubrique, titreFiche, isAdmin, entete 
           <div key={v.id} className="space-y-1">
             {v.titre && <p className="font-bold text-sm text-slate-800 dark:text-white [overflow-wrap:anywhere]">{v.titre}</p>}
             <SafeYoutubeEmbed embedUrl={`https://www.youtube.com/embed/${v.youtube_id}`} title={v.titre || titreFiche} />
+            <QuizVideo cible={`histoire_video:${v.id}`} sujet={`${titreFiche} : ${v.titre || 'vidéo'}`} video={v.youtube_id} isAdmin={false} petits={petits} />
           </div>
         )) : (
           <>
@@ -115,6 +118,9 @@ export function VideosHistoire({ ficheId, rubrique, titreFiche, isAdmin, entete 
                       <Button size="sm" variant="outline" className="text-destructive" onClick={() => setARetirer(v)} aria-label="Retirer la vidéo">🗑️</Button>
                     </div>
                     {ouverte === v.id && <SafeYoutubeEmbed embedUrl={`https://www.youtube.com/embed/${v.youtube_id}`} title={v.titre || titreFiche} />}
+                    <div onPointerDown={(e) => e.stopPropagation()}>
+                      <QuizVideo cible={`histoire_video:${v.id}`} sujet={`${titreFiche} : ${v.titre || 'vidéo'}`} video={v.youtube_id} isAdmin petits={petits} />
+                    </div>
                   </div>
                 );
               }} />
