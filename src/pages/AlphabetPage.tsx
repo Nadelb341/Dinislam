@@ -332,6 +332,13 @@ const AlphabetPage = () => {
 
   // « Commencer mon travail » d'un devoir : ?item=<id de la lettre> → la fiche de la lettre s'ouvre (une fois)
   useOpenItemFromUrl(lettersFetched && ageReady && (!user || isAdmin || (progressFetched && unlocksFetched && groupUnlocksFetched)), (item) => {
+    // ✨ Devoir sur une leçon des « Lettres particulières » (valeur « p:<id> », 22/11) → l'onglet s'ouvre sur cette leçon
+    if (item.startsWith('p:')) {
+      if (ongletsVisibles && !isAdmin && !ongletsVisibles.includes('particularites')) { toast('🔒 Ton professeur va bientôt t\'ouvrir les Lettres particulières'); return; }
+      setOngletState('particularites');
+      setFicheDemandee({ fiche: item.slice(2), message: null });
+      return;
+    }
     const letter = letters.find((l) => String(l.id) === item.trim());
     if (!letter) { toast(MISSING_ITEM_MESSAGE); return; }
     // Lettre fermée : même règle que dans la grille (elle s'ouvre dans l'ordre) → message clair
@@ -378,7 +385,7 @@ const AlphabetPage = () => {
         )}
 
         {onglet === 'particularites' && <AlphabetParticularites isAdmin={isAdmin} ficheInitiale={ficheDemandee?.fiche ?? null} messageInitial={ficheDemandee?.message ?? null} />}
-        {onglet === 'petits' && <AlphabetToutPetits letters={letters} unlocked={unlocked} learned={learned} isAdmin={isAdmin} />}
+        {onglet === 'petits' && <AlphabetToutPetits letters={letters} learned={learned} isAdmin={isAdmin} />}
 
         {onglet === 'arabe' && (<>
         {/* En-tête */}

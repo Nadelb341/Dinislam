@@ -24,9 +24,26 @@ const SCENES = [
   { ciel: 'from-indigo-800 to-slate-900', astre: '🌙', haut: 8 },
 ];
 
-export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }: {
+/** Carte fermée : invisible pour l'enfant ; pour l'enseignante, grisée avec « 🔒 Fermée » */
+function Bloc({ cle, ouverte, fermee, children, className = '' }: { cle: string; ouverte: (c: string) => boolean; fermee: (c: string) => boolean; children: React.ReactNode; className?: string }) {
+  if (!ouverte(cle)) return null;
+  if (!fermee(cle)) return <>{children}</>;
+  return (
+    <div className={`relative ${className}`}>
+      <div className="opacity-45 grayscale">{children}</div>
+      <span className="pointer-events-none absolute top-2 start-2 z-10 rounded-full bg-slate-900/85 px-2.5 py-1 text-xs font-extrabold text-white shadow">🔒 Fermée</span>
+    </div>
+  );
+}
+
+export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees, ouverte, fermee = () => false }: {
   isAdmin: boolean; userId: string | null; prayerTimes: PrayerTimesData | null; lettresValidees: number;
+  /** La carte est-elle visible ? (élève : ouverte pour lui ; enseignante : toujours) */
+  ouverte: (cle: string) => boolean;
+  /** Enseignante : la carte est fermée à tous (affichée grisée) */
+  fermee?: (cle: string) => boolean;
 }) {
+  const b = { ouverte, fermee };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: fiches = [] } = useFichesPetits();
@@ -55,6 +72,7 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }:
     <div className="space-y-4">
       {/* 15 · Un mot pour les parents */}
       {(mot.valeur || isAdmin) && (
+        <Bloc cle="mot" {...b}>
         <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
           {motEdition !== null ? (
             <div className="space-y-2">
@@ -73,9 +91,11 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }:
             </div>
           )}
         </div>
+        </Bloc>
       )}
 
       {/* 1 · Le soleil et les 5 prières : une grande image du moment, sans chiffres ; un toucher = le nom de la prière */}
+      <Bloc cle="soleil" {...b}>
       <div className={`relative rounded-[32px] overflow-hidden shadow-xl bg-gradient-to-b ${scene.ciel} p-4 pt-24 sm:pt-28`}>
         <span className="absolute start-1/2 -translate-x-1/2 text-7xl drop-shadow-xl transition-all duration-1000" style={{ top: scene.haut }} aria-hidden>{scene.astre}</span>
         <div className="relative grid grid-cols-5 gap-1.5 sm:gap-3">
@@ -89,9 +109,11 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }:
         </div>
         {isAdmin && <button type="button" onClick={() => navigate('/petits/prieres5')} className="absolute top-3 end-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold shadow">✏️ Les 5 prières</button>}
       </div>
+      </Bloc>
 
       {/* 2 · La petite phrase du jour */}
       {phrase && (
+        <Bloc cle="phrase" {...b}>
         <div className="relative rounded-[32px] bg-gradient-to-br from-yellow-200 to-amber-400 shadow-xl p-4 text-center space-y-1">
           <p className="text-xs font-bold text-amber-900">💬 La petite phrase du jour</p>
           <button type="button" onClick={() => void direPhrase()} className="w-full space-y-1 active:scale-[0.98] transition-transform">
@@ -111,24 +133,29 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }:
             </div>
           )}
         </div>
+        </Bloc>
       )}
 
       {/* 3 · Mes étoiles : un coffre qui se remplit (dou'as dites, bonnes actions, cases du Ramadan, jeux, lettres validées) */}
+      <Bloc cle="etoiles" {...b}>
       <button type="button" onClick={() => { setCoffre(true); sonHarpeEtoiles(); setTimeout(() => setCoffre(false), 1500); }}
         className="w-full rounded-[32px] bg-gradient-to-br from-indigo-500 to-purple-700 shadow-xl p-4 text-white text-center space-y-1 active:scale-[0.98] transition-transform">
         <p className={`text-6xl ${coffre ? 'animate-bounce' : ''}`}>🧰</p>
         <p className="text-2xl font-extrabold">⭐ {nbEtoiles}</p>
         <p className="text-2xl leading-snug break-all" aria-hidden>{'⭐'.repeat(Math.min(nbEtoiles, 30))}{nbEtoiles > 30 ? '✨' : ''}</p>
       </button>
+      </Bloc>
 
       {/* 4 · Quatre grosses tuiles */}
       <div className="grid grid-cols-2 gap-4">
         {TUILES_GRANDES.map((t) => (
-          <button key={t.cle} type="button" onClick={() => navigate(t.lien)} aria-label={t.titre}
-            className={`aspect-square rounded-[36px] bg-gradient-to-br ${t.fond} shadow-xl flex flex-col items-center justify-center gap-1 text-white active:scale-95 transition-transform`}>
+          <Bloc key={t.cle} cle={t.cle} {...b}>
+          <button type="button" onClick={() => navigate(t.lien)} aria-label={t.titre}
+            className={`w-full aspect-square rounded-[36px] bg-gradient-to-br ${t.fond} shadow-xl flex flex-col items-center justify-center gap-1 text-white active:scale-95 transition-transform`}>
             <span className="text-7xl sm:text-8xl leading-none drop-shadow">{t.emoji}</span>
             <span className="text-lg sm:text-xl font-extrabold drop-shadow">{t.titre}</span>
           </button>
+          </Bloc>
         ))}
       </div>
       {/* 6 à 14 · Les autres cartes des petits */}
@@ -136,11 +163,13 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees }:
         {TUILES_AUTRES.map((c) => {
           const r = RUBRIQUES[c];
           return (
-            <button key={c} type="button" onClick={() => navigate(`/petits/${c}`)} aria-label={r.titre}
-              className={`aspect-square rounded-[28px] bg-gradient-to-br ${r.fond} shadow-lg flex flex-col items-center justify-center gap-1 text-white active:scale-95 transition-transform p-1`}>
+            <Bloc key={c} cle={c} {...b}>
+            <button type="button" onClick={() => navigate(`/petits/${c}`)} aria-label={r.titre}
+              className={`w-full aspect-square rounded-[28px] bg-gradient-to-br ${r.fond} shadow-lg flex flex-col items-center justify-center gap-1 text-white active:scale-95 transition-transform p-1`}>
               <span className="text-5xl leading-none drop-shadow">{r.emoji}</span>
               <span className="text-[11px] sm:text-sm font-extrabold text-center leading-tight drop-shadow [overflow-wrap:anywhere]">{r.titre}</span>
             </button>
+            </Bloc>
           );
         })}
       </div>

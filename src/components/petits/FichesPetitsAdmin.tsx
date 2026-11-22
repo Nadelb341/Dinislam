@@ -100,8 +100,9 @@ export function EditionFichePetit({ rubrique, fiche, fiches, userId, onClose, ra
     if (!fiche || !userId) return;
     try {
       const zones = await collectChildren('zones_contenu', 'cible', [`petits:${fiche.id}`]);
+      const quiz = await collectChildren('petits_quiz', 'fiche_id', [fiche.id]);
       await trashThenDelete({ userId, type: 'petits_fiche', id: fiche.id, label: `${fiche.titre} (${RUBRIQUES[rubrique].titre}, accueil des petits)`, data: fiche,
-        children: [zones], remove: () => untypedDb.from('petits_fiches').delete().eq('id', fiche.id) });
+        children: [zones, quiz], remove: () => untypedDb.from('petits_fiches').delete().eq('id', fiche.id) });
       toast.success('🗑️ Dans la corbeille (Paramètres)');
       rafraichir(); onClose();
     } catch (e) { toast.error(errorMessage(e)); }

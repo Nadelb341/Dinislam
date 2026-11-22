@@ -27,3 +27,30 @@ describe('accueil des petits', () => {
     expect(cleJour(new Date(2026, 10, 2))).toBe('2026-11-02');
   });
 });
+
+import { aAccueilPetits, carteOuvertePetit, libelleAccesPetit } from './petits';
+
+describe('accès des tout-petits', () => {
+  const g0 = 'g0', g3 = 'g3';
+  it('accueil : moins de 6 ans et/ou groupes choisis', () => {
+    expect(aAccueilPetits({ moins6: false, groupes: [g0] }, { age: 9, groupes: [g0] })).toBe(true);
+    expect(aAccueilPetits({ moins6: false, groupes: [g0] }, { age: 4, groupes: [g3] })).toBe(false);
+    expect(aAccueilPetits({ moins6: true, groupes: [] }, { age: 4, groupes: [] })).toBe(true);
+    expect(aAccueilPetits({ moins6: true, groupes: [] }, { age: null, groupes: [] })).toBe(false);
+    expect(aAccueilPetits({ moins6: true, groupes: [] }, { age: 6, groupes: [] })).toBe(false);
+  });
+  it('carte fermée au départ, puis ouverte à tous ou à certains', () => {
+    const e = { age: 5, groupes: [g0] };
+    expect(carteOuvertePetit({}, 'douas', e)).toBe(false);
+    expect(carteOuvertePetit({ douas: { mode: 'tous' } }, 'douas', e)).toBe(true);
+    expect(carteOuvertePetit({ douas: { mode: 'certains', groupes: [g3] } }, 'douas', e)).toBe(false);
+    expect(carteOuvertePetit({ douas: { mode: 'certains', moins6: true } }, 'douas', e)).toBe(true);
+    expect(carteOuvertePetit({ douas: { mode: 'certains', groupes: [g0] } }, 'douas', { age: 8, groupes: [g0] })).toBe(true);
+  });
+  it('libellés', () => {
+    expect(libelleAccesPetit(undefined)).toBe('🔒 Fermée');
+    expect(libelleAccesPetit({ mode: 'tous' })).toBe('🌍 Tous les tout-petits');
+    expect(libelleAccesPetit({ mode: 'certains', moins6: true, groupes: [g0] }, { g0: 'Groupe 0' })).toBe('🎯 moins de 6 ans, Groupe 0');
+    expect(libelleAccesPetit({ mode: 'certains' })).toBe('🔒 Fermée');
+  });
+});

@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { untypedDb } from '@/lib/untypedDb';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { errorMessage } from '@/lib/utils';
-import type { CleRubrique } from '@/lib/petits';
+import { aAccueilPetits, carteOuvertePetit, type AccesCartesPetits, type CleRubrique, type Enfant, type PublicPetits } from '@/lib/petits';
+import { useMyAge } from '@/hooks/useMyAge';
 
 /** 🧸 Données de l'accueil du Groupe 0 (Nadia, 2026-11-22) */
 export interface FichePetit {
@@ -13,21 +14,48 @@ export interface FichePetit {
 }
 export interface Etoile { source: string; ref: string; created_at: string }
 
-/** L'élève est-il dans le Groupe 0 ? (même repère que l'onglet « tout-petits » : groupe dont le nom commence par « Groupe 0 ») */
-export function useEstGroupe0(userId: string | null | undefined) {
+/** Les groupes de l'élève (pour savoir s'il a l'accueil des tout-petits et quelles cartes lui sont ouvertes) */
+export function useMesGroupes(userId: string | null | undefined) {
   return useQuery({
-    queryKey: ['groupe0', userId],
+    queryKey: ['mes-groupes', userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data: m, error } = await supabase.from('student_group_members').select('group_id').eq('user_id', userId!);
+      const { data, error } = await supabase.from('student_group_members').select('group_id').eq('user_id', userId!);
       if (error) throw error;
-      const ids = (m || []).map((r) => r.group_id);
-      if (!ids.length) return false;
-      const { data: g, error: e2 } = await supabase.from('student_groups').select('name').in('id', ids);
-      if (e2) throw e2;
-      return (g || []).some((x) => /^groupe 0/i.test(x.name.trim()));
+      return (data || []).map((r) => r.group_id as string);
     },
   });
+}
+
+/** Tous les groupes (noms), pour l'écran de l'enseignante */
+export function useGroupes() {
+  return useQuery({
+    queryKey: ['student-groups-noms'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('student_groups').select('id, name').order('name');
+      if (error) throw error;
+      return (data || []) as { id: string; name: string }[];
+    },
+  });
+}
+
+/**
+ * 🔒 L'accueil des tout-petits pour l'élève connecté : l'a-t-il ? quelles cartes lui sont ouvertes ?
+ * L'enseignante voit tout (les cartes fermées sont signalées).
+ */
+export function useAccesPetits(userId: string | null | undefined, isAdmin: boolean) {
+  const age = useMyAge();
+  const { data: groupes = [], isFetched } = useMesGroupes(isAdmin ? null : userId);
+  const pub = useReglage<PublicPetits>('petits_public', { moins6: false, groupes: [] });
+  const cartes = useReglage<AccesCartesPetits>('petits_cartes', {});
+  const enfant: Enfant = { age, groupes };
+  return {
+    pret: isAdmin || isFetched,
+    aAccueil: !isAdmin && aAccueilPetits(pub.valeur, enfant),
+    ouverte: (cle: string) => isAdmin || carteOuvertePetit(cartes.valeur, cle, enfant),
+    fermeePourTous: (cle: string) => !cartes.valeur[cle],
+    pub, cartes,
+  };
 }
 
 export function useFichesPetits() {

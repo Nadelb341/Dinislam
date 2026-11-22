@@ -10,9 +10,11 @@ import type { FichePetit } from '@/hooks/usePetits';
  * ⭐ « Je l'ai dite / fait ! » (une étoile par jour), et les zones de contenu (vidéos, images…) que tu ajoutes.
  * ‹ › pour passer d'une fiche à l'autre, grosse croix rouge pour revenir.
  */
-export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileDuJour, gagner, onModifier }: {
+export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileDuJour, gagner, onModifier, enBas }: {
   fiches: FichePetit[]; index: number; isAdmin: boolean; onIndex: (i: number) => void; onClose: () => void;
   etoileDuJour: (f: FichePetit) => boolean; gagner?: (f: FichePetit) => Promise<boolean>; onModifier?: (f: FichePetit) => void;
+  /** Sous les zones de contenu (ex. le quiz audio des histoires) */
+  enBas?: (f: FichePetit) => React.ReactNode;
 }) {
   const f = fiches[index];
   const r = f ? RUBRIQUES[f.rubrique] : null;
@@ -29,7 +31,7 @@ export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileD
 
   return (
     <div className={`fixed inset-0 z-[900] bg-gradient-to-b ${r.fond} overflow-y-auto`}
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
       <button type="button" onClick={onClose} aria-label="Fermer"
         className="fixed end-4 z-10 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
       {isAdmin && onModifier && (
@@ -59,6 +61,7 @@ export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileD
         <div className="rounded-3xl bg-white/90 dark:bg-slate-900/90 p-3 text-start empty:hidden">
           <ZonesContenu cible={`petits:${f.id}`} isAdmin={isAdmin} libelle={f.titre} />
         </div>
+        {enBas?.(f)}
       </div>
       {fiches.length > 1 && (
         <div className="fixed inset-x-0 flex justify-between px-4 pointer-events-none" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>

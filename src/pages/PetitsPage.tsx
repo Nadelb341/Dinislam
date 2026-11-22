@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEtoiles, useFichesPetits, useGagnerEtoile, useReglage, type FichePetit } from '@/hooks/usePetits';
+import { useAccesPetits, useEtoiles, useFichesPetits, useGagnerEtoile, useReglage, type FichePetit } from '@/hooks/usePetits';
+import { ModeInvocations } from '@/components/petits/InvocationsPetits';
+import { QuizHistoire } from '@/components/petits/QuizHistoire';
+import { useSonErreurChoisi } from '@/hooks/useSonErreur';
 import { FicheEnGrand } from '@/components/petits/FicheEnGrand';
 import { EditionFichePetit, GererFichesPetits } from '@/components/petits/FichesPetitsAdmin';
 import { confettiLettres } from '@/lib/confettiLettres';
@@ -34,7 +37,19 @@ export default function PetitsPage() {
   const etoileDuJour = (f: FichePetit) => aEtoile('fiche', refEtoileDuJour(f));
   const gagner = (f: FichePetit) => gagnerEtoile('fiche', refEtoileDuJour(f));
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['petits-fiches'] });
+  // 🔒 Carte fermée pour cet enfant (onglet « 🧸 Tout-petits » de l'enseignante) : la page ne s'ouvre pas non plus par un lien
+  const acces = useAccesPetits(user?.id, isAdmin);
+  useSonErreurChoisi(); // le son doux choisi par l'enseignante, retenu sur l'appareil
+  const cleCarte = ({ prieres5: 'soleil', phrases: 'phrase', aid: 'ramadan' } as Record<string, string>)[rubrique] ?? rubrique;
 
+  if (!isAdmin && acces.pret && !acces.ouverte(cleCarte)) return (
+    <div className="min-h-[100dvh] grid place-items-center bg-gradient-to-b from-sky-200 to-indigo-300 p-6 text-center">
+      <div className="space-y-4">
+        <p className="text-8xl">🔒</p>
+        <button type="button" onClick={() => navigate('/')} className="h-16 px-6 rounded-full bg-white shadow-lg text-3xl">‹ 🏠</button>
+      </div>
+    </div>
+  );
   if (!r && !jeux) return <div className="p-6 text-center"><p>Cette page n'existe pas.</p><button type="button" className="underline" onClick={() => navigate('/')}>Accueil</button></div>;
   const fond = jeux ? 'from-fuchsia-300 to-purple-600' : r!.fond;
 
@@ -53,16 +68,18 @@ export default function PetitsPage() {
           : r!.mode === 'coran' ? <ModeCoran fiches={fiches} ouvrir={setOuverte} />
           : r!.mode === 'doigts' ? <ModeDoigts fiches={fiches} ouvrir={setOuverte} />
           : r!.mode === 'etapes' ? <ModeEtapes fiches={fiches} ouvrir={setOuverte} gagner={() => gagnerEtoile('etapes', `${rubrique}:${cleJour()}`)} />
+          : rubrique === 'douas' ? <ModeInvocations isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />
           : r!.mode === 'calendrier' ? <ModeCalendrier fiches={fiches} aid={toutes.filter((f) => f.rubrique === 'aid')} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />
           : <ModeImagier fiches={fiches} ouvrir={setOuverte} autocollants={r!.mode === 'autocollants'} etoiles={etoiles} />}
 
-        {isAdmin && !jeux && <GererFichesPetits rubrique={rubrique as CleRubrique} fiches={fiches} userId={user?.id ?? null} />}
+        {isAdmin && !jeux && rubrique !== 'douas' && <GererFichesPetits rubrique={rubrique as CleRubrique} fiches={fiches} userId={user?.id ?? null} />}
         {isAdmin && rubrique === 'ramadan' && <GererFichesPetits rubrique="aid" fiches={toutes.filter((f) => f.rubrique === 'aid')} userId={user?.id ?? null} />}
       </div>
 
       {ouverte !== null && (
         <FicheEnGrand fiches={fiches} index={ouverte} isAdmin={isAdmin} onIndex={setOuverte} onClose={() => setOuverte(null)}
-          etoileDuJour={etoileDuJour} gagner={r?.etoile ? gagner : undefined} onModifier={setEdition} />
+          etoileDuJour={etoileDuJour} gagner={r?.etoile ? gagner : undefined} onModifier={setEdition}
+          enBas={rubrique === 'histoires' ? (f) => <QuizHistoire key={f.id} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} /> : undefined} />
       )}
       {ouverte !== null && r?.mode === 'coran' && fiches[ouverte] && <VersetsMotAMot f={fiches[ouverte]} />}
       {edition && <EditionFichePetit rubrique={edition.rubrique} fiche={edition} fiches={fiches} userId={user?.id ?? null} onClose={() => setEdition(null)} rafraichir={rafraichir} />}

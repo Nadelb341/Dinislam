@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedDb } from '@/lib/untypedDb';
 import { SOURATES_DATA } from '@/data/sourates';
 
 /**
@@ -23,8 +24,16 @@ export async function optionsFor(type: string): Promise<Option[]> {
       return (data || []).map((n) => ({ value: String(n.id), label: `Nom n° ${n.display_order} · ${n.transliteration || n.name_french}` }));
     }
     case 'alphabet': {
-      const { data } = await supabase.from('alphabet_letters').select('id, name_french, letter_arabic, display_order').order('display_order');
-      return (data || []).map((l) => ({ value: String(l.id), label: `${l.letter_arabic} · ${l.name_french}` }));
+      // 🔤 Lettres de l'alphabet + ✨ leçons des « Lettres particulières » (22/11 : ex. la chadda pour le Groupe 3 - Avancées) ;
+      // valeur « p:<id> » → « Commencer mon travail » ouvre l'onglet Lettres particulières sur cette leçon
+      const [{ data }, { data: parts }] = await Promise.all([
+        supabase.from('alphabet_letters').select('id, name_french, letter_arabic, display_order').order('display_order'),
+        untypedDb.from('alphabet_particularites').select('id, titre, titre_arabe, position').order('position'),
+      ]);
+      return [
+        ...((parts || []) as { id: string; titre: string; titre_arabe: string | null }[]).map((p) => ({ value: `p:${p.id}`, label: `✨ Lettres particulières · ${p.titre}${p.titre_arabe ? ` ${p.titre_arabe}` : ''}` })),
+        ...(data || []).map((l) => ({ value: String(l.id), label: `${l.letter_arabic} · ${l.name_french}` })),
+      ];
     }
     case 'invocations': {
       const { data } = await supabase.from('invocations').select('id, title_french, title_arabic, display_order').order('display_order');

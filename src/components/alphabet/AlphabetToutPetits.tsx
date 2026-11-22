@@ -20,14 +20,19 @@ import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { errorMessage } from '@/lib/utils';
 import type { Tables } from '@/integrations/supabase/types';
 import { JeuxDeLaLettre } from './JeuxDeLaLettre';
-import { SONS_ERREUR, retenirSonErreur, sonErreur, sonErreurChoisi } from '@/lib/sonsErreur';
+import { ChoixSonErreur } from '@/components/petits/ChoixSonErreur';
+import { useSonErreurChoisi } from '@/hooks/useSonErreur';
+import { sonErreur } from '@/lib/sonsErreur';
+import { OuvertureLettrePetits } from './OuvertureLettrePetits';
+import { lettresOuvertesPour, resumeOuverture, useOuverturesPetits } from '@/lib/ouverturesPetits';
+import { useMesGroupes } from '@/hooks/usePetits';
 
 /**
  * 🧸 Onglet « Pour les tout-petits » (1 à 5 ans) de l'Alphabet (Nadia, 2026-11-21, disposition « E · La télé des houroufs ») :
  * de grosses vignettes, une par lettre ; un toucher = la vidéo (« le monde des houroufs ») en plein écran, grosse croix pour revenir.
  * Idées gardées : aucun mot à lire, boutons géants, jamais « raté », minuteur des parents, vidéos gardées sur l'appareil,
  * sa voix (audio de la lettre), petites animations, confettis en LETTRES ARABES quand l'enfant réussit.
- * Les lettres restent fermées 🔒 : elles s'ouvrent comme dans « Alphabet arabe » (une par une, à chaque validation de Nadia).
+ * Les lettres restent fermées 🔒 : l'enseignante les ouvre À LA MAIN (tous, un groupe, certains enfants), ب d'abord, ا à la fin (22/11).
  * Le petit jeu n'utilise que les lettres DÉJÀ VALIDÉES.
  */
 type Lettre = Tables<'alphabet_letters'>;
@@ -41,10 +46,17 @@ function jouerUrl(url: string | null | undefined) {
   try { void new Audio(url).play().catch(() => {}); } catch { /* son indisponible */ }
 }
 
-export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
-  letters: Lettre[]; unlocked: Set<number>; learned: Set<number>; isAdmin: boolean;
+export function AlphabetToutPetits({ letters: toutes, learned, isAdmin }: {
+  letters: Lettre[]; learned: Set<number>; isAdmin: boolean;
 }) {
   const { user } = useAuth();
+  // ب en premier, ا à la fin (Nadia commence toujours par ب et revient à ا plus tard dans l'année)
+  const letters = useMemo(() => [...toutes.filter((l) => l.id !== 1), ...toutes.filter((l) => l.id === 1)], [toutes]);
+  const { data: ouvertures = [] } = useOuverturesPetits();
+  const { data: mesGroupes = [] } = useMesGroupes(isAdmin ? null : user?.id);
+  const unlocked = useMemo(() => lettresOuvertesPour(ouvertures, user?.id, mesGroupes), [ouvertures, user?.id, mesGroupes]);
+  const [aOuvrir, setAOuvrir] = useState<Lettre | null>(null);
+  useSonErreurChoisi(); // le son doux choisi par l'enseignante, retenu sur l'appareil
   const queryClient = useQueryClient();
   const [lecture, setLecture] = useState<{ lettre: Lettre; i: number; onglet?: 'video' | 'jeux' } | null>(null);
   const [edition, setEdition] = useState<Lettre | null>(null);
@@ -63,25 +75,6 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
     },
   });
   const videosDe = (id: number) => videos.filter((v) => v.letter_id === id);
-  // 🔈 Le son doux de l'erreur choisi par l'enseignante (gardé aussi sur l'appareil pour le hors-ligne)
-  const { data: sonChoisi = sonErreurChoisi() } = useQuery({
-    queryKey: ['reglages-appli', 'son_erreur_petits'],
-    queryFn: async () => {
-      const { data, error } = await untypedDb.from('reglages_appli').select('valeur').eq('cle', 'son_erreur_petits').maybeSingle();
-      if (error) throw error;
-      const n = Number((data as { valeur?: unknown } | null)?.valeur) || 1;
-      retenirSonErreur(n);
-      return n;
-    },
-  });
-  const choisirSon = async (n: number) => {
-    sonErreur(n); retenirSonErreur(n);
-    queryClient.setQueryData(['reglages-appli', 'son_erreur_petits'], n);
-    try {
-      const r = await ecrireOuGarder({ table: 'reglages_appli', op: 'upsert', rows: [{ cle: 'son_erreur_petits', valeur: n, updated_at: new Date().toISOString() }] });
-      if (r === 'en_attente') toast('📡 Gardé, envoyé au retour du réseau');
-    } catch (e) { toast.error(errorMessage(e)); }
-  };
   const [sonsOuverts, setSonsOuverts] = useState(false);
 
   // ⏱️ Minuteur des parents : à la fin, écran doux « on range ! »
@@ -126,26 +119,12 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
 
       {isAdmin && (
         <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/30 p-3 space-y-2 text-sm">
-          <p>👆 Touche ✏️ sur une lettre pour ajouter, changer ou retirer ses vidéos. Les enfants ne voient que les lettres ouvertes ; la suivante s'ouvre à chaque lettre que tu valides.</p>
+          <p>👆 ✏️ sur une lettre = ses vidéos ; 🔓 = l'ouvrir à tous les tout-petits, à un groupe ou à certains enfants (🌍 tous · 🎯 certains · 🔒 fermée). Les enfants ne voient que les lettres ouvertes.</p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => setValiderOuvert((v) => !v)}>{validerOuvert ? 'Fermer' : '✅ Valider une lettre pour un enfant'}</Button>
             <Button size="sm" variant="outline" onClick={() => setSonsOuverts((v) => !v)}>🔈 Son quand l'enfant se trompe</Button>
           </div>
-          {sonsOuverts && (
-            <div className="space-y-1.5">
-              <p className="text-xs">Touche un son pour l'écouter : il devient le son de TOUS les jeux (bulles, écoute, paires, 🎈).</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {SONS_ERREUR.map((x) => (
-                  <button key={x.n} type="button" onClick={() => void choisirSon(x.n)} aria-pressed={sonChoisi === x.n}
-                    className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-start font-semibold ${sonChoisi === x.n ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40' : 'border-border bg-card'}`}>
-                    <span className="text-xl">{x.emoji}</span>
-                    <span className="flex-1 min-w-0">{x.n}. {x.nom}</span>
-                    <span className="text-lg">{sonChoisi === x.n ? '✅' : '▶️'}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {sonsOuverts && <ChoixSonErreur />}
           {validerOuvert && (
             <ValiderPourEleve genre="alphabet" profiles={[]}
               elements={letters.map((l) => ({ id: String(l.id), libelle: `${l.letter_arabic}  ${l.name_french}` }))} />
@@ -171,6 +150,12 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
                 ) : <Lock className="h-12 w-12 text-white" />}
                 {learned.has(l.id) && <span className="absolute bottom-2 end-3 text-2xl">⭐</span>}
               </button>
+              {isAdmin && (
+                <button type="button" onClick={() => setAOuvrir(l)} aria-label={`Ouvrir ${l.name_french} aux tout-petits`}
+                  className="absolute bottom-1.5 start-1.5 h-9 min-w-9 px-1.5 grid place-items-center rounded-full bg-card shadow border border-border text-sm font-bold" dir="ltr">
+                  {resumeOuverture(ouvertures, l.id)}
+                </button>
+              )}
               {isAdmin && (
                 <button type="button" onClick={() => setEdition(l)} aria-label={`Vidéos de ${l.name_french}`}
                   className="absolute top-1.5 end-1.5 h-9 w-9 grid place-items-center rounded-full bg-card shadow border border-border">
@@ -237,6 +222,7 @@ export function AlphabetToutPetits({ letters, unlocked, learned, isAdmin }: {
         );
       })()}
 
+      {aOuvrir && <OuvertureLettrePetits lettre={aOuvrir} onClose={() => setAOuvrir(null)} />}
       {jeu && <JeuEcouteTouche lettres={validees} onClose={() => setJeu(false)} />}
 
       {/* ⏱️ Choix du minuteur (pour les parents) */}

@@ -12,7 +12,8 @@ export interface Rubrique {
 }
 
 export const RUBRIQUES: Record<CleRubrique, Rubrique> = {
-  douas: { cle: 'douas', titre: 'Mes petites dou\'as', emoji: '🤲', fond: 'from-emerald-300 to-teal-500', mode: 'imagier', etoile: 'Je l\'ai dite !' },
+  // « Mes invocations » (Nadia, 22/11) : les invocations de la carte Invocations de l'appli (table invocations), pas des fiches à part
+  douas: { cle: 'douas', titre: 'Mes invocations', emoji: '🤲', fond: 'from-emerald-300 to-teal-500', mode: 'imagier', etoile: 'Je l\'ai dite !' },
   histoires: { cle: 'histoires', titre: 'Les histoires des prophètes', emoji: '📚', fond: 'from-sky-300 to-indigo-500', mode: 'imagier' },
   coran: { cle: 'coran', titre: 'Le Coran des petits', emoji: '📖', fond: 'from-amber-300 to-orange-500', mode: 'coran' },
   cree: { cle: 'cree', titre: 'Allah a créé…', emoji: '🌍', fond: 'from-lime-300 to-green-500', mode: 'imagier' },
@@ -29,7 +30,7 @@ export const RUBRIQUES: Record<CleRubrique, Rubrique> = {
 /** Les 4 grosses tuiles (idée 4), puis les autres cartes des petits */
 export const TUILES_GRANDES: { cle: string; titre: string; emoji: string; fond: string; lien: string }[] = [
   { cle: 'alphabet', titre: 'Mes lettres', emoji: '🔤', fond: 'from-orange-300 to-red-500', lien: '/alphabet' },
-  { cle: 'douas', titre: 'Mes dou\'as', emoji: '🤲', fond: RUBRIQUES.douas.fond, lien: '/petits/douas' },
+  { cle: 'douas', titre: 'Mes invocations', emoji: '🤲', fond: RUBRIQUES.douas.fond, lien: '/petits/douas' },
   { cle: 'histoires', titre: 'Histoires', emoji: '📚', fond: RUBRIQUES.histoires.fond, lien: '/petits/histoires' },
   { cle: 'jeux', titre: 'Jeux', emoji: '🎮', fond: 'from-fuchsia-300 to-purple-600', lien: '/petits/jeux' },
 ];
@@ -100,4 +101,48 @@ export function parler(texte: string, langue: 'ar' | 'fr') {
 export function ecouterFiche(f: { audio_url: string | null; arabe: string | null; titre: string }) {
   if (f.audio_url) { try { void new Audio(f.audio_url).play().catch(() => {}); } catch { /* son indisponible */ } return; }
   if (f.arabe) parler(f.arabe, 'ar'); else parler(f.titre, 'fr');
+}
+
+/**
+ * 🔒 Qui voit quoi chez les tout-petits (Nadia, 22/11) : l'accueil des tout-petits va aux moins de 6 ans et/ou à des groupes choisis ;
+ * chaque carte de cet accueil est FERMÉE au départ, l'enseignante l'ouvre à tous les tout-petits ou à certains (moins de 6 ans, groupes).
+ * Réglages `petits_public` et `petits_cartes` (table reglages_appli).
+ */
+export interface PublicPetits { moins6: boolean; groupes: string[] }
+export interface AccesCartePetit { mode: 'tous' | 'certains'; moins6?: boolean; groupes?: string[] }
+export type AccesCartesPetits = Record<string, AccesCartePetit>;
+export interface Enfant { age: number | null; groupes: string[] }
+
+/** Les cartes de l'accueil des tout-petits, dans l'ordre de l'écran */
+export const CARTES_PETITS: { cle: string; titre: string; emoji: string }[] = [
+  { cle: 'mot', titre: 'Le mot pour les parents', emoji: '👨‍👩‍👧' },
+  { cle: 'soleil', titre: 'Le soleil et les 5 prières', emoji: '☀️' },
+  { cle: 'phrase', titre: 'La petite phrase du jour', emoji: '💬' },
+  { cle: 'etoiles', titre: 'Mes étoiles', emoji: '⭐' },
+  ...TUILES_GRANDES.map((t) => ({ cle: t.cle, titre: t.titre, emoji: t.emoji })),
+  ...TUILES_AUTRES.map((c) => ({ cle: c, titre: RUBRIQUES[c].titre, emoji: RUBRIQUES[c].emoji })),
+];
+
+const dansGroupes = (liste: string[] | undefined, e: Enfant) => !!liste?.some((g) => e.groupes.includes(g));
+const petitAge = (e: Enfant) => e.age !== null && e.age < 6;
+
+/** Cet enfant a-t-il l'accueil des tout-petits ? */
+export function aAccueilPetits(p: PublicPetits, e: Enfant) {
+  return (p.moins6 && petitAge(e)) || dansGroupes(p.groupes, e);
+}
+
+/** Cette carte est-elle ouverte pour cet enfant ? (absente = fermée) */
+export function carteOuvertePetit(acces: AccesCartesPetits, cle: string, e: Enfant) {
+  const a = acces[cle];
+  if (!a) return false;
+  if (a.mode === 'tous') return true;
+  return (!!a.moins6 && petitAge(e)) || dansGroupes(a.groupes, e);
+}
+
+/** « 🔒 Fermée », « 🌍 Tous les tout-petits », « 🎯 Moins de 6 ans + 2 groupes » */
+export function libelleAccesPetit(a: AccesCartePetit | undefined, nomsGroupes: Record<string, string> = {}) {
+  if (!a) return '🔒 Fermée';
+  if (a.mode === 'tous') return '🌍 Tous les tout-petits';
+  const morceaux = [a.moins6 ? 'moins de 6 ans' : '', ...(a.groupes ?? []).map((g) => nomsGroupes[g] ?? 'un groupe')].filter(Boolean);
+  return morceaux.length ? `🎯 ${morceaux.join(', ')}` : '🔒 Fermée';
 }
