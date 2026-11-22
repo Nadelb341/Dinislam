@@ -26,7 +26,9 @@ import AdminContent from '@/components/admin/AdminContent';
 import AdminRecitationReview from '@/components/admin/AdminRecitationReview';
 import AdminCoranManager from '@/components/coran/AdminCoranManager';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import BilanTrimestriel from '@/components/bilan/BilanTrimestriel';
+import { WeeklyProgramAdmin } from '@/components/admin/WeeklyProgramAdmin';
 import ApparenceAppli from '@/components/admin/ApparenceAppli';
 import AdminCartesAcces from '@/components/admin/AdminCartesAcces';
 
@@ -36,7 +38,7 @@ import AdminCartesAcces from '@/components/admin/AdminCartesAcces';
  * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
  * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
  */
-type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces';
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces' | 'reglages-devoirs';
 
 const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
@@ -122,6 +124,8 @@ const Admin = () => {
     case 'coran-manage': return page(<AdminCoranManager onBack={handleBack} />);
     case 'bilan-trimestriel': return page(<BilanTrimestriel onBack={handleBack} groupeInitial={moduleId} />);
     case 'apparence': return page(<ApparenceAppli onBack={handleBack} />);
+    // ⚙️ Réglages des devoirs (22/11) : le « Chemin de la semaine (automatique) » 💎, sorti de l'écran « Distribuer les devoirs »
+    case 'reglages-devoirs': return page(<div className="space-y-4"><Button variant="ghost" onClick={handleBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button><h2 className="text-xl font-extrabold">⚙️ Réglages des devoirs</h2><WeeklyProgramAdmin /></div>);
     case 'cartes-acces': return page(<AdminCartesAcces onBack={handleBack} />);
     default: break;
   }

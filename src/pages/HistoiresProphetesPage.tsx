@@ -13,7 +13,7 @@ import { refEtoileDuJour } from '@/lib/petits';
 
 /**
  * 📚 Carte « Histoires des Prophètes » (les grands, Nadia 22/11) : les mêmes outils que les histoires des tout-petits :
- * chaque histoire en grand (texte, arabe, 🔊), 🎬 vidéos choisies par l'enseignante (cachées au départ), 🎧 quiz qu'on écoute.
+ * chaque histoire en grand (arabe, 🔊), 🎬 les VIDÉOS à la place du texte (22/11, texte retiré), choisies par l'enseignante (cachées au départ), 🎧 quiz.
  * Contenu à part (fiches `petits_fiches` rubrique « prophetes ») : modifier ici ne change pas les tout-petits.
  */
 const COULEURS = ['from-violet-400 to-purple-600', 'from-sky-400 to-indigo-600', 'from-amber-400 to-orange-600', 'from-emerald-400 to-teal-600'];
@@ -37,7 +37,7 @@ export default function HistoiresProphetesPage() {
         <div className="rounded-3xl bg-gradient-to-br from-violet-600 to-purple-800 p-5 text-white shadow-lg">
           <p className="font-arabic text-2xl" dir="rtl">قصص الأنبياء</p>
           <h1 className="text-2xl font-extrabold">{titre}</h1>
-          <p className="text-sm opacity-90">Les récits du Coran, avec des vidéos et un petit quiz à écouter.</p>
+          <p className="text-sm opacity-90">Les récits du Coran en vidéos, avec un petit quiz à écouter.</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {fiches.map((f, i) => (
@@ -54,12 +54,8 @@ export default function HistoiresProphetesPage() {
       {ouverte !== null && (
         <FicheEnGrand fiches={fiches} index={ouverte} isAdmin={isAdmin} onIndex={setOuverte} onClose={() => setOuverte(null)}
           etoileDuJour={(f) => aEtoile('fiche', refEtoileDuJour(f))} onModifier={setEdition}
-          enBas={(f) => (
-            <div key={f.id} className="space-y-4">
-              <VideosHistoire ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />
-              <QuizHistoire ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />
-            </div>
-          )} />
+          auMilieu={(f) => <VideosHistoire key={`v${f.id}`} ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />}
+          enBas={(f) => <QuizHistoire key={`q${f.id}`} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />} />
       )}
       {edition && <EditionFichePetit rubrique="prophetes" fiche={edition} fiches={fiches} userId={user?.id ?? null} onClose={() => setEdition(null)}
         rafraichir={() => void queryClient.invalidateQueries({ queryKey: ['petits-fiches'] })} />}

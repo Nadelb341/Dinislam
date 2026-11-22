@@ -52,6 +52,30 @@ function Diamond({ item, fill, pending = false }: { item: Pick<ProgramItem, 'mod
   );
 }
 
+/** ⭐ La grande étoile des tout-petits (Nadia, 22/11) : grise à faire, orange en attente, dorée et brillante quand c'est validé */
+export function GrandeEtoile({ fill, pending = false, emoji, uid }: { fill: number; pending?: boolean; emoji?: string; uid: string }) {
+  const lit = fill >= 1;
+  const [light, dark] = pending ? ['#fdba74', '#ea580c'] : ['#fde047', '#f59e0b'];
+  const stop = `${Math.round(fill * 100)}%`;
+  return (
+    <span className={`relative inline-block ${lit && !pending ? 'gem-shine' : ''}`}>
+      <svg viewBox="0 0 50 48" className="h-16 w-16" aria-hidden="true" style={lit ? { filter: `drop-shadow(0 0 10px ${light})` } : undefined}>
+        <defs>
+          <linearGradient id={`et-${uid}`} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor={fill > 0 ? dark : '#94a3b8'} />
+            <stop offset={stop} stopColor={fill > 0 ? light : '#94a3b8'} />
+            <stop offset={stop} stopColor="#cbd5e1" />
+            <stop offset="1" stopColor="#e2e8f0" />
+          </linearGradient>
+        </defs>
+        <path d="M25 2 L31.5 17 L47.5 18.2 L35.2 28.6 L39 44.5 L25 36 L11 44.5 L14.8 28.6 L2.5 18.2 L18.5 17 Z" fill={`url(#et-${uid})`} stroke={lit ? '#fff' : '#94a3b8'} strokeWidth="1.8" strokeLinejoin="round" />
+      </svg>
+      {emoji && <span className="absolute inset-0 grid place-items-center text-base pt-1" style={{ opacity: lit ? 1 : 0.55 }}>{emoji}</span>}
+      {lit && !pending && <span className="gem-sparkle absolute -top-1 -right-1 text-sm" aria-hidden="true">✨</span>}
+    </span>
+  );
+}
+
 /** Nom de la carte sous le diamant : la matière du devoir (ou le nom personnel donné par l'enseignante) */
 function nomCarte(item: ProgramItem): string {
   if (item.module !== 'devoir') return item.label;
@@ -60,7 +84,8 @@ function nomCarte(item: ProgramItem): string {
   return item.detail.split(' · ')[0] || 'Devoir';
 }
 
-export function WeeklyPath({ program }: { program: WeeklyProgram }) {
+export function WeeklyPath({ program, etoiles = false }: { program: WeeklyProgram;
+  /** Tout-petits : de grandes étoiles à la place des diamants (Nadia, 22/11) */ etoiles?: boolean }) {
   const navigate = useNavigate();
   const { fireConfetti } = useConfetti();
   const [chestOpen, setChestOpen] = useState(false);
@@ -132,7 +157,8 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
               }}
               aria-label={`${nomCarte(item)} : ${item.label}, ${item.done ? 'validé' : 'à faire'}`}
               className="w-[5.5rem] flex flex-col items-center gap-0.5 rounded-xl p-1 transition-transform active:scale-95 hover:bg-white/60 dark:hover:bg-white/5">
-              <Diamond item={item} fill={fill} pending={!!item.pending && !item.done} />
+              {etoiles ? <GrandeEtoile fill={fill} pending={!!item.pending && !item.done} emoji={item.emoji} uid={`${item.module}-${item.item_id}`} />
+                : <Diamond item={item} fill={fill} pending={!!item.pending && !item.done} />}
               {/* ✂️ 2026-11-11, demande de Nadia : juste le nom de la carte, puis ⏳ tant que ce n'est pas fait */}
               <span className="text-xs font-extrabold leading-tight text-center [overflow-wrap:anywhere]">{nomCarte(item)}</span>
               <span className="text-base leading-none mt-0.5">
@@ -145,7 +171,8 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
         {/* 🌟 Diamant bonus : tout fait avant le jour du cours */}
         {total > 0 && (
           <div className="w-[5.5rem] flex flex-col items-center gap-0.5 p-1" aria-label={bonus ? 'Diamant bonus gagné' : 'Diamant bonus à gagner'}>
-            <Diamond item={{ module: 'bonus', item_id: program.program_id, emoji: '🌟' }} fill={bonus ? 1 : 0} />
+            {etoiles ? <GrandeEtoile fill={bonus ? 1 : 0} emoji="🌟" uid={`bonus-${program.program_id}`} />
+              : <Diamond item={{ module: 'bonus', item_id: program.program_id, emoji: '🌟' }} fill={bonus ? 1 : 0} />}
             <span className="text-xs font-extrabold">Bonus</span>
             <span className="text-base leading-none mt-0.5">{bonus ? '✅' : '⏳'}</span>
           </div>
@@ -162,7 +189,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
             <span className="block h-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </span>
           <span className="text-xs font-extrabold">Trésor</span>
-          <span className="text-[11px] text-muted-foreground text-center leading-tight">{chestOpened ? 'ouvert · +10 pts ✨' : allDone ? 'touche-moi !' : `${done}/${total} 💎`}</span>
+          <span className="text-[11px] text-muted-foreground text-center leading-tight">{chestOpened ? 'ouvert · +10 pts ✨' : allDone ? 'touche-moi !' : `${done}/${total} ${etoiles ? '⭐' : '💎'}`}</span>
         </button>
       </div>
 
@@ -183,7 +210,7 @@ export function WeeklyPath({ program }: { program: WeeklyProgram }) {
               <p className="text-sm font-semibold leading-relaxed">« {reward.text} »</p>
               <p className="text-[11px] text-muted-foreground mt-1">{reward.source}</p>
             </div>
-            <p className="text-xs text-muted-foreground">Ton trésor de la semaine prochaine t'attend 💎</p>
+            <p className="text-xs text-muted-foreground">Ton trésor de la semaine prochaine t'attend {etoiles ? '⭐' : '💎'}</p>
           </div>
         </DialogContent>
       </Dialog>

@@ -73,6 +73,8 @@ export default function PetitsPage() {
           : r!.mode === 'calendrier' ? <ModeCalendrier fiches={fiches} aid={toutes.filter((f) => f.rubrique === 'aid')} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />
           : <ModeImagier fiches={fiches} ouvrir={setOuverte} autocollants={r!.mode === 'autocollants'} etoiles={etoiles} />}
 
+        {/* 🎬 Vidéos de toute la carte « Ramadan et l'Aïd » (22/11), à part de la carte Ramadan des grands */}
+        {rubrique === 'ramadan' && <VideosHistoire rubrique="ramadan" titreFiche="Ramadan et l'Aïd (tout-petits)" isAdmin={isAdmin} entete="🎬 Les vidéos du Ramadan et de l'Aïd" />}
         {isAdmin && !jeux && rubrique !== 'douas' && <GererFichesPetits rubrique={rubrique as CleRubrique} fiches={fiches} userId={user?.id ?? null} />}
         {isAdmin && rubrique === 'ramadan' && <GererFichesPetits rubrique="aid" fiches={toutes.filter((f) => f.rubrique === 'aid')} userId={user?.id ?? null} />}
       </div>

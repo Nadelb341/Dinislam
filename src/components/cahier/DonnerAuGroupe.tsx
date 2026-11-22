@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,7 +38,7 @@ function itemDepuisEtape(s: Suggestion, audio: boolean): ItemDevoir {
   };
 }
 
-export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCetteSemaine, maxSemaine, ouvrirAuDemarrage }: {
+export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCetteSemaine, maxSemaine, ouvrirAuDemarrage, toujoursOuvert, formulaire, dejaDonnes, persoInitial }: {
   eleves: { user_id: string; full_name: string | null }[];
   nomGroupe: string | null;
   dateLimite: string;
@@ -46,14 +46,24 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   dejaCetteSemaine: (id: string) => number;
   maxSemaine: number | null;
   ouvrirAuDemarrage?: boolean;
+  /** 22/11 (Nadia, nouvel écran « Distribuer les devoirs ») : sans son propre bouton ▼, dans « Devoirs de la semaine prochaine » */
+  toujoursOuvert?: boolean;
+  /** Toucher la case d'un élève = « Personnaliser » ses devoirs (le formulaire, juste dessous) */
+  formulaire?: (eleve: { user_id: string; full_name: string | null }) => ReactNode;
+  /** Les devoirs déjà donnés à l'élève cette semaine (pastille ✏️ perso) */
+  dejaDonnes?: (id: string) => { titre: string; emoji?: string | null }[];
+  /** Élève dont « Personnaliser » est ouvert en arrivant (lien depuis le cahier de texte) */
+  persoInitial?: string | null;
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [ouvert, setOuvert] = useState(() => {
     let flag = false;
     try { flag = sessionStorage.getItem('dinislam_ouvrir_donner_groupe') === '1'; sessionStorage.removeItem('dinislam_ouvrir_donner_groupe'); } catch { /* stockage indisponible */ }
-    return !!ouvrirAuDemarrage || flag;
+    return !!ouvrirAuDemarrage || !!toujoursOuvert || flag;
   });
+  const [perso, setPerso] = useState<string | null>(persoInitial ?? null);
+  useEffect(() => { if (persoInitial) setPerso(persoInitial); }, [persoInitial]);
   const [matieres, setMatieres] = useState<Record<string, { on: boolean; audio: boolean }>>(() => lire()
     ?? Object.fromEntries(MATIERES_GROUPE.map((m) => [m.type, { on: ['nourania', 'sourate', 'invocations'].includes(m.type), audio: m.audio }])));
   const [exclus, setExclus] = useState<Set<string>>(() => new Set(eleves.filter((e) => dejaCetteSemaine(e.user_id) > 0).map((e) => e.user_id)));
@@ -115,12 +125,16 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   if (!eleves.length) return null;
   return (
     <div ref={ref} className="rounded-2xl border-2 border-violet-300 dark:border-violet-800 bg-violet-50/70 dark:bg-violet-950/20 p-3 space-y-2">
-      <button type="button" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)} className="w-full flex items-center gap-2 text-start">
-        <span className="flex-1 font-extrabold text-violet-900 dark:text-violet-100">✨ Donner au groupe en 1 appui{nomGroupe ? ` (${nomGroupe})` : ''}</span>
-        <span className="text-xs font-bold text-violet-800 dark:text-violet-200">{ouvert ? '▲' : '▼'}</span>
-      </button>
+      {toujoursOuvert ? (
+        <p className="font-extrabold text-violet-900 dark:text-violet-100">✨ Devoir commun : les matières</p>
+      ) : (
+        <button type="button" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)} className="w-full flex items-center gap-2 text-start">
+          <span className="flex-1 font-extrabold text-violet-900 dark:text-violet-100">✨ Donner au groupe en 1 appui{nomGroupe ? ` (${nomGroupe})` : ''}</span>
+          <span className="text-xs font-bold text-violet-800 dark:text-violet-200">{ouvert ? '▲' : '▼'}</span>
+        </button>
+      )}
       {ouvert && (<>
-        <p className="text-xs text-violet-900 dark:text-violet-100">Choisis les matières : chaque élève reçoit son devoir là où il en est (sa ligne, sa sourate, son invocation…).</p>
+        <p className="text-xs text-violet-900 dark:text-violet-100">Chaque élève reçoit son devoir là où il en est (sa ligne, sa sourate, son invocation…).{formulaire ? ' Le carré choisit l\'élève ; touche sa case pour personnaliser ses devoirs.' : ''}</p>
         <div className="flex flex-wrap gap-1.5">
           {MATIERES_GROUPE.map((m) => {
             const v = matieres[m.type] ?? { on: false, audio: m.audio };
@@ -140,13 +154,22 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
               const deja = dejaCetteSemaine(p.e.user_id);
               const trop = maxSemaine !== null && deja + p.items.length > maxSemaine;
               return (
-                <div key={p.e.user_id} className={cn('px-2.5 py-2 space-y-1', !p.actif && 'opacity-60')}>
-                  <label className="flex items-center gap-2 text-sm font-bold">
-                    <input type="checkbox" className="h-4 w-4 accent-violet-600" checked={!exclus.has(p.e.user_id)} disabled={!p.items.length}
+                <div key={p.e.user_id} className={cn('px-2.5 py-2 space-y-1', formulaire && 'cursor-pointer', perso === p.e.user_id && 'bg-amber-50/60 dark:bg-amber-950/20')}
+                  onClick={formulaire ? (ev) => { if ((ev.target as HTMLElement).closest('button,input,textarea,select,a,label,[data-perso]')) return; setPerso(perso === p.e.user_id ? null : p.e.user_id); } : undefined}>
+                  <div className={cn('flex items-center gap-2 text-sm font-bold', !p.actif && 'opacity-60')}>
+                    <input type="checkbox" className="h-5 w-5 accent-violet-600 cursor-pointer" checked={!exclus.has(p.e.user_id)} disabled={!p.items.length}
+                      aria-label={`Choisir ${p.e.full_name || 'cet élève'}`}
                       onChange={(ev) => setExclus((x) => { const n = new Set(x); if (ev.target.checked) n.delete(p.e.user_id); else n.add(p.e.user_id); return n; })} />
                     <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">{p.e.full_name || 'Élève'}</span>
                     {deja > 0 && <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300">déjà {deja} cette semaine</span>}
-                  </label>
+                    {formulaire && <span className="text-xs text-muted-foreground" aria-hidden>{perso === p.e.user_id ? '▲' : '✏️'}</span>}
+                  </div>
+                  {(dejaDonnes?.(p.e.user_id) ?? []).map((d, i) => (
+                    <div key={`d${i}`} className="flex items-start gap-1.5 ps-7 text-xs">
+                      <span className="cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]">{d.emoji ?? '✏️'} {d.titre}</span>
+                      <span className="shrink-0 rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 text-[10px] font-extrabold text-amber-800 dark:text-amber-200">✏️ perso · donné</span>
+                    </div>
+                  ))}
                   {p.toutes.map(({ m, item, retiree }) => {
                     const k = `${p.e.user_id}|${m.type}`;
                     if (retiree) return (
@@ -166,8 +189,11 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                           onKeyDown={(ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); setEnEdition(null); } }}
                           className="cahier-main text-sm flex-1 min-w-0 min-h-0 py-1" />
                       ) : (
-                        <span className="cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]">{m.emoji} {item.titre}</span>
+                        <span className={cn('cahier-main text-sm flex-1 min-w-0 [overflow-wrap:anywhere]', !p.actif && 'opacity-60')}>{m.emoji} {item.titre}</span>
                       )}
+                      <span className={cn('shrink-0 rounded-full px-1.5 text-[10px] font-extrabold', textes[k]?.trim() ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200' : 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-200')}>
+                        {textes[k]?.trim() ? '✏️ perso' : '🤖 auto'}
+                      </span>
                       <button type="button" aria-label={enEdition === k ? 'Terminer la modification' : `Modifier le devoir ${m.label} de ${p.e.full_name}`}
                         onMouseDown={(ev) => ev.preventDefault()} onClick={() => setEnEdition(enEdition === k ? null : k)} className="shrink-0 text-sm">{enEdition === k ? '✅' : '✏️'}</button>
                       <button type="button" aria-label={`Retirer ${m.label} pour ${p.e.full_name}`} onClick={() => setRetires((x) => new Set(x).add(`${p.e.user_id}|${m.type}`))} className="text-destructive font-bold">✕</button>
@@ -177,14 +203,15 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
                   {!p.toutes.length && <p className="ps-6 text-[11px] text-muted-foreground">Rien à donner dans ces matières (tout validé, ou carte fermée pour lui).</p>}
                   {p.toutes.length > 0 && !p.items.length && <p className="ps-6 text-[11px] text-muted-foreground">Tout est retiré pour cet élève : touche « ↩️ Remettre » pour lui redonner une ligne.</p>}
                   {trop && p.actif && <p className="ps-6 text-[11px] font-semibold text-amber-700 dark:text-amber-300">⚠️ Plus que le maximum de la semaine ({maxSemaine}).</p>}
+                  {formulaire && perso === p.e.user_id && <div data-perso className="cursor-auto">{formulaire(p.e)}</div>}
                 </div>
               );
             })}
           </div>
         )}
         <button type="button" disabled={envoi || !total} onClick={() => setConfirmer(true)}
-          className="w-full rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white py-2.5 text-sm font-extrabold">
-          {envoi ? '⏳ …' : `✨ Donner à ${aDonner.length} élève${aDonner.length > 1 ? 's' : ''} (${total} devoir${total > 1 ? 's' : ''})`}
+          className={cn('w-full rounded-xl disabled:opacity-50 text-white font-extrabold', toujoursOuvert ? 'bg-emerald-600 hover:bg-emerald-700 py-3.5 text-base' : 'bg-violet-600 hover:bg-violet-700 py-2.5 text-sm')}>
+          {envoi ? '⏳ …' : toujoursOuvert ? `✅ Donner les devoirs à ${aDonner.length} élève${aDonner.length > 1 ? 's' : ''} (${total} devoir${total > 1 ? 's' : ''})` : `✨ Donner à ${aDonner.length} élève${aDonner.length > 1 ? 's' : ''} (${total} devoir${total > 1 ? 's' : ''})`}
         </button>
       </>)}
       <AlertDialog open={confirmer} onOpenChange={setConfirmer}>

@@ -129,12 +129,15 @@ export function sonHarpeEtoiles() {
 
 /** 🎛️ « Clic » très doux des icônes de l'en-tête (Nadia, 2026-11-19) : une goutte de son de 60 ms, seulement après un toucher */
 export function sonClicEntete() {
+  // 💎 « Touche de cristal » (choix de Nadia, 22/11) : une note claire, très légère, qui s'éteint lentement
   const c = lecteurSon(); if (!c) return;
   try {
     const t = c.currentTime + 0.005;
-    const o = c.createOscillator(), e = c.createGain();
-    o.type = 'sine'; o.frequency.setValueAtTime(1500, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.05);
-    e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(0.06, t + 0.004); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-    o.connect(e).connect(c.destination); o.start(t); o.stop(t + 0.08);
+    for (const [f, vol, duree] of [[1318, 0.09, 1.3], [2637, 0.025, 0.5]] as const) {
+      const o = c.createOscillator(), e = c.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f, t);
+      e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(vol, t + 0.008); e.gain.exponentialRampToValueAtTime(0.0001, t + duree);
+      o.connect(e).connect(c.destination); o.start(t); o.stop(t + duree + 0.05);
+    }
   } catch { /* pas de son possible */ }
 }

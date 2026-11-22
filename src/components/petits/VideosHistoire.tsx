@@ -22,14 +22,19 @@ import { idYoutube } from '@/lib/youtube';
  */
 interface VideoHistoire { id: string; youtube_id: string; titre: string | null; chaine: string | null; a_revoir: boolean; visible: boolean; position: number }
 
-export function VideosHistoire({ ficheId, titreFiche, isAdmin }: { ficheId: string; titreFiche: string; isAdmin: boolean }) {
+export function VideosHistoire({ ficheId, rubrique, titreFiche, isAdmin, entete = '🎬 Les vidéos' }: {
+  /** Une histoire… */ ficheId?: string;
+  /** …ou toute une carte des tout-petits (ex. « ramadan ») */ rubrique?: string;
+  titreFiche: string; isAdmin: boolean; entete?: string;
+}) {
+  const cible = ficheId ? { col: 'fiche_id', val: ficheId } : { col: 'rubrique', val: rubrique ?? '' };
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const cle = ['histoires-videos', ficheId];
+  const cle = ['histoires-videos', cible.val];
   const { data: videos = [] } = useQuery({
     queryKey: cle,
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('histoires_videos').select('id, youtube_id, titre, chaine, a_revoir, visible, position').eq('fiche_id', ficheId).order('position').order('created_at');
+      const { data, error } = await untypedDb.from('histoires_videos').select('id, youtube_id, titre, chaine, a_revoir, visible, position').eq(cible.col, cible.val).order('position').order('created_at');
       if (error) throw error;
       return (data || []) as VideoHistoire[];
     },
@@ -56,7 +61,7 @@ export function VideosHistoire({ ficheId, titreFiche, isAdmin }: { ficheId: stri
     try {
       if (modif) await maj(modif, { youtube_id: id, titre: titre.trim() || null });
       else {
-        const r = await ecrireOuGarder({ table: 'histoires_videos', op: 'insert', rows: [{ fiche_id: ficheId, youtube_id: id, titre: titre.trim() || null, visible: false, position: Math.max(0, ...videos.map((v) => v.position)) + 10 }] });
+        const r = await ecrireOuGarder({ table: 'histoires_videos', op: 'insert', rows: [{ [cible.col]: cible.val, youtube_id: id, titre: titre.trim() || null, visible: false, position: Math.max(0, ...videos.map((v) => v.position)) + 10 }] });
         toast.success(r === 'en_attente' ? '📡 Gardé, envoyé au retour du réseau' : '🎬 Vidéo ajoutée (cachée aux élèves : touche 👁️ pour la montrer)');
         rafraichir();
       }
@@ -66,7 +71,7 @@ export function VideosHistoire({ ficheId, titreFiche, isAdmin }: { ficheId: stri
   const retirer = async (v: VideoHistoire) => {
     if (!user) return;
     try {
-      await trashThenDelete({ userId: user.id, type: 'histoire_video', id: v.id, label: `Vidéo « ${v.titre || v.youtube_id} » (${titreFiche})`, data: { ...v, fiche_id: ficheId },
+      await trashThenDelete({ userId: user.id, type: 'histoire_video', id: v.id, label: `Vidéo « ${v.titre || v.youtube_id} » (${titreFiche})`, data: { ...v, [cible.col]: cible.val },
         remove: () => untypedDb.from('histoires_videos').delete().eq('id', v.id) });
       toast.success('🗑️ Dans la corbeille (Paramètres)');
       rafraichir();
@@ -76,7 +81,7 @@ export function VideosHistoire({ ficheId, titreFiche, isAdmin }: { ficheId: stri
   if (!isAdmin && !visibles.length) return null;
   return (
     <section className="rounded-[28px] border-[6px] border-sky-400 bg-sky-50 dark:bg-sky-950/40 shadow-xl overflow-hidden text-start">
-      <p className="bg-sky-500 px-4 py-2 text-lg font-extrabold text-white">🎬 Les vidéos{isAdmin ? ` (${visibles.length} visible${visibles.length > 1 ? 's' : ''} sur ${videos.length})` : ''}</p>
+      <p className="bg-sky-500 px-4 py-2 text-lg font-extrabold text-white">{entete}{isAdmin ? ` (${visibles.length} visible${visibles.length > 1 ? 's' : ''} sur ${videos.length})` : ''}</p>
       <div className="p-3 space-y-3">
         {!isAdmin ? visibles.map((v) => (
           <div key={v.id} className="space-y-1">
@@ -116,9 +121,9 @@ export function VideosHistoire({ ficheId, titreFiche, isAdmin }: { ficheId: stri
             {ajout ? (
               <div className="rounded-xl border-2 border-dashed border-sky-400 p-3 space-y-2">
                 <p className="text-sm font-bold">{modif ? '✏️ Modifier la vidéo' : '➕ Ajouter une vidéo YouTube'}</p>
-                <Input id={`video-lien-${ficheId}`} value={lien} onChange={(e) => setLien(e.target.value)} placeholder="Lien YouTube"
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById(`video-titre-${ficheId}`)?.focus(); } }} />
-                <Input id={`video-titre-${ficheId}`} value={titre} maxLength={120} onChange={(e) => setTitre(e.target.value)} placeholder="Titre (facultatif)"
+                <Input id={`video-lien-${cible.val}`} value={lien} onChange={(e) => setLien(e.target.value)} placeholder="Lien YouTube"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById(`video-titre-${cible.val}`)?.focus(); } }} />
+                <Input id={`video-titre-${cible.val}`} value={titre} maxLength={120} onChange={(e) => setTitre(e.target.value)} placeholder="Titre (facultatif)"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
                 <div className="flex gap-2">
                   <Button onClick={() => void enregistrer()}>💾 Enregistrer</Button>

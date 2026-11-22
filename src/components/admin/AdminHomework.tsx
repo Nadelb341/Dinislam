@@ -15,7 +15,6 @@ import { ArrowLeft, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { takeDraftResume } from '@/lib/pendingDrafts';
-import { WeeklyProgramAdmin } from './WeeklyProgramAdmin';
 import { useGroupCourse } from '@/hooks/useGroupCourse';
 import { courseAfter, courseLabel, toLocalInput, type GroupSchedule } from '@/lib/groupCourse';
 import { useHolidays } from '@/hooks/useGroupCourse';
@@ -359,7 +358,7 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
           {quand.date_limite && <p className="text-xs text-muted-foreground">Rappel aux élèves chaque jour à 18 h, et la veille de la date à rendre.</p>}
         </div>
         {/* 🕑 Idée 2 : préparer à l'avance, les élèves les voient au début du prochain cours */}
-        <label className={`flex items-start gap-2 rounded-xl border-2 px-3 py-2 cursor-pointer ${quand.programme ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/30' : 'border-border'}`}>
+        <label className="flex items-start gap-2 px-1 cursor-pointer">
           <input type="checkbox" checked={quand.programme} className="mt-0.5 h-4 w-4 accent-sky-600"
             onChange={(e) => {
               const on = e.target.checked;
@@ -367,25 +366,44 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
               setQuand((q) => ({ programme: on, date_limite: on ? toLocalInput(courseAfter({ group_id: '', ...horaireVu }, holidays, heureVisible)) : (prochainCours ? toLocalInput(prochainCours) : q.date_limite) }));
             }} />
           <span className="text-xs">
-            <b>🕑 Préparer à l'avance</b> : les élèves verront ces devoirs au début du cours, {courseLabel(heureVisible)}, et recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.
+            🕑 Les montrer aux élèves seulement au début du cours ({courseLabel(heureVisible)}){quand.programme ? ' : ils recevront « 📓 Tes nouveaux devoirs sont prêts ! » à ce moment-là.' : ''}
             {!horaireGroupe && <span className="block text-amber-700 dark:text-amber-400 font-semibold">⚠️ Heure du groupe pas réglée : mercredi 14 h par défaut.</span>}
           </span>
         </label>
-        <p className="text-xs text-sky-900 dark:text-sky-100">👇 Touche un élève dans la liste pour lui donner ses devoirs, ou donne-les à tout le groupe d'un coup :</p>
-        {/* ✨ Idée 1 « gagner du temps » (2026-11-12) : chaque élève reçoit son devoir là où il en est */}
-        <DonnerAuGroupe eleves={elevesVus} nomGroupe={nomGroupe ?? null} dateLimite={quand.date_limite}
-          visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null} maxSemaine={reglagesGroupe?.max_devoirs ?? null}
-          dejaCetteSemaine={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? []).filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length} />
       </div>
 
-      {/* 💎 Chemin de la semaine automatique (2026-10-08) — sous le formulaire depuis le 2026-11-05 (demande de Nadia) */}
-      <WeeklyProgramAdmin />
+      {/* 📚 22/11 (Nadia, maquette « Distribuer les devoirs ») : UN seul endroit pour donner les devoirs.
+          Devoir commun (matières) + chaque élève avec ses devoirs 🤖 auto / ✏️ perso ; le carré choisit l'élève,
+          toucher sa case = « Personnaliser » (seulement les matières). Le « Chemin de la semaine » est dans le bouclier › ⚙️ Réglages des devoirs. */}
+      <details id="devoirs-semaine-prochaine" open className="rounded-2xl border-2 border-violet-300 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 shadow-sm scroll-mt-20">
+        <summary className="cursor-pointer list-none p-3 font-extrabold text-lg flex items-center gap-2">📚 Devoirs de la semaine prochaine<span className="ms-auto text-xs">▼</span></summary>
+        <div className="px-2 pb-2">
+          <DonnerAuGroupe eleves={elevesVus} nomGroupe={nomGroupe ?? null} dateLimite={quand.date_limite} toujoursOuvert persoInitial={eleveAOuvrir}
+            visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null} maxSemaine={reglagesGroupe?.max_devoirs ?? null}
+            dejaCetteSemaine={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? []).filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
+            dejaDonnes={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? [])
+              .filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).map((d) => ({ titre: d.titre, emoji: d.matiere_emoji }))}
+            formulaire={(e) => {
+              const siens = devoirsParEleve.find((x) => x.eleve.user_id === e.user_id)?.devoirsEleve ?? [];
+              const passes = lignesProf.filter((l) => l.eleveId === e.user_id && l.rang === 'passee')
+                .map((l) => devoirs.find((d) => d.id === l.devoirId)).filter((d): d is NonNullable<typeof d> => !!d)
+                .map((d) => ({ titre: d.titre, type: d.type, cible_id: d.cible_id, matiere_emoji: d.matiere_emoji }));
+              return (
+                <FormulaireDevoirEleve key={e.user_id} compact eleve={e} groupeId={groupeId ?? null} autres={[]}
+                  dateLimite={quand.date_limite} visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null}
+                  dejaCetteSemaine={siens.filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
+                  semainePassee={passes} />
+              );
+            }} />
+        </div>
+      </details>
 
-      {/* Devoirs grouped by student */}
-      <div>
-        <h3 className="font-semibold text-foreground mb-2">
-          Devoirs assignés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
-        </h3>
+      {/* 📋 Déjà donnés (22/11 : remplace « Devoirs assignés », qui faisait doublon avec le haut ; lecture, ✏️ et 🗑️) */}
+      <details className="rounded-2xl border-2 border-border bg-card/60 p-2">
+        <summary className="cursor-pointer list-none p-1 font-extrabold flex items-center gap-2">
+          📋 Déjà donnés ({membresGroupe ? new Set(devoirsParEleve.flatMap(({ devoirsEleve }) => devoirsEleve.map((d) => d.id))).size : devoirs.length})
+          <span className="ms-auto text-xs">▼</span>
+        </summary>
         {nomGroupe && <p className="text-xs text-muted-foreground mb-2">👥 Seulement les élèves du groupe « {nomGroupe} »</p>}
         {/* 👂 Idée 3 : consignes écoutées et documents ouverts, devoir par devoir (cette semaine) */}
         {(() => {
@@ -413,30 +431,17 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
           eleves={devoirsParEleve.map(({ eleve }) => eleve)}
           ouvrirEleveId={eleveAOuvrir}
           aUnBrouillon={(id) => !!lireBrouillons().parEleve[id]}
-          formulaire={(e, suivant) => {
-            const autres = elevesVus.filter((x) => x.user_id !== e.user_id);
-            const siens = devoirsParEleve.find((x) => x.eleve.user_id === e.user_id)?.devoirsEleve ?? [];
-            const passes = lignesProf.filter((l) => l.eleveId === e.user_id && l.rang === 'passee')
-              .map((l) => devoirs.find((d) => d.id === l.devoirId)).filter((d): d is NonNullable<typeof d> => !!d)
-              .map((d) => ({ titre: d.titre, type: d.type, cible_id: d.cible_id, matiere_emoji: d.matiere_emoji }));
-            return (
-              <FormulaireDevoirEleve key={e.user_id} eleve={e} groupeId={groupeId ?? null} autres={autres}
-                dateLimite={quand.date_limite} visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null}
-                dejaCetteSemaine={siens.filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
-                semainePassee={passes} onSuivant={suivant} />
-            );
-          }}
           lignes={lignesProf} prochainCours={prochainCoursVu} coursHistorique={coursHisto}
           onDelete={(id, titre) => setDevoirToDelete({ id, titre })}
           onModifier={(id, eleveId) => setDevoirAModifier({ id, eleveId })}
-          onDonner={() => setEleveAOuvrir(elevesVus[0]?.user_id ?? null)}
+          onDonner={() => { const d = document.getElementById('devoirs-semaine-prochaine') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}
           onValider={(id) => {
             // Ouvre ses rendus (écoute, ✅ Valider, 🔄 À refaire) et descend jusqu'à eux
             setElevesRendusOuverts((prev) => ({ ...prev, [id]: true }));
             setTimeout(() => document.getElementById(`rendu-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
           }} />
         {!groupeId && <p className="text-[11px] text-muted-foreground mt-1">🕑 Chaque devoir tourne à l'heure du cours de son groupe (mercredi 14 h si le groupe n'a pas d'heure réglée).</p>}
-      </div>
+      </details>
 
       {/* Rendus grouped by student */}
       <div>

@@ -33,7 +33,7 @@ const TYPE_OPTIONS = [
  * 🔁 comme la semaine dernière, 💎 maximum de la semaine du groupe, 📋 donner aussi à…, brouillon par élève, envoi hors ligne.
  */
 export interface DevoirPasse { titre: string; type: string; cible_id: string | null; matiere_emoji: string | null }
-export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, visibleA, dejaCetteSemaine, semainePassee, onSuivant }: {
+export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, visibleA, dejaCetteSemaine, semainePassee, onSuivant, compact = false }: {
   eleve: { user_id: string; full_name: string | null };
   groupeId: string | null;
   /** Les autres élèves du groupe (ou de la classe) pour « 📋 Donner aussi à… » */
@@ -43,6 +43,8 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
   dejaCetteSemaine: number;
   semainePassee: DevoirPasse[];
   onSuivant?: () => void;
+  /** 22/11 (Nadia) : « Personnaliser » dans l'écran du groupe = seulement les matières ; modèles et prochaine étape derrière « ⚡ Modèles » */
+  compact?: boolean;
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -52,6 +54,10 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
   const [aussiOuvert, setAussiOuvert] = useState(() => brouillonDe(eleve.user_id).aussi.length > 0);
   const { askValidation, validationDialog } = useConfirmValidation();
   const suggestions = useProchainesEtapes(eleve.user_id);
+  const [outils, setOutils] = useState(false);
+  const voirOutils = !compact || outils;
+  // « Personnaliser » : toujours par matière, et seulement pour cet élève (le groupe se donne avec le bouton vert)
+  useEffect(() => { if (compact && (!form.parMatiere || form.aussi.length)) setForm((f) => ({ ...f, parMatiere: true, aussi: [] })); }, [compact]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data: reglages } = useReglagesDevoirsGroupe(groupeId);
 
   // ✨ Pré-rempli (Nadia, 2026-11-11) : Nourania = la ligne sous la dernière cochée, Sourate / Invocation = celle en cours de validation.
@@ -184,14 +190,18 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
   return (
     <div className="mt-2 rounded-2xl border-2 border-dashed border-primary/30 bg-card p-3 space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-extrabold">✏️ Nouveaux devoirs pour {nom}</p>
+        <p className="text-sm font-extrabold">{compact ? `✏️ Personnaliser les devoirs de ${nom}` : `✏️ Nouveaux devoirs pour ${nom}`}</p>
         <span className={cn('rounded-full border px-2.5 py-0.5 text-[11px] font-bold', max !== null && dejaCetteSemaine + items.length > max ? 'border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200' : 'bg-muted')}>
           💎 {dejaCetteSemaine + items.length}{max !== null ? ` / max ${max}` : ''} cette semaine
         </span>
       </div>
 
       {/* 💡 Prochaine étape · 🔁 comme la semaine dernière */}
-      {(suggestions.length > 0 || semainePassee.length > 0) && (
+      {compact && (
+        <button type="button" onClick={() => setOutils((v) => !v)} aria-pressed={outils}
+          className={`rounded-full border px-3 py-1 text-xs font-bold ${outils ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30' : 'bg-card'}`}>⚡ Modèles {outils ? '▴' : '▾'}</button>
+      )}
+      {voirOutils && (suggestions.length > 0 || semainePassee.length > 0) && (
         <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 px-2 py-1.5">
           <span className="text-xs font-bold">💡 Sa prochaine étape :</span>
           {suggestions.map((s) => {
@@ -202,17 +212,17 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
         </div>
       )}
 
-      <div className="flex rounded-xl bg-muted p-1">
+      {!compact && <div className="flex rounded-xl bg-muted p-1">
         <button type="button" onClick={() => set({ parMatiere: true })} aria-pressed={form.parMatiere}
           className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${form.parMatiere ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'}`}>✍️ Par matière</button>
         <button type="button" onClick={() => set({ parMatiere: false })} aria-pressed={!form.parMatiere}
           className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${!form.parMatiere ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'}`}>📝 Devoir détaillé</button>
-      </div>
+      </div>}
 
-      {form.parMatiere ? (
+      {form.parMatiere || compact ? (
         <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground">Un 💎 par matière. ➕ pour plusieurs choses dans une même matière : l'élève coche chaque ligne, son diamant se remplit, puis brille quand tu valides.</p>
-          {modeles.length > 0 && (
+          {!compact && <p className="text-xs text-muted-foreground">Un 💎 par matière. ➕ pour plusieurs choses dans une même matière : l'élève coche chaque ligne, son diamant se remplit, puis brille quand tu valides.</p>}
+          {voirOutils && modeles.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 px-2 py-1.5">
               <span className="text-xs font-bold">⚡ Modèles :</span>
               {modeles.map((m) => (
@@ -306,7 +316,7 @@ export function FormulaireDevoirEleve({ eleve, groupeId, autres, dateLimite, vis
       )}
 
       {/* 📋 Donner aussi à… (Q1-A) */}
-      {autres.length > 0 && (
+      {autres.length > 0 && !compact && (
         <div className="rounded-xl border bg-muted/30 px-2.5 py-2 space-y-1.5">
           <button type="button" onClick={() => setAussiOuvert((v) => !v)} className="w-full text-start text-xs font-bold">
             📋 Donner aussi à… {form.aussi.length ? `(${form.aussi.length})` : ''} {aussiOuvert ? '▴' : '▾'}

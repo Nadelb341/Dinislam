@@ -234,6 +234,11 @@ const AdminCommandModal = ({
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100">
                 <span>🔧 Apparence appli</span>
               </button>
+              {/* ⚙️ Réglages des devoirs (22/11) : chemin de la semaine 💎, relance du jeudi, groupes, diamants de la classe */}
+              <button onClick={() => { onClose(); navigate('/admin?section=reglages-devoirs'); }}
+                className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-100">
+                <span>⚙️ Réglages des devoirs (diamants 💎)</span>
+              </button>
               {/* 👻 Mode fantôme (2026-11-05) : entrer dans le compte d'un élève et agir comme lui */}
               <button onClick={() => setFantomeOuvert(true)}
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950/50 dark:text-fuchsia-100">

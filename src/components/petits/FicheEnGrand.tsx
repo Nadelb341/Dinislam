@@ -10,11 +10,13 @@ import type { FichePetit } from '@/hooks/usePetits';
  * ⭐ « Je l'ai dite / fait ! » (une étoile par jour), et les zones de contenu (vidéos, images…) que tu ajoutes.
  * ‹ › pour passer d'une fiche à l'autre, grosse croix rouge pour revenir.
  */
-export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileDuJour, gagner, onModifier, enBas }: {
+export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileDuJour, gagner, onModifier, enBas, auMilieu }: {
   fiches: FichePetit[]; index: number; isAdmin: boolean; onIndex: (i: number) => void; onClose: () => void;
   etoileDuJour: (f: FichePetit) => boolean; gagner?: (f: FichePetit) => Promise<boolean>; onModifier?: (f: FichePetit) => void;
   /** Sous les zones de contenu (ex. le quiz audio des histoires) */
   enBas?: (f: FichePetit) => React.ReactNode;
+  /** À la place du texte (ex. les vidéos des Histoires des Prophètes) */
+  auMilieu?: (f: FichePetit) => React.ReactNode;
 }) {
   const f = fiches[index];
   const r = f ? RUBRIQUES[f.rubrique] : null;
@@ -46,6 +48,7 @@ export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileD
         </button>
         <h2 className="text-3xl font-extrabold text-white drop-shadow [overflow-wrap:anywhere]">{f.titre}</h2>
         {f.arabe && <p dir="rtl" className="font-arabic text-4xl leading-[1.9] text-white drop-shadow">{f.arabe}</p>}
+        {auMilieu?.(f)}
         {f.texte && <p className="rounded-3xl bg-white/90 dark:bg-slate-900/90 text-slate-900 dark:text-white p-4 text-lg leading-relaxed whitespace-pre-wrap text-start">{f.texte}</p>}
         <div className="flex flex-wrap justify-center gap-3">
           <button type="button" onClick={() => ecouterFiche(f)} aria-label="Écouter"

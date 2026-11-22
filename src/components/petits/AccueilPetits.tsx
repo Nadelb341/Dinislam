@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { useEtoiles, useFichesPetits, useGagnerEtoile, useReglage, type FichePetit } from '@/hooks/usePetits';
 import { EditionFichePetit } from './FichesPetitsAdmin';
+import { GrandeEtoile, WeeklyPath } from '@/components/homework/WeeklyPath';
+import { TreasureChest } from '@/components/homework/TreasureChest';
+import { supabase } from '@/integrations/supabase/client';
+import type { WeeklyProgram } from '@/lib/weeklyProgram';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles } from '@/lib/sonSaison';
 import { duJour, ecouterFiche, momentPriere, refEtoileDuJour, RUBRIQUES, TUILES_AUTRES, TUILES_GRANDES } from '@/lib/petits';
@@ -60,6 +64,17 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees, o
   const scene = SCENES[moment];
   const nbEtoiles = etoiles.length + lettresValidees;
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['petits-fiches'] });
+  // ⭐ Les devoirs de la semaine de l'enfant (même chemin que les diamants des grands)
+  const { data: programme = null } = useQuery({
+    queryKey: ['weekly-program', userId],
+    enabled: !!userId && !isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('weekly_program_view', { p_student: userId! });
+      if (error) throw error;
+      const row = (data || [])[0];
+      return row ? ({ ...row, items: (row.items ?? []) as unknown as WeeklyProgram['items'] } as WeeklyProgram) : null;
+    },
+  });
 
   const phraseDite = phrase ? etoiles.some((e) => e.source === 'fiche' && e.ref === refEtoileDuJour(phrase)) : false;
   const direPhrase = async () => {
@@ -136,14 +151,27 @@ export function AccueilPetits({ isAdmin, userId, prayerTimes, lettresValidees, o
         </Bloc>
       )}
 
-      {/* 3 · Mes étoiles : un coffre qui se remplit (dou'as dites, bonnes actions, cases du Ramadan, jeux, lettres validées) */}
+      {/* 3 · Mes étoiles (22/11) : une GRANDE étoile par devoir de la semaine, puis le trésor (comme les diamants des grands) */}
       <Bloc cle="etoiles" {...b}>
-      <button type="button" onClick={() => { setCoffre(true); sonHarpeEtoiles(); setTimeout(() => setCoffre(false), 1500); }}
-        className="w-full rounded-[32px] bg-gradient-to-br from-indigo-500 to-purple-700 shadow-xl p-4 text-white text-center space-y-1 active:scale-[0.98] transition-transform">
-        <p className={`text-6xl ${coffre ? 'animate-bounce' : ''}`}>🧰</p>
-        <p className="text-2xl font-extrabold">⭐ {nbEtoiles}</p>
-        <p className="text-2xl leading-snug break-all" aria-hidden>{'⭐'.repeat(Math.min(nbEtoiles, 30))}{nbEtoiles > 30 ? '✨' : ''}</p>
-      </button>
+      <div className="rounded-[32px] bg-gradient-to-br from-indigo-500 to-purple-700 shadow-xl p-3 text-white space-y-2">
+        <button type="button" onClick={() => { setCoffre(true); sonHarpeEtoiles(); setTimeout(() => setCoffre(false), 1500); }}
+          className="w-full flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+          <span className={`text-4xl ${coffre ? 'animate-bounce' : ''}`}>⭐</span>
+          <span className="text-2xl font-extrabold">Mes étoiles : {nbEtoiles}</span>
+        </button>
+        {programme ? (
+          <div className="rounded-3xl bg-white/95 text-slate-900 [&>div]:mb-0">
+            <WeeklyPath program={programme} etoiles />
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-white/15 p-3 flex flex-wrap items-center justify-center gap-2">
+            {Array.from({ length: Math.min(Math.max(nbEtoiles, 3), 8) }, (_, i) => (
+              <GrandeEtoile key={i} fill={i < nbEtoiles ? 1 : 0} uid={`acc-${i}`} />
+            ))}
+            <TreasureChest open={false} locked className="h-16 w-20" />
+          </div>
+        )}
+      </div>
       </Bloc>
 
       {/* 4 · Quatre grosses tuiles */}

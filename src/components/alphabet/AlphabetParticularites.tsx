@@ -58,9 +58,20 @@ function VueBloc({ b }: { b: Bloc }) {
   if (b.kind === 'audio' && b.url) return (
     <div className="flex items-center gap-3 rounded-xl border border-border p-3"><Volume2 className="h-5 w-5 text-primary shrink-0" /><audio src={b.url} controls className="flex-1 min-w-0 h-9" /></div>
   );
+  // 📄 Le PDF de la leçon, bien mis en valeur (Nadia, 22/11) : dégradé, joli cadre, gros bouton
   if (b.kind === 'pdf' && b.url) return (
-    <a href={b.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-border p-3 hover:bg-muted/50">
-      <FileText className="h-5 w-5 text-red-500 shrink-0" /><span className="text-sm font-medium [overflow-wrap:anywhere]">{b.nom || 'Document'}</span>
+    <a href={b.url} target="_blank" rel="noopener noreferrer"
+      className="group block rounded-[22px] p-[3px] bg-gradient-to-br from-amber-300 via-rose-400 to-violet-500 shadow-lg transition-transform active:scale-[0.98]">
+      <span className="flex items-center gap-3 rounded-[19px] bg-gradient-to-br from-amber-50 via-rose-50 to-violet-100 dark:from-amber-950/60 dark:via-rose-950/50 dark:to-violet-950/60 p-4 border-2 border-white/70 dark:border-white/10">
+        <span className="h-14 w-14 shrink-0 rounded-2xl bg-gradient-to-br from-rose-500 to-violet-600 text-white grid place-items-center shadow-md">
+          <FileText className="h-7 w-7" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-extrabold text-slate-900 dark:text-white [overflow-wrap:anywhere]">{b.nom || 'La leçon en PDF'}</span>
+          <span className="block text-xs font-semibold text-violet-700 dark:text-violet-300">📄 Touche pour ouvrir la fiche de la leçon</span>
+        </span>
+        <span className="text-2xl text-violet-600 dark:text-violet-300 transition-transform group-hover:translate-x-1" aria-hidden>›</span>
+      </span>
     </a>
   );
   return null;
@@ -128,6 +139,7 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale, messageInitial 
           {p.forme && p.titre_arabe && <span className="font-arabic text-base leading-snug text-muted-foreground" dir="rtl">{p.titre_arabe}</span>}
           {!contenuDe(p.id) && <span className="text-[10px] text-muted-foreground">🛠️ En cours de mise à jour</span>}
         </button>
+        {isAdmin && <span aria-hidden className="pointer-events-none absolute top-1 start-1 h-8 min-w-8 px-1 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border text-sm" title="Appui long puis glisser">✋</span>}
         {isAdmin && (
           <button type="button" onClick={() => setEdition(p)} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${p.titre}`}
             className="absolute top-1 end-1 h-8 w-8 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border">
@@ -141,7 +153,7 @@ export function AlphabetParticularites({ isAdmin, ficheInitiale, messageInitial 
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground px-1">
-        {isAdmin ? '👆 Touche une particularité pour la voir · ✏️ pour la modifier · ✋ appui long puis glisser pour la ranger.' : '👆 Touche une particularité pour regarder sa vidéo.'}
+        {isAdmin ? '👆 Touche une particularité pour la voir · ✏️ pour la modifier · ✋ pour la ranger : garde le doigt (ou le clic) appuyé une demi-seconde, puis glisse. Les élèves voient le même ordre et ne peuvent pas le changer.' : '👆 Touche une particularité pour regarder sa vidéo.'}
       </p>
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{[...Array(6)].map((_, i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-2xl" />)}</div>
