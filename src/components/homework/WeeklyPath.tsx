@@ -6,6 +6,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 import { bonusEarned, itemFill, treasureFor, type ProgramItem, type WeeklyProgram } from '@/lib/weeklyProgram';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { dureeMessage } from '@/lib/dureeMessage';
 import { TreasureChest } from './TreasureChest';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +17,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
  * remplit son diamant petit à petit ; 🌟 diamant bonus si tout est fait avant le cours ; 🔥 série de semaines ;
  * 🎁 le trésor s'ouvre avec une animation et un hadith en récompense.
  */
+/** ❓ Le bonus expliqué aux enfants : court et clair (Nadia, 24/11) */
+const AIDE_BONUS = '🌟 Fais tous tes devoirs avant la date. Quand ton prof les valide, tu gagnes le bonus : +5 points !';
+
 const GEM: Record<string, [string, string]> = {
   nourania: ['#fb923c', '#ea580c'], sourates: ['#4ade80', '#15803d'], allah_names: ['#fde047', '#ca8a04'],
   alphabet: ['#60a5fa', '#1d4ed8'], invocations: ['#2dd4bf', '#0f766e'], priere: ['#c084fc', '#7e22ce'],
@@ -173,7 +177,13 @@ export function WeeklyPath({ program, etoiles = false }: { program: WeeklyProgra
           <div className="w-[5.5rem] flex flex-col items-center gap-0.5 p-1" aria-label={bonus ? 'Diamant bonus gagné' : 'Diamant bonus à gagner'}>
             {etoiles ? <GrandeEtoile fill={bonus ? 1 : 0} emoji="🌟" uid={`bonus-${program.program_id}`} />
               : <Diamond item={{ module: 'bonus', item_id: program.program_id, emoji: '🌟' }} fill={bonus ? 1 : 0} />}
-            <span className="text-xs font-extrabold">Bonus</span>
+            <span className="flex items-center gap-1">
+              <span className="text-xs font-extrabold">Bonus</span>
+              {/* ❓ À quoi sert le bonus : message court pour les enfants (Nadia, 24/11) */}
+              <button type="button" aria-label="À quoi sert le bonus ?"
+                onClick={() => toast(AIDE_BONUS, { id: 'aide-bonus', duration: dureeMessage(AIDE_BONUS) })}
+                className="grid place-items-center h-5 w-5 rounded-full bg-amber-400 text-white text-[11px] font-black shadow active:scale-90">?</button>
+            </span>
             <span className="text-base leading-none mt-0.5">{bonus ? '✅' : '⏳'}</span>
           </div>
         )}

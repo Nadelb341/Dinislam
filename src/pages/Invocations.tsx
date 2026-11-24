@@ -19,16 +19,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, Lock, XCircle, BookOpen, Hand, Film, Undo2 } from 'lucide-react';
+import { Check, Video, FileText, Volume2, Image as ImageIcon, X, Send, Clock, XCircle, BookOpen, Hand, Film, Undo2 } from 'lucide-react';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
-import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
+import { useOpenItemFromUrl, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { getInvocationEnrichment } from '@/data/invocationsData';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 import InvocationTextes from '@/components/invocations/InvocationTextes';
+import { BandeauNonValide } from '@/components/invocations/BandeauNonValide';
 import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import type { Tables } from '@/integrations/supabase/types';
@@ -145,6 +146,8 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
           </div>
 
           <div className="p-5 space-y-4 pb-8">
+            {/* ⚠️ Pas encore validée et pas de récitation en attente : bandeau rouge qui clignote (Nadia, 24/11) */}
+            {!isValidated && validationRequest?.status !== 'pending' && !apercuAdmin && <BandeauNonValide audioObligatoire={audioObligatoire} />}
 
             {/* 🎙️ Envoi de la récitation / validation EN HAUT, juste sous le titre : même place que dans les sourates (Nadia, 2026-11-19) */}
             {/* Refusé */}
@@ -494,16 +497,8 @@ const Invocations = () => {
     progress.filter((p) => p.is_validated).map((p) => p.invocation_id)
   );
 
-  // Determine which cards are unlocked:
-  // Card at index 0 is always unlocked.
-  // Card at index N is unlocked if invocation at index N-1 is validated.
-  const isCardUnlocked = (index: number) => {
-    if (isAdmin || isOver20) return true;
-    if (index === 0) return true;
-    const prevInvocation = invocations[index - 1];
-    if (!prevInvocation) return false;
-    return validatedInvocationIds.has(prevInvocation.id);
-  };
+  // 🔓 Toutes les invocations sont ouvertes (Nadia, 24/11) : pas encore validée = en noir et blanc + bandeau rouge ;
+  // la validation par le prof (ou l'élève de 20 ans et plus) remet la carte en couleur.
 
   const getCardValidationRequest = (invocationId: number) => {
     // Return the most recent relevant request
@@ -517,20 +512,12 @@ const Invocations = () => {
 
   const validatedCount = progress.filter((p) => p.is_validated).length;
 
-  const handleCardClick = (invocation, index) => {
-    if (!isCardUnlocked(index)) {
-      toast.info('🔒 Cette invocation sera débloquée après validation de l\'invocation précédente par l\'admin.');
-      return;
-    }
-    setSelectedInvocation(invocation);
-  };
+  const handleCardClick = (invocation) => setSelectedInvocation(invocation);
 
   // « Commencer mon travail » d'un devoir : ?item=<id de l'invocation> → l'invocation s'ouvre (une fois)
   useOpenItemFromUrl(invocationsFetched && ageReady && (!user || progressFetched), (item) => {
     const index = invocations.findIndex((inv) => String(inv.id) === item.trim());
     if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
-    // Invocation verrouillée : l'ouvrir permettrait de demander sa validation hors de l'ordre → message clair
-    if (!isCardUnlocked(index)) { toast.info(lockedItemMessage('Cette invocation')); return; }
     setSelectedInvocation(invocations[index]);
   });
 
@@ -568,32 +555,28 @@ const Invocations = () => {
             {invocations.map((invocation, index) => {
               const invProgress = progress.find((p) => p.invocation_id === invocation.id);
               const isValidated = invProgress?.is_validated ?? false;
-              const unlocked = isCardUnlocked(index);
               const valReq = getCardValidationRequest(invocation.id);
               const isPending = valReq?.status === 'pending';
               const isRefused = valReq?.status === 'refused' && !isValidated;
+              const aValider = !isValidated && !isPending && !isAdmin;
 
               return (
                 <button
                   key={invocation.id}
-                  onClick={() => handleCardClick(invocation, index)}
-                  className={`relative flex flex-col items-center justify-between bg-card border border-border rounded-2xl p-3 transition-all min-h-[110px] ${
-                    unlocked
-                      ? 'hover:shadow-md active:scale-95'
-                      : 'opacity-50 grayscale cursor-not-allowed'
-                  }`}
+                  onClick={() => handleCardClick(invocation)}
+                  className={`relative flex flex-col items-center justify-between border rounded-2xl p-3 transition-all min-h-[110px] hover:shadow-md active:scale-95 ${
+                    isValidated || isAdmin ? 'bg-card border-border' : 'bg-slate-100 dark:bg-slate-800/60 border-slate-300 dark:border-slate-700'
+                  } ${aValider ? 'pt-0' : ''}`}
                 >
+                  {/* ⚠️ Pas encore validée : bandeau rouge qui clignote, le toucher dit quoi faire (Nadia, 24/11) */}
+                  {aValider && <span className="-mx-3 mb-1 self-stretch"><BandeauNonValide compact audioObligatoire={!isOver20} /></span>}
                   {/* Number badge */}
-                  <span className="absolute top-1.5 left-2 text-[10px] text-muted-foreground font-semibold">
+                  <span className={`absolute ${aValider ? 'top-8' : 'top-1.5'} left-2 text-[10px] text-muted-foreground font-semibold`}>
                     #{index + 1}
                   </span>
 
                   {/* Top-right indicator */}
-                  {!unlocked ? (
-                    <span className="absolute top-1.5 right-1.5">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                    </span>
-                  ) : isValidated ? (
+                  {isValidated ? (
                     <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                       <Check className="h-2.5 w-2.5 text-white" />
                     </span>
@@ -602,13 +585,14 @@ const Invocations = () => {
                       <Clock className="h-4 w-4 text-amber-500" />
                     </span>
                   ) : isRefused ? (
-                    <span className="absolute top-1.5 right-1.5">
+                    <span className={`absolute ${aValider ? 'top-8' : 'top-1.5'} right-1.5`}>
                       <XCircle className="h-4 w-4 text-destructive" />
                     </span>
                   ) : null}
 
                   {/* Scène animée */}
-                  <div className="mt-3 flex-1 flex items-center justify-center">
+                  {/* ⚫️ Noir et blanc tant que ce n'est pas validé ; la validation la remet en couleur */}
+                  <div className={`mt-3 flex-1 flex items-center justify-center transition-[filter] duration-700 ${isValidated || isAdmin ? '' : 'grayscale opacity-80'}`}>
                     {invocation.image_url ? (
                       <img src={invocation.image_url} alt={invocation.title_french} className="w-14 h-14 object-contain" />
                     ) : (
@@ -624,7 +608,7 @@ const Invocations = () => {
                   </p>
 
                   {/* Refused label */}
-                  {isRefused && unlocked && (
+                  {isRefused && (
                     <span className="text-[9px] text-destructive font-medium mt-0.5">Refusé</span>
                   )}
                 </button>

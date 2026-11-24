@@ -979,3 +979,7 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   :root.fond-anime .fond-scintille { animation: fond-sc 4s ease-in-out infinite; }
   :root.fond-anime .fond-nuage { animation: fond-derive 24s ease-in-out infinite alternate; }
 }
+
+/* ⚠️ Bandeau rouge qui clignote doucement : invocation pas encore validée (Nadia, 2026-11-24) */
+@keyframes bandeau-clignote { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.bandeau-clignote { animation: bandeau-clignote 1.2s ease-in-out infinite; cursor: pointer; }

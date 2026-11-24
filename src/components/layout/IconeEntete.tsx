@@ -2,7 +2,6 @@ import { forwardRef, useRef, type ButtonHTMLAttributes, type ReactNode } from 'r
 import { Settings, UsersRound, Mail, Trophy, CalendarCheck, BarChart3, Shield, RotateCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { sonClicEntete } from '@/lib/sonSaison';
 
 /**
  * 🎛️ Icônes de l'en-tête (choix de Nadia, 2026-11-19) : modèle 3 « Applis d'iPhone » (carrés très arrondis, dégradé
@@ -96,7 +95,6 @@ export const BoutonEntete = forwardRef<HTMLButtonElement, Props>(function Bouton
           void el.offsetWidth; // relance l'animation
           el.classList.add(nom === 'actualiser' ? 'tourne' : 'rebond');
         }
-        sonClicEntete();
         onClick?.(e);
       }}
       {...rest}
