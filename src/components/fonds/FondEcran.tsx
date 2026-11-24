@@ -54,20 +54,25 @@ export function FondEcran() {
   const nuit = fondDuJour(petits ? 'np' : 'ng', r.actifs, jourDate);
   const actif = !!user && r.actif && mode !== 'aucun' && !!(jour || nuit);
 
-  useEffect(() => {
-    const html = document.documentElement;
-    html.classList.toggle('fond-actif', actif);
-    html.classList.toggle('fond-anime', actif && mode === 'anime');
-    return () => { html.classList.remove('fond-actif', 'fond-anime'); };
-  }, [actif, mode]);
-  if (!actif) return null;
-
   const minuit = new Date(jourDate); minuit.setHours(0, 0, 0, 0);
   const fajr = prayerTimes?.fajrDate.getTime() ?? minuit.getTime() + 6 * 3600_000;
   const maghrib = prayerTimes?.maghribDate.getTime() ?? minuit.getTime() + 18 * 3600_000;
   const c = sombre ? { nuit: 1, voile: 0, moment: 'nuit' as const } : calques(maintenant, fajr, maghrib);
   const opNuit = jour ? c.nuit : 1;
   const voile = jour && nuit ? c.voile : 0;
+  // 🌙 Fond de nuit avec l'appli en clair : les textes posés directement sur le fond passent en clair (sinon « Retour »,
+  // titres et phrases grises deviennent invisibles, Nadia 24/11). Les cartes gardent leurs couleurs (index.css).
+  const nuitVisible = actif && opNuit >= 0.5;
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle('fond-actif', actif);
+    html.classList.toggle('fond-anime', actif && mode === 'anime');
+    html.classList.toggle('fond-nuit', nuitVisible);
+    return () => { html.classList.remove('fond-actif', 'fond-anime', 'fond-nuit'); };
+  }, [actif, mode, nuitVisible]);
+  if (!actif) return null;
+
   return (
     <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
       <CalquesFond jour={jour} nuit={nuit} opNuit={opNuit} voile={voile} aube={c.moment === 'aube'} uid="fe" vendredi={jourDate.getDay() === 5} />

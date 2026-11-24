@@ -980,6 +980,11 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
   :root.fond-anime .fond-nuage { animation: fond-derive 24s ease-in-out infinite alternate; }
 }
 
-/* ⚠️ Bandeau rouge qui clignote doucement : invocation pas encore validée (Nadia, 2026-11-24) */
-@keyframes bandeau-clignote { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-.bandeau-clignote { animation: bandeau-clignote 1.2s ease-in-out infinite; cursor: pointer; }
+/* 🌙 Fond de NUIT avec l'appli en clair (Nadia, 2026-11-24 : « Retour » invisible) : ce qui est posé directement sur le fond
+   (boutons sans fond, titres, phrases grises) passe en clair ; tout ce qui a son propre fond (cartes, bandeaux, boutons pleins)
+   reprend les couleurs normales. Valable pour TOUTES les pages, présentes et futures. */
+:root.fond-nuit:not(.dark) { --fg-jour: var(--foreground); --mfg-jour: var(--muted-foreground); }
+:where(:root.fond-nuit:not(.dark) .app-racine > main) { --foreground: 45 30% 95%; --muted-foreground: 220 25% 80%; color: hsl(var(--foreground)); }
+:where(:root.fond-nuit:not(.dark) .app-racine > main) :where([class^="bg-"]:not([class^="bg-transparent"]), [class*=" bg-"]:not([class*=" bg-transparent"]), [style*="background"], .carte-accueil, input, textarea, select) {
+  --foreground: var(--fg-jour); --muted-foreground: var(--mfg-jour); color: hsl(var(--foreground));
+}

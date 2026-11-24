@@ -10,13 +10,12 @@ import { toast } from 'sonner';
 import { Unlock, Users } from 'lucide-react';
 
 interface Props {
-  moduleType: 'sourates' | 'nourania' | 'invocations' | 'allah-names' | 'alphabet';
+  moduleType: 'sourates' | 'nourania' | 'allah-names' | 'alphabet';
 }
 
 const MODULE_LABELS: Record<string, string> = {
   sourates: 'toutes les sourates',
   nourania: 'toutes les leçons Nourania',
-  invocations: 'toutes les invocations',
   'allah-names': 'les 99 Noms d\'Allah',
   alphabet: 'l\'Alphabet (les 28 lettres ouvertes, sans les marquer comme apprises)',
 };
@@ -25,7 +24,6 @@ const MODULE_LABELS: Record<string, string> = {
 const CARTE_OUVERTE: Record<Props['moduleType'], { nom: string; url: string }> = {
   sourates: { nom: 'Sourates', url: '/sourates' },
   nourania: { nom: 'Nourania', url: '/nourania' },
-  invocations: { nom: 'Invocations', url: '/invocations' },
   'allah-names': { nom: '99 Noms d\'Allah', url: '/allah-names' },
   alphabet: { nom: 'Alphabet', url: '/alphabet' },
 };
@@ -82,18 +80,6 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
         if (!totalCount) return [];
         const { data: progress } = await supabase
           .from('user_nourania_progress')
-          .select('user_id')
-          .eq('is_validated', true);
-        const counts: Record<string, number> = {};
-        (progress || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
-        return Object.entries(counts).filter(([, c]) => c >= totalCount).map(([id]) => id);
-
-      } else if (moduleType === 'invocations') {
-        const { data: invocations } = await supabase.from('invocations').select('id');
-        const totalCount = invocations?.length || 0;
-        if (!totalCount) return [];
-        const { data: progress } = await supabase
-          .from('user_invocation_progress')
           .select('user_id')
           .eq('is_validated', true);
         const counts: Record<string, number> = {};
@@ -191,26 +177,6 @@ const AdminUnlockAllDialog = ({ moduleType }: Props) => {
         }
         for (const userId of toLock) {
           await supabase.from('user_nourania_progress').delete().eq('user_id', userId);
-        }
-
-      } else if (moduleType === 'invocations') {
-        if (toUnlock.length > 0) {
-          const { data: invocations, error } = await supabase.from('invocations').select('id');
-          if (error) throw error;
-          for (const userId of toUnlock) {
-            await supabase.from('user_invocation_progress').delete().eq('user_id', userId);
-            const rows = (invocations || []).map((i) => ({
-              user_id: userId, invocation_id: i.id, is_validated: true, is_memorized: true,
-            }));
-            const { error: insErr } = await supabase.from('user_invocation_progress').insert(rows);
-            if (insErr) throw insErr;
-            await supabase
-              .from('invocation_validation_requests').delete()
-              .eq('user_id', userId).eq('status', 'pending');
-          }
-        }
-        for (const userId of toLock) {
-          await supabase.from('user_invocation_progress').delete().eq('user_id', userId);
         }
 
       } else if (moduleType === 'alphabet') {

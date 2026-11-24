@@ -51,7 +51,6 @@ export const FONDS: Fond[] = [
   { cle: 'np5', famille: 'np', nom: 'Le désert étoilé', dessin: (u) => ciel(`${u}a`, '#141838', '#36407a') + etoiles(45, 13, '#fff', 220) + croissant(40, 60, 12, '#ffe9a8', '#161a3c') + dunes(250, '#3a3f78', '#2c305f') + chameau(118, 236, '#232750') },
   { cle: 'ng1', famille: 'ng', nom: 'La nuit de Médine', dessin: (u) => ciel(`${u}a`, '#0f1533', '#28306a') + etoiles(36, 17, '#fff', 200) + croissant(136, 60, 14, '#ffe9a8', '#121838') + mosquee(272, '#0a0f27', 1) },
   { cle: 'ng2', famille: 'ng', nom: 'La voûte étoilée', dessin: (u) => ciel(`${u}a`, '#070b24', '#1d2a5c') + etoiles(110, 29, '#fff', 320, .9) },
-  { cle: 'ng3', famille: 'ng', nom: 'Géométrie dorée', dessin: (u) => ciel(`${u}a`, '#10122b', '#1f2350') + motif('#d9b45a', .14) },
   { cle: 'ng4', famille: 'ng', nom: 'Crépuscule violet', dessin: (u) => ciel(`${u}a`, '#1b1740', '#7a4b7f', '#34295e') + etoiles(24, 37, '#fff', 160) + `<ellipse cx="90" cy="${H}" rx="140" ry="60" fill="#f2a27a" opacity=".25"/>` },
   { cle: 'ng5', famille: 'ng', nom: 'La nuit du désert', dessin: (u) => ciel(`${u}a`, '#0c1030', '#2a2f5f') + `<path d="M-20 150 Q 90 70 200 20" stroke="#cbd6ff" stroke-width="30" opacity=".08" fill="none"/>` + etoiles(60, 41, '#fff', 210) + dunes(255, '#232853', '#1a1f44') },
 ];

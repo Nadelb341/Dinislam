@@ -30,7 +30,6 @@ import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { InvocationSceneSVG } from '@/components/invocations/InvocationSceneSVG';
 import InvocationTextes from '@/components/invocations/InvocationTextes';
 import { BandeauNonValide } from '@/components/invocations/BandeauNonValide';
-import AdminUnlockAllDialog from '@/components/admin/AdminUnlockAllDialog';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -535,13 +534,6 @@ const Invocations = () => {
             <p className="text-xs text-muted-foreground">mémorisées</p>
           </div>
         </div>
-
-        {/* Bouton admin déverrouillage en masse */}
-        {isAdmin && (
-          <div className="flex justify-end">
-            <AdminUnlockAllDialog moduleType="invocations" />
-          </div>
-        )}
 
         {/* Grid */}
         {isLoading ? (
