@@ -1,6 +1,6 @@
 import { useVillePriere } from '@/hooks/useVillePriere';
 import { enregistrerVillePriere } from '@/lib/rappelsPriere';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,10 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CityOption, PRAYER_METHODS, PRAYER_METHOD_KEY, getSavedMethod, PrayerMethod } from '@/hooks/usePrayerTimesCity';
 
-import SunArcDisplay from '@/components/prayer/SunArcDisplay';
+import { CielDesPrieres } from '@/components/prayer/CielDesPrieres';
+import { EtoilesDuJour } from '@/components/prayer/EtoilesDuJour';
+import { FriseDuJour } from '@/components/prayer/FriseDuJour';
+import { AMBIANCES, momentDe } from '@/lib/momentPriere';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
 import PrayerModuleCards from '@/components/prayer/PrayerModuleCards';
@@ -102,30 +105,35 @@ const Priere = () => {
   });
 
   const nextPrayer = prayerTimes ? getNextPrayer() : null;
+  // 🌅 Moment de la journée (ambiance de TOUTE la page, Nadia 2026-11-26) : recalculé chaque minute
+  const [maintenant, setMaintenant] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setMaintenant(new Date()), 60_000); return () => clearInterval(t); }, []);
+  const moment = prayerTimes ? momentDe(prayerTimes, maintenant) : 'dhohr';
+  const ambiance = AMBIANCES[moment];
+  const basculerPriere = (name: string) => {
+    const done = dailyPrayers.some(p => p.date === todayKey && p.prayer_name === name);
+    if (done) toggleDailyPrayerMutation.mutate(name);
+    else askValidation('Valider cette prière ?', `« ${name} » sera cochée comme faite aujourd'hui.`, () => toggleDailyPrayerMutation.mutate(name));
+  };
 
   return (
     <AppLayout>
-      <div className="p-4 space-y-6 max-w-4xl mx-auto">
-        <div className="text-center space-y-2 animate-fade-in">
-          <h1 className="text-2xl font-bold text-foreground">الصلاة</h1>
-          <p className="text-muted-foreground">La Prière - Apprentissage complet</p>
+      {/* 🌅 L'ambiance du moment (Sobh orangé, Chourouk orangé/bleu, Dhohr et Asr bleu, Maghreb orangé, Icha nuit) colore TOUTE la page */}
+      <div className="min-h-full transition-[background] duration-1000" style={{ background: ambiance.fond }}>
+      <div className="p-4 space-y-5 max-w-5xl mx-auto">
+        <div className="text-center space-y-1 animate-fade-in">
+          <h1 className="text-2xl font-bold font-arabic" style={{ color: ambiance.texte }}>الصلاة</h1>
+          <p className="text-sm font-semibold" style={{ color: ambiance.texte, opacity: 0.85 }}>La Prière</p>
         </div>
 
-        <PrayerWeeklyCalendar prayerData={calendarData} />
-
-        {nextPrayer && (
-          <div className="rounded-xl bg-green-700 text-white p-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-green-200">Prochaine prière</p>
-              <p className="font-bold text-lg">{nextPrayer.name}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-mono font-bold text-xl">{nextPrayer.time}</p>
-              <p className="text-xs text-green-200 font-arabic">{nextPrayer.arabic}</p>
-            </div>
+        {/* Présentation 9 : téléphone tourné ou tablette → 2 colonnes (le ciel à gauche, la journée à droite) */}
+        <div className="grid gap-4 lg:grid-cols-2 [@media(orientation:landscape)_and_(max-height:500px)]:grid-cols-2">
+          <div className="space-y-4 min-w-0">
+            {prayerTimes && <CielDesPrieres moment={moment} prochaine={nextPrayer} />}
+            {prayerTimes && <EtoilesDuJour horaires={prayerTimes} cochees={todayChecked} onToggle={basculerPriere} texte={ambiance.texte} nuit={ambiance.etoiles} />}
+            <PrayerWeeklyCalendar prayerData={calendarData} />
           </div>
-        )}
-
+          <div className="space-y-4 min-w-0">
         <div className="space-y-3 animate-fade-in">
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
@@ -233,20 +241,15 @@ const Priere = () => {
               {prayerError}
             </div>
           ) : prayerTimes ? (
-            <SunArcDisplay
-              prayerTimes={prayerTimes}
-              cityLabel={`${selectedCity.label}, ${selectedCity.country}`}
-              checkedPrayers={todayChecked}
-              onTogglePrayer={(name) => {
-                const done = dailyPrayers.some(p => p.date === todayKey && p.prayer_name === name);
-                if (done) toggleDailyPrayerMutation.mutate(name);
-                else askValidation('Valider cette prière ?', `« ${name} » sera cochée comme faite aujourd'hui.`, () => toggleDailyPrayerMutation.mutate(name));
-              }}
-            />
+            <FriseDuJour horaires={prayerTimes} moment={moment} cochees={todayChecked} texte={ambiance.texte} nuit={ambiance.etoiles} />
           ) : null}
         </div>
 
+          </div>
+        </div>
+
         <PrayerModuleCards />
+      </div>
       </div>
 
       {showQibla && (

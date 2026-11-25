@@ -9,7 +9,7 @@ import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { Cadreur } from '@/components/shared/Cadreur';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -163,6 +163,23 @@ const PrayerModuleCards = () => {
     if (visibleGroups.some((g) => g.key === card.group_key)) setActiveGroup(card.group_key);
     setSelectedCard(card);
   });
+
+  // 💧 /priere?carte=LODO (notification « fais tes ablutions », Nadia 2026-11-26) : ouvre la carte de ce titre dans le groupe de l'élève
+  const carteDemandee = useRef(false);
+  useEffect(() => {
+    if (!cardsFetched || carteDemandee.current) return;
+    const titre = new URLSearchParams(window.location.search).get('carte');
+    if (!titre) return;
+    carteDemandee.current = true;
+    const c = groupCards.find((x) => (x.title ?? '').toLowerCase() === titre.toLowerCase());
+    if (c) setSelectedCard(c);
+  }, [cardsFetched, groupCards]);
+
+  // 🕌 Idée i (Nadia, 2026-11-26) : à la dernière sous-carte de LODO, « Maintenant, je prie » ouvre « Faire la prière »
+  const carteFaireLaPriere = carteParente && (carteParente.title ?? '').toUpperCase() === 'LODO'
+    && sousCartes.length === 0 && sousCartesDe(carteParente.id).at(-1)?.id === carteOuverte?.id
+    ? cards.find((c) => !c.parent_id && c.group_key === carteParente.group_key && (c.title ?? '').toLowerCase() === 'faire la prière') ?? null
+    : null;
 
   const uploadContentMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -420,6 +437,12 @@ const PrayerModuleCards = () => {
           {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
           {carteOuverte && <ZonesContenu cible={`priere:${carteOuverte.id}`} isAdmin={isAdmin} libelle={carteOuverte.title ?? 'Prière'}
             vide={sousCartes.length === 0 && cardContent.length === 0 ? '🛠️ En cours de mise à jour pour cette leçon' : undefined} />}
+          {carteFaireLaPriere && (
+            <button type="button" onClick={() => setSelectedCard(carteFaireLaPriere)}
+              className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-base font-extrabold text-white shadow-md active:scale-[.98]">
+              🕌 Maintenant, je prie → Faire la prière
+            </button>
+          )}
           {isAdmin && (
             <div className="space-y-2">
               <input ref={fileInputRef} type="file" className="hidden" accept="video/*,audio/*,application/pdf,image/*"

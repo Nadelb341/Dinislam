@@ -103,10 +103,11 @@ serve(async (req) => {
         .upsert({ user_id: r.user_id, jour: r.jour, priere: r.priere.cle }, { onConflict: 'user_id,jour,priere', ignoreDuplicates: true })
         .select('user_id');
       if (!reserve?.length) continue;
-      const titre = r.avance ? `🕌 ${r.priere.nom} dans ${r.avance} min (${r.heure})` : `🕌 C'est l'heure du ${r.priere.nom} (${r.heure})`;
-      const corps = r.avance ? `{prenom}, la prière du ${r.priere.nom} approche. Prépare-toi 🤲` : `{prenom}, c'est l'heure de la prière du ${r.priere.nom} 🤲`;
+      // 💧 2026-11-26 (Nadia, idée b) : avant la prière = « fais tes ablutions », et la notification ouvre la carte LODO
+      const titre = r.avance ? `💧 ${r.priere.nom} dans ${r.avance} min (${r.heure}) : fais tes ablutions` : `🕌 C'est l'heure du ${r.priere.nom} (${r.heure})`;
+      const corps = r.avance ? `{prenom}, la prière du ${r.priere.nom} approche. Fais tes ablutions et prépare-toi 🤲` : `{prenom}, c'est l'heure de la prière du ${r.priere.nom} 🤲`;
       try {
-        const res = await sendPushInternal({ userIds: [r.user_id], title: titre, body: corps, type: 'prayer_reminder', tag: `priere-${r.priere.cle}`, data: { url: '/priere' } });
+        const res = await sendPushInternal({ userIds: [r.user_id], title: titre, body: corps, type: 'prayer_reminder', tag: `priere-${r.priere.cle}`, data: { url: r.avance ? '/priere?carte=LODO' : '/priere' } });
         envoyes += res.sent ?? 0;
       } catch (e) {
         console.error('prayer-reminders envoi', r.user_id, e);

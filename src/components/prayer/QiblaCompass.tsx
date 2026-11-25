@@ -24,6 +24,27 @@ function calcQiblaAngle(userLat: number, userLng: number): number {
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
+/**
+ * 🧭 Cap du HAUT de l'écran (Nadia, 2026-11-26, T9) : iPhone donne `webkitCompassHeading` ; Android donne `alpha`, qui tourne dans
+ * l'autre sens (cap = 360 − alpha). On ajoute l'angle de l'écran : téléphone couché, la direction reste juste.
+ */
+function capEcran(e: DeviceOrientationEvent): number | null {
+  const ios = (e as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
+  const brut = typeof ios === 'number' ? ios : e.alpha == null ? null : 360 - e.alpha;
+  if (brut == null) return null;
+  const angle = (typeof screen !== 'undefined' && screen.orientation?.angle) || 0;
+  return (((brut + angle) % 360) + 360) % 360;
+}
+
+/** Dessin de la Kaaba (cube noir, bande dorée, porte) — idée e, boussole pour les enfants */
+const Kaaba = ({ x, y, t }: { x: number; y: number; t: number }) => (
+  <g transform={`translate(${x - t / 2}, ${y - t / 2})`}>
+    <rect width={t} height={t} rx={t * 0.08} fill="#1b1b1f" stroke="#f5c542" strokeWidth={1.2} />
+    <rect y={t * 0.22} width={t} height={t * 0.14} fill="#d9a636" />
+    <rect x={t * 0.62} y={t * 0.52} width={t * 0.2} height={t * 0.48} rx={1} fill="#d9a636" />
+  </g>
+);
+
 const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   const qiblaAngle = calcQiblaAngle(city.lat, city.lon);
   const [compassActive, setCompassActive] = useState(false);
@@ -37,7 +58,8 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   // Create stable handler
   useEffect(() => {
     handlerRef.current = (e: DeviceOrientationEvent) => {
-      const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
+      const heading = capEcran(e);
+      if (heading == null) return;
       targetHeadingRef.current = heading;
       setDeviceHeading(heading);
     };
@@ -49,7 +71,8 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
     if (typeof DOE?.requestPermission !== 'function' && window.DeviceOrientationEvent) {
       // Android / desktop — start immediately
       const handler = (e: DeviceOrientationEvent) => {
-        const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
+        const heading = capEcran(e);
+        if (heading == null) return;
         targetHeadingRef.current = heading;
         setDeviceHeading(heading);
       };
@@ -84,7 +107,8 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
         const permission = await OrientationEvent.requestPermission();
         if (permission === 'granted') {
           const handler = (e: DeviceOrientationEvent) => {
-            const heading: number = e.webkitCompassHeading ?? e.alpha ?? 0;
+            const heading = capEcran(e);
+            if (heading == null) return;
             targetHeadingRef.current = heading;
             setDeviceHeading(heading);
           };
@@ -129,6 +153,14 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
   const currentHeading = smoothHeadingRef.current;
   const compassRotation = -currentHeading;
   const qiblaPointerRotation = qiblaAngle - currentHeading;
+  // ✅ Bien tourné vers la Qibla (à 8° près)
+  const ecart = Math.abs((((qiblaPointerRotation % 360) + 540) % 360) - 180);
+  const aligne = compassActive && ecart < 8;
+  const dejaAligne = useRef(false);
+  useEffect(() => {
+    if (aligne && !dejaAligne.current) { try { navigator.vibrate?.(80); } catch { /* */ } }
+    dejaAligne.current = aligne;
+  }, [aligne]);
 
   const size = 240;
   const cx = size / 2;
@@ -260,12 +292,14 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
 
             <svg width={size} height={size} className="absolute inset-0">
               <g transform={`rotate(${qiblaPointerRotation}, ${cx}, ${cy})`}>
+                {/* Flèche dorée qui mène à la Kaaba dessinée */}
                 <polygon
-                  points={`${cx},${cy - r + 30} ${cx - 6},${cy + 20} ${cx},${cy + 10} ${cx + 6},${cy + 20}`}
-                  fill="white"
-                  opacity="0.95"
+                  points={`${cx},${cy - r + 44} ${cx - 8},${cy + 18} ${cx},${cy + 8} ${cx + 8},${cy + 18}`}
+                  fill={aligne ? '#ffe27a' : '#f5c542'}
+                  stroke="#8a6512" strokeWidth="1"
                 />
-                <text x={cx} y={cy - r + 45} textAnchor="middle" fontSize="16">🕋</text>
+                {aligne && <circle cx={cx} cy={cy - r + 26} r={22} fill="#ffe27a" opacity="0.45" />}
+                <Kaaba x={cx} y={cy - r + 26} t={26} />
               </g>
               <circle cx={cx} cy={cy} r="6" fill="#1e293b" stroke="white" strokeWidth="1.5" />
             </svg>
@@ -277,11 +311,13 @@ const QiblaCompass = ({ city, onClose }: QiblaCompassProps) => {
           <p className="text-sm text-green-800 dark:text-green-300">
             La Qibla est à <strong>{Math.round(qiblaAngle)}°</strong> depuis {city.label}
           </p>
-          {compassActive && (
+          {compassActive && (aligne ? (
+            <p className="mt-1 text-base font-extrabold text-green-700 dark:text-green-300">✅ Bravo, tu es tourné vers la Qibla !</p>
+          ) : (
             <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-              Cap actuel : {Math.round(deviceHeading)}° — Orientez le haut du téléphone vers 🕋
+              Tourne-toi doucement jusqu'à ce que la flèche dorée pointe vers le haut du téléphone 🕋 (cap : {Math.round(deviceHeading)}°)
             </p>
-          )}
+          ))}
           {!compassActive && !needsButton && (
             <p className="text-xs text-muted-foreground mt-1">
               Boussole non disponible sur cet appareil. Orientez-vous à <strong>{Math.round(qiblaAngle)}°</strong> depuis le Nord.
