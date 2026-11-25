@@ -35,6 +35,9 @@ const GROUPS = [
   { key: 'adultes', label: 'Adultes', labelAr: 'الكبار' },
 ];
 
+// 🎨 Fonds pastel très clairs des sous-cartes (rose, pêche, citron, menthe, ciel, lavande, lilas, sable)
+const PASTELS = ['#fde7ee', '#feeadb', '#fdf6d3', '#e3f6e9', '#e2f1fb', '#e8e7fb', '#f3e6f8', '#f6efe3'];
+
 const getContentIcon = (type: string) => {
   if (type.includes('video')) return <Play className="h-4 w-4" />;
   if (type.includes('audio')) return <Music className="h-4 w-4" />;
@@ -301,17 +304,20 @@ const PrayerModuleCards = () => {
   const tuile = (card: Tables<'prayer_cards'>, index: number, drag?: DragItemProps) => {
     const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
     const nbSous = sousCartesDe(card.id).length;
+    // 🎨 Sous-cartes : fond pastel très clair, une couleur par carte (Nadia, 25/11)
+    const pastel = card.parent_id ? PASTELS[index % PASTELS.length] : undefined;
     return (
       <div
         key={card.id}
         ref={ref} {...attrs}
         className={cn('module-card rounded-xl overflow-hidden cursor-pointer hover:shadow-elevated transition-all animate-slide-up touch-manipulation', isDragging && 'opacity-50')}
-        style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both', ...style }}
+        style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both', ...(pastel ? { backgroundColor: pastel } : {}), ...style }}
         onClick={() => setSelectedCard(card)}
       >
         {card.image_url ? (
-          <div className="aspect-[4/3] bg-white">
-            <ImageCadree src={card.image_url} alt={card.title ?? ''} cadrages={card.image_cadrage} emplacement="carte" className="w-full h-full" />
+          <div className="aspect-[4/3]" style={{ backgroundColor: pastel ?? '#ffffff' }}>
+            {/* Image ENTIÈRE (pas de zoom) : tout le texte se lit ; l'équerre 📐 reste */}
+            <ImageCadree src={card.image_url} alt={card.title ?? ''} cadrages={card.image_cadrage} emplacement="carte" className="w-full h-full" imgClassName="object-contain" />
           </div>
         ) : (
           <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
@@ -319,7 +325,7 @@ const PrayerModuleCards = () => {
           </div>
         )}
         <div className="p-2.5 space-y-0.5">
-          <p className="text-xs font-semibold text-foreground [overflow-wrap:anywhere] leading-tight">{card.title || card.title_arabic || 'Sans titre'}</p>
+          <p className={cn('text-xs font-semibold [overflow-wrap:anywhere] leading-tight', pastel ? 'text-[#2a2440]' : 'text-foreground')}>{card.title || card.title_arabic || 'Sans titre'}</p>
           {nbSous > 0 && <p className="text-[11px] text-muted-foreground">🗂️ {nbSous} parties</p>}
         </div>
         {isAdmin && (
@@ -383,12 +389,13 @@ const PrayerModuleCards = () => {
       {/* 📐 Cadrer la photo d'une carte (2026-11-18) */}
       {aCadrer?.image_url && (
         <Cadreur open onClose={() => setACadrer(null)} src={aCadrer.image_url} table="prayer_cards" id={aCadrer.id} valeur={aCadrer.image_cadrage}
-          emplacements={[{ cle: 'carte', nom: 'Carte', classeCadre: 'w-56 max-w-full aspect-[4/3] rounded-xl' }]}
+          emplacements={[{ cle: 'carte', nom: 'Carte', classeCadre: 'w-56 max-w-full aspect-[4/3] rounded-xl bg-white', classeImage: 'object-contain' }]}
           onEnregistre={() => queryClient.invalidateQueries({ queryKey: ['prayer-cards'] })} />
       )}
 
       {/* Fenêtre d'une carte : ses sous-cartes (ex. LODO › 1 - AVOIR L'INTENTION), puis ses zones (fiche, vidéo…) */}
-      <Dialog open={!!carteOuverte} onOpenChange={(open) => !open && setSelectedCard(null)}>
+      {/* ❌ La croix d'une sous-carte ramène à sa carte (ex. LODO), pas à l'accueil de la Prière */}
+      <Dialog open={!!carteOuverte} onOpenChange={(open) => !open && setSelectedCard(carteParente ?? null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             {carteParente && (

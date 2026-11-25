@@ -14,6 +14,7 @@ import { GuideInstallation, GuideNotificationsBloquees } from '@/components/push
  *     une fois à chaque ouverture de l'appli) ;
  *  2. sinon, notifications pas activées → « 🔔 Active tes notifications » (bouton = vrai abonnement, `useWebPush`) ;
  *  3. notifications refusées → comment les réautoriser dans les réglages.
+ * 2026-11-25 (choix 5) : pour « Active tes notifications », d'abord un ÉCRAN PLEIN (« Plus tard » = jusqu'à la prochaine ouverture), puis le bandeau.
  * Collé sous l'en-tête, il revient à chaque ouverture tant que ce n'est pas fait (« ✕ » = caché jusqu'à la prochaine ouverture).
  * Remplace l'ancienne bannière de l'accueil (silencieuse 7 jours après 3 « Plus tard ») et `PushAutoSubscribe`.
  * Rien en mode fantôme (ce téléphone est celui de l'enseignante), rien sans réseau.
@@ -21,6 +22,8 @@ import { GuideInstallation, GuideNotificationsBloquees } from '@/components/push
 const CLE_INSTALLEE = 'dinislam_appli_installee';
 let cacheJusquaReouverture = false;
 let guideDejaMontre = false;
+// 🔔 Choix 5 de Nadia (25/11) : ÉCRAN PLEIN « Active tes notifications » à chaque ouverture ; « Plus tard » = jusqu'à la prochaine ouverture
+let ecranPleinFerme = false;
 
 const permissionActuelle = (): NotificationPermission | 'absent' => ('Notification' in window ? Notification.permission : 'absent');
 
@@ -35,6 +38,7 @@ export default function BandeauActivation() {
   const [aideBloquees, setAideBloquees] = useState(false);
   const [permission, setPermission] = useState(permissionActuelle);
   const [envoi, setEnvoi] = useState(false);
+  const [ecranFerme, setEcranFerme] = useState(ecranPleinFerme);
   const autoEssaye = useRef(false);
   const qui = appareil();
   const fantome = estEnModeFantome();
@@ -87,6 +91,8 @@ export default function BandeauActivation() {
     else toast.error('Les notifications ne se sont pas activées. Réessaie, ou touche « Comment faire ? ».');
   };
 
+  const fermerEcran = () => { ecranPleinFerme = true; setEcranFerme(true); };
+  let ecranPlein = false;
   let texte: string | null = null;
   let bouton: { label: string; action: () => void } | null = null;
   let aide: { label: string; action: () => void } | null = null;
@@ -106,6 +112,7 @@ export default function BandeauActivation() {
     } else {
       texte = '🔔 Active tes notifications pour recevoir les messages et les devoirs de ton professeur';
       bouton = { label: envoi ? '…' : 'Activer', action: () => void activer() };
+      ecranPlein = !ecranFerme;
     }
   }
 
@@ -135,6 +142,23 @@ export default function BandeauActivation() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {ecranPlein && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titre-activer-notifs"
+          className="fixed inset-0 z-[450] flex flex-col items-center justify-center gap-6 bg-gradient-to-b from-[#2d2a5a] to-[#1d1b3d] px-6 text-center text-white"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          <div className="text-7xl animate-bounce" aria-hidden>🔔</div>
+          <h2 id="titre-activer-notifs" className="max-w-sm text-2xl font-extrabold leading-tight [overflow-wrap:anywhere]">Active tes notifications</h2>
+          <p className="max-w-sm text-base leading-snug text-white/85">Pour recevoir les messages, les devoirs et les encouragements de ton professeur.</p>
+          <button type="button" disabled={envoi}
+            onClick={() => { void activer().then(() => { if (permissionActuelle() !== 'default') fermerEcran(); }); }}
+            className="min-h-14 w-full max-w-xs rounded-full bg-[#f5c542] px-6 text-lg font-extrabold text-[#2a1f00] shadow-lg active:scale-95 disabled:opacity-60">
+            {envoi ? '…' : '🔔 Activer'}
+          </button>
+          <button type="button" onClick={fermerEcran} className="min-h-11 rounded-full px-5 text-sm font-bold text-white/75 underline-offset-4 hover:underline">
+            Plus tard
+          </button>
         </div>
       )}
       <GuideInstallation open={guide} onOpenChange={setGuide} />

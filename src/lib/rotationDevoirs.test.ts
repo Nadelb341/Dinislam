@@ -10,11 +10,12 @@ describe('rotation des devoirs', () => {
   it('le devoir est attendu au cours suivant', () => {
     expect(heureDeRendu(devoir, mercredi14h, []).getTime()).toBe(new Date(2026, 10, 11, 14, 0).getTime());
   });
-  it('change d\'onglet pile à l\'heure du cours', () => {
-    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 11, 13, 59))).toBe('semaine');
-    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 11, 14, 0))).toBe('passee');
-    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 18, 13, 59))).toBe('passee');
-    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 18, 14, 0))).toBe('historique');
+  it('change d\'onglet 1 h après l\'heure du cours (remise à zéro, Nadia 25/11)', () => {
+    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 11, 14, 30))).toBe('semaine');
+    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 11, 14, 59))).toBe('semaine');
+    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 11, 15, 0))).toBe('passee');
+    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 18, 14, 59))).toBe('passee');
+    expect(rangement(devoir, mercredi14h, [], new Date(2026, 10, 18, 15, 0))).toBe('historique');
   });
   it('pendant les vacances, la semaine dure jusqu\'au premier cours de la rentrée', () => {
     const avant = { id: 'd2', created_at: new Date(2026, 9, 14, 16, 0).toISOString(), date_limite: null };

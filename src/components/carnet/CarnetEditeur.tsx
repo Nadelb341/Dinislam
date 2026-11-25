@@ -51,7 +51,8 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
   const [recherche, setRecherche] = useState('');
   // ✏️ Message déjà parti, modifié : Nadia choisit de prévenir ou non (décoché par défaut, idée 14 du 18/11)
   const dejaEnvoye = !!message && new Date(message.envoyer_le).getTime() <= Date.now();
-  const [prevenirModif, setPrevenirModif] = useState(false);
+  // Choix 14 de Nadia (25/11) : élèves prévenus d'un message modifié PAR DÉFAUT (on peut décocher)
+  const [prevenirModif, setPrevenirModif] = useState(true);
   const maj = (p: Partial<Formulaire>) => setF((x) => ({ ...x, ...p }));
 
   // 💾 Brouillon automatique (création seulement) : fermé sans envoyer → rappelé à l'ouverture de l'appli

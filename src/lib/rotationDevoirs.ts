@@ -43,11 +43,14 @@ export function heureDeRendu(d: DevoirRotation, s: Omit<GroupSchedule, 'group_id
   return coursApres(s, holidays, from);
 }
 
+/** ⏰ Remise à zéro 1 h APRÈS l'heure du cours (Nadia, 25/11) : pendant le cours, les devoirs restent affichés */
+export const DELAI_REMISE_A_ZERO_MS = 60 * 60 * 1000;
+
 /** Onglet où se range le devoir maintenant */
 export function rangement(d: DevoirRotation, s: Omit<GroupSchedule, 'group_id'>, holidays: Holiday[], now = new Date()): Rangement {
   const rendu = heureDeRendu(d, s, holidays);
-  if (now < rendu) return 'semaine';
-  return now < coursApres(s, holidays, rendu) ? 'passee' : 'historique';
+  if (now.getTime() < rendu.getTime() + DELAI_REMISE_A_ZERO_MS) return 'semaine';
+  return now.getTime() < coursApres(s, holidays, rendu).getTime() + DELAI_REMISE_A_ZERO_MS ? 'passee' : 'historique';
 }
 
 /** Fait (pour l'élève) dès qu'il l'a envoyé ; « à refaire » = pas fait */
@@ -77,7 +80,7 @@ export const cleCours = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() +
 export function coursPasses(s: Omit<GroupSchedule, 'group_id'>, holidays: Holiday[], debut: Date, now = new Date()): Date[] {
   const out: Date[] = [];
   let c = coursApres(s, holidays, new Date(debut.getTime() - 1));
-  for (let i = 0; i < 520 && c <= now; i++) { out.push(c); c = coursApres(s, holidays, c); }
+  for (let i = 0; i < 520 && c.getTime() + DELAI_REMISE_A_ZERO_MS <= now.getTime(); i++) { out.push(c); c = coursApres(s, holidays, c); }
   return out;
 }
 

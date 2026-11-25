@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import SourateRecitationPanel from './SourateRecitationPanel';
+import { EnregistrementCours } from './EnregistrementCours';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
@@ -579,6 +580,9 @@ const SourateDetailDialog = ({
               🎉 Tous tes versets sont cochés ! Envoie maintenant ta récitation 🎙️ La sourate suivante s'ouvrira quand ton professeur l'aura validée ✨
             </div>
           )}
+
+          {/* 🎥 Carte violette « Ton enregistrement pendant le cours » (Nadia, 25/11) : AU-DESSUS de « Envoyer ma récitation » */}
+          <EnregistrementCours sourateNumber={sourate.number} sourateName={sourate.name_french} />
 
           {/* Panel récitation élève */}
           {dbId && (

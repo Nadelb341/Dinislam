@@ -14,7 +14,10 @@ import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { QuizVideo } from '@/components/shared/QuizVideo';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
-import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne, type KindMedia } from '@/lib/alphabetMedias';
+import { enregistrerOrdre, envoyerFichierAlphabet, horsLigne, kindDuFichier, type KindMedia } from '@/lib/alphabetMedias';
+import { supabase } from '@/integrations/supabase/client';
+import { compressDocument } from '@/lib/compressImage';
+import { useUrlLisible } from '@/lib/fichiersPrives';
 import { errorMessage } from '@/lib/utils';
 
 /**
@@ -23,9 +26,25 @@ import { errorMessage } from '@/lib/utils';
  * ✏️ modifier un texte, ✋ appui long + glisser pour ranger, 🗑️ retirer (corbeille). Hors ligne : textes gardés puis envoyés.
  * `cible` = l'endroit (ex. 'sourate:12'). Table `zones_contenu`.
  */
+/** 🔒 Envoi dans l'espace PRIVÉ « devoirs-fichiers », dossier de l'élève (lu par lui et l'enseignante seulement) */
+async function envoyerFichierPrive(file: File, eleveId: string, cible: string): Promise<{ url: string; kind: KindMedia; nom: string }> {
+  const kind = kindDuFichier(file);
+  const pret = kind === 'image' ? await compressDocument(file) : file;
+  const ext = (pret.name.split('.').pop() || 'bin').toLowerCase();
+  const chemin = `${eleveId}/cours/${cible.replace(/[^a-z0-9-]/gi, '_')}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from('devoirs-fichiers').upload(chemin, pret, { contentType: pret.type || undefined, upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from('devoirs-fichiers').getPublicUrl(chemin);
+  return { url: data.publicUrl, kind, nom: file.name.replace(/\.[^.]+$/, '') };
+}
+
 export interface Zone { id: string; cible?: string; kind: KindMedia; texte: string | null; url: string | null; nom: string | null; position: number }
 
 export function VueZone({ b }: { b: Pick<Zone, 'kind' | 'texte' | 'url' | 'nom'> }) {
+  // 🔒 Fichier d'un espace privé (ex. enregistrement d'un élève) : lien signé ; adresse publique rendue telle quelle
+  const lien = useUrlLisible(b.url);
+  if (b.kind !== 'texte' && b.url && !lien) return <p className="text-xs text-muted-foreground">⏳ Chargement…</p>;
+  b = { ...b, url: lien ?? b.url };
   if (b.kind === 'texte') return <p className="whitespace-pre-wrap text-[15px] leading-relaxed [overflow-wrap:anywhere]">{b.texte}</p>;
   if (b.kind === 'youtube' && b.url) return <div className="rounded-xl overflow-hidden"><SafeYoutubeEmbed embedUrl={b.url} title={b.nom || 'Vidéo'} /></div>;
   if (b.kind === 'video' && b.url) return <LecteurVideo src={b.url} controlsList="nodownload" />;
@@ -41,8 +60,10 @@ export function VueZone({ b }: { b: Pick<Zone, 'kind' | 'texte' | 'url' | 'nom'>
   return null;
 }
 
-export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
+export function ZonesContenu({ cible, isAdmin, libelle, vide, eleveId }: {
   cible: string; isAdmin: boolean;
+  /** 🎥 Zones d'UN élève (ex. « Ton enregistrement pendant le cours ») : fichiers dans un espace privé, vus par lui et l'enseignante */
+  eleveId?: string;
   /** Pour la corbeille et les messages (ex. « Sourate Al-Fatiha ») */
   libelle: string;
   /** Message aux élèves quand il n'y a rien (sinon rien ne s'affiche) */
@@ -57,18 +78,20 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
   const [aRetirer, setARetirer] = useState<Zone | null>(null);
 
   const { data: zones = [] } = useQuery({
-    queryKey: ['zones-contenu', cible],
+    queryKey: ['zones-contenu', cible, eleveId ?? null],
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('zones_contenu').select('id, kind, texte, url, nom, position').eq('cible', cible).order('position').order('created_at');
+      let q = untypedDb.from('zones_contenu').select('id, kind, texte, url, nom, position').eq('cible', cible);
+      q = eleveId ? q.eq('eleve_id', eleveId) : q.is('eleve_id', null);
+      const { data, error } = await q.order('position').order('created_at');
       if (error) throw error;
       return (data || []) as Zone[];
     },
   });
-  const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['zones-contenu', cible] });
+  const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['zones-contenu', cible, eleveId ?? null] });
   const maxPos = Math.max(0, ...zones.map((z) => z.position));
 
   const ajouter = async (row: Partial<Zone>) => {
-    const r = await ecrireOuGarder({ table: 'zones_contenu', op: 'insert', rows: [{ cible, position: maxPos + 10, ...row }] });
+    const r = await ecrireOuGarder({ table: 'zones_contenu', op: 'insert', rows: [{ cible, position: maxPos + 10, ...(eleveId ? { eleve_id: eleveId } : {}), ...row }] });
     toast.success(r === 'en_attente' ? '📡 Gardé sur cet appareil, envoyé au retour du réseau' : 'Ajouté ✅');
     rafraichir();
   };
@@ -76,7 +99,7 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
     if (horsLigne()) { toast.error('📡 Nécessite Internet pour envoyer un fichier'); return; }
     setEnvoi(true);
     try {
-      const r = await envoyerFichierAlphabet(f, `zones/${cible.replace(/[^a-z0-9-]/gi, '_')}`);
+      const r = eleveId ? await envoyerFichierPrive(f, eleveId, cible) : await envoyerFichierAlphabet(f, `zones/${cible.replace(/[^a-z0-9-]/gi, '_')}`);
       await ajouter({ kind: r.kind, url: r.url, nom: r.nom });
       setAjout(null);
     } catch (e) { toast.error(errorMessage(e)); } finally { setEnvoi(false); }
@@ -96,7 +119,7 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
     if (!user) return;
     try {
       await trashThenDelete({ userId: user.id, type: 'zone_contenu', id: z.id, label: `${z.kind === 'texte' ? 'Texte' : z.nom || 'Fichier'} (${libelle})`,
-        data: { ...z, cible }, remove: () => untypedDb.from('zones_contenu').delete().eq('id', z.id) });
+        data: { ...z, cible, ...(eleveId ? { eleve_id: eleveId } : {}) }, remove: () => untypedDb.from('zones_contenu').delete().eq('id', z.id) });
       toast.success('🗑️ Dans la corbeille (Paramètres)');
       rafraichir();
     } catch (e) { toast.error(errorMessage(e)); }
@@ -108,7 +131,7 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
       <div className="space-y-3">{zones.map((z) => (
         <div key={z.id} className="space-y-2">
           <VueZone b={z} />
-          {(z.kind === 'video' || z.kind === 'youtube') && <QuizVideo cible={`zone:${z.id}`} sujet={`${libelle}${z.nom ? ` : ${z.nom}` : ''}`} video={z.kind === 'youtube' ? z.url : null} isAdmin={false} />}
+          {!eleveId && (z.kind === 'video' || z.kind === 'youtube') && <QuizVideo cible={`zone:${z.id}`} sujet={`${libelle}${z.nom ? ` : ${z.nom}` : ''}`} video={z.kind === 'youtube' ? z.url : null} isAdmin={false} />}
         </div>
       ))}</div>
     );
@@ -123,7 +146,7 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
             return (
               <div key={z.id} ref={ref} style={style} {...attrs} className={`space-y-1.5 rounded-xl touch-manipulation ${isDragging ? 'opacity-50 ring-2 ring-sky-400' : ''}`}>
                 <VueZone b={z} />
-                {(z.kind === 'video' || z.kind === 'youtube') && (
+                {!eleveId && (z.kind === 'video' || z.kind === 'youtube') && (
                   <div onPointerDown={(e) => e.stopPropagation()}>
                     <QuizVideo cible={`zone:${z.id}`} sujet={`${libelle}${z.nom ? ` : ${z.nom}` : ''}`} video={z.kind === 'youtube' ? z.url : null} isAdmin />
                   </div>
@@ -149,10 +172,10 @@ export function ZonesContenu({ cible, isAdmin, libelle, vide }: {
             </>
           ) : (
             <>
-              <ContentUploadTabs isUploading={envoi} accept="image/*,video/*,application/pdf,.pdf,.doc,.docx" libelleFichier="Image, vidéo, PDF…"
+              <ContentUploadTabs isUploading={envoi} accept="image/*,video/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.txt" libelleFichier="Image, vidéo, PDF, Word, Excel…"
                 onUploadFile={(f) => void envoyer(f)} onAddYoutubeLink={(u) => void ajouter({ kind: 'youtube', url: u, nom: 'Vidéo YouTube' }).then(() => setAjout(null), (e) => toast.error(errorMessage(e)))}
                 onUploadAudio={(f) => void envoyer(f)} />
-              <p className="text-[11px] text-muted-foreground">Un fichier envoyé reste visible sans Internet une fois vu ; un lien YouTube a besoin d'Internet.</p>
+              <p className="text-[11px] text-muted-foreground">Un fichier envoyé reste visible sans Internet une fois vu ; un lien YouTube a besoin d'Internet.{eleveId ? ' 🔒 Privé : seuls cet élève et toi le voyez. 50 Mo maximum par fichier.' : ''}</p>
             </>
           )}
         </div>

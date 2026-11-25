@@ -46,9 +46,10 @@ export function CoranProgrammeTab({ programme, onSave, onStop, onReadDay }: Prop
             {OFFERED_PLANS.map((k) => (
               <button key={k} type="button" aria-pressed={plan === k} onClick={() => setPlan(k)}
                 className={cn('rounded-2xl border px-4 py-3 text-left transition-colors',
-                  plan === k ? 'border-2 border-[#2457a5] bg-blue-50 dark:bg-blue-950/30' : 'border-[#e6d9cc] bg-white dark:bg-[#221413] dark:border-[#3a2523]')}>
-                <b className="block text-base">{PLAN_LABELS[k].emoji} {PLAN_LABELS[k].title}</b>
-                <span className="text-xs text-muted-foreground">{PLAN_LABELS[k].hint}</span>
+                  // 🩵 Programme choisi = carte bleu ciel bien visible (Nadia, 25/11) ; titres toujours foncés et lisibles
+                  plan === k ? 'border-2 border-[#2457a5] bg-[#bfe3fa] shadow-md' : 'border-[#e6d9cc] bg-white dark:bg-[#221413] dark:border-[#3a2523]')}>
+                <b className={cn('block text-base', plan === k ? 'text-[#14305e]' : 'text-[#2a1414] dark:text-[#f3e9e4]')}>{PLAN_LABELS[k].emoji} {PLAN_LABELS[k].title}{plan === k ? ' ✓' : ''}</b>
+                <span className={cn('text-xs', plan === k ? 'text-[#24406e]' : 'text-[#75605a] dark:text-[#bfa79f]')}>{PLAN_LABELS[k].hint}</span>
               </button>
             ))}
           </div>

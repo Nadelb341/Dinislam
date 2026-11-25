@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
  * seul le réglage est enregistré (colonne `image_cadrage`) ; « Revenir au cadrage d'origine ». Sans réseau : gardé sur
  * l'appareil puis envoyé au retour d'Internet (ecrireOuGarder).
  */
-export type EmplacementCadre = { cle: string; nom: string; classeCadre: string };
+export type EmplacementCadre = { cle: string; nom: string; classeCadre: string; classeImage?: string };
 
 export function Cadreur({ open, onClose, src, table, id, valeur, emplacements, onEnregistre }: {
   open: boolean; onClose: () => void; src: string; table: string; id: string | number; valeur: unknown;
@@ -61,7 +61,7 @@ export function Cadreur({ open, onClose, src, table, id, valeur, emplacements, o
             glisse.current = { x: e.clientX, y: e.clientY };
           }}
           onPointerUp={() => { glisse.current = null; }} onPointerCancel={() => { glisse.current = null; }}>
-          <img src={src} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover" style={styleCadre(c)} />
+          <img src={src} alt="" draggable={false} className={cn('pointer-events-none h-full w-full object-cover', emp?.classeImage)} style={styleCadre(c)} />
         </div>
         <label className="flex items-center gap-3 text-sm font-semibold">
           🔍 Zoom
