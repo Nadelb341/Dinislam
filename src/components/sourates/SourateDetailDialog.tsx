@@ -1,10 +1,12 @@
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useAuth } from '@/contexts/AuthContext';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
+import { QuizVideo } from '@/components/shared/QuizVideo';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NPM_VERSETS } from './npmVersets';
 import { getCdnAudioUrl } from './cdnAudio';
 import { getHoussaryEmbedUrl } from '@/data/houssaryVideos';
+import { getVideoRepeteeEmbedUrl } from '@/data/videosRepetees';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
 import { extractYoutubeVideoId } from '@/utils/youtube';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -611,9 +613,27 @@ const SourateDetailDialog = ({
           {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
           <ZonesContenu cible={`sourate:${sourate.number}`} isAdmin={estAdminZones} libelle={`Sourate ${sourate.number}`} />
 
-          {/* Récitation complète — Sheikh El Houssary */}
+          {/* 🎬 Vidéo « répétée 3 fois » (Nadia, 26/11) : remplace celle d'El Houssary quand elle existe */}
           {(() => {
-            const houssaryUrl = getHoussaryEmbedUrl(sourate.number);
+            const repetee = getVideoRepeteeEmbedUrl(sourate.number);
+            if (!repetee) return null;
+            return (
+              <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#fdf2f2', borderColor: '#f5c6c6' }}>
+                <p className="text-sm font-semibold px-4 pt-3 pb-2 flex items-center gap-2" style={{ color: '#9f1d1d' }}>
+                  🎬 Apprendre la sourate (chaque verset répété 3 fois)
+                </p>
+                <div className="aspect-video">
+                  <SafeYoutubeEmbed embedUrl={repetee} title={`Apprendre ${sourate.name_french} (répétée 3 fois)`} className="w-full h-full relative overflow-hidden bg-black" />
+                </div>
+                {/* 🎯 Quiz automatique de la vidéo (règle du 22/11) */}
+                <div className="p-2"><QuizVideo cible={`sourate-repetee:${sourate.number}`} sujet={`Sourate ${sourate.name_french}`} video={repetee} isAdmin={estAdminZones} /></div>
+              </div>
+            );
+          })()}
+
+          {/* Récitation complète — Sheikh El Houssary (seulement s'il n'y a pas de vidéo « répétée 3 fois ») */}
+          {(() => {
+            const houssaryUrl = getVideoRepeteeEmbedUrl(sourate.number) ? null : getHoussaryEmbedUrl(sourate.number);
             if (!houssaryUrl) return null;
             return (
               <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }}>

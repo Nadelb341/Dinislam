@@ -10,7 +10,7 @@ import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import { trashThenDelete } from '@/lib/trash';
 import { horsLigne } from '@/lib/alphabetMedias';
 import { errorMessage } from '@/lib/utils';
-import { preparerQuiz, type QuestionVideo } from '@/lib/quizVideo';
+import { quizEnFile, preparerQuiz, type QuestionVideo } from '@/lib/quizVideo';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonCristal, sonHarpeEtoiles } from '@/lib/sonSaison';
 import { useDeuxChances } from '@/hooks/useDeuxChances';
@@ -95,7 +95,7 @@ export function QuizVideo({ cible, sujet, video, isAdmin, petits = false }: {
       )}
       {isAdmin && (
         <div className={`rounded-2xl border-2 p-2.5 space-y-2 text-sm ${visibleEleves ? 'border-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/30'}`}>
-          {prepa === 'encours' ? <p className="font-semibold">🪄 Je prépare 10 questions sur cette vidéo… (quelques secondes)</p>
+          {prepa === 'encours' ? <p className="font-semibold">🪄 Je prépare 10 questions sur cette vidéo… (jusqu'à 1 à 2 minutes ; les vidéos passent une par une){quizEnFile > 1 ? ` · ${quizEnFile - 1} autre(s) avant` : ''}</p>
             : !quiz ? (
               <Button size="sm" variant="outline" onClick={() => void preparer()}>🪄 Préparer le quiz (10 questions){prepa === 'erreur' ? ' : réessayer' : ''}</Button>
             ) : (
