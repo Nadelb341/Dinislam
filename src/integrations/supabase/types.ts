@@ -2959,6 +2959,7 @@ export type Database = {
           image_cadrage: Json | null
           image_url: string | null
           is_locked: boolean | null
+          parent_id: string | null
           title: string | null
           title_arabic: string
           title_french: string
@@ -2972,6 +2973,7 @@ export type Database = {
           image_cadrage?: Json | null
           image_url?: string | null
           is_locked?: boolean | null
+          parent_id?: string | null
           title?: string | null
           title_arabic: string
           title_french: string
@@ -2985,6 +2987,7 @@ export type Database = {
           image_cadrage?: Json | null
           image_url?: string | null
           is_locked?: boolean | null
+          parent_id?: string | null
           title?: string | null
           title_arabic?: string
           title_french?: string

@@ -1,3 +1,4 @@
+import { untypedDb } from '@/lib/untypedDb';
 import { prevenirNouveauContenu } from '@/lib/notifNouveauContenu';
 import { errorMessage } from '@/lib/utils';
 import { collectChildren, trashThenDelete } from '@/lib/trash';
@@ -142,7 +143,14 @@ const PrayerModuleCards = () => {
     enabled: !!selectedCard?.id,
   });
 
-  const groupCards = cards.filter(c => c.group_key === effectiveActiveGroup);
+  // 🗂️ Sous-cartes (Nadia, 2026-11-25 : LODO › Introduction, Affaires à avoir, 1…11) : une carte avec parent_id vit DANS sa carte parente
+  const groupCards = cards.filter(c => c.group_key === effectiveActiveGroup && !c.parent_id);
+  const sousCartesDe = (id: string | undefined) => (id ? cards.filter((c) => c.parent_id === id) : [])
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  const sousCartes = sousCartesDe(selectedCard?.id);
+  const carteParente = selectedCard?.parent_id ? cards.find((c) => c.id === selectedCard.parent_id) ?? null : null;
+  // La carte ouverte suit la version à jour (titre modifié, image…) — en direct
+  const carteOuverte = selectedCard ? cards.find((c) => c.id === selectedCard.id) ?? selectedCard : null;
 
   // « Commencer mon travail » d'un devoir : /priere?item=<id de la carte> → la carte s'ouvre (une fois).
   // Pas de verrou ici : la carte s'ouvre même si elle est rangée dans un autre groupe d'âge.
@@ -215,29 +223,55 @@ const PrayerModuleCards = () => {
   };
 
   // ➕ Nouvelle carte : même catégorie et même groupe que ses voisines, placée à la fin ; la fenêtre « Modifier » s'ouvre tout de suite
-  const nouvelleCarte = async () => {
-    const voisine = groupCards[0] ?? cards[0];
-    if (!voisine) { toast.error('Aucune carte modèle trouvée'); return; }
-    const ordre = Math.max(0, ...groupCards.map((c) => c.display_order ?? 0)) + 10;
+  // `parent` = la carte dans laquelle on ajoute une SOUS-carte (sinon carte du groupe affiché)
+  const nouvelleCarte = async (parent?: Tables<'prayer_cards'>) => {
+    const freres = parent ? sousCartesDe(parent.id) : groupCards;
+    let categorie = parent?.category_id ?? freres[0]?.category_id ?? cards[0]?.category_id;
+    if (!categorie) {
+      // Aucune carte encore : on prend la 1re catégorie de la Prière (avant, le ➕ échouait sur une page vide)
+      const { data: cat } = await supabase.from('prayer_categories').select('id').order('display_order').limit(1).maybeSingle();
+      categorie = cat?.id;
+    }
+    if (!categorie) { toast.error('📡 Impossible de créer la carte pour l\'instant (réseau ?)'); return; }
+    const ordre = Math.max(0, ...freres.map((c) => c.display_order ?? 0)) + 10;
+    const titre = parent ? 'Nouvelle sous-carte' : 'Nouvelle carte';
     const { data, error } = await supabase.from('prayer_cards').insert({
-      category_id: voisine.category_id, group_key: effectiveActiveGroup, title: 'Nouvelle carte', title_french: 'Nouvelle carte', title_arabic: '', display_order: ordre,
+      category_id: categorie, group_key: parent?.group_key ?? effectiveActiveGroup, parent_id: parent?.id ?? null,
+      title: titre, title_french: titre, title_arabic: '', display_order: ordre,
     }).select('*').single();
     if (error || !data) { toast.error(errorMessage(error)); return; }
     await queryClient.invalidateQueries({ queryKey: ['prayer-cards'] });
     setEditingCard(data); setEditTitle(data.title ?? '');
-    toast.success('➕ Carte ajoutée : donne-lui un titre et une image');
+    toast.success(parent ? '➕ Sous-carte ajoutée : donne-lui un titre et une image' : '➕ Carte ajoutée : donne-lui un titre et une image');
   };
 
-  // 🗑️ Supprimer une carte : elle va dans la corbeille avec ses fichiers (restaurable)
+  // 🗑️ Supprimer une carte : elle va dans la corbeille avec ses fichiers, ses zones ET ses sous-cartes (restaurable d'un coup)
   const supprimerCarte = async (card: Tables<'prayer_cards'>) => {
     if (!user) return;
     try {
-      const enfants = await collectChildren('prayer_card_content', 'card_id', [card.id]);
+      // Toute la descendance (sous-cartes, et leurs propres sous-cartes)
+      const descendants: Tables<'prayer_cards'>[] = [];
+      let niveau = [card.id];
+      while (niveau.length) {
+        const enfants = cards.filter((c) => c.parent_id && niveau.includes(c.parent_id));
+        descendants.push(...enfants);
+        niveau = enfants.map((c) => c.id);
+      }
+      const ids = [card.id, ...descendants.map((c) => c.id)];
+      const cibles = ids.map((id) => `priere:${id}`);
+      const fichiers = await collectChildren('prayer_card_content', 'card_id', ids);
+      const zones = await collectChildren('zones_contenu', 'cible', cibles);
+      // Ordre de restauration : sous-cartes d'abord (parents avant enfants), puis fichiers et zones
       await trashThenDelete({ userId: user.id, type: 'prayer_card', id: card.id, label: `${card.title || 'Carte'} (Prière)`, data: card,
-        children: [enfants], remove: () => supabase.from('prayer_cards').delete().eq('id', card.id) });
+        children: [{ table: 'prayer_cards', rows: descendants as unknown as Record<string, unknown>[] }, fichiers, zones],
+        remove: async () => {
+          if (zones.rows.length) { const z = await untypedDb.from('zones_contenu').delete().in('cible', cibles); if (z.error) return z; }
+          return supabase.from('prayer_cards').delete().eq('id', card.id);
+        } });
       setEditingCard(null);
+      if (selectedCard && ids.includes(selectedCard.id)) setSelectedCard(carteParente && !ids.includes(carteParente.id) ? carteParente : null);
       queryClient.invalidateQueries({ queryKey: ['prayer-cards'] });
-      toast.success('🗑️ Carte dans la corbeille (Paramètres)');
+      toast.success(descendants.length ? `🗑️ Carte et ses ${descendants.length} sous-cartes dans la corbeille (Paramètres)` : '🗑️ Carte dans la corbeille (Paramètres)');
     } catch (e) { toast.error(errorMessage(e)); }
   };
 
@@ -262,6 +296,45 @@ const PrayerModuleCards = () => {
       URL.revokeObjectURL(blobUrl);
     } catch { toast.error('Erreur de téléchargement'); }
   };
+
+  // Une tuile de carte (grille du groupe ET grille des sous-cartes) — ✋ enseignante : appui long + glisser pour ranger
+  const tuile = (card: Tables<'prayer_cards'>, index: number, drag?: DragItemProps) => {
+    const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+    const nbSous = sousCartesDe(card.id).length;
+    return (
+      <div
+        key={card.id}
+        ref={ref} {...attrs}
+        className={cn('module-card rounded-xl overflow-hidden cursor-pointer hover:shadow-elevated transition-all animate-slide-up touch-manipulation', isDragging && 'opacity-50')}
+        style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both', ...style }}
+        onClick={() => setSelectedCard(card)}
+      >
+        {card.image_url ? (
+          <div className="aspect-[4/3] bg-white">
+            <ImageCadree src={card.image_url} alt={card.title ?? ''} cadrages={card.image_cadrage} emplacement="carte" className="w-full h-full" />
+          </div>
+        ) : (
+          <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+            <FileText className="h-8 w-8 text-primary/40" />
+          </div>
+        )}
+        <div className="p-2.5 space-y-0.5">
+          <p className="text-xs font-semibold text-foreground [overflow-wrap:anywhere] leading-tight">{card.title || card.title_arabic || 'Sans titre'}</p>
+          {nbSous > 0 && <p className="text-[11px] text-muted-foreground">🗂️ {nbSous} parties</p>}
+        </div>
+        {isAdmin && (
+          <div className="flex justify-center gap-1 pb-2" onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setEditingCard(card); setEditTitle(card.title ?? ''); }} aria-label="Modifier la carte" className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"><Edit2 className="h-3 w-3 inline" /></button>
+            {card.image_url && <button onClick={() => setACadrer(card)} aria-label="Cadrer la photo" className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">📐</button>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const grille = (liste: Tables<'prayer_cards'>[]) => isAdmin
+    ? <SortableCardList items={liste} strategy={rectSortingStrategy} onReorder={(n) => void rangerCartes(n)} renderItem={(c, d) => tuile(c, liste.indexOf(c), d)} />
+    : liste.map((c, i) => tuile(c, i));
 
   return (
     <div className="space-y-4">
@@ -296,46 +369,9 @@ const PrayerModuleCards = () => {
         </p>
       )}
 
-      {/* Cards grid — ✋ enseignante : appui long + glisser pour ranger (2026-11-21, plus de flèches) */}
       <div className="grid grid-cols-2 gap-3">
-        {(() => {
-          const tries = [...groupCards].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
-          const tuile = (card: Tables<'prayer_cards'>, index: number, drag?: DragItemProps) => {
-            const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
-            return (
-          <div
-            key={card.id}
-            ref={ref} {...attrs}
-            className={cn('module-card rounded-xl overflow-hidden cursor-pointer hover:shadow-elevated transition-all animate-slide-up touch-manipulation', isDragging && 'opacity-50')}
-            style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both', ...style }}
-            onClick={() => setSelectedCard(card)}
-          >
-            {card.image_url ? (
-              <div className="aspect-[4/3] bg-muted">
-                <ImageCadree src={card.image_url} alt={card.title} cadrages={card.image_cadrage} emplacement="carte" className="w-full h-full" />
-              </div>
-            ) : (
-              <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                <FileText className="h-8 w-8 text-primary/40" />
-              </div>
-            )}
-            <div className="p-2.5">
-              <p className="text-xs font-medium text-foreground [overflow-wrap:anywhere] leading-tight">{card.title || card.title_arabic || 'Sans titre'}</p>
-            </div>
-            {isAdmin && (
-              <div className="flex justify-center gap-1 pb-2" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { setEditingCard(card); setEditTitle(card.title); }} className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground"><Edit2 className="h-3 w-3 inline" /></button>
-                {card.image_url && <button onClick={() => setACadrer(card)} aria-label="Cadrer la photo" className="text-xs px-2 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground">📐</button>}
-              </div>
-            )}
-          </div>
-            );
-          };
-          return isAdmin
-            ? <SortableCardList items={tries} strategy={rectSortingStrategy} onReorder={(n) => void rangerCartes(n)} renderItem={(c, d) => tuile(c, tries.indexOf(c), d)} />
-            : tries.map((c, i) => tuile(c, i));
-        })()}
-        {/* ➕ Nouvelle sous-carte, pré-remplie d'après les cartes voisines du même groupe (2026-11-21) */}
+        {grille([...groupCards].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)))}
+        {/* ➕ Nouvelle carte, pré-remplie d'après les cartes voisines du même groupe (2026-11-21) */}
         {isAdmin && (
           <button type="button" onClick={() => void nouvelleCarte()}
             className="rounded-xl border-2 border-dashed border-primary/50 text-primary font-bold text-sm min-h-[120px] grid place-items-center hover:bg-primary/5">
@@ -351,14 +387,32 @@ const PrayerModuleCards = () => {
           onEnregistre={() => queryClient.invalidateQueries({ queryKey: ['prayer-cards'] })} />
       )}
 
-      {/* Card detail dialog */}
-      <Dialog open={!!selectedCard} onOpenChange={(open) => !open && setSelectedCard(null)}>
+      {/* Fenêtre d'une carte : ses sous-cartes (ex. LODO › 1 - AVOIR L'INTENTION), puis ses zones (fiche, vidéo…) */}
+      <Dialog open={!!carteOuverte} onOpenChange={(open) => !open && setSelectedCard(null)}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg">{selectedCard?.title}</DialogTitle>
+            {carteParente && (
+              <button type="button" onClick={() => setSelectedCard(carteParente)}
+                className="self-start text-sm font-semibold text-primary hover:underline [overflow-wrap:anywhere] text-left">
+                ← {carteParente.title || 'Retour'}
+              </button>
+            )}
+            <DialogTitle className="text-lg pr-8 [overflow-wrap:anywhere]">{carteOuverte?.title}</DialogTitle>
           </DialogHeader>
+          {carteOuverte && (sousCartes.length > 0 || isAdmin) && (
+            <div className="grid grid-cols-2 gap-3">
+              {grille(sousCartes)}
+              {isAdmin && (
+                <button type="button" onClick={() => void nouvelleCarte(carteOuverte)}
+                  className="rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold text-xs min-h-[80px] grid place-items-center hover:bg-primary/5 px-2">
+                  ➕ Nouvelle sous-carte
+                </button>
+              )}
+            </div>
+          )}
           {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
-          {selectedCard && <ZonesContenu cible={`priere:${selectedCard.id}`} isAdmin={isAdmin} libelle={selectedCard.title} />}
+          {carteOuverte && <ZonesContenu cible={`priere:${carteOuverte.id}`} isAdmin={isAdmin} libelle={carteOuverte.title ?? 'Prière'}
+            vide={sousCartes.length === 0 && cardContent.length === 0 ? '🛠️ En cours de mise à jour pour cette leçon' : undefined} />}
           {isAdmin && (
             <div className="space-y-2">
               <input ref={fileInputRef} type="file" className="hidden" accept="video/*,audio/*,application/pdf,image/*"
@@ -405,23 +459,21 @@ const PrayerModuleCards = () => {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">Aucun contenu pour le moment</p>
-              {isAdmin && <p className="text-xs mt-1">Ajoutez des fichiers (vidéos, audios, PDF, images)</p>}
-            </div>
-          )}
+          ) : isAdmin && sousCartes.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground">Ajoute des sous-cartes, un texte, une image, une vidéo ou un PDF.</p>
+          ) : null}
         </DialogContent>
       </Dialog>
 
       {/* Edit card dialog */}
       <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Modifier la carte</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingCard?.parent_id ? 'Modifier la sous-carte' : 'Modifier la carte'}</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
               <label className="text-sm font-medium">Titre</label>
-              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && editingCard) { e.preventDefault(); updateCardMutation.mutate({ id: editingCard.id, title: editTitle }); } }} />
             </div>
             <div>
               <label className="text-sm font-medium">Image de la carte</label>
@@ -431,13 +483,18 @@ const PrayerModuleCards = () => {
                 <Image className="h-4 w-4" /> Changer l'image
               </Button>
             </div>
-            <Button className="w-full" onClick={() => updateCardMutation.mutate({ id: editingCard.id, title: editTitle })} disabled={updateCardMutation.isPending}>
+            <Button className="w-full" onClick={() => editingCard && updateCardMutation.mutate({ id: editingCard.id, title: editTitle })} disabled={updateCardMutation.isPending}>
               Enregistrer
             </Button>
-            <Button variant="ghost" className="w-full text-destructive" onClick={() => setSupprimerCarteOuverte(true)}>🗑️ Supprimer cette carte</Button>
+            <Button variant="ghost" className="w-full text-destructive" onClick={() => setSupprimerCarteOuverte(true)}>
+              🗑️ {editingCard?.parent_id ? 'Supprimer cette sous-carte' : 'Supprimer cette carte'}
+            </Button>
             <ConfirmDeleteDialog open={supprimerCarteOuverte} onOpenChange={setSupprimerCarteOuverte}
               onConfirm={() => { setSupprimerCarteOuverte(false); if (editingCard) void supprimerCarte(editingCard); }}
-              title="Supprimer cette carte ?" description="Elle ira dans la corbeille de Paramètres avec ses fichiers ; tu pourras la restaurer." />
+              title={editingCard?.parent_id ? 'Supprimer cette sous-carte ?' : 'Supprimer cette carte ?'}
+              description={editingCard && sousCartesDe(editingCard.id).length
+                ? `Elle ira dans la corbeille de Paramètres avec ses ${sousCartesDe(editingCard.id).length} sous-cartes, ses fiches et ses vidéos ; tu pourras tout restaurer d'un coup.`
+                : 'Elle ira dans la corbeille de Paramètres avec ses fichiers ; tu pourras la restaurer.'} />
           </div>
         </DialogContent>
       </Dialog>
@@ -446,7 +503,7 @@ const PrayerModuleCards = () => {
         open={!!deleteContentId}
         onOpenChange={(open) => !open && setDeleteContentId(null)}
         onConfirm={() => { if (deleteContentId) deleteContentMutation.mutate(deleteContentId); setDeleteContentId(null); }}
-        description="Ce fichier sera supprimé définitivement."
+        description="Ce fichier ira dans la corbeille de Paramètres."
       />
     </div>
   );
