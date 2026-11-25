@@ -96,7 +96,7 @@ const NewMessageNotification = ({ onOpenMessages }: NewMessageNotificationProps)
   return (
     <Dialog open={!!pendingNotification} onOpenChange={() => {}}>
       <DialogContent
-        className="sm:max-w-md h-[70vh] flex flex-col"
+        className="sm:max-w-md h-[70vh] paysage:h-[calc(100dvh-1rem)] flex flex-col" /* 2026-11-26 (Nadia : téléphone tourné) : pleine hauteur en paysage */
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -110,7 +110,7 @@ const NewMessageNotification = ({ onOpenMessages }: NewMessageNotificationProps)
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-6 paysage:space-y-3">
           <div className="w-24 h-24 rounded-full bg-orange-500/20 flex items-center justify-center animate-pulse">
             <Mail className="h-12 w-12 text-orange-500" />
           </div>

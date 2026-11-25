@@ -147,8 +147,9 @@ function VersetsMotAMot({ f }: { f: FichePetit }) {
   if (!f.versets?.length) return null;
   const toucher = (k: string) => { sonPlop(); setAllumes((s) => new Set(s).add(k)); };
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[905] max-h-[48vh] overflow-y-auto rounded-t-[32px] bg-white dark:bg-slate-900 shadow-2xl p-4"
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 92px)' }}>
+    // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, panneau à droite (l'image reste visible à gauche),
+    // entre le ✕ et le bouton › qui restent dans la marge de droite
+    <div className="fixed inset-x-0 bottom-0 z-[905] max-h-[48vh] overflow-y-auto rounded-t-[32px] bg-white dark:bg-slate-900 shadow-2xl p-4 pb-[calc(env(safe-area-inset-bottom,0px)+92px)] paysage:inset-x-auto paysage:right-20 paysage:top-[calc(env(safe-area-inset-top,0px)+8px)] paysage:bottom-2 paysage:w-[45%] paysage:max-h-none paysage:rounded-[32px] paysage:pb-4">
       <div className="flex justify-end mb-1"><button type="button" onClick={() => setAllumes(new Set())} className="rounded-full bg-muted px-3 py-1 text-sm font-bold">🔁 Recommencer</button></div>
       <div dir="rtl" className="space-y-2">
         {f.versets.map((v, i) => (
@@ -288,16 +289,17 @@ function ModeCalendrier({ fiches, aid, isAdmin, aEtoile, gagnerEtoile }: {
         })}
       </div>
       {vue !== null && f && (
-        <div className="fixed inset-0 z-[900] bg-black/50 grid place-items-center p-4" onClick={() => setVue(null)}>
-          <div className="w-full max-w-md rounded-[32px] bg-white dark:bg-slate-900 p-5 text-center space-y-3 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <p className="text-7xl">{vue > 30 ? '🎉' : luneDuJour(vue)}</p>
+        // 2026-11-26 (Nadia : téléphone tourné) : fenêtre du jour plus compacte en paysage peu haut
+        <div className="fixed inset-0 z-[900] bg-black/50 grid place-items-center p-4 paysage:p-2 overflow-y-auto" onClick={() => setVue(null)}>
+          <div className="w-full max-w-md rounded-[32px] bg-white dark:bg-slate-900 p-5 paysage:p-3 text-center space-y-3 paysage:space-y-1 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-7xl paysage:text-5xl">{vue > 30 ? '🎉' : luneDuJour(vue)}</p>
             <p className="text-sm font-bold text-muted-foreground">{vue > 30 ? 'L\'Aïd' : `Jour ${vue}`}</p>
-            <p className="text-5xl">{f.emoji}</p>
+            <p className="text-5xl paysage:text-4xl">{f.emoji}</p>
             {f.arabe && <p dir="rtl" className="font-arabic text-3xl">{f.arabe}</p>}
             <p className="text-xl font-extrabold">{f.texte || f.titre}</p>
             <div className="flex justify-center gap-3">
-              <button type="button" onClick={() => ecouterFiche(f)} className="h-16 w-16 rounded-full bg-muted text-4xl">🔊</button>
-              <button type="button" onClick={() => setVue(null)} className="h-16 rounded-full bg-red-500 px-6 text-white text-xl font-bold">✕</button>
+              <button type="button" onClick={() => ecouterFiche(f)} className="h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-muted text-4xl paysage:text-3xl">🔊</button>
+              <button type="button" onClick={() => setVue(null)} className="h-16 paysage:h-12 rounded-full bg-red-500 px-6 text-white text-xl font-bold">✕</button>
             </div>
           </div>
         </div>

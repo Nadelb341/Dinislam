@@ -267,7 +267,8 @@ const MessagingDialog = ({ open, onOpenChange, onMessagesRead }: MessagingDialog
   return (
     <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md h-[70vh] flex flex-col">
+      {/* 2026-11-26 (Nadia : téléphone tourné) : pleine hauteur en paysage */}
+      <DialogContent className="sm:max-w-md h-[70vh] paysage:h-[calc(100dvh-1rem)] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-center flex items-center justify-center gap-2">
             <Mail className="h-5 w-5" />

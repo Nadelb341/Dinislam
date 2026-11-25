@@ -64,6 +64,18 @@ const AdminMoonAssistant = () => {
     setPos({ x: 16, y: window.innerHeight - 64 - 16 - 40 });
   }, [location.pathname]);
 
+  // 2026-11-26 (Nadia : téléphone tourné) : à la rotation / au redimensionnement, le bouton reste dans l'écran (comme StarMascot)
+  useEffect(() => {
+    const surTaille = () => {
+      setPos(prev => ({
+        x: Math.max(8, Math.min(prev.x, window.innerWidth - 56)),
+        y: Math.max(8, Math.min(prev.y, window.innerHeight - 56)),
+      }));
+    };
+    window.addEventListener('resize', surTaille);
+    return () => window.removeEventListener('resize', surTaille);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);

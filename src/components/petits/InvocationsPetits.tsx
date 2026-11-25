@@ -95,15 +95,19 @@ function InvocationEnGrand({ inv, fond, isAdmin, dite, onDire, onClose, onPrec, 
   };
 
   return (
-    <div className={`fixed inset-0 z-[900] bg-gradient-to-b ${fond} overflow-y-auto`}
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
+    // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, image + titre à gauche, vidéos et texte à droite,
+    // boutons ‹ › sur les côtés (dans la marge) pour ne plus rien cacher
+    <div className={`fixed inset-0 z-[900] bg-gradient-to-b ${fond} overflow-y-auto pt-[calc(env(safe-area-inset-top,0px)+84px)] pb-[calc(env(safe-area-inset-bottom,0px)+96px)] paysage:pt-[calc(env(safe-area-inset-top,0px)+64px)] paysage:pb-[calc(env(safe-area-inset-bottom,0px)+16px)]`}>
       <button type="button" onClick={onClose} aria-label="Fermer"
-        className="fixed end-4 z-10 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
-      <div id="invocation-petit-haut" className="mx-auto max-w-xl px-4 space-y-4 text-center">
-        <div className="mx-auto h-40 w-40 rounded-[32px] bg-white/90 shadow-xl p-3 grid place-items-center">
+        className="fixed end-4 z-10 h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-red-500 text-white text-4xl paysage:text-3xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
+      <div id="invocation-petit-haut" className="mx-auto max-w-xl px-4 space-y-4 text-center paysage:max-w-none paysage:px-20 paysage:flex paysage:items-start paysage:gap-4 paysage:space-y-0">
+        <div className="space-y-4 paysage:w-[30%] paysage:shrink-0">
+        <div className="mx-auto h-40 w-40 paysage:h-32 paysage:w-32 rounded-[32px] bg-white/90 shadow-xl p-3 grid place-items-center">
           {inv.image_url ? <img src={inv.image_url} alt="" className="max-h-full object-contain" /> : <InvocationSceneSVG title={inv.title_french} />}
         </div>
-        <h2 className="text-3xl font-extrabold text-white drop-shadow [overflow-wrap:anywhere]">{inv.title_french}</h2>
+        <h2 className="text-3xl paysage:text-2xl font-extrabold text-white drop-shadow [overflow-wrap:anywhere]">{inv.title_french}</h2>
+        </div>
+        <div className="space-y-4 paysage:flex-1 paysage:min-w-0">
 
         {/* ⚡ 1 · La vidéo courte */}
         {(courte || yt) && (
@@ -141,11 +145,12 @@ function InvocationEnGrand({ inv, fond, isAdmin, dite, onDire, onClose, onPrec, 
         <div className="rounded-3xl bg-white/90 dark:bg-slate-900/90 p-3 text-start empty:hidden">
           <ZonesContenu cible={`invocation:${inv.id}`} isAdmin={isAdmin} libelle={inv.title_french} />
         </div>
+        </div>
       </div>
       {(onPrec || onSuiv) && (
-        <div className="fixed inset-x-0 flex justify-between px-4 pointer-events-none" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
-          <button type="button" onClick={onPrec} aria-label="Précédente" className="pointer-events-auto h-16 w-16 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">‹</button>
-          <button type="button" onClick={onSuiv} aria-label="Suivante" className="pointer-events-auto h-16 w-16 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">›</button>
+        <div className="fixed inset-x-0 flex justify-between px-4 pointer-events-none bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] paysage:bottom-auto paysage:top-1/2 paysage:-translate-y-1/2">
+          <button type="button" onClick={onPrec} aria-label="Précédente" className="pointer-events-auto h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">‹</button>
+          <button type="button" onClick={onSuiv} aria-label="Suivante" className="pointer-events-auto h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">›</button>
         </div>
       )}
     </div>

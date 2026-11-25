@@ -8,6 +8,7 @@ import { IMAGES_AUTOMNE } from './dessinsAutomne';
 import { PERSOS } from './dessinsHiver';
 import { ANIMAUX } from './dessinsPrintempsEte';
 import { porterHabit } from './compagnonEvenement';
+import { usePaysage } from '@/hooks/usePaysage';
 import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
 import { EVT_SON_FEU, arreterSonFeu, basculerSonFeu, lireSonFeu, sonFeuEnCours } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
@@ -29,6 +30,8 @@ const PLACES_BUCHES = [[78, 147], [100, 147], [89, 141], [67, 141], [111, 141]];
 const BUCHE = '<rect x="0" y="0" width="20" height="5.5" rx="2.7" fill="#8a5a36" stroke="#3f2a1d" stroke-width=".9"/><ellipse cx="19" cy="2.75" rx="2" ry="2.4" fill="#e3c49a" stroke="#3f2a1d" stroke-width=".7"/>';
 
 export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userId: string; regle: boolean; buches: boolean; decor: boolean; etincelles: boolean }) {
+  // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, la cheminée est réduite de moitié
+  const L = usePaysage() ? 'min(15vw, 56px)' : 'min(30vw, 112px)';
   // Jours où l'élève est venu (gardé sur l'appareil) : le feu baisse d'un cran par jour SANS visite
   const etat = useMemo(() => {
     const cle = `dinislam_feu_visites_${userId}`;
@@ -102,7 +105,7 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
   return createPortal(
     <>
     <div aria-hidden className="pointer-events-none fixed bottom-0 z-[31] transition-opacity duration-500"
-      style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', aspectRatio: '200 / 172', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
+      style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: L, aspectRatio: '200 / 172', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
       <svg viewBox="0 0 200 172" className="absolute inset-0 h-full w-full overflow-visible">
         {/* Braises qui fument (feu éteint) */}
         {k === 0 && (
@@ -138,7 +141,7 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
     {k > 0 && lireSonFeu() !== 'aucun' && (
       <button type="button" aria-label={sonJoue ? 'Arrêter le bruit du feu' : 'Écouter le feu'} aria-pressed={sonJoue} onClick={() => setSonJoue(basculerSonFeu())}
         className="fixed bottom-0 z-[32] rounded-full"
-        style={{ right: 'calc(max(-6px, env(safe-area-inset-right, 0px)) + min(30vw, 112px) * 0.3)', width: 'calc(min(30vw, 112px) * 0.4)', height: 'calc(min(30vw, 112px) * 0.3)', marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + min(30vw, 112px) * 0.04)' }}>
+        style={{ right: `calc(max(-6px, env(safe-area-inset-right, 0px)) + ${L} * 0.3)`, width: `calc(${L} * 0.4)`, height: `calc(${L} * 0.3)`, marginBottom: `calc(env(safe-area-inset-bottom, 0px) + ${L} * 0.04)` }}>
         {/* 🔊 pendant que le son joue : on comprend qu'un nouveau toucher l'arrête */}
         {sonJoue
           ? <span aria-hidden className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-pulse rounded-full bg-white/90 px-1.5 text-xs shadow">🔊</span>

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
+import { usePaysage } from '@/hooks/usePaysage';
 import { EVT_VALIDATION, preparerSon, sonPlop, sonTintement } from '@/lib/sonSaison';
 import {
   ANIMAUX, LUNE_SVG, MOTS, NUAGE_SVG, OISEAU_SVG, TORTUE_SVG, arbrePrintemps, bandeEte, bandePrintemps, palmiersEte, soleilEte, soleilPrintemps,
@@ -170,8 +171,12 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
   const animal = useMemo(() => choisirAnimal(saison, userId), [saison, userId]);
   const [W, setW] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 390));
   useEffect(() => { const f = () => setW(window.innerWidth); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
-  const tasX = Math.round(W * 0.42);
-  const bande = useMemo(() => (ete ? bandeEte(W, tasX) : bandePrintemps(W, tasX)), [ete, W, tasX]);
+  // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, la bande du bas est réduite de moitié
+  // (dessinée 2 fois plus large puis affichée à moitié : mêmes proportions, rien d'écrasé)
+  const kb = usePaysage() ? 0.5 : 1;
+  const WV = Math.round(W / kb);
+  const tasX = Math.round(WV * 0.42);
+  const bande = useMemo(() => (ete ? bandeEte(WV, tasX) : bandePrintemps(WV, tasX)), [ete, WV, tasX]);
   const HB = ete ? 84 : 70;
   const arriereRef = useRef<HTMLCanvasElement>(null);
   const avantRef = useRef<HTMLCanvasElement>(null);
@@ -436,7 +441,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
       if (reposRef.current || now < pauseJusqua.current) { raf = requestAnimationFrame(boucle); return; }
       P.t += dt;
       if (animal === 'dauphin') {
-        const mer = H - HB + 14;
+        const mer = H - (HB - 14) * kb;
         if (P.mode === 'eau') { el.style.opacity = '0'; if (P.t > 4 + Math.random() * 5) { P.mode = 'saut'; P.t = 0; P.x0 = larg * (0.08 + Math.random() * 0.4); P.dir = Math.random() < 0.5 ? 1 : -1; jaillir(P.x0, mer, 0.5, eau, 0.8); } }
         else {
           const k = Math.min(1, P.t / 1.3), x = P.x0 + P.dir * 90 * k, y = mer - Math.sin(Math.PI * k) * 72;
@@ -480,7 +485,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
     document.addEventListener('visibilitychange', demarrer);
     demarrer();
     return () => { cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', demarrer); };
-  }, [c.bas, c.animal, c.plongeon, calme, animal, ete, HB]);
+  }, [c.bas, c.animal, c.plongeon, calme, animal, ete, HB, kb]);
 
   // Lundi = 1 … dimanche = 7 : une étape de plus chaque jour
   const etapeChateau = ((new Date().getDay() + 6) % 7) + 1;
@@ -526,11 +531,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
           {soir && <div aria-hidden className="fixed inset-0 z-[26] pe-voile-soir" />}
           {c.bas && (
             <>
-              <svg aria-hidden width={W} height={HB} viewBox={`0 0 ${W} ${HB}`} className="fixed bottom-0 left-0 z-[27]" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+              <svg aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[27]" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 dangerouslySetInnerHTML={{ __html: bande.fond }} />
               {ete && c.chateau && (
                 <svg aria-hidden viewBox="0 0 60 46" className="pe-chateau fixed z-[28]" key={etapeChateau}
-                  style={{ left: Math.round(W * 0.2), bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)', width: 54 }}
+                  style={{ left: Math.round(W * 0.2), bottom: `calc(env(safe-area-inset-bottom, 0px) + ${12 * kb}px)`, width: 54 * kb }}
                   dangerouslySetInnerHTML={{ __html: chateauSable(etapeChateau) }} />
               )}
               {c.animal && (
@@ -541,8 +546,8 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
                   style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1, transformOrigin: '50% 100%' }}
                   dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg + (animal === 'dauphin' ? '' : habitSvg(habit, 40, 34)) }} />
               )}
-              <svg ref={tasRef} aria-hidden width={W} height={HB} viewBox={`0 0 ${W} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible"
-                style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)', transformOrigin: `${tasX}px ${HB}px` }} dangerouslySetInnerHTML={{ __html: bande.tas }} />
+              <svg ref={tasRef} aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible"
+                style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)', transformOrigin: `${tasX * kb}px ${HB * kb}px` }} dangerouslySetInnerHTML={{ __html: bande.tas }} />
               {ete && c.motDuJour && (
                 <button type="button" aria-label="La tortue : touche-la pour voir le mot de l'été" onClick={montrerMot} className="pe-tortue pointer-events-auto fixed bottom-1 left-1.5 z-[31] w-12">
                   <svg viewBox="0 0 40 34" aria-hidden dangerouslySetInnerHTML={{ __html: TORTUE_SVG }} />
@@ -551,7 +556,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
             </>
           )}
           {c.decor && (
-            <div className="fixed bottom-0 z-[32] transition-opacity duration-500" style={{ right: 'max(-8px, env(safe-area-inset-right, 0px))', width: ete ? 'min(42vw, 165px)' : 'min(36vw, 140px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
+            <div className="fixed bottom-0 z-[32] transition-opacity duration-500" style={{ right: 'max(-8px, env(safe-area-inset-right, 0px))', width: ete ? (kb < 1 ? 'min(21vw, 83px)' : 'min(42vw, 165px)') : (kb < 1 ? 'min(18vw, 70px)' : 'min(36vw, 140px)'), marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
               <svg aria-hidden viewBox={ete ? '0 0 200 220' : '0 0 200 240'} className="block w-full" dangerouslySetInnerHTML={{ __html: decor }} />
               {!ete && c.motDuJour && (
                 <button type="button" aria-label="L'oiseau : touche-le pour voir le mot du printemps" onClick={montrerMot} className="pe-oiseau pointer-events-auto absolute" style={{ left: '22%', top: '40%', width: '24%' }}>

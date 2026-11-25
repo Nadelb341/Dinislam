@@ -439,7 +439,8 @@ const AdminMessagingDialog = ({ open, onOpenChange, onMessagesRead, prefillGroup
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-lg h-[75vh] flex flex-col p-0 [&>button]:hidden">
+        {/* 2026-11-26 (Nadia : téléphone tourné) : pleine hauteur en paysage */}
+        <DialogContent className="sm:max-w-lg h-[75vh] paysage:h-[calc(100dvh-1rem)] flex flex-col p-0 [&>button]:hidden">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="flex items-center gap-2">
               {selectedConversation ? (

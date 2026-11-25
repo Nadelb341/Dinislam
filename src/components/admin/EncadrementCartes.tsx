@@ -97,12 +97,13 @@ export default function EncadrementCartes() {
   );
 
   return (
-    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[300px_1fr]">
+    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[300px_1fr] paysage:grid paysage:grid-cols-[240px_1fr]">
+      {/* 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, aperçu à gauche et réglages à droite (comme sur ordinateur) */}
       {/* 👀 Aperçu en direct (idée 3). Nadia, 2026-11-18 : figé en haut de l'écran (un peu plus petit) pendant que les réglages défilent dessous */}
       <div className="sticky top-0 z-20 -mx-1 space-y-1.5 min-w-0 self-start bg-background/95 px-1 pb-2 pt-1 backdrop-blur lg:top-4 lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <p className="text-sm font-extrabold">👀 Aperçu en direct <span className="text-xs font-normal text-muted-foreground">· touche une carte pour la régler</span></p>
         <div ref={telephone} className="mx-auto w-full max-w-[230px] rounded-[1.6rem] border-[5px] border-slate-800 bg-background p-2 shadow-lg lg:max-w-[280px] lg:rounded-[2rem] lg:border-[6px] lg:p-3">
-          <div className="flex max-h-[32dvh] flex-col gap-2.5 overflow-y-auto p-1 lg:max-h-[520px] lg:gap-3 lg:p-1.5">
+          <div className="flex max-h-[32dvh] flex-col gap-2.5 overflow-y-auto p-1 lg:max-h-[520px] paysage:max-h-[55dvh] lg:gap-3 lg:p-1.5">
             {mini('carnet', '📒 Carnet de liaison')}
             {mini('majournee', '📋 Ma journée (toi seulement)')}
             <div className="grid grid-cols-2 gap-3">

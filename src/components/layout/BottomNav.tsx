@@ -58,10 +58,11 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
   const needsScroll = navItems.length > MAX_VISIBLE;
 
   return (
+    // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, menu de 48 px avec icônes seules (nom en bulle et pour les lecteurs d’écran)
     <nav ref={ref} className="fixed bottom-0 left-0 right-0 z-50 bottom-nav safe-bottom">
       {needsScroll ? (
         <ScrollArea className="w-full">
-          <div className="flex items-center h-16 px-2 min-w-max">
+          <div className="flex items-center h-16 px-2 min-w-max paysage:h-12">
             {navItems.map((item) => (
               <NavButton key={item.path} item={item} location={location} navigate={navigate} compact={needsScroll} />
             ))}
@@ -69,7 +70,7 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       ) : (
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-16 px-2 paysage:h-12">
           {navItems.map((item) => (
             <NavButton key={item.path} item={item} location={location} navigate={navigate} />
           ))}
@@ -93,6 +94,8 @@ const NavButton = ({ item, location, navigate, compact }: NavButtonProps) => {
   return (
     <button
       onClick={() => navigate(item.path)}
+      aria-label={item.label}
+      title={item.label}
       className={cn(
         'flex flex-col items-center justify-center h-full gap-1 transition-all duration-300',
         compact ? 'px-3 min-w-[64px]' : 'w-full',
@@ -101,7 +104,7 @@ const NavButton = ({ item, location, navigate, compact }: NavButtonProps) => {
     >
       <div
         className={cn(
-          'p-2 rounded-xl transition-all duration-300',
+          'p-2 rounded-xl transition-all duration-300 paysage:p-1.5',
           isActive ? 'bg-primary shadow-royal' : 'hover:bg-muted'
         )}
       >
@@ -113,7 +116,7 @@ const NavButton = ({ item, location, navigate, compact }: NavButtonProps) => {
       </div>
       <FitText
         className={cn(
-          'text-[10px] font-medium transition-colors max-w-[60px]',
+          'text-[10px] font-medium transition-colors max-w-[60px] paysage:hidden',
           isActive ? 'text-primary' : 'text-muted-foreground'
         )}
       >

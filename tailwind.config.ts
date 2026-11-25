@@ -1,5 +1,6 @@
 import tailwindcssAnimate from "tailwindcss-animate";
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 export default {
   darkMode: ["class"],
@@ -126,5 +127,14 @@ export default {
       },
     },
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [
+    tailwindcssAnimate,
+    // 2026-11-26 (Nadia : téléphone tourné) : téléphone couché (peu de hauteur) → préfixe « paysage: ».
+    // Variante et non « screen » : un screen en objet casse les min-[…]: / max-[…]: déjà utilisés (BilanVue).
+    // « :root & » = un cran plus fort, pour gagner sur sm:/md:/lg: (qui sont écrits après dans le CSS).
+    // Même requête que src/hooks/usePaysage.ts (à changer ENSEMBLE).
+    plugin(({ addVariant }) => {
+      addVariant("paysage", "@media (orientation: landscape) and (max-height: 500px) { :root & }");
+    }),
+  ],
 } satisfies Config;

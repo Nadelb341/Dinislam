@@ -5,6 +5,7 @@ import { EVT_VALIDATION, preparerSon, sonCristal } from '@/lib/sonSaison';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
 import { TapisFeuilles } from './TapisFeuilles';
+import { usePaysage } from '@/hooks/usePaysage';
 import { ARBRE_VB, CHEMINEE_VB, ERABLE, dessinerArbre, dessinerCheminee } from './dessinsAutomne';
 
 /**
@@ -42,6 +43,8 @@ interface Eclat { x: number; y: number; vx: number; vy: number; r: number; vr: n
 
 export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: boolean; userId: string | null }) {
   const a = r.automne;
+  // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, cheminée réduite de moitié (comme le feu posé dessus, FeuSemaine)
+  const paysage = usePaysage();
   // « Réduire les animations » du téléphone : respecté seulement si l'admin a décoché « Animer même si… » (tout était figé sur l'iPhone de Nadia)
   const reduit = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const calme = reduit && !r.animerToujours;
@@ -257,11 +260,11 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       {createPortal(
         <div aria-hidden className={`saison-decor pointer-events-none ${calme ? 'saison-calme' : ''}`}>
           {/* 🍂 Tapis de feuilles à gauche de la cheminée (sous elle : la cheminée reste devant) */}
-          <TapisFeuilles a={a} userId={userId} calme={calme} defile={defile} largeurCheminee={a.cheminee ? Math.min(window.innerWidth * 0.3, 112) : 0} />
+          <TapisFeuilles a={a} userId={userId} calme={calme} defile={defile} largeurCheminee={a.cheminee ? Math.min(window.innerWidth * 0.3, 112) * (paysage ? 0.5 : 1) : 0} />
           {a.cheminee && (
             <svg viewBox={`0 0 ${CHEMINEE_VB.w} ${CHEMINEE_VB.h}`}
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && a.petitFeuJour ? 'saison-feu-jour' : ''}`}
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />
           )}
           {a.feuilles && !calme && <canvas ref={avantRef} className="fixed inset-0 z-40 h-full w-full" />}

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
+import { usePaysage } from '@/hooks/usePaysage';
 import { EVT_VALIDATION, preparerSon, sonCristal } from '@/lib/sonSaison';
 import {
   CHALET_VB, LANTERNES_SVG, MOTS_HIVER, NEIGE_SVG, OURS_SVG, PERSOS, TAS_NEIGE_SVG, dessinerChalet, dessinerChemineeHiver,
@@ -57,6 +58,8 @@ function trace(ctx: CanvasRenderingContext2D, r: number) {
 
 export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soir: boolean; matin: boolean; userId: string | null }) {
   const h = r.hiver;
+  // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, la bande du bas (neige, ours, cheminée…) est réduite de moitié
+  const paysage = usePaysage();
   const reduit = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const calme = reduit && !r.animerToujours;
   const chalet = useMemo(() => dessinerChalet(), []);
@@ -378,12 +381,12 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
           {soir && <div aria-hidden className="fixed inset-0 z-[26] hiver-voile-soir" />}
           {h.neigeBas && (
             <>
-              <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[60px] w-full"
+              <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[60px] paysage:h-[30px] w-full"
                 style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} dangerouslySetInnerHTML={{ __html: NEIGE_SVG + (h.lanternes ? LANTERNES_SVG : '') }} />
-              <svg ref={tracesRef} aria-hidden className="fixed bottom-0 left-0 z-[28] h-10 w-full" viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} 40`} preserveAspectRatio="none" />
+              <svg ref={tracesRef} aria-hidden className="fixed bottom-0 left-0 z-[28] h-10 paysage:h-5 w-full" viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} 40`} preserveAspectRatio="none" />
               {h.ours && (
                 <button type="button" aria-label="L'ours polaire : touche-le pour voir le mot de l'hiver" onClick={() => h.motOurs && montrerMot()}
-                  className={`pointer-events-auto fixed bottom-2 left-1.5 z-[28] w-[58px] ${ourEveil ? 'hiver-ours-reveil' : ''}`}>
+                  className={`pointer-events-auto fixed bottom-2 left-1.5 z-[28] w-[58px] paysage:bottom-1 paysage:w-[29px] ${ourEveil ? 'hiver-ours-reveil' : ''}`}>
                   <svg viewBox="0 0 60 48" aria-hidden dangerouslySetInnerHTML={{ __html: OURS_SVG }} />
                 </button>
               )}
@@ -392,11 +395,11 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
                   aria-label={perso === 'pingouin' ? "Le pingouin : touche-le pour qu'il te parle" : "Le bonhomme de neige : touche-le pour qu'il te parle"}
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, perso === 'pingouin' ? 'Le pingouin' : 'Le bonhomme de neige')) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
-                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent]"
+                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] paysage:bottom-1 paysage:h-[19px] paysage:w-[15px] cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent]"
                   style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] + habitSvg(habit, 30, 38) }} />
               )}
               {h.personnage && h.plongeon && (
-                <svg ref={tasRef} aria-hidden viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] overflow-visible" style={{ left: 'calc(42% - 30px)' }}
+                <svg ref={tasRef} aria-hidden viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] paysage:bottom-px paysage:h-[13px] paysage:w-[30px] overflow-visible" style={{ left: paysage ? 'calc(42% - 15px)' : 'calc(42% - 30px)' }}
                   dangerouslySetInnerHTML={{ __html: TAS_NEIGE_SVG }} />
               )}
             </>
@@ -423,7 +426,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
           {h.cheminee && (
             <svg aria-hidden viewBox="0 0 200 172"
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && h.petitFeuJour ? 'hiver-feu-jour' : ''} ${h.chocolat && soir ? 'hiver-chocolat-visible' : ''}`}
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />
           )}
           {h.flocons && !calme && <canvas ref={avantRef} className="fixed inset-0 z-40 h-full w-full" />}

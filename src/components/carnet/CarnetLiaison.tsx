@@ -266,7 +266,7 @@ function Note({ m, isAdmin, userId, lectures, miennes, estParent, classe, onLu, 
         <Dialog open onOpenChange={setPhoto}>
           <DialogContent className="max-w-2xl p-2">
             <DialogTitle className="sr-only">{m.piece_nom || 'Photo'}</DialogTitle>
-            <ImgPrive src={m.piece_url} alt={m.piece_nom || ''} className="w-full max-h-[80vh] object-contain rounded-lg" />
+            <ImgPrive src={m.piece_url} alt={m.piece_nom || ''} className="w-full max-h-[80vh] paysage:max-h-[calc(100dvh-2rem)] object-contain rounded-lg" />{/* 2026-11-26 (Nadia : téléphone tourné) */}
           </DialogContent>
         </Dialog>
       )}
