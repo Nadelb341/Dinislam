@@ -32,20 +32,22 @@ export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileD
   };
 
   return (
-    <div className={`fixed inset-0 z-[900] bg-gradient-to-b ${r.fond} overflow-y-auto`}
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 84px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
+    // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, image à gauche et texte à droite,
+    // boutons ‹ › sur les côtés (dans la marge) pour ne plus rien cacher
+    <div className={`fixed inset-0 z-[900] bg-gradient-to-b ${r.fond} overflow-y-auto pt-[calc(env(safe-area-inset-top,0px)+84px)] pb-[calc(env(safe-area-inset-bottom,0px)+96px)] paysage:pt-[calc(env(safe-area-inset-top,0px)+64px)] paysage:pb-[calc(env(safe-area-inset-bottom,0px)+16px)]`}>
       <button type="button" onClick={onClose} aria-label="Fermer"
-        className="fixed end-4 z-10 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
+        className="fixed end-4 z-10 h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-red-500 text-white text-4xl paysage:text-3xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
       {isAdmin && onModifier && (
         <button type="button" onClick={() => onModifier(f)} aria-label="Modifier la fiche"
-          className="fixed start-4 z-10 h-14 px-4 rounded-full bg-white text-slate-900 font-bold shadow-xl" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 14px)' }}>✏️ Modifier</button>
+          className="fixed start-4 z-10 h-14 paysage:h-11 px-4 rounded-full bg-white text-slate-900 font-bold shadow-xl" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 14px)' }}>✏️ Modifier</button>
       )}
-      <div className="mx-auto max-w-xl px-4 space-y-4 text-center">
-        <button type="button" onClick={() => ecouterFiche(f)} aria-label={`Écouter ${f.titre}`} className="mx-auto block active:scale-95 transition-transform">
+      <div className="mx-auto max-w-xl px-4 space-y-4 text-center paysage:max-w-none paysage:px-20 paysage:flex paysage:items-start paysage:gap-4 paysage:space-y-0">
+        <button type="button" onClick={() => ecouterFiche(f)} aria-label={`Écouter ${f.titre}`} className="mx-auto block active:scale-95 transition-transform paysage:mx-0 paysage:w-2/5 paysage:shrink-0">
           {f.image_url
-            ? <img src={f.image_url} alt={f.titre} className="mx-auto max-h-[38vh] rounded-[32px] shadow-xl object-contain bg-white/40" />
-            : <span className="block text-[9rem] leading-none drop-shadow-xl">{f.emoji || r.emoji}</span>}
+            ? <img src={f.image_url} alt={f.titre} className="mx-auto max-h-[38vh] paysage:max-h-[calc(100dvh-6rem)] paysage:max-w-full rounded-[32px] shadow-xl object-contain bg-white/40" />
+            : <span className="block text-[9rem] paysage:text-[min(9rem,45dvh)] leading-none drop-shadow-xl">{f.emoji || r.emoji}</span>}
         </button>
+        <div className="space-y-4 paysage:flex-1 paysage:min-w-0">
         <h2 className="text-3xl font-extrabold text-white drop-shadow [overflow-wrap:anywhere]">{f.titre}</h2>
         {f.arabe && <p dir="rtl" className="font-arabic text-4xl leading-[1.9] text-white drop-shadow">{f.arabe}</p>}
         {auMilieu?.(f)}
@@ -65,13 +67,14 @@ export function FicheEnGrand({ fiches, index, isAdmin, onIndex, onClose, etoileD
           <ZonesContenu cible={`petits:${f.id}`} isAdmin={isAdmin} libelle={f.titre} />
         </div>
         {enBas?.(f)}
+        </div>
       </div>
       {fiches.length > 1 && (
-        <div className="fixed inset-x-0 flex justify-between px-4 pointer-events-none" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+        <div className="fixed inset-x-0 flex justify-between px-4 pointer-events-none bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] paysage:bottom-auto paysage:top-1/2 paysage:-translate-y-1/2">
           <button type="button" onClick={() => onIndex((index - 1 + fiches.length) % fiches.length)} aria-label="Précédente"
-            className="pointer-events-auto h-16 w-16 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">‹</button>
+            className="pointer-events-auto h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">‹</button>
           <button type="button" onClick={() => onIndex((index + 1) % fiches.length)} aria-label="Suivante"
-            className="pointer-events-auto h-16 w-16 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">›</button>
+            className="pointer-events-auto h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-white/90 text-4xl font-black text-slate-700 shadow-xl">›</button>
         </div>
       )}
     </div>

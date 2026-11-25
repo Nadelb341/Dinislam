@@ -6,6 +6,7 @@ import type { PeriodeRamadan } from '@/lib/ramadanDates';
 import { EVT_VALIDATION, preparerSon, sonTintement } from '@/lib/sonSaison';
 import { habitSvg, PAUSE_MS, toucherCompagnon, useHabitDuJour, useTailleCompagnon } from './compagnonEvenement';
 import { jourHijriDe } from '@/lib/phaseLune';
+import { usePaysage } from '@/hooks/usePaysage';
 import { CACTUS_VB, COMPAGNONS, KAABA_VB, LANTERNE_VB, MESA_VB, MOSQUEE_VB, MOUTON_VB, NB_LANTERNES, PALMIER_VB, TOUFFE, cactusSvg, compagnonSvg, etoilePendue, kaabaSvg, lanterneSvg, mesaSvg, mosqueeSvg, moutonSvg, palmierSvg, rocherSvg } from './dessinsRamadan';
 
 /**
@@ -106,7 +107,9 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
     if (persoRef.current && toucherCompagnon(persoRef.current, COMPAGNONS[perso].nom)) { setPause(true); setTimeout(() => setPause(false), PAUSE_MS); }
   };
   const p = COMPAGNONS[perso];
-  const hauteurPerso = Math.round(46 * taille);
+  // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, la bande du bas (désert, dromadaire, mosquée) est réduite de moitié
+  const paysage = usePaysage();
+  const hauteurPerso = Math.round(46 * taille * (paysage ? 0.5 : 1));
   // 16 lanternes (deux fois, pour un défilement sans à-coup), chacune avec ses propres dégradés, et une étoile pendue après chacune
   const guirlande = useMemo(() => Array.from({ length: 32 }, (_, i) => ({ lanterne: lanterneSvg(((i % 16) * 3 + 1) % NB_LANTERNES, `g${i}`), etoile: etoilePendue(`g${i}`) })), []);
   const kaaba = useMemo(() => kaabaSvg('kaaba', jourHijri), [jourHijri]);
@@ -182,7 +185,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
 
           {/* 🏜️ Le désert en bas : rochers au loin, dune, palmiers, cactus, rochers, touffes, dune devant */}
           {c.dunes && (
-            <div aria-hidden className="ramadan-desert pointer-events-none fixed inset-x-0 bottom-0 z-[27] h-[96px] overflow-hidden" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div aria-hidden className="ramadan-desert pointer-events-none fixed inset-x-0 bottom-0 z-[27] h-[96px] overflow-hidden paysage:right-auto paysage:w-[200%] paysage:origin-bottom-left paysage:scale-50" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
               {desert.map((o, i) => o.fond
                 ? <svg key={i} viewBox="0 0 340 60" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full" style={{ height: o.h }} dangerouslySetInnerHTML={{ __html: o.svg }} />
                 : <svg key={i} viewBox={o.vb} className="absolute overflow-visible" style={{ left: o.left, bottom: o.bas, height: o.h, opacity: o.opacite, transform: o.miroir ? 'scaleX(-1)' : undefined }} dangerouslySetInnerHTML={{ __html: o.svg }} />)}
@@ -192,7 +195,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           {/* 🕊️ La colombe vole de temps en temps au-dessus du désert (Nadia, 2026-11-17), en battant des ailes */}
           {c.dunes && !calme && (
             <svg aria-hidden viewBox={`0 0 ${COMPAGNONS.colombe.vb[0]} ${COMPAGNONS.colombe.vb[1]}`} className="ramadan-colombe-vol pointer-events-none fixed left-0 z-[28] h-[26px] w-[34px] overflow-visible"
-              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 74px)' }} dangerouslySetInnerHTML={{ __html: colombe }} />
+              style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${paysage ? 37 : 74}px)` }} dangerouslySetInnerHTML={{ __html: colombe }} />
           )}
 
           {/* 🎉 Aïd : ballons, feux d'artifice, cadeaux ; Aïd el-Adha : moutons */}
@@ -232,7 +235,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           {/* 🕌 Mosquée en bas à droite */}
           {c.mosquee && (
             <svg aria-hidden viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: mosquee }} />
           )}
         </div>,

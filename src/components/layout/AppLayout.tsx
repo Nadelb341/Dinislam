@@ -74,7 +74,8 @@ const AppLayout = ({
       {/* 📡 Hors connexion : l'appli reste ouverte avec les dernières données (2026-11-02) */}
       <SilentBoundary name="Bandeau hors connexion"><OfflineBanner /></SilentBoundary>
       <EmailVerificationBanner />
-      <main className={`flex-1 ${showBottomNav ? 'pb-20' : ''}`}>
+      {/* 2026-11-26 (Nadia : téléphone tourné) : menu du bas de 48 px en paysage peu haut → marge réduite */}
+      <main className={`flex-1 ${showBottomNav ? 'pb-20 paysage:pb-14' : ''}`}>
         <div className="p-4">
           <PendingDraftsCenter />
           <TrashPurgeWarning />

@@ -103,9 +103,10 @@ const Header = ({
       <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary via-primary to-royal-dark shadow-royal safe-top">
         {/* 2026-11-04 : 9 icônes de 40 px ne tenaient pas sur un iPhone (la maison sortait de l'écran) → 36 px et sans marge sur téléphone */}
         {/* 2026-11-19 (Nadia) : icônes centrées dans la barre */}
-        <div className="flex items-center justify-center h-14 px-1 sm:px-4">
+        {/* 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, barre plus fine (44 px) et icônes de 36 px */}
+        <div className="flex items-center justify-center h-14 px-1 sm:px-4 paysage:h-11">
 
-          <div className="flex items-center gap-0 sm:gap-1 [&>button]:h-9 [&>button]:w-9 sm:[&>button]:h-10 sm:[&>button]:w-10">
+          <div className="flex items-center gap-0 sm:gap-1 [&>button]:h-9 [&>button]:w-9 sm:[&>button]:h-10 sm:[&>button]:w-10 paysage:[&>button]:h-9 paysage:[&>button]:w-9">
             <UserSettingsDialog />
             <AccountSwitcher />
             <BoutonEntete nom="messages" onClick={handleOpenMessaging} aria-label="Messages" title="Messages">

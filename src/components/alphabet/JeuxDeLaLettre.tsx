@@ -146,6 +146,13 @@ function Trace({ lettre, retour }: { lettre: Lettre; retour: () => void }) {
     ctx.fillText(lettre.letter_arabic, r.width / 2, r.height / 2);
   };
   useEffect(() => { preparer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // 2026-11-26 (Nadia : téléphone tourné) : le cadre change de taille quand on tourne le téléphone → on le refait
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const surTaille = () => { clearTimeout(t); t = setTimeout(() => preparer(), 250); };
+    window.addEventListener('resize', surTaille);
+    return () => { clearTimeout(t); window.removeEventListener('resize', surTaille); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vérifie : corps couvert à 65 % avec chacune de ses 6 tranches tracée, chaque point à moitié, trait resté près de la lettre
   const verifier = () => {
@@ -211,17 +218,18 @@ function Trace({ lettre, retour }: { lettre: Lettre; retour: () => void }) {
   const fin = () => { if (!dessine.current) return; dessine.current = false; verifier(); };
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-amber-50 dark:bg-amber-950" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 88px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
+    // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, zone de tracé CARRÉE de toute la hauteur, couleurs en colonne à droite
+    <div className="absolute inset-0 flex flex-col bg-amber-50 dark:bg-amber-950 pt-[calc(env(safe-area-inset-top,0px)+88px)] pb-[calc(env(safe-area-inset-bottom,0px)+16px)] paysage:flex-row paysage:items-center paysage:justify-center paysage:gap-3 paysage:py-2">
       <Retour retour={retour} />
-      <canvas ref={cadre} className="flex-1 min-h-0 w-full touch-none" aria-label={`Trace ${lettre.name_french}`}
+      <canvas ref={cadre} className="flex-1 min-h-0 w-full touch-none paysage:flex-none paysage:h-full paysage:w-auto paysage:aspect-square paysage:max-w-[60%] paysage:rounded-3xl paysage:bg-white/60" aria-label={`Trace ${lettre.name_french}`}
         onPointerDown={debut} onPointerMove={bouge} onPointerUp={fin} onPointerCancel={fin} />
       {gagne && <p className="absolute inset-x-0 top-24 text-center text-7xl animate-bounce pointer-events-none">🌟👏🌟</p>}
-      <div className="flex items-center justify-center gap-3 px-4 pt-3">
+      <div className="flex items-center justify-center gap-3 px-4 pt-3 paysage:flex-col paysage:gap-2 paysage:p-0">
         {TEINTES.slice(0, 4).map((t) => (
           <button key={t} type="button" aria-label="Couleur" onClick={() => setCouleur(t)}
-            className={`h-14 w-14 rounded-full shadow ${couleur === t ? 'ring-4 ring-slate-800 dark:ring-white' : ''}`} style={{ background: t }} />
+            className={`h-14 w-14 paysage:h-11 paysage:w-11 rounded-full shadow ${couleur === t ? 'ring-4 ring-slate-800 dark:ring-white' : ''}`} style={{ background: t }} />
         ))}
-        <button type="button" aria-label="Effacer" onClick={preparer} className="h-14 w-14 rounded-full bg-white shadow text-3xl grid place-items-center">🧽</button>
+        <button type="button" aria-label="Effacer" onClick={preparer} className="h-14 w-14 paysage:h-11 paysage:w-11 rounded-full bg-white shadow text-3xl paysage:text-2xl grid place-items-center">🧽</button>
       </div>
     </div>
   );

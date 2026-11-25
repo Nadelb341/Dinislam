@@ -72,7 +72,8 @@ interface Props {
 export function CoranReader({ index, onIndexChange, mode, action, tools, range, bookmarkOf, onOpenBookmark }: Props) {
   const [double, setDouble] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia('(orientation: landscape) and (min-width: 900px)');
+    // 2026-11-26 (Nadia : téléphone tourné) : double page dès 700 px de large en paysage (avant : 900 px)
+    const mq = window.matchMedia('(orientation: landscape) and (min-width: 700px)');
     const up = () => setDouble(mq.matches);
     up();
     mq.addEventListener('change', up);
@@ -156,7 +157,7 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range, 
   return (
     <div className="flex flex-col rounded-2xl overflow-hidden border border-[#e6d9cc] dark:border-[#3a2523] bg-white dark:bg-[#1b1110] shadow-sm">
       {/* En haut : le mode de lecture à gauche, les outils (marque-page, sommaire, écouter) à droite (2026-10-25) */}
-      <div className={cn('flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs font-bold', MODE_STYLE[mode.kind])}>
+      <div className={cn('flex flex-wrap items-center justify-between gap-2 px-3 py-2 paysage:py-1 text-xs font-bold', MODE_STYLE[mode.kind])}>
         <div className="min-w-0">
           <p className="[overflow-wrap:anywhere]">{mode.label}</p>
           {mode.sub && <p className="text-[11px] font-semibold opacity-80 [overflow-wrap:anywhere]">{mode.sub}</p>}
@@ -164,8 +165,8 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range, 
         {tools && <div className="flex flex-wrap items-center justify-end gap-1.5">{tools}</div>}
       </div>
 
-      <div className="relative bg-white flex items-center justify-center overflow-hidden touch-none select-none"
-        style={{ height: 'min(74dvh, 1100px)' }}
+      {/* 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, la page prend presque toute la hauteur sous l'en-tête */}
+      <div className="relative bg-white flex items-center justify-center overflow-hidden touch-none select-none h-[min(74dvh,1100px)] paysage:h-[calc(100dvh-6rem)]"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <div className="h-full w-full flex items-center justify-center gap-1 transition-transform duration-150"
           style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
@@ -233,7 +234,7 @@ export function CoranReader({ index, onIndexChange, mode, action, tools, range, 
       </div>
 
       {/* En bas : le numéro de la page, centré (2026-10-25) */}
-      <div className="flex flex-col items-center gap-1.5 px-3 py-2 text-center border-t border-[#e6d9cc] dark:border-[#3a2523] bg-[#fbf7ef] dark:bg-[#221413]">
+      <div className="flex flex-col items-center gap-1.5 px-3 py-2 paysage:flex-row paysage:flex-wrap paysage:justify-center paysage:gap-3 paysage:py-1 text-center border-t border-[#e6d9cc] dark:border-[#3a2523] bg-[#fbf7ef] dark:bg-[#221413]">
         <div className="min-w-0">
           <p className="text-sm font-extrabold tabular-nums text-[#2a1414] dark:text-[#f3e9e4]">
             {leftInfo ? `${info.title} – ${leftInfo.title.replace('Page ', '')}` : info.title}

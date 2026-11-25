@@ -174,35 +174,36 @@ export function AlphabetToutPetits({ letters: toutes, learned, isAdmin }: {
         const v = liste[lecture.i] ?? null;
         const i = letters.findIndex((x) => x.id === lecture.lettre.id);
         return (
-          <div className="fixed inset-0 z-[900] flex flex-col" style={{ background: v && lecture.onglet !== 'jeux' ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          // 2026-11-26 (Nadia : téléphone tourné) : défile si la hauteur manque ; boutons, lettre et vidéo plus petits en paysage peu haut
+          <div className="fixed inset-0 z-[900] flex flex-col overflow-y-auto" style={{ background: v && lecture.onglet !== 'jeux' ? '#000' : TEINTES[i % TEINTES.length], paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             {/* 📺 Vidéo / 🎮 Jeux de la lettre */}
             <div className="flex justify-center gap-3 pt-3 relative z-10">
               {/* ‹ Retour à la liste des lettres (Nadia, 2026-11-21) */}
               <button type="button" onClick={() => setLecture(null)} aria-label="Retour aux lettres"
-                className="absolute start-4 top-3 h-16 px-4 rounded-full bg-white/90 shadow-lg flex items-center gap-1.5 active:scale-95 transition-transform">
+                className="absolute start-4 top-3 h-16 paysage:h-12 px-4 rounded-full bg-white/90 shadow-lg flex items-center gap-1.5 active:scale-95 transition-transform">
                 <span className="text-4xl font-black text-slate-700 leading-none" dir="ltr">‹</span>
                 <span className="hidden sm:inline font-arabic text-2xl text-slate-800 leading-none" dir="rtl">أ ب ت</span>
               </button>
               {(['video', 'jeux'] as const).map((o) => (
                 <button key={o} type="button" aria-label={o === 'video' ? 'Vidéo' : 'Jeux'} onClick={() => setLecture({ ...lecture, onglet: o })}
                   aria-pressed={(lecture.onglet ?? 'video') === o}
-                  className={`h-20 w-24 sm:h-24 sm:w-28 rounded-[28px] text-5xl sm:text-6xl shadow-lg grid place-items-center transition-transform active:scale-95 ${(lecture.onglet ?? 'video') === o ? 'bg-red-500 ring-4 ring-yellow-300 scale-105' : 'bg-white/60'}`}>
+                  className={`h-20 w-24 sm:h-24 sm:w-28 paysage:h-14 paysage:w-20 rounded-[28px] text-5xl sm:text-6xl paysage:text-4xl shadow-lg grid place-items-center transition-transform active:scale-95 ${(lecture.onglet ?? 'video') === o ? 'bg-red-500 ring-4 ring-yellow-300 scale-105' : 'bg-white/60'}`}>
                   {o === 'video' ? '📺' : '🎮'}
                 </button>
               ))}
             </div>
-            <div className="flex-1 min-h-0 grid place-items-center p-4 relative">
+            <div className="flex-1 min-h-0 grid place-items-center p-4 paysage:p-2 relative">
               {lecture.onglet === 'jeux' ? <JeuxDeLaLettre key={lecture.lettre.id} lettre={lecture.lettre} connues={connues} /> : v ? (v.type === 'youtube'
-                ? <div className="w-full max-w-3xl"><SafeYoutubeEmbed embedUrl={v.url} title={v.nom || lecture.lettre.name_french} /></div>
-                : <LecteurVideo key={v.id} src={v.url} autoPlay playsInline controlsList="nodownload" className="max-h-full"
+                ? <div className="w-full max-w-3xl paysage:max-w-[calc((100dvh-6rem)*16/9)]"><SafeYoutubeEmbed embedUrl={v.url} title={v.nom || lecture.lettre.name_french} /></div>
+                : <LecteurVideo key={v.id} src={v.url} autoPlay playsInline controlsList="nodownload" className="max-h-full paysage:max-h-[calc(100dvh-6rem)]"
                     onEnded={() => { confettiLettres([lecture.lettre.letter_arabic]); sonHarpeEtoiles(); }} />)
                 : (
-                  <div className="text-center text-white space-y-6">
+                  <div className="text-center text-white space-y-6 paysage:space-y-2">
                     <button type="button" onClick={() => jouerUrl(lecture.lettre.audio_url)} aria-label={`Écouter ${lecture.lettre.name_french}`}
-                      className="font-arabic text-[11rem] leading-none drop-shadow-xl animate-[wiggle_1.2s_ease-in-out]">{lecture.lettre.letter_arabic}</button>
+                      className="font-arabic text-[min(11rem,40dvh)] leading-none drop-shadow-xl animate-[wiggle_1.2s_ease-in-out]">{lecture.lettre.letter_arabic}</button>
                     {lecture.lettre.audio_url && (
                       <button type="button" onClick={() => jouerUrl(lecture.lettre.audio_url)} aria-label="Écouter"
-                        className="mx-auto h-24 w-24 rounded-full bg-white/90 text-5xl grid place-items-center shadow-xl">🔊</button>
+                        className="mx-auto h-24 w-24 paysage:h-14 paysage:w-14 rounded-full bg-white/90 text-5xl paysage:text-3xl grid place-items-center shadow-xl">🔊</button>
                     )}
                     <p className="rounded-2xl bg-white/20 px-5 py-3 text-lg font-bold">🛠️ En cours de mise à jour pour cette leçon</p>
                     {isAdmin && (
@@ -213,10 +214,10 @@ export function AlphabetToutPetits({ letters: toutes, learned, isAdmin }: {
                 )}
             </div>
             <button type="button" onClick={() => setLecture(null)} aria-label="Fermer"
-              className="absolute end-4 z-20 h-16 w-16 rounded-full bg-red-500 text-white text-4xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
+              className="absolute end-4 z-20 h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-red-500 text-white text-4xl paysage:text-3xl font-bold shadow-xl grid place-items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>✕</button>
             {liste.length > 1 && lecture.onglet !== 'jeux' && (
               <button type="button" onClick={() => setLecture({ ...lecture, i: (lecture.i + 1) % liste.length })} aria-label="Vidéo suivante"
-                className="absolute start-4 h-16 w-16 rounded-full bg-white/90 text-3xl shadow-xl grid place-items-center" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>⏭️</button>
+                className="absolute start-4 h-16 w-16 paysage:h-12 paysage:w-12 rounded-full bg-white/90 text-3xl shadow-xl grid place-items-center" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>⏭️</button>
             )}
           </div>
         );
