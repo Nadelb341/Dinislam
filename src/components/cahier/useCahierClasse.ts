@@ -15,12 +15,18 @@ export type CahierDevoir = {
   created_at: string | null; date_limite: string | null;
   /** Devoir préparé à l'avance : moment où l'élève le voit */
   visible_a?: string | null;
+  /** 📝 Devoirs libres (2026-11-26) */
+  libre_modele?: string | null;
+  questions?: unknown;
 };
 export type CahierRendu = {
   id: string; devoir_id: string | null; student_id: string; statut: string | null;
   audio_url: string | null; rendu_at: string | null; commentaire_admin: string | null;
   /** 📷 Photos du travail de l'élève (2026-11-04) */
   photos?: unknown;
+  /** 📝 Texte écrit et réponses aux questions (devoirs libres, 2026-11-26) */
+  reponse_texte?: string | null;
+  reponses?: unknown;
 };
 /** État d'une case élève × devoir */
 export type EtatCase = 'hors' | 'corrige' | 'rendu' | 'a_refaire' | 'rien';
@@ -47,7 +53,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
       if (ids.length) filtres.push(`student_id.in.(${ids.join(',')})`);
       const [devoirsRes, profilsRes, rendusRes] = await Promise.all([
         supabase.from('devoirs')
-          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite, visible_a')
+          .select('*')
           .or(filtres.join(','))
           .order('created_at', { ascending: true }),
         ids.length
@@ -55,7 +61,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
           : Promise.resolve({ data: [] as CahierEleve[], error: null }),
         ids.length
           ? supabase.from('devoirs_rendus')
-            .select('id, devoir_id, student_id, statut, audio_url, rendu_at, commentaire_admin, photos')
+            .select('*')
             .in('student_id', ids)
             .order('rendu_at', { ascending: false })
           : Promise.resolve({ data: [] as CahierRendu[], error: null }),
@@ -71,7 +77,7 @@ export function useCahierClasse(groupId: string | null, memberIds: string[]) {
       let autres: CahierDevoir[] = [];
       if (manquants.length) {
         const { data: extra } = await supabase.from('devoirs')
-          .select('id, titre, type, assigned_to, group_id, student_id, created_at, date_limite, visible_a')
+          .select('*')
           .in('id', manquants);
         autres = (extra || []) as CahierDevoir[];
       }

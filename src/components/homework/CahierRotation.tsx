@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { fondMatiere, matiereDe } from '@/lib/devoirFichiers';
 import { cleCours, compteARebours, estFaitRange, jourCourt, type Rangement } from '@/lib/rotationDevoirs';
+import { ordreLignesEleve } from '@/lib/devoirsLibres';
 
 /** Un devoir déjà rangé par la rotation (voir src/lib/rotationDevoirs.ts) */
 export interface DevoirRange {
@@ -137,7 +138,8 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
                 reste.veille ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200')}>{reste.texte}</span>
             )}
           </div>
-          {l.map((d) => ligne(d, passe))}
+          {/* 📝 Les devoirs libres en premier, au-dessus des sourates (Nadia, 2026-11-26) */}
+          {ordreLignesEleve(l).map((d) => ligne(d, passe))}
         </div>
       );
     });

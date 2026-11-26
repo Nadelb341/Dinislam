@@ -31,6 +31,7 @@ import {
 import { envoyerMessageCorrection } from '@/lib/messageCorrection';
 import { PiecesJointesVue } from '@/components/shared/PiecesJointesVue';
 import { asPJ, lundiCourant } from '@/lib/devoirFichiers';
+import type { Tables } from '@/integrations/supabase/types';
 import { DonnerAuGroupe } from '@/components/cahier/DonnerAuGroupe';
 import { useReglagesDevoirsGroupe } from '@/hooks/useReglagesDevoirsGroupe';
 import { FormulaireDevoirEleve } from '@/components/cahier/FormulaireDevoirEleve';
@@ -38,6 +39,9 @@ import { CLE_BROUILLON, lireBrouillons } from '@/lib/devoirsEleve';
 import { useDevoirsEnAttente } from '@/hooks/useDevoirsEnAttente';
 import { CopierDevoirsDialog } from '@/components/cahier/CopierDevoirsDialog';
 import { ModifierDevoirDialog } from '@/components/cahier/ModifierDevoirDialog';
+import { DevoirsLibresZone, LigneDevoirsLibres } from '@/components/cahier/DevoirsLibres';
+import { RenduLibreVue } from '@/components/cahier/RenduLibreVue';
+import { etiquetteLibre } from '@/lib/devoirsLibres';
 
 
 interface AdminHomeworkProps {
@@ -66,6 +70,8 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
   // Idée 4 : correction audio (la consigne audio est maintenant sur chaque ligne, 2026-11-04)
   const [correctionAudio, setCorrectionAudio] = useState<Blob | null>(null);
   const [copierOuvert, setCopierOuvert] = useState(false);
+  // 📝 Zone « Devoirs libres » (2026-11-26) : ouverte par la ligne « 📝 Devoirs libres » du devoir commun
+  const [libresOuvert, setLibresOuvert] = useState(false);
   // 📅 2026-11-11 (Nadia) : en haut, seulement « Pour quand ? » (date + préparer à l'avance), pour tous les élèves de la liste
   const [quand, setQuand] = useState<{ date_limite: string; programme: boolean }>({ date_limite: '', programme: false });
   // Carte d'élève à ouvrir (devoir préparé depuis le cahier de texte, ou « 📚 Donner les devoirs » à l'heure du cours)
@@ -126,14 +132,16 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
       const [{ data: profiles }, { data: devoirsList }] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name').in('user_id', studentIds),
         devoirIds.length
-          ? supabase.from('devoirs').select('id, titre, type').in('id', devoirIds)
-          : Promise.resolve({ data: [] }),
+          // '*' : le devoir entier (📝 devoirs libres : modèle et questions, pour lire les réponses de l'élève)
+          ? supabase.from('devoirs').select('*').in('id', devoirIds)
+          : Promise.resolve({ data: [] as Tables<'devoirs'>[] }),
       ]);
 
       return data.map((r) => ({
         ...r,
         student_name: profiles?.find(p => p.user_id === r.student_id)?.full_name || 'Inconnu',
         devoir_titre: devoirsList?.find((d) => d.id === r.devoir_id)?.titre || '',
+        devoir: devoirsList?.find((d) => d.id === r.devoir_id) ?? null,
       }));
     },
   });
@@ -377,12 +385,19 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
           toucher sa case = « Personnaliser » (seulement les matières). Le « Chemin de la semaine » est dans le bouclier › ⚙️ Réglages des devoirs. */}
       <details id="devoirs-semaine-prochaine" open className="rounded-2xl border-2 border-violet-300 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-950/20 shadow-sm scroll-mt-20">
         <summary className="cursor-pointer list-none p-3 font-extrabold text-lg flex items-center gap-2">📚 Devoirs de la semaine prochaine<span className="ms-auto text-xs">▼</span></summary>
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 space-y-2">
+          {/* 📝 Devoirs libres (2026-11-26, organisation C de Nadia) : 6 modèles prêts à remplir, en haut des matières */}
+          <DevoirsLibresZone groupeId={groupeId ?? null} nomGroupe={nomGroupe ?? null} eleves={elevesVus} dateLimite={quand.date_limite}
+            visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null} devoirs={devoirs} rendus={rendus}
+            ouvert={libresOuvert} onOuvert={setLibresOuvert} />
           <DonnerAuGroupe eleves={elevesVus} nomGroupe={nomGroupe ?? null} dateLimite={quand.date_limite} toujoursOuvert persoInitial={eleveAOuvrir}
             visibleA={quand.programme && heureVisible ? heureVisible.toISOString() : null} maxSemaine={reglagesGroupe?.max_devoirs ?? null}
-            dejaCetteSemaine={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? []).filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
+            dejaCetteSemaine={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? []).filter((d) => d.type !== 'libre' && new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).length}
+            // 📝 Les devoirs libres (donnés à tout le groupe) ne décochent pas l'élève et ne sont pas des « ✏️ perso »
             dejaDonnes={(id) => (devoirsParEleve.find((x) => x.eleve.user_id === id)?.devoirsEleve ?? [])
-              .filter((d) => new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).map((d) => ({ titre: d.titre, emoji: d.matiere_emoji }))}
+              .filter((d) => d.type !== 'libre' && new Date(d.created_at || 0).getTime() >= lundiCourant(now).getTime()).map((d) => ({ titre: d.titre, emoji: d.matiere_emoji }))}
+            avantMatieres={<LigneDevoirsLibres devoirs={devoirs} groupeId={groupeId ?? null}
+              onOuvrir={() => { setLibresOuvert(true); setTimeout(() => document.getElementById('devoirs-libres-zone')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} />}
             formulaire={(e) => {
               const siens = devoirsParEleve.find((x) => x.eleve.user_id === e.user_id)?.devoirsEleve ?? [];
               const passes = lignesProf.filter((l) => l.eleveId === e.user_id && l.rang === 'passee')
@@ -503,11 +518,14 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
                           ? 'bg-destructive/5 border border-destructive/20'
                           : 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800'
                       }`}>
-                        <p className="font-semibold text-foreground text-sm mb-1">{r.devoir_titre}</p>
+                        {r.devoir?.type === 'libre' && (
+                          <p className="mb-1 w-fit rounded-full bg-fuchsia-100 dark:bg-fuchsia-950/50 px-2 py-0.5 text-[11px] font-extrabold text-fuchsia-900 dark:text-fuchsia-100">{etiquetteLibre(r.devoir.libre_modele)}</p>
+                        )}
+                        <p className="font-semibold text-foreground text-sm mb-1 [overflow-wrap:anywhere]">{r.devoir_titre}</p>
                         <p className="text-xs text-muted-foreground mb-2">
                           {new Date(r.rendu_at).toLocaleDateString('fr-FR')}
                         </p>
-                        {!r.audio_url && !asPJ(r.photos).length && r.statut === 'rendu' && (
+                        {!r.audio_url && !asPJ(r.photos).length && !r.reponse_texte && r.statut === 'rendu' && (
                           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">✅ L'élève a validé son devoir (sans audio demandé)</p>
                         )}
                         {r.audio_url && (
@@ -523,6 +541,8 @@ const AdminHomework = ({ onBack, groupeId, ouvrirEleveId }: AdminHomeworkProps) 
                         {asPJ(r.photos).length > 0 && (
                           <div className="mb-2 space-y-1"><p className="text-xs font-bold">📷 Photos de l'élève</p><PiecesJointesVue items={asPJ(r.photos)} grand /></div>
                         )}
+                        {/* 📝 Texte écrit et réponses aux questions (devoirs libres) */}
+                        <RenduLibreVue rendu={r} devoir={r.devoir} className="mb-2" />
                         {r.commentaire_admin && (
                           <p className="text-xs text-destructive bg-destructive/5 rounded-lg p-2 mb-2">
                             💬 {r.commentaire_admin}

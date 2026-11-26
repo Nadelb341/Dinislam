@@ -39,6 +39,16 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
       return un(v ?? undefined);
     },
   },
+  // 📝 Devoir libre commencé (clé : préfixe + groupe, ou « general »), 2026-11-26
+  dinislam_devoir_libre_: {
+    place: 'Accueil › Cahier de texte › Devoirs › 📝 Devoirs libres', noun: 'devoir libre pas encore donné', route: '/?open=todo&cahier=1', adminOnly: true,
+    labelOf: (d) => { const v = d as { titre?: string; consigne?: string } | null; return text(v?.titre) || text(v?.consigne); },
+  },
+  // 📝 Réponse écrite d'un élève à un devoir libre, pas encore envoyée (clé : préfixe + devoir), 2026-11-26
+  dinislam_reponse_libre_: {
+    place: 'Cahier de texte › 📝 Devoirs libres', noun: 'réponse pas encore envoyée', route: '/?open=devoirs',
+    labelOf: (d) => { const v = d as { titre?: string; texte?: string } | null; return text(v?.titre) || text(v?.texte); },
+  },
   dinislam_admin_task_: {
     place: 'Accueil › Cahier de texte', noun: 'tâche pas encore ajoutée', route: '/', adminOnly: true,
     labelOf: (d) => text(d),

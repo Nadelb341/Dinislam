@@ -68,6 +68,8 @@ export function enregistrerBrouillon(eleveId: string, nom: string, f: FormEleve)
 export interface ItemDevoir {
   titre: string; type: string; cible: string; audio: boolean; pj: PieceJointe[]; consigne: string | null;
   label: string | null; emoji: string | null; description: string | null; lien_lecon: string | null; etapes: string[];
+  /** 📝 Devoirs libres (2026-11-26) : colonnes en plus, recopiées telles quelles sur chaque copie (modèle, lot, questions…) */
+  extra?: Record<string, unknown>;
 }
 
 /** Étapes d'une liste de lignes : une étape par ligne, ou une par élément 📍 quand une ligne en a plusieurs */
@@ -138,6 +140,7 @@ async function envoyer(d: Distribution) {
     consigne_audio_url: it.consigne, pieces_jointes: it.pj as unknown as Json, matiere_label: it.label, matiere_emoji: it.emoji,
     description: it.description, lien_lecon: it.lien_lecon, etapes: it.etapes, date_limite: d.date_limite || null,
     visible_a: d.visible_a, assigned_to: 'student', student_id: sid, created_by: d.created_by,
+    ...(it.extra ?? {}),
   })));
   const { error } = await supabase.from('devoirs').insert(lignes);
   if (error) throw new Error(error.message);

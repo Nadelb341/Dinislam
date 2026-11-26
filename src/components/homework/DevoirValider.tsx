@@ -14,6 +14,8 @@ import { errorMessage, cn } from '@/lib/utils';
 import { AudioProf } from './AudioProf';
 import { logEchecAudio } from '@/lib/crashLog';
 import { AudioApercu } from '@/components/shared/AudioApercu';
+import { RepondreDevoirLibre } from './RepondreDevoirLibre';
+import type { RegleReponse } from '@/lib/devoirsLibres';
 
 export interface DevoirAValider {
   id: string; titre: string; type: string;
@@ -23,6 +25,8 @@ export interface DevoirAValider {
   commentaire?: string | null;
   /** 🎧 Correction audio du professeur (devoirs_rendus.correction_audio_url) */
   correction_audio_url?: string | null;
+  /** 📝 Devoir libre (2026-11-26) : ce que l'élève doit renvoyer, les questions, sa réponse d'avant (à refaire) */
+  libre?: { regle: RegleReponse; questions: string[]; renduId?: string | null; reponseTexte?: string | null; reponses?: string[] } | null;
 }
 
 /**
@@ -95,6 +99,10 @@ export function DevoirValider({ devoir, dansLaCarte = false, onSent }: { devoir:
   }
   if (devoir.statut === 'rendu') {
     return <p className="rounded-xl bg-orange-100 dark:bg-orange-950/40 px-3 py-2 text-sm font-bold text-orange-800 dark:text-orange-200">⏳ Devoir envoyé · ton professeur va le valider (diamant orange 🟠)</p>;
+  }
+  // 📝 Devoir libre : l'élève répond selon le modèle (texte, photo, audio, questions)
+  if (devoir.libre) {
+    return <RepondreDevoirLibre onSent={onSent} devoir={{ id: devoir.id, titre: devoir.titre, statut: devoir.statut, commentaire: devoir.commentaire, correction_audio_url: devoir.correction_audio_url, ...devoir.libre }} />;
   }
 
   return (

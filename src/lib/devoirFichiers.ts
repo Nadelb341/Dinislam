@@ -67,6 +67,7 @@ const FONDS: Record<string, string> = {
   nourania: 'bg-violet-100 dark:bg-violet-950/50', sourate: 'bg-emerald-100 dark:bg-emerald-950/50', recitation: 'bg-rose-100 dark:bg-rose-950/50',
   allah_names: 'bg-amber-100 dark:bg-amber-950/50', alphabet: 'bg-sky-100 dark:bg-sky-950/50', invocations: 'bg-teal-100 dark:bg-teal-950/50',
   priere: 'bg-indigo-100 dark:bg-indigo-950/50', coran: 'bg-lime-100 dark:bg-lime-950/50',
+  libre: 'bg-fuchsia-200 dark:bg-fuchsia-950/60',
 };
 export const fondMatiere = (type: string) => FONDS[type] ?? 'bg-orange-100 dark:bg-orange-950/50';
 

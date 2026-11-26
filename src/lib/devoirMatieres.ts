@@ -14,5 +14,8 @@ export const MATIERES: { type: string; emoji: string; label: string; exemple: st
   { type: 'autre', emoji: '✏️', label: 'Autre', exemple: 'fiche à colorier' },
 ];
 
+/** 📝 Devoirs libres (2026-11-26) : PAS dans MATIERES (ils ne sont pas une ligne du formulaire par élève, ils ont leur zone) */
+const LIBRE = { type: 'libre', emoji: '📝', label: 'Devoirs libres', exemple: 'faire la dictée et m\'envoyer une photo' };
+
 export const matiereOf = (type: string) =>
-  MATIERES.find((m) => m.type === type) ?? (type === 'exercice_pdf' ? { type, emoji: '📄', label: 'Exercice', exemple: '' } : MATIERES[MATIERES.length - 1]);
+  MATIERES.find((m) => m.type === type) ?? (type === 'libre' ? LIBRE : type === 'exercice_pdf' ? { type, emoji: '📄', label: 'Exercice', exemple: '' } : MATIERES[MATIERES.length - 1]);
