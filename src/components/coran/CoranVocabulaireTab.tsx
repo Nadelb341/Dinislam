@@ -295,11 +295,12 @@ export function CoranVocabulaireTab() {
     return (
       <div key={s.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
         <div className={cn('h-full rounded-2xl text-white shadow-sm bg-gradient-to-br flex flex-col', c.degrade)}>
-          <button type="button" onClick={() => aller(s.id, null)} className={cn('w-full p-4 pb-2 text-left flex flex-col gap-2 transition-transform active:scale-[0.98]', isAdmin && 'pe-12')}>
+          <button type="button" onClick={() => aller(s.id, null)} className={cn('w-full p-4 pb-2 text-center flex flex-col items-center gap-2 transition-transform active:scale-[0.98]', isAdmin && 'px-12')}>
+            {/* 2026-11-26 (Nadia) : titre centré et agrandi */}
             <span className="text-4xl leading-none">{s.emoji}</span>
-            <span>
-              <span className="block font-extrabold leading-snug [overflow-wrap:anywhere]">{s.titre}</span>
-              <span className="block text-xs text-white/85">{n} partie{n > 1 ? 's' : ''}{s.pdf_url ? ' · PDF entier' : ''}</span>
+            <span className="flex flex-col items-center">
+              <span className="block text-xl sm:text-2xl font-extrabold leading-tight [overflow-wrap:anywhere] [text-wrap:balance]">{s.titre}</span>
+              <span className="mt-0.5 block text-xs sm:text-sm text-white/85">{n} partie{n > 1 ? 's' : ''}{s.pdf_url ? ' · PDF entier' : ''}</span>
               {badge && <span className={cn('mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', badge.classe)}>{badge.texte}</span>}
             </span>
           </button>

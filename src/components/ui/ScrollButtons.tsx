@@ -19,7 +19,7 @@ export function ScrollButtons({
   if (!showTop && !showBottom) return null;
 
   const containerClass = position === 'fixed'
-    ? 'fixed bottom-24 right-4 z-50 flex flex-col gap-2'
+    ? 'fixed bottom-[calc(var(--menu-bas,4rem)+2rem)] right-4 z-50 flex flex-col gap-2'
     : 'absolute bottom-4 right-4 z-10 flex flex-col gap-2';
 
   const btnClass = cn(

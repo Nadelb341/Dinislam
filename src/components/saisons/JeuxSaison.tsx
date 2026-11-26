@@ -152,7 +152,9 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
   const secouer = async () => {
     const cle = `dinislam_secoue_${userId}`;
     const deja = lire(cle) === jourLocal();
-    setTombe(true); setTimeout(() => setTombe(false), 1200);
+    // 🍎 Nadia (2026-11-26) : UNE seule pomme tombe, la 1ʳᵉ fois du jour (quand l'élève découvre le nom d'Allah du jour) ;
+    // ensuite plus rien ne tombe ni ne bouge (on peut juste revoir le nom)
+    if (!deja) { setTombe(true); setTimeout(() => setTombe(false), 1200); }
     // Le nom d'Allah du jour (le même toute la journée)
     const debut = new Date(new Date().getFullYear(), 0, 0).getTime();
     const ordre = (Math.floor((Date.now() - debut) / 86400000) % 99) + 1;
@@ -168,7 +170,7 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
     <>
       <div className="absolute z-[6] pointer-events-none" style={{ top: 6, left: -6, width: largeur, height: largeur * 0.9 }}>
         {fruits && places.slice(0, nbFruits).map((p, i) => (
-          <span key={i} className={`absolute text-[15px] leading-none ${tombe ? 'jeux-secoue' : 'jeux-fruit'}`} style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${i * 0.12}s` }}>{FRUIT[saison]}</span>
+          <span key={i} className="absolute text-[15px] leading-none jeux-fruit" style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${i * 0.12}s` }}>{FRUIT[saison]}</span>
         ))}
         {tombe && <span className="absolute text-2xl jeux-tombe" style={{ left: '45%', top: '40%' }}>{FRUIT[saison] === '✨' ? '🎁' : FRUIT[saison]}</span>}
         {secoue && (
@@ -200,23 +202,18 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
 
 // ——— ❓ La question du coin du feu ———
 function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
+  // Nadia (2026-11-26) : une question de religion par jour (roulement de 60) ; on garde la réponse du jour sur l'appareil
   const cle = `dinislam_question_feu_${userId}`;
+  const cleChoix = `dinislam_question_feu_choix_${userId}`;
   const [repondu, setRepondu] = useState(() => lire(cle) === jourLocal());
   const [ouvert, setOuvert] = useState(false);
-  const [choix, setChoix] = useState<string | null>(null);
-  const { data: apprises = [] } = useQuery({
-    queryKey: ['question-feu-lettres', userId],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_alphabet_progress').select('letter_id, alphabet_letters(letter_arabic, name_french)').eq('user_id', userId).eq('is_validated', true);
-      return (data || []).map((x) => (x as unknown as { alphabet_letters: { letter_arabic: string; name_french: string } | null }).alphabet_letters).filter((x): x is { letter_arabic: string; name_french: string } => !!x);
-    },
-  });
-  const q: Question = useMemo(() => questionDuJour(jourLocal(), apprises), [apprises]);
-  const repondre = (o: string) => { setChoix(o); setRepondu(true); ecrire(cle, jourLocal()); };
+  const [choix, setChoix] = useState<string | null>(() => (lire(cle) === jourLocal() ? lire(cleChoix) : null));
+  const q: Question = useMemo(() => questionDuJour(jourLocal()), []);
+  const repondre = (o: string) => { setChoix(o); setRepondu(true); ecrire(cle, jourLocal()); ecrire(cleChoix, o); };
   return createPortal(
     <>
       {/* Petit bouton posé sur la cheminée (44 px) : il ne cache jamais les cartes */}
-      <button type="button" onClick={() => { setOuvert(true); setChoix(null); }} aria-label={COIN[saison]}
+      <button type="button" onClick={() => setOuvert(true)} aria-label={COIN[saison]}
         className={`fixed z-[31] grid place-items-center rounded-full w-11 h-11 ${repondu ? 'opacity-40' : 'jeux-question'}`}
         style={{ right: 'calc(max(4px, env(safe-area-inset-right, 0px)) + 22px)', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 58px)' }}>
         <span className={`rounded-full text-sm font-extrabold w-7 h-7 grid place-items-center shadow ${repondu ? 'bg-white/80 text-orange-700' : 'bg-amber-400 text-amber-950'}`}>{repondu ? '🔥' : '?'}</span>
@@ -226,7 +223,6 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
           <div className="jeux-bulle max-w-sm w-full rounded-3xl bg-card p-5 space-y-3 shadow-2xl border-2 border-orange-300" onClick={(e) => e.stopPropagation()}>
             <p className="text-xs font-bold text-orange-700 dark:text-orange-300">{COIN[saison]}</p>
             <p className="font-bold text-base">{q.question}</p>
-            {q.grand && <p className="font-arabic text-6xl text-center leading-snug">{q.grand}</p>}
             <div className="grid gap-2">
               {q.options.map((o) => (
                 <button key={o} type="button" disabled={!!choix} onClick={() => repondre(o)}
@@ -234,7 +230,10 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
               ))}
             </div>
             {choix && <p className="text-sm font-bold">{choix === q.bonne ? '🎉 Bravo, ma shā\' Allah !' : `Presque ! La bonne réponse : ${q.bonne}`}</p>}
-            <p className="text-[11px] text-muted-foreground">Une nouvelle question chaque jour.</p>
+            {choix && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source}</p>}
+            {choix
+              ? <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-center text-sm font-bold text-amber-800 dark:text-amber-200">🌙 Tu auras une nouvelle question demain, in shā' Allah ! ✨🤲</p>
+              : <p className="text-[11px] text-muted-foreground">Une nouvelle question chaque jour.</p>}
             <button type="button" onClick={() => setOuvert(false)} className="w-full rounded-xl bg-orange-500 text-white py-2 text-sm font-bold">Fermer</button>
           </div>
         </div>

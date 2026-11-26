@@ -23,39 +23,86 @@ export function messagesCompagnon(c: { prenom: string; grandi: boolean; niveau: 
   ];
 }
 
-export interface Question { question: string; grand?: string; options: string[]; bonne: string }
+export interface Question { question: string; options: string[]; bonne: string; source?: string }
 
-const BANQUE: Question[] = [
-  { question: 'Combien de prières obligatoires fait-on chaque jour ?', options: ['3', '5', '7'], bonne: '5' },
+/**
+ * ❓ Les 60 questions du coin du feu (Nadia, 2026-11-26) : une par jour, à tour de rôle (60 jours avant de revoir la même).
+ * Uniquement la religion, d'après le Coran et les hadiths authentiques (Al-Boukhârî, Mouslim), école sunnite malikite.
+ */
+export const QUESTIONS_FEU: Question[] = [
+  { question: 'Combien de prières obligatoires fait-on chaque jour ?', options: ['3', '5', '7'], bonne: '5', source: 'Al-Boukhârî 349 et Mouslim 162' },
   { question: 'Quelle est la première sourate du Coran ?', options: ['Al-Fâtiha', 'An-Nâs', 'Al-Ikhlâs'], bonne: 'Al-Fâtiha' },
-  { question: 'Que dit-on avant de manger ?', options: ['Bismillah', 'Allahou Akbar', 'Amîn'], bonne: 'Bismillah' },
   { question: 'Quelle est la dernière sourate du Coran ?', options: ['Al-Falaq', 'An-Nâs', 'Al-Kawthar'], bonne: 'An-Nâs' },
-  { question: 'Quelle prière fait-on au lever du jour ?', options: ['Fajr', 'Maghrib', 'Icha'], bonne: 'Fajr' },
-  { question: 'Que dit-on après avoir mangé ?', options: ['Al-hamdoulillah', 'Bismillah', 'Salam'], bonne: 'Al-hamdoulillah' },
-  { question: 'Combien de lettres compte l\'alphabet arabe ?', options: ['26', '28', '30'], bonne: '28' },
-  { question: 'Quel mois jeûne-t-on ?', options: ['Ramadan', 'Chawwal', 'Rajab'], bonne: 'Ramadan' },
-  { question: 'Dans quel sens lit-on l\'arabe ?', options: ['De droite à gauche', 'De gauche à droite', 'De haut en bas'], bonne: 'De droite à gauche' },
-  { question: 'Quelle prière fait-on au coucher du soleil ?', options: ['Maghrib', 'Dhohr', 'Asr'], bonne: 'Maghrib' },
-  { question: 'Que répond-on à « Assalamou alaykoum » ?', options: ['Wa alaykoum assalam', 'Bismillah', 'In shaa Allah'], bonne: 'Wa alaykoum assalam' },
   { question: 'Combien de sourates compte le Coran ?', options: ['99', '114', '120'], bonne: '114' },
-  { question: 'Que dit-on quand on éternue ?', options: ['Al-hamdoulillah', 'Astaghfiroullah', 'Amîn'], bonne: 'Al-hamdoulillah' },
-  { question: 'Quelle sourate dit « Qoul houwa Allahou ahad » ?', options: ['Al-Ikhlâs', 'Al-Falaq', 'Al-Kâfiroun'], bonne: 'Al-Ikhlâs' },
+  { question: 'Quelle sourate récite-t-on dans chaque rak\'a de la prière ?', options: ['Al-Fâtiha', 'Al-Kahf', 'Yâ-Sîn'], bonne: 'Al-Fâtiha', source: 'Al-Boukhârî 756 et Mouslim 394' },
+  { question: 'Que dit-on avant de manger ?', options: ['Bismillah', 'Allahou Akbar', 'Amîn'], bonne: 'Bismillah', source: 'Al-Boukhârî 5376 et Mouslim 2022' },
+  { question: 'Avec quelle main mange-t-on ?', options: ['La main droite', 'La main gauche', 'Les deux mains'], bonne: 'La main droite', source: 'Al-Boukhârî 5376 et Mouslim 2022' },
+  { question: 'Que dit-on quand on éternue ?', options: ['Al-hamdoulillah', 'Astaghfiroullah', 'Amîn'], bonne: 'Al-hamdoulillah', source: 'Al-Boukhârî 6224' },
+  { question: 'Que dit-on à celui qui éternue et dit « Al-hamdoulillah » ?', options: ['Yarhamouka Allah', 'Bismillah', 'Allahou Akbar'], bonne: 'Yarhamouka Allah', source: 'Al-Boukhârî 6224' },
+  { question: 'Que répond-on à « Assalamou alaykoum » ?', options: ['Wa alaykoum assalam', 'Bismillah', 'In shâ\' Allah'], bonne: 'Wa alaykoum assalam', source: 'Sourate An-Nisâ\', verset 86' },
+  { question: 'Combien y a-t-il de piliers de l\'islam ?', options: ['3', '5', '6'], bonne: '5', source: 'Al-Boukhârî 8 et Mouslim 16' },
+  { question: 'Quel est le premier pilier de l\'islam ?', options: ['La chahâda', 'Le jeûne', 'Le pèlerinage'], bonne: 'La chahâda', source: 'Al-Boukhârî 8 et Mouslim 16' },
+  { question: 'Combien y a-t-il de piliers de la foi (al-îmân) ?', options: ['4', '5', '6'], bonne: '6', source: 'Mouslim 8 (le hadith de Jibrîl)' },
+  { question: 'Quel mois jeûne-t-on ?', options: ['Ramadan', 'Chawwâl', 'Rajab'], bonne: 'Ramadan', source: 'Sourate Al-Baqara, verset 185' },
+  { question: 'Pendant le Ramadan, on jeûne de quand à quand ?', options: ['De l\'aube au coucher du soleil', 'De midi à minuit', 'Du matin à midi'], bonne: 'De l\'aube au coucher du soleil', source: 'Sourate Al-Baqara, verset 187' },
+  { question: 'Comment s\'appelle le repas qu\'on prend avant l\'aube pendant le Ramadan ?', options: ['Le souhoûr', 'L\'iftâr', 'Le dîner'], bonne: 'Le souhoûr', source: 'Al-Boukhârî 1923 et Mouslim 1095' },
+  { question: 'Combien de jours dure le mois de Ramadan ?', options: ['29 ou 30 jours', '20 jours', '40 jours'], bonne: '29 ou 30 jours', source: 'Al-Boukhârî 1907 et Mouslim 1080' },
+  { question: 'Quelle nuit est meilleure que mille mois ?', options: ['Laylat al-Qadr', 'La nuit de l\'Aïd', 'La nuit du vendredi'], bonne: 'Laylat al-Qadr', source: 'Sourate Al-Qadr, verset 3' },
+  { question: 'Quelle fête célèbre-t-on à la fin du Ramadan ?', options: ['L\'Aïd al-Fitr', 'L\'Aïd al-Adha', 'Le Mawlid'], bonne: 'L\'Aïd al-Fitr' },
+  { question: 'Quelle fête célèbre-t-on au moment du pèlerinage ?', options: ['L\'Aïd al-Adha', 'L\'Aïd al-Fitr', 'Achoura'], bonne: 'L\'Aïd al-Adha' },
+  { question: 'Comment s\'appelle le grand pèlerinage à La Mecque ?', options: ['Le Hajj', 'La Zakât', 'La Joumou\'a'], bonne: 'Le Hajj' },
+  { question: 'Combien de fois tourne-t-on autour de la Kaaba pendant le tawâf ?', options: ['3 fois', '7 fois', '10 fois'], bonne: '7 fois' },
+  { question: 'Comment s\'appelle l\'aumône obligatoire ?', options: ['La zakât', 'La sadaqa', 'Le hajj'], bonne: 'La zakât' },
+  { question: 'Dans quelle ville se trouve la Kaaba ?', options: ['La Mecque', 'Médine', 'Jérusalem'], bonne: 'La Mecque' },
+  { question: 'Vers où se tourne-t-on pour prier ?', options: ['Vers la Kaaba', 'Vers le soleil', 'Vers le nord'], bonne: 'Vers la Kaaba', source: 'Sourate Al-Baqara, verset 144' },
+  { question: 'Que fait-on avant la prière pour se purifier ?', options: ['Les ablutions (woudoû\')', 'Une sieste', 'Un repas'], bonne: 'Les ablutions (woudoû\')', source: 'Sourate Al-Mâ\'ida, verset 6' },
+  { question: 'Combien de rak\'ât compte la prière du Sobh ?', options: ['2', '3', '4'], bonne: '2' },
+  { question: 'Combien de rak\'ât compte la prière du Maghreb ?', options: ['2', '3', '4'], bonne: '3' },
+  { question: 'Combien de rak\'ât compte la prière du Dhohr ?', options: ['2', '3', '4'], bonne: '4' },
+  { question: 'Quelle prière fait-on au coucher du soleil ?', options: ['Le Maghreb', 'Le Dhohr', 'L\'Asr'], bonne: 'Le Maghreb' },
+  { question: 'Comment s\'appelle la grande prière en groupe du vendredi ?', options: ['La Joumou\'a', 'Le Witr', 'Le Tarâwîh'], bonne: 'La Joumou\'a', source: 'Sourate Al-Joumou\'a, verset 9' },
+  { question: 'Qui était le premier muezzin de l\'islam ?', options: ['Bilâl', 'Abou Bakr', '\'Omar'], bonne: 'Bilâl', source: 'Al-Boukhârî 604 et Mouslim 377' },
+  { question: 'Quel ange a apporté le Coran au Prophète ﷺ ?', options: ['Jibrîl', 'Mîkâ\'îl', 'Isrâfîl'], bonne: 'Jibrîl', source: 'Sourate Al-Baqara, verset 97' },
+  { question: 'Dans quelle grotte le Prophète ﷺ a-t-il reçu la première révélation ?', options: ['La grotte de Hirâ\'', 'La grotte de Thawr', 'La grotte des gens de la caverne'], bonne: 'La grotte de Hirâ\'', source: 'Al-Boukhârî 3 et Mouslim 160' },
+  { question: 'Quel est le premier mot révélé du Coran ?', options: ['Iqra\' (Lis)', 'Qoul (Dis)', 'Bismillah'], bonne: 'Iqra\' (Lis)', source: 'Al-Boukhârî 3 et Mouslim 160' },
+  { question: 'Dans quelle ville est né le Prophète ﷺ ?', options: ['La Mecque', 'Médine', 'Damas'], bonne: 'La Mecque' },
+  { question: 'Comment s\'appelait la maman du Prophète ﷺ ?', options: ['Âmina', 'Khadîja', 'Fâtima'], bonne: 'Âmina' },
+  { question: 'Comment s\'appelle le voyage du Prophète ﷺ de La Mecque à Médine ?', options: ['L\'Hégire (al-hijra)', 'Le Hajj', 'L\'Isrâ\''], bonne: 'L\'Hégire (al-hijra)' },
+  { question: 'Quel compagnon accompagnait le Prophète ﷺ dans la grotte pendant l\'Hégire ?', options: ['Abou Bakr', '\'Ali', 'Bilâl'], bonne: 'Abou Bakr', source: 'Sourate At-Tawba, verset 40 ; Al-Boukhârî 3653' },
+  { question: 'Qui est le premier homme créé par Allah ?', options: ['Âdam', 'Nouh', 'Ibrâhîm'], bonne: 'Âdam', source: 'Sourate Al-Baqara, versets 30 à 37' },
+  { question: 'Quel prophète a construit l\'arche ?', options: ['Nouh', 'Moussa', 'Younous'], bonne: 'Nouh', source: 'Sourate Hoûd, verset 37' },
+  { question: 'Quel prophète a été avalé par un grand poisson ?', options: ['Younous', 'Yousouf', 'Ayyoub'], bonne: 'Younous', source: 'Sourate As-Sâffât, versets 139 à 144' },
+  { question: 'Quel prophète a construit la Kaaba avec son fils Ismâ\'îl ?', options: ['Ibrâhîm', 'Moussa', 'Dâwoud'], bonne: 'Ibrâhîm', source: 'Sourate Al-Baqara, verset 127' },
+  { question: 'À quel prophète la Torah a-t-elle été donnée ?', options: ['Moussa', '\'Îsâ', 'Soulaymân'], bonne: 'Moussa', source: 'Sourate Al-Mâ\'ida, verset 44' },
+  { question: 'À quel prophète les Psaumes (Az-Zabour) ont-ils été donnés ?', options: ['Dâwoud', 'Ibrâhîm', 'Nouh'], bonne: 'Dâwoud', source: 'Sourate An-Nisâ\', verset 163' },
+  { question: 'Quel prophète a entendu une fourmi parler ?', options: ['Soulaymân', 'Younous', 'Hoûd'], bonne: 'Soulaymân', source: 'Sourate An-Naml, versets 18 et 19' },
+  { question: 'Quel prophète a été jeté dans un puits par ses frères ?', options: ['Yousouf', 'Ya\'qoub', 'Ismâ\'îl'], bonne: 'Yousouf', source: 'Sourate Yousouf, versets 10 à 15' },
+  { question: 'Comment s\'appelle la maman du prophète \'Îsâ ?', options: ['Maryam', 'Âsiya', 'Hâjar'], bonne: 'Maryam', source: 'Sourate Maryam' },
+  { question: 'Dans quelle sourate trouve-t-on l\'histoire des gens de la caverne ?', options: ['Al-Kahf', 'Al-Fîl', 'Yâ-Sîn'], bonne: 'Al-Kahf', source: 'Sourate Al-Kahf, versets 9 à 26' },
+  { question: 'Quelle sourate vaut le tiers du Coran ?', options: ['Al-Ikhlâs', 'Al-Falaq', 'Al-Fâtiha'], bonne: 'Al-Ikhlâs', source: 'Al-Boukhârî 5013 et Mouslim 811' },
+  { question: 'Quel est le plus grand verset du Coran ?', options: ['Âyat al-Koursî', 'Le dernier verset d\'An-Nâs', 'Bismillah'], bonne: 'Âyat al-Koursî', source: 'Mouslim 810' },
+  { question: 'Quelle sourate commence par « Qoul houwa Allâhou ahad » ?', options: ['Al-Ikhlâs', 'Al-Falaq', 'Al-Kâfiroûn'], bonne: 'Al-Ikhlâs' },
+  { question: 'Combien de noms d\'Allah cite le hadith « Allah a … noms » ?', options: ['50', '99', '114'], bonne: '99', source: 'Al-Boukhârî 2736 et Mouslim 2677' },
+  { question: 'Que dit-on quand on prévoit de faire quelque chose plus tard ?', options: ['In shâ\' Allah', 'Al-hamdoulillah', 'Amîn'], bonne: 'In shâ\' Allah', source: 'Sourate Al-Kahf, versets 23 et 24' },
+  { question: 'Le Prophète ﷺ a dit : « Les actes ne valent que par… »', options: ['les intentions', 'la fatigue', 'l\'argent'], bonne: 'les intentions', source: 'Al-Boukhârî 1 et Mouslim 1907' },
+  { question: 'Le Prophète ﷺ a dit : « Le meilleur d\'entre vous est celui qui apprend le Coran et… »', options: ['l\'enseigne', 'le range', 'le vend'], bonne: 'l\'enseigne', source: 'Al-Boukhârî 5027' },
+  { question: 'Le Prophète ﷺ a dit : « Une bonne parole est… »', options: ['une aumône', 'un jeu', 'inutile'], bonne: 'une aumône', source: 'Al-Boukhârî 2989 et Mouslim 1009' },
+  { question: 'Le Prophète ﷺ a dit : « Que celui qui croit en Allah et au Jour dernier dise du bien ou… »', options: ['qu\'il se taise', 'qu\'il crie', 'qu\'il parte'], bonne: 'qu\'il se taise', source: 'Al-Boukhârî 6018 et Mouslim 47' },
+  { question: 'Selon le Prophète ﷺ, qui est vraiment fort ?', options: ['Celui qui se maîtrise quand il est en colère', 'Celui qui gagne à la bagarre', 'Celui qui crie le plus fort'], bonne: 'Celui qui se maîtrise quand il est en colère', source: 'Al-Boukhârî 6114 et Mouslim 2609' },
+  { question: 'Le Prophète ﷺ a dit : « Aucun de vous n\'est vraiment croyant tant qu\'il n\'aime pas pour son frère… »', options: ['ce qu\'il aime pour lui-même', 'rien du tout', 'seulement les jouets'], bonne: 'ce qu\'il aime pour lui-même', source: 'Al-Boukhârî 13 et Mouslim 45' },
 ];
 
-/** Petit hasard stable : la même question toute la journée, et des réponses mélangées toujours de la même façon */
+/** Petit hasard stable : des réponses mélangées toujours de la même façon pour un jour donné */
 function graine(t: string) { let h = 7; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) | 0; return Math.abs(h); }
 function melanger<T>(l: T[], g: number): T[] { const a = [...l]; let s = g || 1; for (let i = a.length - 1; i > 0; i--) { s = (s * 16807) % 2147483647; const j = s % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-/** ❓ Question du jour : un jour sur deux une de SES lettres apprises (s'il en a au moins 3), sinon une question de la banque */
-export function questionDuJour(jour: string, apprises: { letter_arabic: string; name_french: string }[]): Question {
-  const g = graine(jour);
-  if (apprises.length >= 3 && g % 2 === 0) {
-    const l = apprises[g % apprises.length];
-    const autres = melanger(apprises.filter((x) => x.name_french !== l.name_french), g).slice(0, 2).map((x) => x.name_french);
-    return { question: 'Quelle est cette lettre ?', grand: l.letter_arabic, options: melanger([l.name_french, ...autres], g + 1), bonne: l.name_french };
-  }
-  const q = BANQUE[g % BANQUE.length];
-  return { ...q, options: melanger(q.options, g) };
+/** Numéro du jour (AAAA-MM-JJ) depuis le 1er janvier 1970, en heure locale du calendrier */
+const numeroJour = (jour: string) => { const [a, m, j] = jour.split('-').map(Number); return Math.floor(Date.UTC(a, m - 1, j) / 86_400_000); };
+
+/** ❓ Question du jour : la même toute la journée, la suivante le lendemain (roulement de 60) */
+export function questionDuJour(jour: string): Question {
+  const q = QUESTIONS_FEU[((numeroJour(jour) % QUESTIONS_FEU.length) + QUESTIONS_FEU.length) % QUESTIONS_FEU.length];
+  return { ...q, options: melanger(q.options, graine(jour)) };
 }
 
 // ——— 🔥 La flamme de la cheminée (Nadia, 2026-11-11 : idées 1, 2, 4, 5 gardées) ———

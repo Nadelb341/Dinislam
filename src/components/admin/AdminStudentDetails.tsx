@@ -193,6 +193,22 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
     },
   });
 
+  // 🏆 Nadia (2026-11-26) : ses points PAR MATIÈRE (même calcul que le total du classement, fonction points_par_matiere)
+  const { data: pointsMatiere } = useQuery({
+    queryKey: ['points-par-matiere', selectedStudent?.id],
+    enabled: !!selectedStudent,
+    queryFn: async () => {
+      const { data, error } = await untypedDb.rpc('points_par_matiere', { p_user_id: selectedStudent!.id });
+      if (error) throw error;
+      const parMatiere: Record<string, number> = {};
+      for (const l of (data || []) as { action_key: string; points: number }[]) {
+        const m = MATIERE_DES_POINTS[l.action_key] || 'autres';
+        parMatiere[m] = (parMatiere[m] || 0) + (l.points || 0);
+      }
+      return parMatiere;
+    },
+  });
+
   // Detailed validated items for retrograde
   const { data: validatedDetails } = useQuery({
     queryKey: ['student-validated-details', selectedStudent?.id],
@@ -261,11 +277,22 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
         .delete()
         .eq('user_id', selectedStudent.id)
         .eq(target.itemIdField, target.itemId);
+
+      // 3. 🏆 Nadia (2026-11-26) : rétrogradé = il PERD ses points. Une sourate / leçon aussi « débloquée à la main »
+      // garderait ses points (le barème compte validé OU débloqué) : on retire donc aussi ce déblocage.
+      if (target.table === 'user_sourate_progress') {
+        const { error } = await untypedDb.from('sourate_admin_unlocks').delete().eq('user_id', selectedStudent.id).eq('sourate_id', target.itemId);
+        if (error) throw error;
+      } else if (target.table === 'user_nourania_progress') {
+        const { error } = await untypedDb.from('nourania_admin_unlocks').delete().eq('student_id', selectedStudent.id).eq('lesson_id', target.itemId);
+        if (error) throw error;
+      }
     },
     onSuccess: (_, target) => {
       toast.success(`🔓 "${target.label}" rétrogradé — l'élève devra re-soumettre`);
       queryClient.invalidateQueries({ queryKey: ['student-progress-details', selectedStudent?.id] });
       queryClient.invalidateQueries({ queryKey: ['student-validated-details', selectedStudent?.id] });
+      queryClient.invalidateQueries({ queryKey: ['points-par-matiere', selectedStudent?.id] });
       setRetrogradeTarget(null);
     },
     onError: (err) => {
@@ -402,16 +429,21 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
     setDeleteConfirm({ open: false, userId: '', name: '' });
   };
 
-  const progressBar = (value: number, total: number, label: string, icon: React.ReactNode) => {
+  const progressBar = (value: number, total: number, label: string, icon: React.ReactNode, matiere?: string) => {
     const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+    const pts = matiere && pointsMatiere ? pointsMatiere[matiere] ?? 0 : null;
     return (
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        {/* 2026-11-26 (Nadia) : les points gagnés dans cette matière, au milieu de la ligne */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {icon}
-            <span className="text-sm font-medium">{label}</span>
+            <span className="text-sm font-medium [overflow-wrap:anywhere]">{label}</span>
           </div>
-          <Badge variant={percentage >= 100 ? 'default' : 'outline'}>{percentage}%</Badge>
+          {pts !== null ? (
+            <span className="justify-self-center whitespace-nowrap rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold tabular-nums text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-700">⭐ {pts} pt{pts > 1 ? 's' : ''}</span>
+          ) : <span />}
+          <Badge className="justify-self-end" variant={percentage >= 100 ? 'default' : 'outline'}>{percentage}%</Badge>
         </div>
         <Progress value={percentage} className="h-2" />
         <p className="text-xs text-muted-foreground text-right">{value}/{total}</p>
@@ -630,12 +662,13 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
               {/* Barres de progression */}
               <div className="space-y-4">
                 <h4 className="font-semibold text-foreground">Progression par module</h4>
-                {progressBar(studentProgress.ramadan.completed, studentProgress.ramadan.total, 'Ramadan', <Moon className="h-4 w-4 text-gold" />)}
-                {progressBar(studentProgress.nourania.validated, studentProgress.nourania.total, 'Nourania', <Sparkles className="h-4 w-4 text-primary" />)}
-                {progressBar(studentProgress.alphabet.validated, studentProgress.alphabet.total, 'Alphabet', <BookOpen className="h-4 w-4 text-gold" />)}
-                {progressBar(studentProgress.invocations.memorized, studentProgress.invocations.total, 'Invocations', <MessageSquare className="h-4 w-4 text-primary" />)}
-                {progressBar(studentProgress.sourates.validated, studentProgress.sourates.total, 'Sourates', <BookMarked className="h-4 w-4 text-gold" />)}
-                {progressBar(studentProgress.prayer.validated, studentProgress.prayer.total, 'Prière', <Hand className="h-4 w-4 text-primary" />)}
+                {progressBar(studentProgress.ramadan.completed, studentProgress.ramadan.total, 'Ramadan', <Moon className="h-4 w-4 text-gold" />, 'ramadan')}
+                {progressBar(studentProgress.nourania.validated, studentProgress.nourania.total, 'Nourania', <Sparkles className="h-4 w-4 text-primary" />, 'nourania')}
+                {progressBar(studentProgress.alphabet.validated, studentProgress.alphabet.total, 'Alphabet', <BookOpen className="h-4 w-4 text-gold" />, 'alphabet')}
+                {progressBar(studentProgress.invocations.memorized, studentProgress.invocations.total, 'Invocations', <MessageSquare className="h-4 w-4 text-primary" />, 'invocations')}
+                {progressBar(studentProgress.sourates.validated, studentProgress.sourates.total, 'Sourates', <BookMarked className="h-4 w-4 text-gold" />, 'sourates')}
+                {progressBar(studentProgress.prayer.validated, studentProgress.prayer.total, 'Prière', <Hand className="h-4 w-4 text-primary" />, 'priere')}
+                {pointsMatiere && <AutresPoints points={pointsMatiere} />}
               </div>
 
               {/* Réglages de notifications + Espace parents (2026-09-30) */}
@@ -842,3 +875,35 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
 };
 
 export default AdminStudentDetails;
+
+/** 🏆 À quelle matière appartient chaque règle du barème (Nadia, 2026-11-26) */
+const MATIERE_DES_POINTS: Record<string, string> = {
+  sourate_validee: 'sourates', nourania_lecon_validee: 'nourania', invocation_vue: 'invocations',
+  alphabet_lettre_apprise: 'alphabet', alphabet_bonne_reponse: 'alphabet',
+  priere_validee: 'priere', journee_5_prieres: 'priere',
+  jeune_marque: 'ramadan', quiz_reussi: 'ramadan', ramadan_jour_complete: 'ramadan',
+  allah_nom_valide: 'noms', vocabulaire_appris: 'vocabulaire',
+  devoir_rendu: 'devoirs', devoir_corrige: 'devoirs', presence_marquee: 'presence',
+};
+const AUTRES_MATIERES: { cle: string; nom: string }[] = [
+  { cle: 'noms', nom: '🌟 99 Noms' }, { cle: 'vocabulaire', nom: '💬 Vocabulaire' }, { cle: 'devoirs', nom: '📚 Devoirs' },
+  { cle: 'presence', nom: '📋 Présence' }, { cle: 'autres', nom: '🎁 Bonus' },
+];
+
+/** Les points gagnés ailleurs que dans les 6 modules, et le total (le même que dans le classement) */
+function AutresPoints({ points }: { points: Record<string, number> }) {
+  const total = Object.values(points).reduce((a, b) => a + b, 0);
+  const autres = AUTRES_MATIERES.filter((m) => (points[m.cle] ?? 0) > 0);
+  return (
+    <div className="rounded-xl bg-amber-50 p-2.5 text-xs ring-1 ring-amber-200 dark:bg-amber-950/30 dark:ring-amber-800">
+      {autres.length > 0 && (
+        <p className="flex flex-wrap gap-1.5">
+          {autres.map((m) => (
+            <span key={m.cle} className="rounded-full bg-white px-2 py-0.5 font-bold tabular-nums dark:bg-card">{m.nom} : {points[m.cle]} pts</span>
+          ))}
+        </p>
+      )}
+      <p className="mt-1.5 text-center text-sm font-extrabold text-amber-800 dark:text-amber-200">🏆 Total : {total} points</p>
+    </div>
+  );
+}

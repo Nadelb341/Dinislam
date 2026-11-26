@@ -75,7 +75,8 @@ const AppLayout = ({
       <SilentBoundary name="Bandeau hors connexion"><OfflineBanner /></SilentBoundary>
       <EmailVerificationBanner />
       {/* 2026-11-26 (Nadia : téléphone tourné) : menu du bas de 48 px en paysage peu haut → marge réduite */}
-      <main className={`flex-1 ${showBottomNav ? 'pb-20 paysage:pb-14' : ''}`}>
+      {/* 2026-11-26 : le menu du bas peut faire 1 à 4 lignes → marge = sa hauteur réelle (--menu-bas) + 1 rem */}
+      <main className={`flex-1 ${showBottomNav ? 'pb-[calc(var(--menu-bas,4rem)+1rem)]' : ''}`}>
         <div className="p-4">
           <PendingDraftsCenter />
           <TrashPurgeWarning />

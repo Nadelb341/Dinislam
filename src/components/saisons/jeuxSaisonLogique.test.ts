@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { debutCycleFeu, echelleFeu, messagesCompagnon, motArabeDuJour, niveauFeu, questionDuJour } from './jeuxSaisonLogique';
+import { debutCycleFeu, echelleFeu, messagesCompagnon, motArabeDuJour, niveauFeu, questionDuJour, QUESTIONS_FEU } from './jeuxSaisonLogique';
 
 describe('jeux des décors de saison (2026-11-11)', () => {
   it('il parle de ses devoirs et de grandir', () => {
@@ -9,16 +9,21 @@ describe('jeux des décors de saison (2026-11-11)', () => {
     expect(m.length).toBeGreaterThanOrEqual(5);
     expect(messagesCompagnon({ prenom: 'Réda', grandi: false, niveau: 0, aFaire: 0 })[1]).toContain('Tous tes devoirs sont faits');
   });
-  it('la même question toute la journée, la bonne réponse parmi les choix', () => {
-    const a = questionDuJour('2026-11-11', []), b = questionDuJour('2026-11-11', []);
+  it('la même question toute la journée, une autre chaque jour, 60 en roulement', () => {
+    const a = questionDuJour('2026-11-11'), b = questionDuJour('2026-11-11');
     expect(a).toEqual(b);
-    expect(a.options).toContain(a.bonne);
-    const lettres = [{ letter_arabic: 'ا', name_french: 'Alif' }, { letter_arabic: 'ب', name_french: 'Ba' }, { letter_arabic: 'ت', name_french: 'Ta' }];
-    for (const j of ['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-15']) {
-      const q = questionDuJour(j, lettres);
+    expect(QUESTIONS_FEU).toHaveLength(60);
+    const vues = new Set<string>();
+    const d = new Date(2026, 10, 1, 12);
+    for (let i = 0; i < 60; i++) {
+      const q = questionDuJour(d.toLocaleDateString('en-CA'));
       expect(q.options).toContain(q.bonne);
       expect(new Set(q.options).size).toBe(q.options.length);
+      vues.add(q.question);
+      d.setDate(d.getDate() + 1);
     }
+    expect(vues.size).toBe(60);
+    expect(questionDuJour(d.toLocaleDateString('en-CA')).question).toBe(questionDuJour('2026-11-01').question);
   });
   it('🔥 feu : maximum le mercredi dès 18 h, un cran de moins par jour sans connexion, braises au 7ᵉ jour', () => {
     const mer18 = new Date(2026, 10, 11, 18, 30); // mercredi 11/11/2026
