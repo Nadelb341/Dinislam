@@ -34,6 +34,17 @@ function motif(c: string, o: number) {
 const lanterne = (x: number, y: number, c: string) => `<line x1="${x}" y1="0" x2="${x}" y2="${y - 12}" stroke="#d9b45a" stroke-width="1"/><circle class="fond-scintille" cx="${x}" cy="${y}" r="16" fill="${c}" opacity=".18"/><path d="M${x - 7} ${y - 9} h14 l3 6 v8 l-3 6 h-14 l-3 -6 v-8 z" fill="${c}" stroke="#d9b45a" stroke-width="1.2"/><path d="M${x - 4} ${y - 12} h8 l-1 3 h-6 z" fill="#d9b45a"/>`;
 const chameau = (x: number, y: number, c: string) => `<g fill="${c}" transform="translate(${x} ${y})"><ellipse cx="0" cy="0" rx="16" ry="8"/><ellipse cx="-2" cy="-8" rx="8" ry="7"/><path d="M14 -2 Q 22 -6 22 -18 Q 26 -20 28 -16 Q 26 -6 18 4 Z"/><rect x="-12" y="4" width="3" height="14"/><rect x="-5" y="4" width="3" height="14"/><rect x="4" y="4" width="3" height="14"/><rect x="10" y="4" width="3" height="14"/></g>`;
 
+// ✨ 26/11 : étoiles à 4 branches qui brillent (fonds du soir plus clairs, d'après les 3 images de Nadia)
+function scintilles(n: number, graine: number, c: string, hmax = 300) {
+  let s = graine, out = '';
+  const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < n; i++) {
+    const x = r() * W, y = r() * hmax, k = 2.5 + r() * 2.5;
+    out += `<path class="fond-scintille" d="M${x.toFixed(1)} ${(y - k).toFixed(1)} L${(x + k * .18).toFixed(1)} ${(y - k * .18).toFixed(1)} L${(x + k).toFixed(1)} ${y.toFixed(1)} L${(x + k * .18).toFixed(1)} ${(y + k * .18).toFixed(1)} L${x.toFixed(1)} ${(y + k).toFixed(1)} L${(x - k * .18).toFixed(1)} ${(y + k * .18).toFixed(1)} L${(x - k).toFixed(1)} ${y.toFixed(1)} L${(x - k * .18).toFixed(1)} ${(y - k * .18).toFixed(1)}Z" fill="${c}"/>`;
+  }
+  return out;
+}
+
 export const FONDS: Fond[] = [
   { cle: 'jp1', famille: 'jp', nom: 'Prairie aux fleurs', dessin: (u) => ciel(`${u}a`, '#bfe6ff', '#e9f8ff') + soleil(140, 52, 16) + nuage(50, 70, 1) + nuage(120, 110, .7) + colline(250, '#a8dc8f') + colline(280, '#86c977', 18) + fleurs(292, ['#ff9fb3', '#ffd36b', '#b9a2ff', '#ff9fb3', '#8fd4ff', '#ffd36b', '#ff9fb3']) },
   { cle: 'jp2', famille: 'jp', nom: 'Le chemin dans la forêt', dessin: (u) => ciel(`${u}a`, '#c9ecff', '#f2fbff') + nuage(90, 60, 1.1) + arbre(22, 170, 1.4, '#86c977') + arbre(160, 160, 1.6, '#76bb6c') + colline(250, '#9fd68a', 14) + `<path d="M70 ${H} Q 90 250 92 232 Q 96 250 120 ${H} Z" fill="#f1dcae"/>` + fleurs(300, ['#ff9fb3', '#ffd36b', '#fff', '#ffd36b', '#ff9fb3', '#b9a2ff', '#fff']) },
@@ -53,6 +64,17 @@ export const FONDS: Fond[] = [
   { cle: 'ng2', famille: 'ng', nom: 'La voûte étoilée', dessin: (u) => ciel(`${u}a`, '#070b24', '#1d2a5c') + etoiles(110, 29, '#fff', 320, .9) },
   { cle: 'ng4', famille: 'ng', nom: 'Crépuscule violet', dessin: (u) => ciel(`${u}a`, '#1b1740', '#7a4b7f', '#34295e') + etoiles(24, 37, '#fff', 160) + `<ellipse cx="90" cy="${H}" rx="140" ry="60" fill="#f2a27a" opacity=".25"/>` },
   { cle: 'ng5', famille: 'ng', nom: 'La nuit du désert', dessin: (u) => ciel(`${u}a`, '#0c1030', '#2a2f5f') + `<path d="M-20 150 Q 90 70 200 20" stroke="#cbd6ff" stroke-width="30" opacity=".08" fill="none"/>` + etoiles(60, 41, '#fff', 210) + dunes(255, '#232853', '#1a1f44') },
+  // 🌆 26/11 : les 10 fonds du soir PLUS CLAIRS choisis par Nadia (https://claude.ai/artifact/EYFbAje7VPMrKiRaPtC8kr, tous gardés)
+  { cle: 'ns1', famille: 'ng', nom: 'Soir doré', dessin: (u) => ciel(`${u}a`, '#1f3f7d', '#f3b679', '#3f6fb4') + etoiles(40, 51, '#fff', 180) },
+  { cle: 'ns2', famille: 'ng', nom: 'Bleu roi étoilé', dessin: (u) => ciel(`${u}a`, '#1c3594', '#4f7fe6', '#2f58c9') + etoiles(70, 52, '#fff', 320) + scintilles(8, 52, '#fff') },
+  { cle: 'ns3', famille: 'ng', nom: 'Bleu lagon scintillant', dessin: (u) => ciel(`${u}a`, '#1a3a86', '#6fb3ea', '#2c62b8') + etoiles(50, 53, '#8fe8ff', 300) + scintilles(10, 53, '#8fe8ff') },
+  { cle: 'ns4', famille: 'ng', nom: 'Lavande et croissant', dessin: (u) => ciel(`${u}a`, '#4a55a8', '#b9b0ea', '#6f74c4') + etoiles(30, 54, '#fff', 210) + croissant(140, 54, 13, '#fff3c4', '#5560b2') },
+  { cle: 'ns5', famille: 'ng', nom: 'Crépuscule rose', dessin: (u) => ciel(`${u}a`, '#2f4d9c', '#eba7bd', '#5f78c4') + etoiles(30, 55, '#fff', 170) },
+  { cle: 'ns6', famille: 'ng', nom: 'Clair de lune sur la mer', dessin: (u) => ciel(`${u}a`, '#25508f', '#6aa3d6', '#3d74b5') + etoiles(35, 56, '#fff', 180) + croissant(46, 68, 12, '#fff3c4', '#2c5a9c') + `<rect y="224" width="${W}" height="${H - 224}" fill="#1f4f8a"/><path d="M40 228 h12 M36 241 h20 M42 256 h10 M38 271 h16" stroke="#fff3c4" stroke-width="3" opacity=".7"/>` },
+  { cle: 'ns7', famille: 'ng', nom: 'Aurore turquoise', dessin: (u) => ciel(`${u}a`, '#1b3f74', '#4fb9b6', '#24628c') + etoiles(40, 57, '#fff', 210) + `<path d="M-10 128 Q 60 64 190 118" stroke="#7ff0d0" stroke-width="26" opacity=".18" fill="none"/>` },
+  { cle: 'ns8', famille: 'np', nom: 'Nuit pastel des tout-petits', dessin: (u) => ciel(`${u}a`, '#5c7ed8', '#cbd9ff', '#8aa6ea') + etoiles(26, 58, '#ffe27a', 210) + scintilles(4, 58, '#ffe27a', 210) + nuage(50, 234, 1.4, '#fff', .85) + nuage(130, 268, 1.2, '#fff', .85) },
+  { cle: 'ns9', famille: 'ng', nom: 'Nuages de nuit', dessin: (u) => ciel(`${u}a`, '#3561b0', '#8fb4e6', '#5281cc') + etoiles(25, 59, '#fff', 160) + croissant(130, 52, 11, '#fff3c4', '#3b67b4') + nuage(40, 170, 2, '#c9d8f2', .55) + nuage(140, 214, 2.2, '#c9d8f2', .55) + nuage(70, 266, 2.4, '#c9d8f2', .55) },
+  { cle: 'ns10', famille: 'ng', nom: 'Mosquée au coucher', dessin: (u) => ciel(`${u}a`, '#28509a', '#f1b884', '#4f7cc0') + etoiles(30, 60, '#fff', 150) + mosquee(290, '#2b3f74', 1) },
 ];
 
 export const REGLAGE_FONDS_DEFAUT: ReglageFonds = { actif: true, actifs: FONDS.map((f) => f.cle) };

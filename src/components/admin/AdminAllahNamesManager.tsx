@@ -162,7 +162,7 @@ const AdminAllahNamesManager = ({ onBack }: Props) => {
       const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-      const { error } = await supabase.from('allah_names').update({ image_url: urlData.publicUrl }).eq('id', nameId);
+      const { error } = await supabase.from('allah_names').update({ image_url: `${urlData.publicUrl}?v=${Date.now()}` }).eq('id', nameId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-allah-names'] });
       queryClient.invalidateQueries({ queryKey: ['allah-names'] });

@@ -8,6 +8,7 @@ import { SortableCardList, type DragItemProps } from '@/components/shared/Sortab
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ImageCadree } from '@/components/shared/ImageCadree';
+import { idZonesPartagees, jumelles } from '@/lib/carteJumelles';
 import { Cadreur } from '@/components/shared/Cadreur';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -219,10 +220,14 @@ const PrayerModuleCards = () => {
       const updates: TablesUpdate<'prayer_cards'> = {};
       if (title !== undefined) updates.title = title;
       if (image_url !== undefined) updates.image_url = image_url;
-      const { error } = await supabase.from('prayer_cards').update(updates).eq('id', id);
+      // 👯 26/11 : aussi les jumelles des autres groupes d'âge (calculées avec l'ANCIEN titre)
+      const carte = cards.find((c) => c.id === id);
+      const ids = [id, ...(carte ? jumelles(carte, cards) : [])];
+      const { error } = await supabase.from('prayer_cards').update(updates).in('id', ids);
       if (error) throw error;
+      return ids.length;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['prayer-cards'] }); setEditingCard(null); toast.success('Carte mise à jour'); },
+    onSuccess: (n) => { queryClient.invalidateQueries({ queryKey: ['prayer-cards'] }); setEditingCard(null); toast.success(n > 1 ? `Carte mise à jour (aussi dans les ${n - 1} autres groupes d'âge)` : 'Carte mise à jour'); },
   });
 
   const uploadCardImage = async (file: File, cardId: string) => {
@@ -230,7 +235,8 @@ const PrayerModuleCards = () => {
     const path = `card-images/${cardId}.${ext}`;
     await supabase.storage.from('prayer-cards').upload(path, await compressDocument(file), { upsert: true });
     const { data } = supabase.storage.from('prayer-cards').getPublicUrl(path);
-    updateCardMutation.mutate({ id: cardId, image_url: data.publicUrl });
+    // 🖼️ 2026-11-26 : même nom de fichier → les autres téléphones gardaient l’ancienne image en mémoire. Adresse nouvelle à chaque envoi.
+    updateCardMutation.mutate({ id: cardId, image_url: `${data.publicUrl}?v=${Date.now()}` });
   };
 
   const rangerCartes = async (n: Tables<'prayer_cards'>[]) => {
@@ -405,7 +411,7 @@ const PrayerModuleCards = () => {
 
       {/* 📐 Cadrer la photo d'une carte (2026-11-18) */}
       {aCadrer?.image_url && (
-        <Cadreur open onClose={() => setACadrer(null)} src={aCadrer.image_url} table="prayer_cards" id={aCadrer.id} valeur={aCadrer.image_cadrage}
+        <Cadreur open onClose={() => setACadrer(null)} src={aCadrer.image_url} table="prayer_cards" id={aCadrer.id} autresIds={jumelles(aCadrer, cards)} valeur={aCadrer.image_cadrage}
           emplacements={[{ cle: 'carte', nom: 'Carte', classeCadre: 'w-56 max-w-full aspect-[4/3] rounded-xl bg-white', classeImage: 'object-contain' }]}
           onEnregistre={() => queryClient.invalidateQueries({ queryKey: ['prayer-cards'] })} />
       )}
@@ -435,7 +441,7 @@ const PrayerModuleCards = () => {
             </div>
           )}
           {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
-          {carteOuverte && <ZonesContenu cible={`priere:${carteOuverte.id}`} isAdmin={isAdmin} libelle={carteOuverte.title ?? 'Prière'}
+          {carteOuverte && <ZonesContenu cible={`priere:${idZonesPartagees(carteOuverte, cards)}`} isAdmin={isAdmin} libelle={carteOuverte.title ?? 'Prière'}
             vide={sousCartes.length === 0 && cardContent.length === 0 ? '🛠️ En cours de mise à jour pour cette leçon' : undefined} />}
           {carteFaireLaPriere && (
             <button type="button" onClick={() => setSelectedCard(carteFaireLaPriere)}

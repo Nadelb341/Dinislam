@@ -290,7 +290,7 @@ const AdminGenericModuleManager = ({ moduleId, moduleTitle, onBack }: Props) => 
       const { error: upErr } = await supabase.storage.from('module-cards').upload(path, await compressDocument(file), { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from('module-cards').getPublicUrl(path);
-      const { error } = await supabase.from('module_cards').update({ image_url: urlData.publicUrl }).eq('id', cardId);
+      const { error } = await supabase.from('module_cards').update({ image_url: `${urlData.publicUrl}?v=${Date.now()}` }).eq('id', cardId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['admin-module-cards', moduleId] });
       queryClient.invalidateQueries({ queryKey: ['module-cards', moduleId] });

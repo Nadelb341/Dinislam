@@ -118,7 +118,7 @@ const AdminRecitationReview = ({ onBack, kind = 'sourates' }: AdminRecitationRev
           .upload(filename, savedAudio, { contentType: savedAudio.type || 'audio/mp4', upsert: true });
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('recitations').getPublicUrl(filename);
-        audioPublicUrl = publicUrl;
+        audioPublicUrl = `${publicUrl}?v=${Date.now()}`; // réponse réenregistrée : nouvelle adresse (sinon ancien son gardé en mémoire)
       }
 
       const { error } = await supabase

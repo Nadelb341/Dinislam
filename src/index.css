@@ -984,7 +984,8 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
    (boutons sans fond, titres, phrases grises) passe en clair ; tout ce qui a son propre fond (cartes, bandeaux, boutons pleins)
    reprend les couleurs normales. Valable pour TOUTES les pages, présentes et futures. */
 :root.fond-nuit:not(.dark) { --fg-jour: var(--foreground); --mfg-jour: var(--muted-foreground); }
-:where(:root.fond-nuit:not(.dark) .app-racine > main) { --foreground: 45 30% 95%; --muted-foreground: 220 25% 80%; color: hsl(var(--foreground)); }
+:where(:root.fond-nuit:not(.dark) .app-racine > main) { --foreground: 45 30% 95%; --muted-foreground: 220 25% 80%; color: hsl(var(--foreground)); text-shadow: 0 1px 3px rgba(12, 22, 60, .55); }
+/* 26/11 : l'ombre douce garde le texte clair lisible sur les fonds du soir plus clairs (bas orangé, rose, pastel) ; jamais dans les cartes */
 :where(:root.fond-nuit:not(.dark) .app-racine > main) :where([class^="bg-"]:not([class^="bg-transparent"]), [class*=" bg-"]:not([class*=" bg-transparent"]), [style*="background"], .carte-accueil, input, textarea, select) {
-  --foreground: var(--fg-jour); --muted-foreground: var(--mfg-jour); color: hsl(var(--foreground));
+  --foreground: var(--fg-jour); --muted-foreground: var(--mfg-jour); color: hsl(var(--foreground)); text-shadow: none;
 }

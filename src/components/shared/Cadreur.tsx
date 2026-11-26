@@ -14,8 +14,10 @@ import { cn } from '@/lib/utils';
  */
 export type EmplacementCadre = { cle: string; nom: string; classeCadre: string; classeImage?: string };
 
-export function Cadreur({ open, onClose, src, table, id, valeur, emplacements, onEnregistre }: {
+export function Cadreur({ open, onClose, src, table, id, autresIds = [], valeur, emplacements, onEnregistre }: {
   open: boolean; onClose: () => void; src: string; table: string; id: string | number; valeur: unknown;
+  /** 26/11 : mêmes réglages écrits aussi sur ces lignes (cartes jumelles de la Prière) */
+  autresIds?: string[];
   emplacements: EmplacementCadre[]; onEnregistre?: () => void;
 }) {
   const [onglet, setOnglet] = useState(emplacements[0]?.cle ?? '');
@@ -31,6 +33,7 @@ export function Cadreur({ open, onClose, src, table, id, valeur, emplacements, o
     setBusy(true);
     try {
       const r = await ecrireOuGarder({ table, op: 'update', id: String(id), values: { image_cadrage: cadres } });
+      for (const autre of autresIds) await ecrireOuGarder({ table, op: 'update', id: autre, values: { image_cadrage: cadres } });
       toast.success(r === 'ok' ? '📐 Cadrage enregistré' : '📐 Cadrage gardé sur l\'appareil : envoyé au retour d\'Internet');
       onEnregistre?.();
       onClose();

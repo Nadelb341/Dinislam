@@ -15,7 +15,7 @@ import { CielDesPrieres } from '@/components/prayer/CielDesPrieres';
 import { EtoilesDuJour } from '@/components/prayer/EtoilesDuJour';
 import { AMBIANCES, momentDe } from '@/lib/momentPriere';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
-import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
+import { SemaineAnneaux } from '@/components/prayer/SemaineAnneaux';
 import PrayerModuleCards from '@/components/prayer/PrayerModuleCards';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 
@@ -82,7 +82,7 @@ const Priere = () => {
     dailyPrayers.forEach(p => {
       map[p.date] = (map[p.date] || 0) + 1;
     });
-    return Object.entries(map).map(([date, count]) => ({ date, count }));
+    return map;
   }, [dailyPrayers]);
 
   const { askValidation, validationDialog } = useConfirmValidation();
@@ -228,8 +228,8 @@ const Priere = () => {
             ) : null}
           </div>
           <div className="min-w-0 space-y-4">
-            {prayerTimes && <EtoilesDuJour horaires={prayerTimes} cochees={todayChecked} onToggle={basculerPriere} texte={ambiance.texte} nuit={ambiance.etoiles} />}
-            <PrayerWeeklyCalendar prayerData={calendarData} />
+            {prayerTimes && <EtoilesDuJour horaires={prayerTimes} cochees={todayChecked} onToggle={basculerPriere} texte={ambiance.texte} nuit={ambiance.etoiles} semaine={calendarData} />}
+            {!prayerTimes && <div className="rounded-3xl p-3 bg-white/70 dark:bg-black/25"><SemaineAnneaux dates={calendarData} texte={ambiance.texte} nuit={ambiance.etoiles} /></div>}
           </div>
         </div>
 

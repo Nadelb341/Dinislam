@@ -92,7 +92,7 @@ export function CoranVocabulaireTab() {
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
               <h2 className="font-extrabold leading-snug [overflow-wrap:anywhere]">{entier ? `📄 ${sousCarte.titre} : PDF entier` : partie!.titre}</h2>
-              {partie && textePages(partie) && <p className="text-xs text-white/85">{textePages(partie)} du PDF entier</p>}
+              {partie && textePages(partie) && <p className="text-xs text-white/85">{textePages(partie)}{sousCarte.pdf_url ? ' du PDF entier' : ' du livre'}</p>}
             </div>
             {isAdmin && partie && (
               <button type="button" onClick={() => setEdition({ carte: partie, parentId: sousCarte.id })} aria-label={`Modifier ${partie.titre}`}
@@ -197,19 +197,39 @@ export function CoranVocabulaireTab() {
   const tuile = (s: CarteVocab, drag?: DragItemProps) => {
     const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
     const c = couleurVocab(s.couleur);
-    const n = toutes.filter((x) => x.parent_id === s.id).length;
+    const parties = enfantsDe(toutes, s.id);
+    const n = parties.length;
     const badge = isAdmin ? badgeVisibilite(s) : null;
+    // 📑 2026-11-26 (Nadia) : le SOMMAIRE en tête de chaque carte ; un thème touché → on y va directement
     return (
       <div key={s.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
-        <button type="button" onClick={() => aller(s.id, null)}
-          className={cn('w-full h-full min-h-[128px] rounded-2xl p-4 text-left text-white shadow-sm bg-gradient-to-br flex flex-col justify-between gap-2 transition-transform active:scale-[0.98]', c.degrade)}>
-          <span className="text-4xl leading-none">{s.emoji}</span>
-          <span>
-            <span className="block font-extrabold leading-snug [overflow-wrap:anywhere]">{s.titre}</span>
-            <span className="block text-xs text-white/85">{n} partie{n > 1 ? 's' : ''}{s.pdf_url ? ' · PDF entier' : ''}</span>
-            {badge && <span className={cn('mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', badge.classe)}>{badge.texte}</span>}
-          </span>
-        </button>
+        <div className={cn('h-full rounded-2xl text-white shadow-sm bg-gradient-to-br flex flex-col', c.degrade)}>
+          <button type="button" onClick={() => aller(s.id, null)} className={cn('w-full p-4 pb-2 text-left flex flex-col gap-2 transition-transform active:scale-[0.98]', isAdmin && 'pe-12')}>
+            <span className="text-4xl leading-none">{s.emoji}</span>
+            <span>
+              <span className="block font-extrabold leading-snug [overflow-wrap:anywhere]">{s.titre}</span>
+              <span className="block text-xs text-white/85">{n} partie{n > 1 ? 's' : ''}{s.pdf_url ? ' · PDF entier' : ''}</span>
+              {badge && <span className={cn('mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', badge.classe)}>{badge.texte}</span>}
+            </span>
+          </button>
+          {n > 0 && (
+            <nav aria-label={`Sommaire : ${s.titre}`} className="mx-3 mb-3 rounded-xl bg-white/15 p-2">
+              <p className="px-1 pb-1 text-[11px] font-extrabold uppercase tracking-wide text-white/90">📑 Sommaire</p>
+              <ol className="max-h-56 overflow-y-auto overscroll-contain space-y-0.5 pe-1">
+                {parties.map((p, k) => (
+                  <li key={p.id}>
+                    <button type="button" onClick={() => aller(s.id, p.id)} onPointerDown={(e) => e.stopPropagation()}
+                      className="w-full flex items-start gap-2 rounded-lg px-1.5 py-1 text-left text-xs font-semibold leading-snug hover:bg-white/20 active:bg-white/25">
+                      <span className="shrink-0 min-w-5 text-white/80 tabular-nums">{k + 1}.</span>
+                      <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">{p.titre}</span>
+                      <span aria-hidden className="shrink-0 text-white/70">›</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )}
+        </div>
         {isAdmin && <PoigneeDrag />}
         {isAdmin && (
           <button type="button" onClick={() => setEdition({ carte: s, parentId: null })} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${s.titre}`}

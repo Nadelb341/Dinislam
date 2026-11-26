@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { CINQ_PRIERES, type Horaires } from '@/lib/momentPriere';
 import { useConfetti } from '@/hooks/useConfetti';
 import { cn } from '@/lib/utils';
+import { SemaineAnneaux } from '@/components/prayer/SemaineAnneaux';
 
 const Etoile = ({ pleine }: { pleine: boolean }) => (
   <svg viewBox="0 0 24 24" className="h-11 w-11 sm:h-12 sm:w-12" aria-hidden
@@ -15,8 +16,10 @@ const Etoile = ({ pleine }: { pleine: boolean }) => (
  * ⭐ Mes 5 étoiles du jour (Nadia, 2026-11-26, présentation 3) : une grosse étoile par prière, à allumer quand elle est faite.
  * Les 5 allumées : confettis + « +10 points » (idée d, compté par la base : `journee_5_prieres`).
  */
-export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false }: {
+export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false, semaine }: {
   horaires: Horaires; cochees: string[]; onToggle: (cle: string) => void; texte: string; nuit?: boolean;
+  /** 26/11 (Nadia, D placée comme E) : la semaine en anneaux juste sous les étoiles — date → nombre de prières */
+  semaine?: Record<string, number>;
 }) {
   const { fireConfetti } = useConfetti();
   const nb = CINQ_PRIERES.filter((p) => cochees.includes(p.cle)).length;
@@ -55,6 +58,7 @@ export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false
           );
         })}
       </div>
+      {semaine && <SemaineAnneaux dates={semaine} texte={texte} nuit={nuit} />}
     </section>
   );
 }

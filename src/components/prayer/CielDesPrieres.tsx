@@ -18,7 +18,7 @@ const REPERES: { cle: keyof Horaires; nom: string; arabe: string; x: number; y: 
   { cle: 'dhuhrDate', nom: 'Dhohr', arabe: 'الظُّهْر', x: 49.4, y: 30.5 },
   { cle: 'asrDate', nom: 'Asr', arabe: 'العَصْر', x: 66.8, y: 34.5 },
   { cle: 'maghribDate', nom: 'Maghreb', arabe: 'المَغْرِب', x: 82.4, y: 48.5 },
-  { cle: 'ishaDate', nom: 'Icha', arabe: 'العِشَاء', x: 88.6, y: 28.5 },
+  { cle: 'ishaDate', nom: 'Icha', arabe: 'العِشَاء', x: 92.8, y: 57 }, // 26/11 (Nadia) : au bout de l'arche (nuit tombée), comme Sobh au début
 ];
 
 const hm = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
