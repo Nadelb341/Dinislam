@@ -156,7 +156,7 @@ export function EditionFichePetit({ rubrique, fiche, fiches, userId, onClose, ra
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" size="sm" variant="outline" disabled={!!envoi} onClick={() => fichierSon.current?.click()}>{envoi === 'audio' ? 'Envoi…' : audio ? '🔁 Changer ta voix' : '🎙️ Ajouter ta voix'}</Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => ecouterFiche({ audio_url: audio, arabe: arabe || null, titre })}>🔊 Écouter</Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => ecouterFiche({ audio_url: audio, arabe: arabe || null, titre, rubrique })}>🔊 Écouter</Button>
           {audio && <Button type="button" size="sm" variant="outline" onClick={() => setAudio(null)}>Retirer ta voix</Button>}
           <input ref={fichierSon} type="file" accept="audio/*" capture className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void envoyer(f, 'audio'); }} />
         </div>

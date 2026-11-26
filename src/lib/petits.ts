@@ -2,6 +2,8 @@
  * 🧸 Accueil du Groupe 0 (Nadia, 2026-11-22 : les 15 idées gardées) : rubriques et petits calculs.
  * Contenu en base (table petits_fiches), modifiable avec le ✏️ ; étoiles dans petits_etoiles.
  */
+import { direAvecSaVoix } from '@/lib/voixFabriquees';
+
 export type CleRubrique = 'douas' | 'coran' | 'histoires' | 'cree' | 'piliers' | 'ablutions' | 'priere' | 'manieres' | 'ramadan' | 'aid' | 'phrases' | 'prieres5' | 'prophetes';
 export type ModeRubrique = 'imagier' | 'coran' | 'doigts' | 'etapes' | 'autocollants' | 'calendrier';
 
@@ -111,10 +113,14 @@ export function parler(texte: string, langue: 'ar' | 'fr') {
   } catch { /* pas de voix sur cet appareil */ }
 }
 
-/** Joue sa voix (fichier) sinon la voix de l'appareil (l'arabe d'abord, sinon le titre) */
-export function ecouterFiche(f: { audio_url: string | null; arabe: string | null; titre: string }) {
-  if (f.audio_url) { try { void new Audio(f.audio_url).play().catch(() => {}); } catch { /* son indisponible */ } return; }
-  if (f.arabe) parler(f.arabe, 'ar'); else parler(f.titre, 'fr');
+/**
+ * Joue sa voix (fichier) EN PRIORITÉ, sinon la voix fabriquée de Jamal (choix de Nadia du 26/11), sinon la voix de l'appareil
+ * (l'arabe d'abord, sinon le titre). Voir `lib/voixFabriquees.ts`. La carte des grands « Histoires des Prophètes »
+ * (rubrique `prophetes`) garde la voix du téléphone : le choix de Nadia ne concerne que les tout-petits.
+ */
+export function ecouterFiche(f: { audio_url: string | null; arabe: string | null; titre: string; rubrique?: string }) {
+  const [texte, langue]: [string, 'ar' | 'fr'] = f.arabe ? [f.arabe, 'ar'] : [f.titre, 'fr'];
+  direAvecSaVoix(f.audio_url, texte, langue, f.rubrique === 'prophetes' ? null : 'jamal');
 }
 
 /**

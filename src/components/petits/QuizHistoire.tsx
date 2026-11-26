@@ -16,7 +16,8 @@ import { audioExt, useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonCristal } from '@/lib/sonSaison';
 import { sonErreur } from '@/lib/sonsErreur';
-import { cleJour, parler } from '@/lib/petits';
+import { cleJour } from '@/lib/petits';
+import { direAvecSaVoix, jouerFichier, type VoixFabriquee } from '@/lib/voixFabriquees';
 
 /**
  * 🎧 Quiz AUDIO des histoires (Nadia, 22/11) : beaucoup de petits ne savent pas encore lire → la question est DITE (ta voix,
@@ -27,9 +28,10 @@ import { cleJour, parler } from '@/lib/petits';
 export interface Choix { texte: string; emoji: string | null; image_url?: string | null; audio_url?: string | null; juste: boolean }
 export interface QuestionQuiz { id: string; fiche_id: string; question: string; audio_url: string | null; choix: Choix[]; position: number }
 
-const jouer = (url: string | null | undefined, texte: string) => {
-  if (url) { try { void new Audio(url).play().catch(() => parler(texte, 'fr')); return; } catch { /* son indisponible */ } }
-  parler(texte, 'fr');
+// Ta voix enregistrée d'abord, sinon la voix fabriquée de Jamal (tout-petits, choix de Nadia du 26/11), sinon la voix du téléphone
+const jouer = (url: string | null | undefined, texte: string, voix: VoixFabriquee | null = null) => {
+  if (url && !texte) { jouerFichier(url, () => {}); return; }
+  direAvecSaVoix(url, texte, 'fr', voix);
 };
 
 function useQuizHistoire(ficheId: string) {
@@ -45,8 +47,10 @@ function useQuizHistoire(ficheId: string) {
 
 const melanger = <T,>(t: T[]) => [...t].sort(() => Math.random() - 0.5);
 
-export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }: {
+export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile, petits = true }: {
   ficheId: string; titre: string; isAdmin: boolean;
+  /** Tout-petits = voix fabriquée de Jamal ; la carte des grands (Histoires des Prophètes) garde la voix du téléphone */
+  petits?: boolean;
   aEtoile: (source: string, ref: string) => boolean; gagnerEtoile: (source: string, ref: string) => Promise<boolean>;
 }) {
   const { data: questions = [] } = useQuizHistoire(ficheId);
@@ -58,15 +62,16 @@ export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }:
   const q = questions[n];
   const ordre = useMemo(() => (q ? melanger(q.choix.map((_, i) => i)) : []), [q]);
   const ref = `quiz:${ficheId}:${cleJour()}`;
+  const voix: VoixFabriquee | null = petits ? 'jamal' : null;
 
-  useEffect(() => { if (enCours && q) jouer(q.audio_url, q.question); }, [enCours, q]);
+  useEffect(() => { if (enCours && q) jouer(q.audio_url, q.question, voix); }, [enCours, q, voix]);
 
   const commencer = () => { setN(0); setRates([]); setTrouve(false); setFini(false); setEnCours(true); };
   const toucher = (i: number) => {
     if (!q || trouve) return;
     const c = q.choix[i];
     if (c.juste) {
-      jouer(c.audio_url, c.texte);
+      jouer(c.audio_url, c.texte, voix);
       setTrouve(true); sonCristal(); confettiLettres(['⭐']);
       setTimeout(() => {
         if (n + 1 < questions.length) { setN(n + 1); setRates([]); setTrouve(false); }
@@ -74,7 +79,7 @@ export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }:
       }, 1800);
     } else {
       sonErreur();
-      setTimeout(() => jouer(c.audio_url, c.texte), 500);
+      setTimeout(() => jouer(c.audio_url, c.texte, voix), 500);
       setRates((r) => [...r, i]);
     }
   };
@@ -99,7 +104,7 @@ export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }:
         ) : q && (
           <>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => jouer(q.audio_url, q.question)} aria-label="Réécouter la question"
+              <button type="button" onClick={() => jouer(q.audio_url, q.question, voix)} aria-label="Réécouter la question"
                 className="h-16 w-16 shrink-0 rounded-full bg-white text-4xl shadow-lg grid place-items-center active:scale-95">🔊</button>
               <p className="flex-1 min-w-0 text-base font-bold [overflow-wrap:anywhere]">{q.question}</p>
               <span className="text-sm font-bold text-muted-foreground">{n + 1}/{questions.length}</span>
@@ -115,7 +120,7 @@ export function QuizHistoire({ ficheId, titre, isAdmin, aEtoile, gagnerEtoile }:
                       className={`w-full aspect-square rounded-3xl bg-white dark:bg-slate-900 shadow-lg grid place-items-center p-1 transition-all active:scale-95 ${bon ? 'ring-8 ring-emerald-400 scale-105' : rate ? 'opacity-40 animate-[wiggle_0.4s_ease-in-out]' : ''}`}>
                       {c.image_url ? <img src={c.image_url} alt="" className="max-h-full max-w-full object-contain rounded-2xl" /> : <span className="text-5xl sm:text-6xl leading-none">{c.emoji || '❓'}</span>}
                     </button>
-                    <button type="button" onClick={() => jouer(c.audio_url, c.texte)} aria-label={`Écouter : ${c.texte}`}
+                    <button type="button" onClick={() => jouer(c.audio_url, c.texte, voix)} aria-label={`Écouter : ${c.texte}`}
                       className="absolute -bottom-2 start-1/2 -translate-x-1/2 h-10 w-10 rounded-full bg-fuchsia-500 text-white text-xl shadow grid place-items-center">🔊</button>
                   </div>
                 );

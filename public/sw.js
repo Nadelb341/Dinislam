@@ -159,8 +159,12 @@ function rangeFromCached(cached, request) {
       'Content-Range': 'bytes ' + start + '-' + end + '/' + size, 'Accept-Ranges': 'bytes' } });
   });
 }
-function videoResponse(event, request, key) {
-  return caches.open(VIDEO_CACHE).then(function(cache) {
+// 🎙️ Voix fabriquées (/sons/voix/…, Nadia 2026-11-26) : même règle que les vidéos, dans leur propre mémoire jamais effacée
+// lors d'une mise à jour → chaque phrase entendue une fois se réécoute sans réseau. Jamais préchargées toutes d'un coup
+// (vite.config.ts les retire de PRECACHE). Le nom d'un fichier change avec son texte : pas de vieille voix gardée par erreur.
+var VOIX_CACHE = 'dinislam-voix';
+function videoResponse(event, request, key, cacheName) {
+  return caches.open(cacheName || VIDEO_CACHE).then(function(cache) {
     return cache.match(key).then(function(cached) {
       if (cached) return rangeFromCached(cached, request);
       // Pas encore gardée : on la télécharge entière une fois, en arrière-plan, pour la prochaine fois
@@ -255,6 +259,10 @@ self.addEventListener('fetch', function(event) {
     // (règle « appli libre » du 2026-11-08). Jamais préchargées toutes d'un coup.
     if (p.indexOf('/videos/') === 0) {
       event.respondWith(videoResponse(event, request, p));
+      return;
+    }
+    if (p.indexOf('/sons/voix/') === 0) {
+      event.respondWith(videoResponse(event, request, p, VOIX_CACHE));
       return;
     }
     // Toujours le réseau : numéro de version, audios/PDF lourds, morceaux demandés par plages (lecture audio)
