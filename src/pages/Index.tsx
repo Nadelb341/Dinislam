@@ -400,11 +400,16 @@ const handleModuleClick = (mod) => {
 
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
               🏡 À droite (2026-11-26) : la maisonnette de l'écureuil qui se cache dans toute l'appli (à la place de l'ancienne cachette
-              du décor). Rangée cachée tant que les jeux ne la remplissent pas ; l'écureuil ne se cache jamais dedans (data-pas-ecureuil) */}
-          <div data-pas-ecureuil className="rangee-jeux flex items-end justify-between gap-2 ps-1">
-            <div id="bulle-cache-cache" className="min-w-0 empty:hidden" />
-            <div id="maison-ecureuil" className="ms-auto shrink-0 empty:hidden" />
-          </div>
+              du décor). L'écureuil ne se cache jamais dedans (data-pas-ecureuil).
+              🐛 2026-11-26 (Nadia : « la maisonnette disparaît ») : la rangée était cachée par une règle CSS « :has(… :empty) » que
+              Safari / iPhone ne recalcule pas quand la maisonnette arrive après coup (vérifié dans WebKit) → rangée restée cachée.
+              Maintenant elle est là dès qu'un des 2 jeux est allumé, et la maisonnette n'est plus jamais cachée par le CSS. */}
+          {saison && (reglagesSaison.jeux.cacheCache || reglagesSaison.jeux.ecureuil !== false) && (
+            <div data-pas-ecureuil className="rangee-jeux flex items-end justify-between gap-2 ps-1">
+              <div id="bulle-cache-cache" className="min-w-0 empty:hidden" />
+              <div id="maison-ecureuil" className="ms-auto shrink-0" />
+            </div>
+          )}
           {/* 🏮 Ramadan (2026-11-16) : 30 lanternes (une s'allume par jour passé), compte à rebours et moment de l'iftar */}
           {ramadan && fete?.mode === 'ramadan' && (reglagesSaison.ramadan.lanternesMois || reglagesSaison.ramadan.compteRebours || reglagesSaison.ramadan.iftar) && (
             <SilentBoundary name="Lanternes du Ramadan">

@@ -8,15 +8,19 @@ import { useSaisonActive } from '@/lib/saisons';
 import { sonCristal } from '@/lib/sonSaison';
 import { ECUREUIL_SVG, ECUREUIL_VB, MAISON_VB, maisonnetteSvg } from './dessinsCachettes';
 import { gene, type Boite } from './cacheCacheLogique';
-import { niveauIndice, ordreAuHasard, positionDansPage, repereCourt, texteIndice, type PageEcureuil } from './ecureuilLogique';
+import {
+  ENCOURAGEMENTS, INTROS_INDICE, MESSAGES_MAISON, TEXTE_ANNONCE, annonceVisible, avecPrenom, devinettesLieu, niveauIndice, ordreAuHasard,
+  positionDansPage, repereCourt, texteIndice, tirerSansRepeter, type ChoixIndice, type PageEcureuil,
+} from './ecureuilLogique';
 import { demarrerEcureuil, donnerPrenom, ecureuilTrouve, enregistrerPages, faireAvancer, fermerBravo, useEcureuil } from './ecureuilEtat';
 
 /**
  * 🐿️ L'écureuil qui se cache dans TOUTE l'appli (Nadia, 2026-11-26).
  * - `EcureuilPartout` (monté UNE fois dans App.tsx, au-dessus des pages) : le cache dans la page choisie, posé au bord
  *   d'un titre / d'une carte / d'une image (on voit les 3/4 de lui, il ne cache jamais un bouton), les indices dans une
- *   petite bulle en bas à gauche (20 s, 35 s, 45 s), le bravo quand on le trouve.
- * - `MaisonEcureuil` (accueil, monté par JeuxSaison) : sa maisonnette, à la place de l'ancienne « cachette dans le décor ».
+ *   petite bulle en bas à gauche, au-dessus du menu du bas (10 s : « tu auras des indices… » ; 30 s : devinette ; 45 s :
+ *   devinette plus facile + nom de la page ; 55 s : endroit exact), le bravo quand on le trouve.
+ * - `MaisonEcureuil` (accueil, monté par JeuxSaison) : sa maisonnette, TOUJOURS affichée (qu'il soit dedans ou pas).
  * - Même réglage et même filtre de groupes que les autres petits jeux (`r.jeux.ecureuil`, `r.jeux.groupes`).
  * Tout marche sans réseau : rien n'est envoyé, l'état vit sur l'appareil.
  */
@@ -75,8 +79,24 @@ function EcureuilJeu() {
   const cache = etat?.lieu === 'cache' ? etat : null;
   const surLaPage = !!cache && pathname === sansRecherche(cache.chemin);
   const niveau = cache ? niveauIndice(maintenant - cache.depuis) : 0;
-  const [repere, setRepere] = useState<{ repere?: string; ou?: string }>({});
-  const texte = cache ? texteIndice(niveau, { surLaPage, nomPage: cache.nomPage, ...(surLaPage ? repere : {}) }) : null;
+  const [repere, setRepere] = useState<Repere>({});
+  // 🎲 Début de phrase, devinette et encouragement tirés au hasard UNE fois par indice (jamais les mêmes que l'indice d'avant)
+  const derniers = useRef<ChoixIndice>({ intro: -1, devinette: -1, encourage: -1 });
+  const cleIndice = cache ? `${cache.chemin}|${cache.depuis}|${niveau}` : '';
+  const choix = useMemo<ChoixIndice>(() => {
+    const d = derniers.current;
+    if (!cleIndice) return d;
+    const c = {
+      intro: tirerSansRepeter(INTROS_INDICE.length, d.intro, Math.random()),
+      devinette: Math.floor(Math.random() * 1000),
+      encourage: tirerSansRepeter(ENCOURAGEMENTS.length, d.encourage, Math.random()),
+    };
+    derniers.current = c;
+    return c;
+  }, [cleIndice]);
+  const texte = cache ? texteIndice(niveau, { surLaPage, chemin: cache.chemin, nomPage: cache.nomPage, ...(surLaPage ? repere : {}) }, choix) : null;
+  // 😉 Au bout de 10 s de recherche : « tu auras des indices dans quelques secondes » (jusqu'au 1er indice)
+  const annonce = !!cache && niveau === 0 && annonceVisible(maintenant - cache.depuis);
 
   return (
     <>
@@ -84,13 +104,15 @@ function EcureuilJeu() {
       {cache && texte && (
         <BulleIndice texte={texte} allerA={niveau >= 3 && !surLaPage ? () => navigate(cache.chemin) : undefined} />
       )}
+      {annonce && <BulleIndice texte={TEXTE_ANNONCE} titre="🐿️ L'écureuil te dit" />}
       {bravo > 0 && <BravoEcureuil prenom={prenom} />}
     </>
   );
 }
 
 /* ---------- 🐿️ Caché dans la page ---------- */
-type Cible = { el: HTMLElement; place: number; repere: string; ou: string };
+type Repere = { repere?: string; ou?: string; devinettes?: readonly string[] | null };
+type Cible = { el: HTMLElement; place: number; repere: string; ou: string; devinettes: readonly string[] | null };
 const LARG = 40, VISIBLE = 30; // 40 px de large ; 30 px visibles sur 40 = les 3/4 de son corps
 /** Marge autour de lui dans sa boîte : sa lueur (3ᵉ indice) n'est pas coupée en carré ; seul le bas (caché) est coupé */
 const MARGE = 14;
@@ -130,13 +152,18 @@ function choisirCible(graine: number): Cible | null {
       const b = { left: r.left + p * (r.width - LARG), top: r.top - VISIBLE, width: LARG, height: VISIBLE };
       if (b.left < 4 || b.left + LARG > W - 4) continue;
       if (gene(b, obs, 6 * LARG * VISIBLE * 4)) continue;
-      return { el, place: p, repere: repereDe(el), ou: positionDansPage(r.top + sy, document.documentElement.scrollHeight) };
+      const repere = repereDe(el);
+      // 🧩 Le repère près de lui (logo, cheminée, carte, « Devoirs à faire »…) → sa devinette pour le 1ᵉʳ indice
+      const deco = el.closest<HTMLElement>('[data-cachette]') ?? el.querySelector<HTMLElement>('[data-cachette]');
+      const carte = el.closest<HTMLElement>('[data-carte-chemin]');
+      const devinettes = devinettesLieu({ cachette: deco?.dataset.cachette, carteChemin: carte?.dataset.carteChemin, carteNom: carte?.dataset.carteNom, texte: repere });
+      return { el, place: p, repere, ou: positionDansPage(r.top + sy, document.documentElement.scrollHeight), devinettes };
     }
   }
   return null;
 }
 
-function EcureuilCache({ graine, niveau, onRepere }: { graine: number; niveau: number; onRepere: (r: { repere?: string; ou?: string }) => void }) {
+function EcureuilCache({ graine, niveau, onRepere }: { graine: number; niveau: number; onRepere: (r: Repere) => void }) {
   const [cible, setCible] = useState<Cible | null>(null);
   const cibleRef = useRef(cible);
   cibleRef.current = cible;
@@ -148,7 +175,7 @@ function EcureuilCache({ graine, niveau, onRepere }: { graine: number; niveau: n
       if (c?.el.isConnected && c.el.getBoundingClientRect().width > 0) return;
       const n = choisirCible(graine);
       setCible(n);
-      repereRef.current(n ? { repere: n.repere, ou: n.ou } : {});
+      repereRef.current(n ? { repere: n.repere, ou: n.ou, devinettes: n.devinettes } : {});
     };
     // Le temps que la page s'affiche (cartes chargées à part)
     const t0 = setTimeout(chercher, 1200);
@@ -209,7 +236,7 @@ function EcureuilCache({ graine, niveau, onRepere }: { graine: number; niveau: n
 }
 
 /* ---------- 💡 La bulle des indices (petite, en bas à gauche, à côté de l'étoile) ---------- */
-function BulleIndice({ texte, allerA }: { texte: string; allerA?: () => void }) {
+function BulleIndice({ texte, allerA, titre = '💡 Indice de l\'écureuil' }: { texte: string; allerA?: () => void; titre?: string }) {
   const [ouvert, setOuvert] = useState(true);
   // Chaque nouvel indice s'ouvre 9 s, puis se replie en un petit écureuil (le toucher le rouvre)
   useEffect(() => { setOuvert(true); const t = setTimeout(() => setOuvert(false), 9000); return () => clearTimeout(t); }, [texte]);
@@ -219,7 +246,7 @@ function BulleIndice({ texte, allerA }: { texte: string; allerA?: () => void }) 
       <div data-ecureuil role="status" className="jeux-bulle fixed z-[45] flex max-w-[min(15rem,calc(100vw-8rem))] items-start gap-1.5 rounded-2xl rounded-bl-sm border-2 border-amber-300 bg-white/95 dark:bg-card px-2.5 py-1.5 shadow-lg" style={pos}>
         <svg viewBox={ECUREUIL_VB} aria-hidden className="mt-0.5 h-7 w-7 shrink-0" dangerouslySetInnerHTML={{ __html: ECUREUIL_SVG }} />
         <div className="min-w-0">
-          <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300">💡 Indice de l'écureuil</p>
+          <p className="text-[10px] font-bold text-amber-700 dark:text-amber-300">{titre}</p>
           <p className="text-xs font-semibold leading-snug text-amber-950 dark:text-amber-100 [overflow-wrap:anywhere]">{texte}</p>
           {allerA && <button type="button" onClick={() => { allerA(); setOuvert(false); }} className="mt-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-bold text-white">🐿️ Y aller</button>}
         </div>
@@ -263,6 +290,13 @@ function BravoEcureuil({ prenom }: { prenom: string }) {
 }
 
 /* ---------- 🏡 La maisonnette sur l'accueil (dans la rangée de la bulle du cache-cache) ---------- */
+const CLE_DERNIER_MESSAGE = 'dinislam_ecureuil_dernier_message';
+function tirerMessageMaison(): number {
+  const v = lire(CLE_DERNIER_MESSAGE);
+  const i = tirerSansRepeter(MESSAGES_MAISON.length, v == null ? null : Number(v), Math.random());
+  ecrire(CLE_DERNIER_MESSAGE, String(i));
+  return i;
+}
 export function MaisonEcureuil({ userId, prenom }: { userId: string; prenom: string }) {
   const { etat } = useEcureuil();
   useEffect(() => { demarrerEcureuil(); }, []);
@@ -292,17 +326,25 @@ export function MaisonEcureuil({ userId, prenom }: { userId: string; prenom: str
   const fermerAnnonce = () => { ecrire(cleAnnonce, '1'); setAnnonce(false); };
   const annonceSvg = useMemo(() => maisonnetteSvg('annonce', true), []);
 
+  // 💬 Bulle quand il n'est pas chez lui : un message joueur au hasard, qui change toutes les 12 s (jamais 2 fois le même de suite)
+  const [iMsg, setIMsg] = useState(tirerMessageMaison);
+  useEffect(() => {
+    if (dedans) return;
+    const t = setInterval(() => setIMsg(tirerMessageMaison()), 12_000);
+    return () => clearInterval(t);
+  }, [dedans]);
+
   const toucher = () => setMessage(dedans
     ? `Coucou${p ? ` ${p}` : ''} ! Je me repose dans ma maisonnette 🏡 Je repars bientôt me cacher 😉`
     : 'Je ne suis pas à la maison ! Cherche-moi dans l\'appli 🔍');
-  const texteBulle = message ?? (dedans ? null : `Tu ne me trouveras pas${p ? `, ${p}` : ''} ! 😜`);
+  const texteBulle = message ?? (dedans ? null : avecPrenom(MESSAGES_MAISON[iMsg] ?? MESSAGES_MAISON[0], p));
 
   return (
     <>
       {place && createPortal(
         <div className="flex items-end gap-1">
           {texteBulle && (
-            <span role="status" className="jeux-bulle mb-6 max-w-[8rem] sm:max-w-[12rem] rounded-2xl rounded-br-none border-2 border-amber-300 bg-white dark:bg-card px-2 py-1 text-[11px] sm:text-xs font-extrabold leading-tight text-amber-800 dark:text-amber-200 shadow-md [overflow-wrap:anywhere]">
+            <span key={message ? 'message' : iMsg} role="status" className="jeux-bulle mb-6 max-w-[8rem] sm:max-w-[12rem] rounded-2xl rounded-br-none border-2 border-amber-300 bg-white dark:bg-card px-2 py-1 text-[11px] sm:text-xs font-extrabold leading-tight text-amber-800 dark:text-amber-200 shadow-md [overflow-wrap:anywhere]">
               {texteBulle}
             </span>
           )}

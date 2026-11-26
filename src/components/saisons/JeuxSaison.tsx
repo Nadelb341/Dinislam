@@ -48,7 +48,8 @@ export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauc
       )}
       {j.cacheCache && <CacheCache saison={saison} userId={userId} sansEcureuil={j.ecureuil} />}
       {/* 🐿️ 2026-11-26 : la maisonnette de l'écureuil qui se cache dans toute l'appli (lui est monté dans App.tsx) */}
-      {j.ecureuil && <MaisonEcureuil userId={userId} prenom={prenom} />}
+      {/* Même règle que l'écureuil lui-même (allumé par défaut) : la maisonnette reste TOUJOURS là, qu'il soit dedans ou pas */}
+      {j.ecureuil !== false && <MaisonEcureuil userId={userId} prenom={prenom} />}
     </>
   );
 }
