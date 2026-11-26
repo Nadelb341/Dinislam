@@ -53,6 +53,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   alphabet_petits_videos: ['alphabet-petits-videos'],
   ordre_cartes: ['ordre-cartes'],
   zones_contenu: ['zones-contenu'],
+  // 📖 Coran › Vocabulaire du Coran (2026-11-26)
+  coran_vocabulaire: ['coran-vocabulaire'],
   alphabet_mots: ['alphabet-mots'],
   alphabet_quiz_questions: ['alphabet-quiz'],
   alphabet_commentaires: ['alphabet-commentaires'],

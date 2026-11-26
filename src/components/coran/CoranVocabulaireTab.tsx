@@ -1,0 +1,241 @@
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Pencil } from 'lucide-react';
+import { rectSortingStrategy } from '@dnd-kit/sortable';
+import { useAuth } from '@/contexts/AuthContext';
+import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
+import { ZonesContenu } from '@/components/shared/ZonesContenu';
+import { VocabPdfLecteur } from '@/components/coran/VocabPdfLecteur';
+import { AccesVocabDialog } from '@/components/coran/AccesVocabDialog';
+import { ModifierVocabDialog } from '@/components/coran/ModifierVocabDialog';
+import { couleurVocab } from '@/components/coran/couleursVocab';
+import { useCoranVocabulaire, CLE_VOCAB } from '@/hooks/useCoranVocabulaire';
+import { enregistrerOrdre } from '@/lib/alphabetMedias';
+import { badgeVisibilite, cibleZones, enfantsDe, textePages, type CarteVocab } from '@/lib/coranVocabulaire';
+import { cn, errorMessage } from '@/lib/utils';
+
+/**
+ * 📖 Coran › onglet « Vocabulaire du Coran » (Nadia, 2026-11-26).
+ * Niveau 1 : les sous-cartes (une par PDF de Nadia). Niveau 2 : les parties de son sommaire (+ « PDF entier »
+ * en haut à droite). Niveau 3 : le PDF de la partie. Navigation dans l'adresse (?vc=<sous-carte>&vp=<partie|entier>)
+ * → la flèche « retour » du téléphone revient d'un cran.
+ * Enseignante : ✏️ titre / PDF, ✋ ranger (appui long), ➕ ajouter, 🗑️ corbeille, « Afficher à » (= « Qui voit »).
+ */
+const texteAcces = (c: CarteVocab) => (c.mode === 'personne' ? '🔒 Personne' : c.mode === 'certains' ? `🎯 Certains (${(c.group_ids?.length || 0) + (c.user_ids?.length || 0)})` : '🌍 Tout le monde');
+
+const PoigneeDrag = () => (
+  <span aria-hidden className="pointer-events-none absolute top-1.5 start-1.5 h-7 min-w-7 px-1 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border text-xs" title="Appui long puis glisser">✋</span>
+);
+
+export function CoranVocabulaireTab() {
+  const { isAdmin, user } = useAuth();
+  const queryClient = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const { data: toutes = [], isLoading, isError } = useCoranVocabulaire();
+  const [edition, setEdition] = useState<{ carte: CarteVocab | null; parentId: string | null } | null>(null);
+  const [acces, setAcces] = useState<CarteVocab | null>(null);
+
+  const sousCarte = toutes.find((c) => c.id === params.get('vc') && !c.parent_id) ?? null;
+  const vp = params.get('vp');
+  const partie = sousCarte && vp && vp !== 'entier' ? toutes.find((c) => c.id === vp && c.parent_id === sousCarte.id) ?? null : null;
+  const entier = !!sousCarte && vp === 'entier';
+
+  // Ouvrir = nouvelle entrée dans l'historique (le « retour » du téléphone referme) ; page affichée depuis le haut
+  const aller = (vc: string | null, p: string | null) => {
+    setParams((old) => {
+      const n = new URLSearchParams(old);
+      if (vc) n.set('vc', vc); else n.delete('vc');
+      if (p) n.set('vp', p); else n.delete('vp');
+      return n;
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  };
+
+  const ranger = async (liste: CarteVocab[]) => {
+    const positions = new Map(liste.map((c, i) => [c.id, (i + 1) * 10]));
+    queryClient.setQueriesData<CarteVocab[]>({ queryKey: CLE_VOCAB }, (old) => (old || []).map((c) => (positions.has(c.id) ? { ...c, position: positions.get(c.id)! } : c)));
+    try {
+      const r = await enregistrerOrdre('coran_vocabulaire', liste.map((c) => c.id));
+      toast.success(r === 'en_attente' ? '📡 Ordre gardé, envoyé au retour du réseau' : '✋ Ordre enregistré (les élèves voient le même)');
+    } catch (e) { toast.error(errorMessage(e)); void queryClient.invalidateQueries({ queryKey: CLE_VOCAB }); }
+  };
+  const vibrer = () => { try { navigator.vibrate?.(15); } catch { /* rien */ } };
+
+  if (isLoading) return <div className="grid gap-3 sm:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="h-32 rounded-2xl bg-muted animate-pulse" />)}</div>;
+  if (isError && !toutes.length) return <p className="text-sm text-center text-muted-foreground py-8">📡 Nécessite Internet : ouvre cet onglet une fois avec le réseau pour le garder sur ton appareil.</p>;
+
+  const dialogues = (
+    <>
+      {isAdmin && edition && (
+        <ModifierVocabDialog carte={edition.carte} parentId={edition.parentId} userId={user?.id ?? null}
+          freres={enfantsDe(toutes, edition.parentId)} onClose={() => setEdition(null)}
+          onSupprimee={() => { if (edition.carte?.id === sousCarte?.id) aller(null, null); else if (edition.carte?.id === partie?.id) aller(sousCarte?.id ?? null, null); }} />
+      )}
+      {isAdmin && <AccesVocabDialog carte={acces} onClose={() => setAcces(null)} />}
+    </>
+  );
+
+  // ─── Niveau 3 : le PDF d'une partie, ou le PDF entier ───
+  if (sousCarte && (partie || entier)) {
+    const c = couleurVocab(sousCarte.couleur);
+    const parties = enfantsDe(toutes, sousCarte.id);
+    const i = partie ? parties.findIndex((p) => p.id === partie.id) : -1;
+    const url = entier ? sousCarte.pdf_url : partie?.pdf_url;
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => aller(sousCarte.id, null)} className={cn('text-sm font-bold [overflow-wrap:anywhere] text-left', c.texte)}>
+          ← {sousCarte.emoji} {sousCarte.titre}
+        </button>
+        <div className={cn('rounded-2xl px-4 py-3 text-white shadow-sm bg-gradient-to-br', c.degrade)}>
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="font-extrabold leading-snug [overflow-wrap:anywhere]">{entier ? `📄 ${sousCarte.titre} : PDF entier` : partie!.titre}</h2>
+              {partie && textePages(partie) && <p className="text-xs text-white/85">{textePages(partie)} du PDF entier</p>}
+            </div>
+            {isAdmin && partie && (
+              <button type="button" onClick={() => setEdition({ carte: partie, parentId: sousCarte.id })} aria-label={`Modifier ${partie.titre}`}
+                className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-white/20 hover:bg-white/30"><Pencil className="h-4 w-4" /></button>
+            )}
+          </div>
+        </div>
+        {url ? <VocabPdfLecteur url={url} /> : <p className="text-sm text-center text-muted-foreground py-6">🛠️ En cours de mise à jour : pas encore de PDF.</p>}
+        {partie && <ZonesContenu cible={cibleZones(partie.id)} isAdmin={isAdmin} libelle={`${partie.titre} (Vocabulaire du Coran)`} />}
+        {partie && parties.length > 1 && (
+          <div className="flex gap-2">
+            {i > 0 && (
+              <button type="button" onClick={() => aller(sousCarte.id, parties[i - 1].id)} className={cn('flex-1 min-w-0 rounded-xl border px-3 py-2 text-left text-xs font-bold', c.doux)}>
+                ‹ Précédente<span className="block font-semibold text-muted-foreground [overflow-wrap:anywhere]">{parties[i - 1].titre}</span>
+              </button>
+            )}
+            {i < parties.length - 1 && (
+              <button type="button" onClick={() => aller(sousCarte.id, parties[i + 1].id)} className={cn('flex-1 min-w-0 rounded-xl border px-3 py-2 text-right text-xs font-bold', c.doux)}>
+                Suivante ›<span className="block font-semibold text-muted-foreground [overflow-wrap:anywhere]">{parties[i + 1].titre}</span>
+              </button>
+            )}
+          </div>
+        )}
+        {dialogues}
+      </div>
+    );
+  }
+
+  // ─── Niveau 2 : une sous-carte et les parties de son sommaire ───
+  if (sousCarte) {
+    const c = couleurVocab(sousCarte.couleur);
+    const parties = enfantsDe(toutes, sousCarte.id);
+    const badge = isAdmin ? badgeVisibilite(sousCarte) : null;
+    const ligne = (p: CarteVocab, n: number, drag?: DragItemProps) => {
+      const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+      return (
+        <div key={p.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
+          <button type="button" onClick={() => aller(sousCarte.id, p.id)}
+            className={cn('w-full flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-transform active:scale-[0.99]', c.doux, isAdmin && 'ps-10 pe-11')}>
+            <span className={cn('shrink-0 h-9 w-9 grid place-items-center rounded-full text-white text-sm font-extrabold bg-gradient-to-br', c.degrade)}>{n}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-bold leading-snug [overflow-wrap:anywhere]">{p.titre}</span>
+              {textePages(p) && <span className="block text-[11px] text-muted-foreground">{textePages(p)}</span>}
+            </span>
+          </button>
+          {isAdmin && <PoigneeDrag />}
+          {isAdmin && (
+            <button type="button" onClick={() => setEdition({ carte: p, parentId: sousCarte.id })} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${p.titre}`}
+              className="absolute top-1/2 -translate-y-1/2 end-2 h-8 w-8 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border"><Pencil className="h-3.5 w-3.5" /></button>
+          )}
+        </div>
+      );
+    };
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => aller(null, null)} className="text-sm font-bold text-[#7a1d22] dark:text-[#e08a8f]">← Vocabulaire du Coran</button>
+        <div className={cn('rounded-2xl px-4 py-3 text-white shadow-sm bg-gradient-to-br', c.degrade)}>
+          <div className="flex items-start gap-2">
+            <span className="text-3xl leading-none shrink-0">{sousCarte.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-extrabold leading-snug [overflow-wrap:anywhere]">{sousCarte.titre}</h2>
+              <p className="text-xs text-white/85">{parties.length} partie{parties.length > 1 ? 's' : ''}</p>
+            </div>
+            {sousCarte.pdf_url && (
+              <button type="button" onClick={() => aller(sousCarte.id, 'entier')}
+                className="shrink-0 rounded-full bg-white text-slate-900 px-3 py-1.5 text-xs font-extrabold shadow-sm active:scale-95 transition-transform">
+                📄 PDF entier
+              </button>
+            )}
+          </div>
+          {isAdmin && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => setAcces(sousCarte)} className="rounded-full bg-white/20 hover:bg-white/30 px-3 py-1 text-xs font-bold">
+                👁️ Afficher à : {texteAcces(sousCarte)}
+              </button>
+              {badge && <span className={cn('rounded-full px-2.5 py-0.5 text-[11px] font-bold', badge.classe)}>{badge.texte}</span>}
+              <button type="button" onClick={() => setEdition({ carte: sousCarte, parentId: null })} className="rounded-full bg-white/20 hover:bg-white/30 px-3 py-1 text-xs font-bold">
+                ✏️ Modifier
+              </button>
+            </div>
+          )}
+        </div>
+        <ZonesContenu cible={cibleZones(sousCarte.id)} isAdmin={isAdmin} libelle={`${sousCarte.titre} (Vocabulaire du Coran)`} />
+        {isAdmin && <p className="text-[11px] text-muted-foreground px-1">👆 Touche une partie pour l'ouvrir · ✏️ pour la modifier · ✋ appui long puis glisser pour la ranger (les élèves voient le même ordre).</p>}
+        <div className="space-y-2">
+          {isAdmin ? (
+            <SortableCardList items={parties} onReorder={(l) => void ranger(l)} onDragStart={vibrer} renderItem={(p, drag) => ligne(p, parties.indexOf(p) + 1, drag)} />
+          ) : parties.map((p, n) => ligne(p, n + 1))}
+          {!parties.length && <p className="text-sm text-center text-muted-foreground py-4">🛠️ En cours de mise à jour.</p>}
+          {isAdmin && (
+            <button type="button" onClick={() => setEdition({ carte: null, parentId: sousCarte.id })}
+              className="w-full rounded-xl border-2 border-dashed border-primary/50 py-3 text-sm font-bold text-primary hover:bg-primary/5">➕ Ajouter une partie</button>
+          )}
+        </div>
+        {dialogues}
+      </div>
+    );
+  }
+
+  // ─── Niveau 1 : les sous-cartes ───
+  const sousCartes = enfantsDe(toutes, null);
+  const tuile = (s: CarteVocab, drag?: DragItemProps) => {
+    const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+    const c = couleurVocab(s.couleur);
+    const n = toutes.filter((x) => x.parent_id === s.id).length;
+    const badge = isAdmin ? badgeVisibilite(s) : null;
+    return (
+      <div key={s.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
+        <button type="button" onClick={() => aller(s.id, null)}
+          className={cn('w-full h-full min-h-[128px] rounded-2xl p-4 text-left text-white shadow-sm bg-gradient-to-br flex flex-col justify-between gap-2 transition-transform active:scale-[0.98]', c.degrade)}>
+          <span className="text-4xl leading-none">{s.emoji}</span>
+          <span>
+            <span className="block font-extrabold leading-snug [overflow-wrap:anywhere]">{s.titre}</span>
+            <span className="block text-xs text-white/85">{n} partie{n > 1 ? 's' : ''}{s.pdf_url ? ' · PDF entier' : ''}</span>
+            {badge && <span className={cn('mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-bold', badge.classe)}>{badge.texte}</span>}
+          </span>
+        </button>
+        {isAdmin && <PoigneeDrag />}
+        {isAdmin && (
+          <button type="button" onClick={() => setEdition({ carte: s, parentId: null })} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${s.titre}`}
+            className="absolute top-1.5 end-1.5 h-8 w-8 grid place-items-center rounded-full bg-card/90 text-foreground shadow-sm border border-border"><Pencil className="h-3.5 w-3.5" /></button>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground px-1">
+        {isAdmin ? '👆 Touche une carte pour l’ouvrir · ✏️ pour la modifier · ✋ appui long puis glisser pour la ranger.' : 'Les mots et les signes du Coran, partie par partie. 👆 Touche une carte pour l’ouvrir.'}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {isAdmin ? (
+          <SortableCardList items={sousCartes} strategy={rectSortingStrategy} onReorder={(l) => void ranger(l)} onDragStart={vibrer} renderItem={(s, drag) => tuile(s, drag)} />
+        ) : sousCartes.map((s) => tuile(s))}
+        {isAdmin && (
+          <button type="button" onClick={() => setEdition({ carte: null, parentId: null })}
+            className="min-h-[128px] rounded-2xl border-2 border-dashed border-primary/50 text-primary font-bold text-sm grid place-items-center hover:bg-primary/5">➕ Nouvelle sous-carte</button>
+        )}
+      </div>
+      {!sousCartes.length && !isAdmin && <p className="text-sm text-center text-muted-foreground py-6">Ton professeur va bientôt ajouter du contenu ici. 🤲</p>}
+      {dialogues}
+    </div>
+  );
+}
+
+export default CoranVocabulaireTab;
