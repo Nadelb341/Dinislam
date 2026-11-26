@@ -166,12 +166,13 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
       )}
       {ouvert && (<>
         <p className="text-xs text-violet-900 dark:text-violet-100">Chaque élève reçoit son devoir là où il en est (sa ligne, sa sourate, son invocation…).{formulaire ? ' Le carré choisit l\'élève ; touche sa case pour personnaliser ses devoirs.' : ''}</p>
-        <div className="flex flex-wrap gap-1.5">
+        {/* 2026-11-26 (Nadia) : les matières l'une SOUS l'autre (plus côte à côte) */}
+        <div className="flex flex-col gap-1.5">
           {MATIERES_GROUPE.map((m) => {
             const v = matieres[m.type] ?? { on: false, audio: m.audio };
             return (
-              <span key={m.type} className={cn('flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-bold', v.on ? 'bg-violet-600 text-white border-violet-600' : 'bg-card')}>
-                <button type="button" aria-pressed={v.on} onClick={() => setMatieres((x) => ({ ...x, [m.type]: { ...v, on: !v.on } }))}>{v.on ? '✓ ' : ''}{m.emoji} {m.label}</button>
+              <span key={m.type} className={cn('flex w-full flex-wrap items-center gap-1 rounded-2xl border px-2 py-1 text-xs font-bold', v.on ? 'bg-violet-600 text-white border-violet-600' : 'bg-card')}>
+                <button type="button" aria-pressed={v.on} className="me-auto py-0.5 text-start" onClick={() => setMatieres((x) => ({ ...x, [m.type]: { ...v, on: !v.on } }))}>{v.on ? '✓ ' : ''}{m.emoji} {m.label}</button>
                 {v.on && <button type="button" aria-pressed={v.audio} aria-label={`Audio demandé pour ${m.label}`} title="Audio demandé"
                   onClick={() => setMatieres((x) => ({ ...x, [m.type]: { ...v, audio: !v.audio } }))} className={cn('rounded-full px-1', v.audio ? 'bg-white/30' : 'opacity-50 line-through')}>🎙️</button>}
                 {v.on && <ChoixPartie type={m.type} valeur={parties[m.type] ?? null} onChange={(c) => setParties((x) => ({ ...x, [m.type]: c }))} />}

@@ -382,13 +382,13 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
           {soir && <div aria-hidden className="fixed inset-0 z-[26] hiver-voile-soir" />}
           {h.neigeBas && (
             <>
-              <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[60px] paysage:h-[30px] w-full"
-                style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} dangerouslySetInnerHTML={{ __html: NEIGE_SVG + (h.lanternes ? LANTERNES_SVG : '') }} />
-              <svg ref={tracesRef} aria-hidden className="fixed bottom-0 left-0 z-[28] h-10 paysage:h-5 w-full" viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} 40`} preserveAspectRatio="none" />
+              <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[60px] paysage:h-[30px] w-full au-dessus-menu"
+                style={{ marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))' }} dangerouslySetInnerHTML={{ __html: NEIGE_SVG + (h.lanternes ? LANTERNES_SVG : '') }} />
+              <svg ref={tracesRef} aria-hidden className="fixed bottom-0 left-0 z-[28] h-10 paysage:h-5 w-full au-dessus-menu" viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} 40`} preserveAspectRatio="none" />
               {/* ⛄ 2026-11-26 : grand bonhomme de neige posé dans la neige = une cachette du cache-cache (seulement si le jeu est allumé) */}
               {r.jeux.cacheCache && (
                 <svg aria-hidden data-cachette="Le bonhomme de neige" data-cachette-bord="0.12" data-cachette-place="0.5" viewBox={BONHOMME_VB}
-                  className="pointer-events-none fixed bottom-1 z-[29] h-16 w-[50px] paysage:h-8 paysage:w-[25px] overflow-visible" style={{ left: 'calc(42% + 40px)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                  className="pointer-events-none fixed bottom-1 z-[29] h-16 w-[50px] paysage:h-8 paysage:w-[25px] overflow-visible au-dessus-menu" style={{ left: 'calc(42% + 40px)', marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))' }}
                   dangerouslySetInnerHTML={{ __html: GRAND_BONHOMME_SVG }} />
               )}
               {h.ours && (
@@ -402,7 +402,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
                   aria-label={perso === 'pingouin' ? "Le pingouin : touche-le pour qu'il te parle" : "Le bonhomme de neige : touche-le pour qu'il te parle"}
                   onClick={(e) => { e.stopPropagation(); if (repos) { setRepos(false); try { sessionStorage.removeItem('dinislam_hiver_repos'); } catch { /* */ } } else if (toucherCompagnon(e.currentTarget, perso === 'pingouin' ? 'Le pingouin' : 'Le bonhomme de neige')) pauseJusqua.current = performance.now() + PAUSE_MS; else setBulle(true); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') setBulle(true); }}
-                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] paysage:bottom-1 paysage:h-[19px] paysage:w-[15px] cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent]"
+                  className="pointer-events-auto fixed bottom-1.5 left-0 z-[29] h-[38px] w-[30px] paysage:bottom-1 paysage:h-[19px] paysage:w-[15px] cursor-pointer overflow-visible outline-none [-webkit-tap-highlight-color:transparent] au-dessus-menu"
                   style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] + habitSvg(habit, 30, 38) }} />
               )}
               {h.personnage && h.plongeon && (
@@ -412,7 +412,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
             </>
           )}
           {bulle && (
-            <div className="pointer-events-auto fixed bottom-14 left-2 z-[60] w-56 rounded-2xl border-2 border-[#bcd3ee] bg-white p-2.5 text-xs text-[#1e3a8a] shadow-[0_10px_24px_-10px_rgba(30,60,120,.45)]">
+            <div className="pointer-events-auto fixed bottom-14 left-2 z-[60] w-56 rounded-2xl border-2 border-[#bcd3ee] bg-white p-2.5 text-xs text-[#1e3a8a] shadow-[0_10px_24px_-10px_rgba(30,60,120,.45)] au-dessus-menu">
               <b className="block text-sm">{perso === 'pingouin' ? '🐧' : '⛄'} Je me repose ?</b>
               Je reste tranquille jusqu'à ta prochaine connexion.
               <div className="mt-2 flex gap-1.5">
@@ -422,7 +422,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
             </div>
           )}
           {mot && (
-            <div role="status" className="hiver-bulle-in pointer-events-auto fixed bottom-16 left-1.5 z-[60] min-w-[160px] rounded-2xl border-2 border-[#bcd3ee] bg-white py-2 pl-2.5 pr-8 text-[#1e3a8a] shadow-[0_10px_24px_-10px_rgba(30,60,120,.45)]">
+            <div role="status" className="hiver-bulle-in pointer-events-auto fixed bottom-16 left-1.5 z-[60] min-w-[160px] rounded-2xl border-2 border-[#bcd3ee] bg-white py-2 pl-2.5 pr-8 text-[#1e3a8a] shadow-[0_10px_24px_-10px_rgba(30,60,120,.45)] au-dessus-menu">
               <small className="block text-[10px] font-bold text-[#5d6f88]">❄️ Mot de l'hiver du jour</small>
               <p className="font-arabic text-2xl leading-relaxed text-[#14213d]" dir="rtl">{mot[0]}</p>
               <p className="text-xs">{mot[1]}</p>
@@ -433,7 +433,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
           {h.cheminee && (
             <svg aria-hidden data-cachette="La cheminée" data-cachette-cote="gauche" data-cachette-bord="0.23" data-cachette-place="0.83" viewBox="0 0 200 172"
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && h.petitFeuJour ? 'hiver-feu-jour' : ''} ${h.chocolat && soir ? 'hiver-chocolat-visible' : ''}`}
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />
           )}
           {h.flocons && !calme && <canvas ref={avantRef} className="fixed inset-0 z-40 h-full w-full" />}
@@ -468,7 +468,7 @@ function MessageFlocons({ userId }: { userId: string | null }) {
   if (!visible) return null;
   return createPortal(
     <div role="status" className={`fixed inset-x-0 z-[60] flex justify-center px-4 ${part ? 'saison-msg-part' : 'saison-msg-arrive'}`}
-      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 110px)' }}>
+      style={{ bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 110px)' }}>
       <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border-2 border-[#bcd3ee] bg-gradient-to-br from-white via-[#e8f1fc] to-[#dbe8f8] p-4 pr-10 shadow-[0_16px_40px_-12px_rgba(30,60,120,.5)]">
         <p className="text-base font-extrabold text-[#1e3a8a]">❄️ Attrape les flocons !</p>
         <p className="text-sm leading-snug text-[#34465f]">Les flocons qui passent <b>devant</b> les cartes s'attrapent : touche-en un, il éclate en paillettes avec un petit son de cristal&nbsp;!</p>

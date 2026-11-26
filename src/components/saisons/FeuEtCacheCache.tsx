@@ -105,8 +105,8 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
   const chatDort = k > 0 && niveau >= 4;
   return createPortal(
     <>
-    <div aria-hidden className="pointer-events-none fixed bottom-0 z-[31] transition-opacity duration-500"
-      style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: L, aspectRatio: '200 / 172', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
+    <div aria-hidden className="pointer-events-none fixed bottom-0 z-[31] transition-opacity duration-500 au-dessus-menu"
+      style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: L, aspectRatio: '200 / 172', marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1 }}>
       <svg viewBox="0 0 200 172" className="absolute inset-0 h-full w-full overflow-visible">
         {/* Braises qui fument (feu éteint) */}
         {k === 0 && (
@@ -141,8 +141,8 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
     {/* 🔥 Toucher le foyer = écouter le feu, toucher encore = l'arrêter (2026-11-17) ; son choisi dans Paramètres ; jamais tout seul. Sous la bulle « ? » du coin du feu, sans la toucher. */}
     {k > 0 && lireSonFeu() !== 'aucun' && (
       <button type="button" aria-label={sonJoue ? 'Arrêter le bruit du feu' : 'Écouter le feu'} aria-pressed={sonJoue} onClick={() => setSonJoue(basculerSonFeu())}
-        className="fixed bottom-0 z-[32] rounded-full"
-        style={{ right: `calc(max(-6px, env(safe-area-inset-right, 0px)) + ${L} * 0.3)`, width: `calc(${L} * 0.4)`, height: `calc(${L} * 0.3)`, marginBottom: `calc(env(safe-area-inset-bottom, 0px) + ${L} * 0.04)` }}>
+        className="fixed bottom-0 z-[32] rounded-full au-dessus-menu"
+        style={{ right: `calc(max(-6px, env(safe-area-inset-right, 0px)) + ${L} * 0.3)`, width: `calc(${L} * 0.4)`, height: `calc(${L} * 0.3)`, marginBottom: `calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + ${L} * 0.04)` }}>
         {/* 🔊 pendant que le son joue : on comprend qu'un nouveau toucher l'arrête */}
         {sonJoue
           ? <span aria-hidden className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 animate-pulse rounded-full bg-white/90 px-1.5 text-xs shadow">🔊</span>

@@ -97,7 +97,7 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
 
   return (
     <div className={`fixed bottom-0 left-0 z-[28] transition-opacity duration-500 ${pause ? 'jeux-pause' : ''}`}
-      style={{ width: L, height: H + 30, marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1, ['--tas' as string]: `${tasX}px`, ['--cycle' as string]: `${CYCLE}s` }}>
+      style={{ width: L, height: H + 30, marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1, ['--tas' as string]: `${tasX}px`, ['--cycle' as string]: `${CYCLE}s` }}>
       <svg className="absolute bottom-0 left-0" width={L} height={H} viewBox={`0 0 ${L} ${H}`} dangerouslySetInnerHTML={{ __html: tapis.fond }} />
 
       {montrerPerso && (

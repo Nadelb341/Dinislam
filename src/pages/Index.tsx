@@ -351,7 +351,8 @@ const handleModuleClick = (mod) => {
 
   return (
     <>
-<AppLayout showBottomNav={false}>
+{/* 2026-11-26 (Nadia) : le menu du bas aussi sur l'accueil ; le décor du bas se pose au-dessus (--menu-bas) */}
+<AppLayout>
         <div className={cn('p-4 space-y-6', (automne || hiver || clair || ramadan) && 'relative isolate pb-32')}>
           {automne && (
             <SilentBoundary name="Décor de saison">

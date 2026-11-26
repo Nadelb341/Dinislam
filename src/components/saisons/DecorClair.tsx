@@ -76,12 +76,12 @@ function dessinerAbeille(ctx: CanvasRenderingContext2D, s: number, battement: nu
 /** 🌸 Idée 2 : fleurs qui poussent dans les 4 coins après 1 minute sans toucher */
 const fleurCoin = (p: string, c: string) => `<svg viewBox="0 0 24 24"><path d="M12 24v-9" stroke="#4f9a2f" stroke-width="1.6"/><path d="M12 20c-4-1-6-4-5-6 3 0 5 2 5 6z" fill="#6cbf3f"/><g fill="${p}" stroke="${c}" stroke-width=".5"><circle cx="12" cy="5" r="3.4"/><circle cx="16.5" cy="8.5" r="3.4"/><circle cx="15" cy="13.5" r="3.4"/><circle cx="9" cy="13.5" r="3.4"/><circle cx="7.5" cy="8.5" r="3.4"/></g><circle cx="12" cy="9.6" r="2.6" fill="#f7c22e"/></svg>`;
 const COINS_FLEURS: { pos: CSSProperties; t: number; d: number; svg: string }[] = [
-  { pos: { left: 4, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 74px)' }, t: 30, d: 0, svg: fleurCoin('#ffd1dc', '#e891a8') },
-  { pos: { left: 30, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }, t: 22, d: 1.2, svg: fleurCoin('#fff', '#d9d2c0') },
+  { pos: { left: 4, bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 74px)' }, t: 30, d: 0, svg: fleurCoin('#ffd1dc', '#e891a8') },
+  { pos: { left: 30, bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 72px)' }, t: 22, d: 1.2, svg: fleurCoin('#fff', '#d9d2c0') },
   { pos: { left: 6, top: 70 }, t: 24, d: 2, svg: fleurCoin('#fff4c2', '#e0c25a') },
   { pos: { right: 6, top: 76 }, t: 26, d: 0.6, svg: fleurCoin('#d9cdf7', '#9b7fe0') },
   { pos: { right: 34, top: 70 }, t: 20, d: 2.6, svg: fleurCoin('#ffd1dc', '#e891a8') },
-  { pos: { left: 56, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 70px)' }, t: 18, d: 3.2, svg: fleurCoin('#fff4c2', '#e0c25a') },
+  { pos: { left: 56, bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 70px)' }, t: 18, d: 3.2, svg: fleurCoin('#fff4c2', '#e0c25a') },
 ];
 
 /** 🐞 Idée 4 : la coccinelle qui se promène sur le haut d'une carte */
@@ -533,11 +533,11 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
           {soir && <div aria-hidden className="fixed inset-0 z-[26] pe-voile-soir" />}
           {c.bas && (
             <>
-              <svg aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[27]" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+              <svg aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[27] au-dessus-menu" style={{ marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))' }}
                 dangerouslySetInnerHTML={{ __html: bande.fond }} />
               {ete && c.chateau && (
                 <svg aria-hidden data-cachette="Le château de sable" data-cachette-bord="0.2" data-cachette-place="0.5" viewBox="0 0 60 46" className="pe-chateau fixed z-[28]" key={etapeChateau}
-                  style={{ left: Math.round(W * 0.2), bottom: `calc(env(safe-area-inset-bottom, 0px) + ${12 * kb}px)`, width: 54 * kb }}
+                  style={{ left: Math.round(W * 0.2), bottom: `calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + ${12 * kb}px)`, width: 54 * kb }}
                   dangerouslySetInnerHTML={{ __html: chateauSable(etapeChateau) }} />
               )}
               {c.animal && (
@@ -548,17 +548,17 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
                   style={{ transform: `translate(60px, ${typeof window !== 'undefined' ? window.innerHeight - 56 : 600}px)`, opacity: animal === 'dauphin' ? 0 : 1, transformOrigin: '50% 100%' }}
                   dangerouslySetInnerHTML={{ __html: ANIMAUX[animal].svg + (animal === 'dauphin' ? '' : habitSvg(habit, 40, 34)) }} />
               )}
-              <svg ref={tasRef} aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible"
-                style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)', transformOrigin: `${tasX * kb}px ${HB * kb}px` }} dangerouslySetInnerHTML={{ __html: bande.tas }} />
+              <svg ref={tasRef} aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[30] overflow-visible au-dessus-menu"
+                style={{ marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', transformOrigin: `${tasX * kb}px ${HB * kb}px` }} dangerouslySetInnerHTML={{ __html: bande.tas }} />
               {ete && c.motDuJour && (
-                <button type="button" aria-label="La tortue : touche-la pour voir le mot de l'été" onClick={montrerMot} className="pe-tortue pointer-events-auto fixed bottom-1 left-1.5 z-[31] w-12">
+                <button type="button" aria-label="La tortue : touche-la pour voir le mot de l'été" onClick={montrerMot} className="pe-tortue pointer-events-auto fixed bottom-1 left-1.5 z-[31] w-12 au-dessus-menu">
                   <svg viewBox="0 0 40 34" aria-hidden dangerouslySetInnerHTML={{ __html: TORTUE_SVG }} />
                 </button>
               )}
             </>
           )}
           {c.decor && (
-            <div className="fixed bottom-0 z-[32] transition-opacity duration-500" style={{ right: 'max(-8px, env(safe-area-inset-right, 0px))', width: ete ? (kb < 1 ? 'min(21vw, 83px)' : 'min(42vw, 165px)') : (kb < 1 ? 'min(18vw, 70px)' : 'min(36vw, 140px)'), marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
+            <div className="fixed bottom-0 z-[32] transition-opacity duration-500 au-dessus-menu" style={{ right: 'max(-8px, env(safe-area-inset-right, 0px))', width: ete ? (kb < 1 ? 'min(21vw, 83px)' : 'min(42vw, 165px)') : (kb < 1 ? 'min(18vw, 70px)' : 'min(36vw, 140px)'), marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1 }}>
               <svg aria-hidden data-cachette={ete ? 'Les palmiers' : 'Le grand arbre'} data-cachette-bord="0.12" data-cachette-place="0.3" viewBox={ete ? '0 0 200 220' : '0 0 200 240'} className="block w-full" dangerouslySetInnerHTML={{ __html: decor }} />
               {/* 🦋 2026-11-26 : grand papillon posé sur l'arbre en fleurs = une cachette du cache-cache (printemps, si le jeu est allumé) */}
               {!ete && r.jeux.cacheCache && (
@@ -573,7 +573,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
             </div>
           )}
           {bulle && (
-            <div className="pointer-events-auto fixed bottom-16 left-2 z-[60] w-56 rounded-2xl border-2 border-[#b9dc8a] bg-white p-2.5 text-xs text-[#2f5a1a] shadow-[0_10px_24px_-10px_rgba(40,90,30,.45)]">
+            <div className="pointer-events-auto fixed bottom-16 left-2 z-[60] w-56 rounded-2xl border-2 border-[#b9dc8a] bg-white p-2.5 text-xs text-[#2f5a1a] shadow-[0_10px_24px_-10px_rgba(40,90,30,.45)] au-dessus-menu">
               <b className="block text-sm">{emojiAnimal[animal]} Je me repose ?</b>
               Je reste tranquille jusqu'à ta prochaine connexion.
               <div className="mt-2 flex gap-1.5">
@@ -583,7 +583,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
             </div>
           )}
           {mot && (
-            <div role="status" className="hiver-bulle-in pointer-events-auto fixed bottom-24 z-[60] min-w-[160px] rounded-2xl border-2 border-[#b9dc8a] bg-white py-2 pl-2.5 pr-8 text-[#2f5a1a] shadow-[0_10px_24px_-10px_rgba(40,90,30,.45)]"
+            <div role="status" className="hiver-bulle-in pointer-events-auto fixed bottom-24 z-[60] min-w-[160px] rounded-2xl border-2 border-[#b9dc8a] bg-white py-2 pl-2.5 pr-8 text-[#2f5a1a] shadow-[0_10px_24px_-10px_rgba(40,90,30,.45)] au-dessus-menu"
               style={ete ? { left: 6 } : { right: 12 }}>
               <small className="block text-[10px] font-bold text-[#5d7a48]">{ete ? '☀️ Mot de l’été du jour' : '🌸 Mot du printemps du jour'}</small>
               <p className="font-arabic text-2xl leading-relaxed text-[#1f3a12]" dir="rtl">{mot[0]}</p>
@@ -626,7 +626,7 @@ function MessageSemaine({ saison, userId }: { saison: Clair; userId: string | nu
   if (!visible) return null;
   const ete = saison === 'ete';
   return createPortal(
-    <div role="status" className={`fixed inset-x-0 z-[60] flex justify-center px-4 ${part ? 'saison-msg-part' : 'saison-msg-arrive'}`} style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 110px)' }}>
+    <div role="status" className={`fixed inset-x-0 z-[60] flex justify-center px-4 ${part ? 'saison-msg-part' : 'saison-msg-arrive'}`} style={{ bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 110px)' }}>
       <div className={`relative w-full max-w-sm overflow-hidden rounded-3xl border-2 p-4 pr-10 shadow-[0_16px_40px_-12px_rgba(40,90,60,.45)] ${ete ? 'border-[#f3d877] bg-gradient-to-br from-[#fffdf2] via-[#e9f7ff] to-[#d6f0ff]' : 'border-[#b9dc8a] bg-gradient-to-br from-white via-[#f1f9e6] to-[#e3f2cf]'}`}>
         <p className={`text-base font-extrabold ${ete ? 'text-[#1f6fa8]' : 'text-[#2f5a1a]'}`}>{ete ? '🫧 Éclate les bulles !' : '🦋 Attrape les papillons !'}</p>
         <p className="text-sm leading-snug text-[#3a4a3a]">{ete

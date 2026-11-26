@@ -213,7 +213,7 @@ function BulleIndice({ texte, allerA }: { texte: string; allerA?: () => void }) 
   const [ouvert, setOuvert] = useState(true);
   // Chaque nouvel indice s'ouvre 9 s, puis se replie en un petit écureuil (le toucher le rouvre)
   useEffect(() => { setOuvert(true); const t = setTimeout(() => setOuvert(false), 9000); return () => clearTimeout(t); }, [texte]);
-  const pos = { left: 'calc(env(safe-area-inset-left, 0px) + 64px)', bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 84px), calc(var(--menu-bas, 0px) + 16px))' };
+  const pos = { left: 'calc(env(safe-area-inset-left, 0px) + 64px)', bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 84px)' };
   return createPortal(
     ouvert ? (
       <div data-ecureuil role="status" className="jeux-bulle fixed z-[45] flex max-w-[min(15rem,calc(100vw-8rem))] items-start gap-1.5 rounded-2xl rounded-bl-sm border-2 border-amber-300 bg-white/95 dark:bg-card px-2.5 py-1.5 shadow-lg" style={pos}>

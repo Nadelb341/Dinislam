@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LucideIcon } from 'lucide-react';
 import { FitText } from '@/components/shared/FitText';
+import { MODULE_EMOJI_FALLBACK } from '@/lib/emojiCartes';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image,
@@ -51,6 +52,7 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
       label: mod.title,
       path: mod.is_builtin && mod.builtin_path ? mod.builtin_path : `/module/${mod.id}`,
       imageUrl: mod.image_url,
+      slug: slugCarte(mod),
     }));
   }, [modules, visibles]);
 
@@ -90,8 +92,21 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
   );
 });
 
+/** 🎨 Tuiles colorées du menu (Nadia, 2026-11-26 : « plus agréable à regarder, avec des couleurs », comme l'agenda) */
+const TEINTES: Record<string, string> = {
+  ramadan: '#fde2c4', alphabet: '#cfe3ff', invocations: '#e2d9ff', priere: '#c9f1f5', grammaire: '#cdf2d8',
+  'allah-names': '#ffeeb8', '99-noms': '#ffeeb8', sourates: '#d6dcff', nourania: '#fff1a8', vocabulaire: '#ffd6ea',
+  'lecture-coran': '#c4f0e6', darija: '#ffdcc2', dictionnaire: '#e4dcff', dhikr: '#d3f2d1', hadiths: '#d4def9',
+  'histoires-prophetes': '#ffe9b3', coran: '#cdeed2', 'cahier-texte': '#d3e5ff', 'registre-presence': '#cfeed8',
+};
+const TEINTES_SECOURS = ['#fde2c4', '#cfe3ff', '#e2d9ff', '#cdf2d8', '#ffd6ea', '#fff1a8'];
+const teinte = (slug: string) => {
+  const cle = slug.replace(/^module\//, '');
+  return TEINTES[cle] ?? TEINTES_SECOURS[[...cle].reduce((h, c) => h + c.charCodeAt(0), 0) % TEINTES_SECOURS.length];
+};
+
 interface NavButtonProps {
-  item: { icon: LucideIcon; label: string; path: string; imageUrl?: string | null };
+  item: { icon: LucideIcon; label: string; path: string; imageUrl?: string | null; slug: string };
   location: ReturnType<typeof useLocation>;
   navigate: ReturnType<typeof useNavigate>;
   serre?: boolean;
@@ -99,6 +114,7 @@ interface NavButtonProps {
 
 const NavButton = ({ item, location, navigate, serre }: NavButtonProps) => {
   const isActive = location.pathname.startsWith(item.path);
+  const emoji = MODULE_EMOJI_FALLBACK[item.slug.replace(/^module\//, '')]?.emoji;
   const Icon = item.icon;
 
   return (
@@ -108,31 +124,33 @@ const NavButton = ({ item, location, navigate, serre }: NavButtonProps) => {
       aria-current={isActive ? 'page' : undefined}
       title={item.label}
       className={cn(
-        // 🔍 micro zoom (Nadia, 2026-11-26) : l'icône grossit un peu au survol et se « presse » au toucher
-        'group flex w-full flex-col items-center justify-center gap-0.5 rounded-xl transition-all duration-200 active:scale-90 [-webkit-tap-highlight-color:transparent]',
-        serre ? 'h-11' : 'h-[52px]',
+        // 🔍 micro zoom (Nadia, 2026-11-26) : la tuile grossit un peu au survol et se « presse » au toucher
+        'group flex w-full flex-col items-center justify-center gap-0.5 rounded-xl transition-transform duration-200 active:scale-90 [-webkit-tap-highlight-color:transparent]',
+        serre ? 'h-[50px]' : 'h-[58px]',
         'paysage:h-11',
-        isActive ? '' : 'opacity-70 hover:opacity-100'
       )}
     >
-      <div
+      <span
         className={cn(
-          'rounded-xl transition-transform duration-200 group-hover:scale-110',
-          serre ? 'p-1' : 'p-1.5',
-          'paysage:p-1.5',
-          isActive ? 'scale-110 bg-primary shadow-royal' : 'hover:bg-muted'
+          'grid place-items-center rounded-[14px] shadow-[0_3px_8px_rgba(120,90,60,.18),inset_0_1px_0_rgba(255,255,255,.7)] transition-transform duration-200 group-hover:scale-110',
+          serre ? 'h-8 w-8' : 'h-9 w-9',
+          'paysage:h-8 paysage:w-8',
+          isActive && 'scale-110 ring-2 ring-primary ring-offset-1 ring-offset-background'
         )}
+        style={{ background: `linear-gradient(160deg, #ffffffcc, transparent 60%), ${teinte(item.slug)}` }}
       >
         {item.imageUrl ? (
-          <img src={item.imageUrl} alt="" className="h-5 w-5 rounded object-cover" />
+          <img src={item.imageUrl} alt="" className="h-6 w-6 rounded-lg object-cover" />
+        ) : emoji ? (
+          <span aria-hidden className={cn('leading-none', serre ? 'text-lg' : 'text-xl', emoji === 'أ' && 'font-arabic font-bold text-[#2457a5]')}>{emoji}</span>
         ) : (
-          <Icon className={cn('h-5 w-5 transition-colors', isActive ? 'text-gold' : 'text-foreground')} />
+          <Icon className="h-5 w-5 text-foreground" />
         )}
-      </div>
+      </span>
       <FitText
         className={cn(
-          'max-w-full px-0.5 text-[10px] font-medium leading-tight transition-colors paysage:hidden',
-          isActive ? 'text-primary font-bold' : 'text-muted-foreground'
+          'max-w-full px-0.5 text-[10px] leading-tight transition-colors paysage:hidden',
+          isActive ? 'font-extrabold text-primary' : 'font-semibold text-[#7d6e60] dark:text-muted-foreground'
         )}
       >
         {item.label}

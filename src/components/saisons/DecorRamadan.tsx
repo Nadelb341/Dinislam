@@ -185,7 +185,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
 
           {/* 🏜️ Le désert en bas : rochers au loin, dune, palmiers, cactus, rochers, touffes, dune devant */}
           {c.dunes && (
-            <div aria-hidden className="ramadan-desert pointer-events-none fixed inset-x-0 bottom-0 z-[27] h-[96px] overflow-hidden paysage:right-auto paysage:w-[200%] paysage:origin-bottom-left paysage:scale-50" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div aria-hidden className="ramadan-desert pointer-events-none fixed inset-x-0 bottom-0 z-[27] h-[96px] overflow-hidden paysage:right-auto paysage:w-[200%] paysage:origin-bottom-left paysage:scale-50 au-dessus-menu" style={{ marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))' }}>
               {desert.map((o, i) => o.fond
                 ? <svg key={i} viewBox="0 0 340 60" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full" style={{ height: o.h }} dangerouslySetInnerHTML={{ __html: o.svg }} />
                 : <svg key={i} viewBox={o.vb} className="absolute overflow-visible" style={{ left: o.left, bottom: o.bas, height: o.h, opacity: o.opacite, transform: o.miroir ? 'scaleX(-1)' : undefined }} dangerouslySetInnerHTML={{ __html: o.svg }} />)}
@@ -195,7 +195,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           {/* 🕊️ La colombe vole de temps en temps au-dessus du désert (Nadia, 2026-11-17), en battant des ailes */}
           {c.dunes && !calme && (
             <svg aria-hidden viewBox={`0 0 ${COMPAGNONS.colombe.vb[0]} ${COMPAGNONS.colombe.vb[1]}`} className="ramadan-colombe-vol pointer-events-none fixed left-0 z-[28] h-[26px] w-[34px] overflow-visible"
-              style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${paysage ? 37 : 74}px)` }} dangerouslySetInnerHTML={{ __html: colombe }} />
+              style={{ bottom: `calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + ${paysage ? 37 : 74}px)` }} dangerouslySetInnerHTML={{ __html: colombe }} />
           )}
 
           {/* 🎉 Aïd : ballons, feux d'artifice, cadeaux ; Aïd el-Adha : moutons */}
@@ -226,7 +226,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           {c.compagnon && (
             <button ref={persoRef} type="button" onClick={toucherPerso} aria-label={`${p.nom} : touche-le pour qu'il te parle`} data-cachette="Le dromadaire" data-cachette-bord="0.12" data-cachette-place="0.45"
               className={`ramadan-perso pointer-events-auto fixed left-0 z-[29] outline-none [-webkit-tap-highlight-color:transparent] ${pause || calme ? 'pause' : ''}`}
-              style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)', height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
+              style={{ bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 6px)', height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
               <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className="ramadan-dromadaire h-full w-full overflow-visible" aria-hidden
                 dangerouslySetInnerHTML={{ __html: persoSvg + habitSvg(habit, p.vb[0], p.vb[1], 'dromadaire') }} />
             </button>
@@ -234,8 +234,8 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
 
           {/* 🕌 Mosquée en bas à droite */}
           {c.mosquee && (
-            <svg aria-hidden data-cachette="La mosquée" data-cachette-cote="gauche" data-cachette-bord="0.12" data-cachette-place="0.85" viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+            <svg aria-hidden data-cachette="La mosquée" data-cachette-cote="gauche" data-cachette-bord="0.12" data-cachette-place="0.85" viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500 au-dessus-menu"
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: mosquee }} />
           )}
         </div>,
@@ -285,7 +285,7 @@ function MessageFete({ mode, annee, userId }: { mode: 'ramadan' | 'fitr' | 'adha
     ? { titre: '🌙 Ramadan Moubarak !', ar: 'رَمَضَان مُبَارَك', sous: 'Qu\'Allah accepte ton jeûne, tes prières et tes efforts.' }
     : { titre: '🎉 Aïd Moubarak Saïd !', ar: 'عِيد مُبَارَك سَعِيد', sous: mode === 'adha' ? 'Belle fête de l\'Aïd el-Adha à toi et ta famille 🐑' : 'Belle fête de l\'Aïd el-Fitr à toi et ta famille !' };
   return createPortal(
-    <div role="status" className="saison-msg-arrive fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4" onClick={() => setVisible(false)}>
+    <div role="status" className="saison-msg-arrive fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 au-dessus-menu" onClick={() => setVisible(false)}>
       <div className="max-w-sm rounded-2xl border-2 border-[#e2c08f] bg-[#fffaf0] px-5 py-3 text-center shadow-xl">
         <p className="text-lg font-extrabold text-[#7a4e10]">{texte.titre}</p>
         <p className="font-arabic text-2xl text-[#1d7f78]" dir="rtl" lang="ar">{texte.ar}</p>

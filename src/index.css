@@ -1013,3 +1013,6 @@ html.anniv-fete .titre-logo::after { content: "✨"; position: absolute; right: 
 :where(:root.fond-nuit:not(.dark) .app-racine > main) :where([class^="bg-"]:not([class^="bg-transparent"]), [class*=" bg-"]:not([class*=" bg-transparent"]), [style*="background"], .carte-accueil, input, textarea, select) {
   --foreground: var(--fg-jour); --muted-foreground: var(--mfg-jour); color: hsl(var(--foreground)); text-shadow: none;
 }
+
+/* 2026-11-26 (Nadia : menu du bas aussi sur l'accueil) : le décor fixé en bas reste AU-DESSUS du menu */
+.au-dessus-menu { margin-bottom: var(--menu-bas, 0px); }

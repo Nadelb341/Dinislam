@@ -265,7 +265,7 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
             // 🙈 data-cachette (2026-11-26) : une cachette du cache-cache (le personnage dépasse sur le côté gauche)
             <svg data-cachette="La cheminée" data-cachette-cote="gauche" data-cachette-bord="0.23" data-cachette-place="0.83" viewBox={`0 0 ${CHEMINEE_VB.w} ${CHEMINEE_VB.h}`}
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && a.petitFeuJour ? 'saison-feu-jour' : ''}`}
-              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
+              style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'var(--menu-bas, env(safe-area-inset-bottom, 0px))', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />
           )}
           {a.feuilles && !calme && <canvas ref={avantRef} className="fixed inset-0 z-40 h-full w-full" />}
@@ -300,7 +300,7 @@ function MessageFeuilles({ userId }: { userId: string | null }) {
   if (!visible) return null;
   return createPortal(
     <div role="status" className={`fixed inset-x-0 z-[60] flex justify-center px-4 ${part ? 'saison-msg-part' : 'saison-msg-arrive'}`}
-      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
+      style={{ bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 96px)' }}>
       <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border-2 border-[#e2c08f] bg-gradient-to-br from-[#fff8ee] via-[#fbe7c8] to-[#f6d3a8] p-4 pr-10 shadow-[0_16px_40px_-12px_rgba(120,60,20,.55)]">
         <svg viewBox="0 0 40 40" aria-hidden className="saison-msg-feuille absolute -left-2 -top-3 h-14 w-14 opacity-90"><path d={ERABLE} fill="#e8572a" stroke="#4a2c1a" strokeWidth="1.6" strokeLinejoin="round" /></svg>
         <svg viewBox="0 0 40 40" aria-hidden className="saison-msg-feuille b absolute -bottom-3 right-10 h-9 w-9 opacity-80"><path d={ERABLE} fill="#f2a33a" stroke="#4a2c1a" strokeWidth="2" strokeLinejoin="round" /></svg>

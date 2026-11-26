@@ -218,7 +218,7 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
       {/* Petit bouton posé sur la cheminée (44 px) : il ne cache jamais les cartes */}
       <button type="button" onClick={() => setOuvert(true)} aria-label={COIN[saison]}
         className={`fixed z-[31] grid place-items-center rounded-full w-11 h-11 ${repondu ? 'opacity-40' : 'jeux-question'}`}
-        style={{ right: 'calc(max(4px, env(safe-area-inset-right, 0px)) + 22px)', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 58px)' }}>
+        style={{ right: 'calc(max(4px, env(safe-area-inset-right, 0px)) + 22px)', bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 58px)' }}>
         <span className={`rounded-full text-sm font-extrabold w-7 h-7 grid place-items-center shadow ${repondu ? 'bg-white/80 text-orange-700' : 'bg-amber-400 text-amber-950'}`}>{repondu ? '🔥' : '?'}</span>
       </button>
       {ouvert && (
