@@ -1246,6 +1246,68 @@ export type Database = {
         }
         Relationships: []
       }
+      coran_vocabulaire: {
+        Row: {
+          cle: string | null
+          couleur: string | null
+          created_at: string
+          emoji: string | null
+          group_ids: string[]
+          id: string
+          mode: string
+          page_debut: number | null
+          page_fin: number | null
+          parent_id: string | null
+          pdf_url: string | null
+          position: number
+          titre: string
+          updated_at: string
+          user_ids: string[]
+        }
+        Insert: {
+          cle?: string | null
+          couleur?: string | null
+          created_at?: string
+          emoji?: string | null
+          group_ids?: string[]
+          id?: string
+          mode?: string
+          page_debut?: number | null
+          page_fin?: number | null
+          parent_id?: string | null
+          pdf_url?: string | null
+          position?: number
+          titre: string
+          updated_at?: string
+          user_ids?: string[]
+        }
+        Update: {
+          cle?: string | null
+          couleur?: string | null
+          created_at?: string
+          emoji?: string | null
+          group_ids?: string[]
+          id?: string
+          mode?: string
+          page_debut?: number | null
+          page_fin?: number | null
+          parent_id?: string | null
+          pdf_url?: string | null
+          position?: number
+          titre?: string
+          updated_at?: string
+          user_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coran_vocabulaire_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "coran_vocabulaire"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_ready: {
         Row: {
           course_date: string

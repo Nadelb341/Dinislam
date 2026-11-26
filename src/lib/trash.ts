@@ -12,7 +12,8 @@ export type TrashItemType =
   | "student_group" | "scheduled_notification"
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
-  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video";
+  | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video"
+  | "coran_vocabulaire" | "coran_vocabulaire_pdf";
 
 export interface TrashItem {
   id: string;
@@ -24,7 +25,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image" | "coran_vocabulaire_pdf">, string> = {
   convocation_modele: "convocation_modeles",
   convocation_programmation: "convocation_programmations",
   carnet_message: "carnet_messages",
@@ -48,6 +49,8 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   petits_quiz: "petits_quiz",
   histoire_video: "histoires_videos",
   quiz_video: "quiz_videos",
+  // 📖 Coran › Vocabulaire du Coran (2026-11-26) : sous-carte ou partie (+ ses parties et zones gardées avec elle)
+  coran_vocabulaire: "coran_vocabulaire",
   // 🕊️ Hadith du jour de l'accueil (2026-11-21)
   hadith_du_jour: "hadiths_du_jour",
   allah_name: "allah_names",
@@ -279,6 +282,22 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
       const { error } = await supabase.from("admin_tasks").update({ attachments: [...list, d.attachment] as unknown as Json }).eq("id", d.task_id);
       if (error) return false;
     }
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 📖 PDF d'une carte du Vocabulaire du Coran remplacé (2026-11-26) : on remet l'ancien, celui en place part à son tour dans la corbeille
+  if (item.item_type === "coran_vocabulaire_pdf") {
+    const d = item.item_data as { id?: string; pdf_url?: string | null } | null;
+    if (!d?.id) return false;
+    const { data: row, error: lectureErr } = await untypedDb.from("coran_vocabulaire").select("pdf_url").eq("id", d.id).maybeSingle();
+    if (lectureErr || !row) return false;
+    const actuel = (row as { pdf_url: string | null }).pdf_url;
+    if (actuel && actuel !== (d.pdf_url ?? null)) {
+      const ok = await moveToTrash(item.user_id, "coran_vocabulaire_pdf", d.id, item.label, { id: d.id, pdf_url: actuel });
+      if (!ok) return false;
+    }
+    const { error } = await untypedDb.from("coran_vocabulaire").update({ pdf_url: d.pdf_url ?? null, updated_at: new Date().toISOString() }).eq("id", d.id);
+    if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }

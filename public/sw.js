@@ -10,7 +10,8 @@
 // 2. Ouverture de l'appli : réseau limité à 3 s, sinon la page en mémoire.
 // 3. Fichiers de l'appli : mémoire d'abord (instantané, marche sans réseau).
 // 4. Données (Supabase /rest/) : réseau limité à 4 s, sinon la dernière copie connue de la personne.
-// 5. Audios, vidéos, PDF et fichiers du stockage : toujours le réseau (trop lourds pour être tous gardés).
+// 5. Audios et fichiers du stockage : toujours le réseau (trop lourds pour être tous gardés).
+//    Vidéos (/videos/) et PDF (/pdf/, PDF publics du stockage) : gardés sur l'appareil dès la 1re ouverture.
 //    Les pages du Coran ont leur propre mémoire (« dinislam-coran-pages-v1 », CoranReader) : jamais effacée ici.
 var VERSION = '__BUILD_VERSION__';
 var PRECACHE = self.__PRECACHE || [];
@@ -176,6 +177,35 @@ function videoResponse(event, request, key, cacheName) {
   });
 }
 
+// 📄 Mémoire des PDF (Coran › Vocabulaire du Coran, 2026-11-26 ; règle « appli libre ») : un PDF ouvert une fois
+// reste lisible sans réseau. Jamais effacée lors d'une mise à jour, jamais préchargée d'office (des dizaines de Mo).
+// Un PDF modifié doit changer de nom de fichier. Le lecteur PDF demande parfois des « plages » : découpées dans la copie.
+var PDF_CACHE = 'dinislam-pdf';
+function estVraiPdf(response) {
+  if (!response || !response.ok || response.status !== 200 || response.type === 'opaque') return false;
+  var type = response.headers.get('content-type') || '';
+  // Une adresse inconnue renvoie la page d'accueil (text/html) : jamais gardée comme un PDF
+  return type.indexOf('pdf') !== -1 || type.indexOf('octet-stream') !== -1;
+}
+function pdfResponse(event, request, key) {
+  return caches.open(PDF_CACHE).then(function(cache) {
+    return cache.match(key).then(function(cached) {
+      if (cached) return rangeFromCached(cached, request);
+      if (!request.headers.has('range')) {
+        return fetch(request).then(function(response) {
+          if (estVraiPdf(response)) { var copy = response.clone(); event.waitUntil(cache.put(key, copy).catch(function() {})); }
+          return response;
+        }).catch(function() { return Response.error(); });
+      }
+      // Demande d'une plage : on garde le PDF entier en arrière-plan pour la prochaine fois
+      event.waitUntil(fetch(key, { mode: 'cors', credentials: 'omit' }).then(function(full) {
+        if (estVraiPdf(full)) return cache.put(key, full);
+      }).catch(function() {}));
+      return fetch(request).catch(function() { return Response.error(); });
+    });
+  });
+}
+
 function shellResponse() {
   return fromCache('/').then(function(r) {
     if (r) return clean(r);
@@ -261,12 +291,18 @@ self.addEventListener('fetch', function(event) {
       event.respondWith(videoResponse(event, request, p));
       return;
     }
+    // 🗣️ Voix fabriquées (/sons/voix/…) : gardées dès la 1re écoute
     if (p.indexOf('/sons/voix/') === 0) {
       event.respondWith(videoResponse(event, request, p, VOIX_CACHE));
       return;
     }
+    // 📄 PDF de l'appli (/pdf/…) : gardés sur l'appareil dès la 1re ouverture → lisibles sans réseau
+    if (p.indexOf('/pdf/') === 0) {
+      event.respondWith(pdfResponse(event, request, p));
+      return;
+    }
     // Toujours le réseau : numéro de version, audios/PDF lourds, morceaux demandés par plages (lecture audio)
-    if (p === '/version.json' || p.indexOf('/audio/') === 0 || p.indexOf('/pdf/') === 0 ||
+    if (p === '/version.json' || p.indexOf('/audio/') === 0 ||
         request.headers.has('range') || request.destination === 'audio' || request.destination === 'video') return;
     event.respondWith(
       fromCache(request).then(function(cached) {
@@ -305,6 +341,13 @@ self.addEventListener('fetch', function(event) {
   if (request.destination === 'video' && url.hostname.indexOf('.supabase.co') !== -1 &&
       url.pathname.indexOf('/storage/v1/object/public/') === 0) {
     event.respondWith(videoResponse(event, request, url.href));
+    return;
+  }
+  // 📄 PDF envoyés dans le stockage public (ex. une partie ajoutée par Nadia au Vocabulaire du Coran) : même règle
+  // que les PDF de l'appli. Chaque envoi a un nom unique.
+  if (url.hostname.indexOf('.supabase.co') !== -1 && url.pathname.indexOf('/storage/v1/object/public/') === 0 &&
+      /\.pdf$/i.test(url.pathname)) {
+    event.respondWith(pdfResponse(event, request, url.href));
     return;
   }
   // 🔒🖼️ Images PRIVÉES (lien signé ?token=…, pièces jointes du carnet, photos des devoirs) — 2026-11-12 :

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ import { CoranJuzTab } from '@/components/coran/CoranJuzTab';
 import { CoranRevelationTab } from '@/components/coran/CoranRevelationTab';
 import { CoranProgrammeTab } from '@/components/coran/CoranProgrammeTab';
 import { CoranStudentsTab } from '@/components/coran/CoranStudentsTab';
+// 📖 Vocabulaire du Coran (2026-11-26) : chargé seulement à l'ouverture de l'onglet (le lecteur PDF est lourd)
+const CoranVocabulaireTab = lazy(() => import('@/components/coran/CoranVocabulaireTab'));
 import { JUZ, A_SAVOIR, indexOfPage, pageOfIndex } from '@/data/coranMeta';
 import { SOURATES_DATA } from '@/data/sourates';
 import { pagesForDay, localDay, dateOfDay, type Programme } from '@/lib/coranPlan';
@@ -32,12 +34,14 @@ import { describeIndex, BOOKMARK_COLORS } from '@/lib/coranPages';
  * le Coran Al-Tajwid à feuilleter + un en-tête à onglets. Les onglets ouvrent les MÊMES pages, mais chacun
  * garde sa propre progression (bande de couleur en haut de la page : vert Lire, or Juz', bleu Programme).
  */
-type Tab = 'lire' | 'juz' | 'lieu' | 'programme' | 'savoir' | 'eleves';
+type Tab = 'lire' | 'juz' | 'vocab' | 'lieu' | 'programme' | 'savoir' | 'eleves';
 type Reading = { kind: 'free' } | { kind: 'juz'; juz: number; sura: number } | { kind: 'prog'; day: number };
 
 const TABS: { id: Tab; emoji: string; label: string; admin?: boolean }[] = [
   { id: 'lire', emoji: '📖', label: 'Lire' },
   { id: 'juz', emoji: '📚', label: "Juz'" },
+  // 📖 Nadia, 2026-11-26 : entre « Juz' » et « Lieu révélation »
+  { id: 'vocab', emoji: '🗣️', label: 'Vocabulaire du Coran' },
   { id: 'lieu', emoji: '🕋', label: 'Lieu révélation' },
   { id: 'programme', emoji: '🗓️', label: 'Programme' },
   { id: 'savoir', emoji: '💡', label: 'À savoir' },
@@ -57,7 +61,7 @@ const CoranPage = () => {
   const setTab = useCallback((t: Tab) => {
     setTabState(t);
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-    setParams((p) => { const n = new URLSearchParams(p); if (t === 'lire') n.delete('tab'); else n.set('tab', t); return n; }, { replace: true });
+    setParams((p) => { const n = new URLSearchParams(p); if (t === 'lire') n.delete('tab'); else n.set('tab', t); n.delete('vc'); n.delete('vp'); return n; }, { replace: true });
   }, [setParams]);
 
   const { lecture, juzDone, programme, save, remove } = useCoranProgress();
@@ -202,7 +206,7 @@ const CoranPage = () => {
             {TABS.filter((t) => !t.admin || isAdmin).map((t) => (
               <button key={t.id} role="tab" type="button" aria-selected={tab === t.id}
                 onClick={() => { if (t.id === 'lire' && reading.kind !== 'free') { setReading({ kind: 'free' }); setIndex(lecture.index > 1 ? lecture.index : 1); } setTab(t.id); }}
-                className={cn('px-1 pt-1.5 pb-2 text-center text-[11px] sm:text-xs font-bold leading-tight border-b-[3px] transition-colors min-w-[64px]',
+                className={cn('px-1 pt-1.5 pb-2 text-center text-[11px] sm:text-xs font-bold leading-tight border-b-[3px] transition-colors', t.id === 'vocab' ? 'min-w-[84px]' : 'min-w-[64px]',
                   tab === t.id ? 'text-white border-[#f3d38b]' : 'text-white/70 border-transparent hover:text-white')}>
                 <span className="block text-lg leading-none mb-0.5">{t.emoji}</span>{t.label}
               </button>
@@ -259,6 +263,12 @@ const CoranPage = () => {
         {tab === 'juz' && (
           <CoranJuzTab selected={juzSel} onSelect={setJuzSel} juzDone={juzDone}
             onOpen={(juz, sura, page) => { setReading({ kind: 'juz', juz, sura }); setIndex(indexOfPage(page)); setTab('lire'); }} />
+        )}
+
+        {tab === 'vocab' && (
+          <Suspense fallback={<div className="h-32 rounded-2xl bg-muted animate-pulse" />}>
+            <CoranVocabulaireTab />
+          </Suspense>
         )}
 
         {tab === 'lieu' && <CoranRevelationTab initialOpen={Number(params.get('sourate')) || undefined} onRead={(page) => readFreeNoSave(indexOfPage(page))} />}
