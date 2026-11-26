@@ -12,6 +12,7 @@ import { usePaysage } from '@/hooks/usePaysage';
 import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
 import { EVT_SON_FEU, arreterSonFeu, basculerSonFeu, lireSonFeu, sonFeuEnCours } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
+import { dire, fichierVoix } from '@/lib/voixFabriquees';
 
 /**
  * 🔥 Flamme de la cheminée + 🙈 cache-cache (Nadia, 2026-11-11 : cheminée idées 1, 2, 4, 5 ; cache-cache les 5 idées).
@@ -266,14 +267,9 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
 
   const mot = motArabeDuJour(jour(), saison === 'ramadan');
   const gentil = motGentilDuJour(jour());
-  const parler = () => {
-    try {
-      const u = new SpeechSynthesisUtterance(mot.arabe);
-      u.lang = 'ar-SA'; u.rate = 0.8;
-      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-    } catch { /* voix indisponible sur cet appareil */ }
-  };
-  const voix = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  // 🔊 Voix fabriquée de Hamed (choix de Nadia du 26/11, gardée hors ligne une fois entendue), sinon la voix de l'appareil
+  const ecouterMot = () => dire(mot.arabe, 'ar', 'hamed');
+  const voix = !!fichierVoix(mot.arabe, 'ar', 'hamed') || (typeof window !== 'undefined' && 'speechSynthesis' in window);
 
   return (
     <>
@@ -325,7 +321,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
               <p className="text-4xl">{mot.image}</p>
               <p className="font-arabic text-4xl leading-snug" dir="rtl">{mot.arabe}</p>
               <p className="text-sm"><b>{mot.translit}</b> = {mot.sens}</p>
-              {voix && <button type="button" onClick={parler} className="rounded-full bg-amber-500 text-white px-3 py-1 text-xs font-bold">🔊 Écouter</button>}
+              {voix && <button type="button" onClick={ecouterMot} className="rounded-full bg-amber-500 text-white px-3 py-1 text-xs font-bold">🔊 Écouter</button>}
             </div>
             <p className="text-xs">Le personnage qui se promène en bas met {HABIT[saison].nom} pour toute la journée : regarde !</p>
             <div className="rounded-2xl bg-muted/50 p-2.5 text-start">

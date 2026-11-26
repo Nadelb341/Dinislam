@@ -16,7 +16,7 @@ import { sonCristal, sonHarpeEtoiles } from '@/lib/sonSaison';
 import { useDeuxChances } from '@/hooks/useDeuxChances';
 import { MessageReponse } from '@/components/shared/MessageReponse';
 import { sonErreur } from '@/lib/sonsErreur';
-import { parler } from '@/lib/petits';
+import { dire } from '@/lib/voixFabriquees';
 
 /**
  * 🎯 Le quiz de 10 questions d'une vidéo, n'importe où dans l'appli (Nadia, 22/11 : « je ne veux pas avoir à le redemander »).
@@ -149,12 +149,13 @@ function Partie({ questions, petits, titre, onClose }: { questions: QuestionVide
   const q = questions[etape];
   const fini = etape >= questions.length;
   const ordre = useMemo(() => (q ? melanger(q.choix.map((_, i) => i)) : []), [q]);
-  useEffect(() => { if (petits && q) parler(q.question, 'fr'); }, [petits, q]);
+  // Tout-petits : voix fabriquée de Jamal si la phrase est connue (choix de Nadia du 26/11), sinon la voix du téléphone
+  useEffect(() => { if (petits && q) dire(q.question, 'fr', 'jamal'); }, [petits, q]);
   useEffect(() => { if (fini) { confettiLettres(['⭐']); sonHarpeEtoiles(); } }, [fini]);
 
   const toucherPetit = (i: number) => {
     if (!q || trouve) return;
-    parler(q.choix[i], 'fr');
+    dire(q.choix[i], 'fr', 'jamal');
     if (i === q.bonne) {
       setTrouve(true); sonCristal();
       setTimeout(() => { setN((x) => x + 1); setRates([]); setTrouve(false); }, 1300);
@@ -184,7 +185,7 @@ function Partie({ questions, petits, titre, onClose }: { questions: QuestionVide
         ) : q && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              {petits && <button type="button" onClick={() => parler(q.question, 'fr')} aria-label="Réécouter la question" className="h-12 w-12 shrink-0 rounded-full bg-violet-100 text-2xl">🔊</button>}
+              {petits && <button type="button" onClick={() => dire(q.question, 'fr', 'jamal')} aria-label="Réécouter la question" className="h-12 w-12 shrink-0 rounded-full bg-violet-100 text-2xl">🔊</button>}
               <p className="flex-1 font-bold [overflow-wrap:anywhere]">{q.question}</p>
             </div>
             {q.arabe && <p className="font-arabic text-3xl text-center" dir="rtl">{q.arabe}</p>}

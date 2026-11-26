@@ -70,7 +70,7 @@ export default function HistoiresProphetesPage() {
               <VideosHistoire key={`v${f.id}`} ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />
             </>
           )}
-          enBas={(f) => <QuizHistoire key={`q${f.id}`} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />} />
+          enBas={(f) => <QuizHistoire key={`q${f.id}`} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} petits={false} />} />
       )}
       {edition && <EditionFichePetit rubrique="prophetes" fiche={edition} fiches={fiches} userId={user?.id ?? null} onClose={() => setEdition(null)}
         rafraichir={() => void queryClient.invalidateQueries({ queryKey: ['petits-fiches'] })} />}
