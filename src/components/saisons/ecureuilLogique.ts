@@ -429,3 +429,30 @@ export function repereCourt(texte: string, max = 28): string {
   const i = coupe.lastIndexOf(' ');
   return `${(i > 10 ? coupe.slice(0, i) : coupe).trim()}…`;
 }
+
+
+/**
+ * 🦔 27/11 (Nadia) : l'écureuil annonce son « ami » caché dans l'accueil (le personnage du cache-cache).
+ * « Le hérisson » → « mon copain le hérisson » ; « La biche » → « ma copine la biche » ; « L'escargot » → « mon copain l'escargot ».
+ */
+export function copainDe(nom: string): string {
+  const n = nom.trim();
+  const bas = n.charAt(0).toLowerCase() + n.slice(1);
+  return /^la /i.test(n) ? `ma copine ${bas}` : `mon copain ${bas}`;
+}
+const MESSAGES_AMI: readonly string[] = [
+  '{copain} se cache aussi dans la page d\'accueil… tu ne l\'auras pas, {prenom} ! 😜',
+  'Psst {prenom} ! {Copain} joue à cache-cache dans l\'accueil. Bonne chance ! 🙈',
+  'Hihi ! {Copain} s\'est caché quelque part ici. Même moi, je ne sais pas où ! 🤭',
+  '{Copain} est très fort à cache-cache… Tu crois pouvoir le trouver ? 🔍',
+  'J\'ai un secret : {copain} se cache sur cette page ! 🤫',
+  'Ouvre grand tes yeux, {prenom} : {copain} est caché tout près ! 👀',
+];
+export const NB_MESSAGES_AMI = MESSAGES_AMI.length;
+export function messageAmi(i: number, nom: string, prenom: string): string {
+  const c = copainDe(nom);
+  const t = MESSAGES_AMI[((i % MESSAGES_AMI.length) + MESSAGES_AMI.length) % MESSAGES_AMI.length]
+    .replace('{Copain}', c.charAt(0).toUpperCase() + c.slice(1)).replace('{copain}', c);
+  const r = avecPrenom(t, prenom);
+  return r.charAt(0).toUpperCase() + r.slice(1);
+}

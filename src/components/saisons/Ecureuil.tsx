@@ -1,3 +1,4 @@
+import { EVT_AMI, amiActuel } from './ecureuilEtat';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +10,7 @@ import { sonCristal } from '@/lib/sonSaison';
 import { ECUREUIL_SVG, ECUREUIL_VB, MAISON_VB, maisonnetteSvg } from './dessinsCachettes';
 import { gene, type Boite } from './cacheCacheLogique';
 import {
-  ENCOURAGEMENTS, INTROS_INDICE, MESSAGES_MAISON, TEXTE_ANNONCE, annonceVisible, avecPrenom, devinettesLieu, niveauIndice, ordreAuHasard,
+  ENCOURAGEMENTS, INTROS_INDICE, MESSAGES_MAISON, messageAmi, TEXTE_ANNONCE, annonceVisible, avecPrenom, devinettesLieu, niveauIndice, ordreAuHasard,
   positionDansPage, repereCourt, texteIndice, tirerSansRepeter, type ChoixIndice, type PageEcureuil,
 } from './ecureuilLogique';
 import { demarrerEcureuil, donnerPrenom, ecureuilTrouve, enregistrerPages, faireAvancer, fermerBravo, useEcureuil } from './ecureuilEtat';
@@ -328,23 +329,32 @@ export function MaisonEcureuil({ userId, prenom }: { userId: string; prenom: str
 
   // 💬 Bulle quand il n'est pas chez lui : un message joueur au hasard, qui change toutes les 12 s (jamais 2 fois le même de suite)
   const [iMsg, setIMsg] = useState(tirerMessageMaison);
+  // 🦔 27/11 (Nadia) : son « ami » du cache-cache caché dans l'accueil, annoncé par l'écureuil (un message sur deux)
+  const [ami, setAmi] = useState<string | null>(amiActuel);
   useEffect(() => {
-    if (dedans) return;
-    const t = setInterval(() => setIMsg(tirerMessageMaison()), 12_000);
+    const f = (e: Event) => setAmi((e as CustomEvent<string | null>).detail ?? null);
+    window.addEventListener(EVT_AMI, f);
+    return () => window.removeEventListener(EVT_AMI, f);
+  }, []);
+  const [tour, setTour] = useState(0);
+  useEffect(() => {
+    if (dedans && !ami) return;
+    const t = setInterval(() => { setTour((x) => x + 1); if (!dedans) setIMsg(tirerMessageMaison()); }, 12_000);
     return () => clearInterval(t);
-  }, [dedans]);
+  }, [dedans, ami]);
 
   const toucher = () => setMessage(dedans
     ? `Coucou${p ? ` ${p}` : ''} ! Je me repose dans ma maisonnette 🏡 Je repars bientôt me cacher 😉`
     : 'Je ne suis pas à la maison ! Cherche-moi dans l\'appli 🔍');
-  const texteBulle = message ?? (dedans ? null : avecPrenom(MESSAGES_MAISON[iMsg] ?? MESSAGES_MAISON[0], p));
+  const parlerDeLAmi = !!ami && (dedans || tour % 2 === 0);
+  const texteBulle = message ?? (parlerDeLAmi ? messageAmi(Math.floor(tour / 2), ami!, p) : dedans ? null : avecPrenom(MESSAGES_MAISON[iMsg] ?? MESSAGES_MAISON[0], p));
 
   return (
     <>
       {place && createPortal(
         <div className="flex items-end gap-1">
           {texteBulle && (
-            <span key={message ? 'message' : iMsg} role="status" className="jeux-bulle mb-6 max-w-[8rem] sm:max-w-[12rem] rounded-2xl rounded-br-none border-2 border-amber-300 bg-white dark:bg-card px-2 py-1 text-[11px] sm:text-xs font-extrabold leading-tight text-amber-800 dark:text-amber-200 shadow-md [overflow-wrap:anywhere]">
+            <span key={message ? 'message' : parlerDeLAmi ? `ami-${tour}` : iMsg} role="status" className="jeux-bulle mb-6 max-w-[8rem] sm:max-w-[12rem] rounded-2xl rounded-br-none border-2 border-amber-300 bg-white dark:bg-card px-2 py-1 text-[11px] sm:text-xs font-extrabold leading-tight text-amber-800 dark:text-amber-200 shadow-md [overflow-wrap:anywhere]">
               {texteBulle}
             </span>
           )}

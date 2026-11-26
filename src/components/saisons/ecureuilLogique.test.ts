@@ -161,3 +161,17 @@ describe('🐿️ petits outils', () => {
     expect(repereCourt('Apprendre les ablutions avant la prière du matin')).toBe('Apprendre les ablutions…');
   });
 });
+
+import { copainDe, messageAmi } from './ecureuilLogique';
+describe('🦔 l\'écureuil annonce son copain', () => {
+  it('copain / copine selon le nom', () => {
+    expect(copainDe('Le hérisson')).toBe('mon copain le hérisson');
+    expect(copainDe('La biche')).toBe('ma copine la biche');
+    expect(copainDe("L'escargot")).toBe("mon copain l'escargot");
+  });
+  it('avec ou sans prénom', () => {
+    expect(messageAmi(0, 'Le hérisson', 'Nadia')).toMatch(/^Mon copain le hérisson se cache aussi .*Nadia/);
+    expect(messageAmi(1, 'Le hérisson', '')).toMatch(/^Psst\s!\sMon copain le hérisson/);
+    expect(messageAmi(1, 'Le hérisson', '')).not.toContain('{');
+  });
+});

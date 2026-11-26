@@ -1,3 +1,4 @@
+import { annoncerAmi } from './ecureuilEtat';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -254,6 +255,12 @@ export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: S
   const nomAnimal = animal.nom;
   const fenRef = useRef<HTMLButtonElement>(null);
   const departRef = useRef<SVGSVGElement>(null);
+  // 🐿️ 27/11 (Nadia) : c'est l'écureuil (bulle de sa maisonnette) qui annonce « son copain » caché dans l'accueil
+  useEffect(() => {
+    if (!sansEcureuil) return;
+    annoncerAmi(cachette && !trouveIci ? animal.nom : null);
+    return () => annoncerAmi(null);
+  }, [sansEcureuil, cachette, trouveIci, animal.nom]);
   const tracesRef = useRef<HTMLDivElement>(null);
 
   // La cachette de la partie (cherchée dans l'accueil ; retrouvée si l'accueil se redessine) + la place de la bulle
@@ -298,7 +305,8 @@ export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: S
       const boite = tracesRef.current;
       if (!boite) return;
       const w = window.innerWidth, h = window.innerHeight;
-      const d = departRef.current?.getBoundingClientRect();
+      // 27/11 (Nadia) : avec l'écureuil, plus de bulle « Essaie de me trouver ! » : les traces partent de SA maisonnette
+      const d = (sansEcureuil ? document.getElementById('maison-ecureuil') : departRef.current)?.getBoundingClientRect();
       const depart = d && d.width ? { x: d.left + d.width / 2, y: d.top + d.height / 2 } : { x: w / 2, y: h - 80 };
       const traces = cheminTraces(depart, pointVisible(f, cachette.cote), { x0: 14, y0: 64, x1: w - 14, y1: h - 14 });
       const cle = traces.map((p) => `${p.x | 0},${p.y | 0}`).join(';');
@@ -312,7 +320,7 @@ export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: S
     };
     raf = requestAnimationFrame(tour);
     return () => cancelAnimationFrame(raf);
-  }, [cachette, trouveIci, indice]);
+  }, [cachette, trouveIci, indice, sansEcureuil]);
 
   const trouver = () => {
     const nom = cachette?.nom || 'une carte';
@@ -337,7 +345,7 @@ export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: S
     <>
       {/* 💬 La bulle « Essaie de me trouver ! » (dite par le personnage de la partie), entre l'arbre / le message de bienvenue et
           le carnet (Nadia, 12/11). Les traces partent d'elle. (26/11 : l'ancienne « cachette dans le décor » est retirée) */}
-      {bulle && !trouveIci && createPortal(
+      {bulle && !trouveIci && !sansEcureuil && createPortal(
         <div className="jeux-bulle-cache flex items-end gap-1 pointer-events-none">
           <svg ref={departRef} viewBox={animal.vb} aria-hidden className="h-10 w-10 shrink-0" dangerouslySetInnerHTML={{ __html: animal.svg }} />
           <span className="relative mb-5 rounded-2xl rounded-bl-none border-2 border-amber-300 bg-white dark:bg-card px-2.5 py-1 text-[11px] sm:text-xs font-extrabold text-amber-800 dark:text-amber-200 shadow-md max-w-[6.5rem] sm:max-w-none leading-tight">Essaie de me trouver !</span>

@@ -57,3 +57,12 @@ export const donnerPrenom = (prenom: string) => { if (prenom && prenom !== store
 
 const abonner = (f: () => void) => { abonnes.add(f); return () => { abonnes.delete(f); }; };
 export const useEcureuil = () => useSyncExternalStore(abonner, () => store, () => store);
+
+/** 🐿️ L'ami caché de l'écureuil (nom du personnage du cache-cache, ou null) : lu par la maisonnette */
+export const EVT_AMI = 'dinislam-ami-cache';
+export function annoncerAmi(nom: string | null) {
+  (window as unknown as { __amiCache?: string | null }).__amiCache = nom;
+  window.dispatchEvent(new CustomEvent(EVT_AMI, { detail: nom }));
+}
+export const amiActuel = () => (window as unknown as { __amiCache?: string | null }).__amiCache ?? null;
+

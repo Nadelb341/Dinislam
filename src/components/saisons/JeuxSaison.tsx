@@ -223,7 +223,7 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
   return createPortal(
     <>
       {/* Petit bouton posé sur la cheminée (44 px) : il ne cache jamais les cartes */}
-      <button type="button" onClick={() => { setRouverte(!!choix); setOuvert(true); }} aria-label={COIN[saison]}
+      <button type="button" onClick={() => { setRouverte(repondu); setOuvert(true); }} aria-label={COIN[saison]}
         className={`fixed z-[31] grid place-items-center rounded-full w-11 h-11 ${repondu ? 'opacity-40' : 'jeux-question'}`}
         style={{ right: 'calc(max(4px, env(safe-area-inset-right, 0px)) + 22px)', bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 58px)' }}>
         <span className={`rounded-full text-sm font-extrabold w-7 h-7 grid place-items-center shadow ${repondu ? 'bg-white/80 text-orange-700' : 'bg-amber-400 text-amber-950'}`}>{repondu ? '🔥' : '?'}</span>
@@ -236,13 +236,14 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
             <p className="font-bold text-base">{q.question}</p>
             <div className="grid gap-2">
               {q.options.map((o) => (
-                <button key={o} type="button" disabled={!!choix} onClick={() => repondre(o)}
-                  className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold text-start ${choix && o === q.bonne ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : choix === o ? 'border-red-400 bg-red-50 dark:bg-red-950/30' : 'bg-card'}`}>{o}</button>
+                <button key={o} type="button" disabled={repondu} onClick={() => repondre(o)}
+                  className={`rounded-xl border-2 px-3 py-2 text-sm font-semibold text-start ${repondu && o === q.bonne ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : choix === o ? 'border-red-400 bg-red-50 dark:bg-red-950/30' : 'bg-card'}`}>{o}</button>
               ))}
             </div>
             {choix && <p className="text-sm font-bold">{choix === q.bonne ? '🎉 Bravo, ma shā\' Allah !' : `Presque ! La bonne réponse : ${q.bonne}`}</p>}
-            {choix && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source}</p>}
-            {choix
+            {repondu && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source}</p>}
+            {/* 1ʳᵉ ouverture : le rappel reste EN BAS après la réponse (comme avant) ; réouverture : il est EN HAUT (rouge clair) */}
+            {repondu
               ? (!rouverte && <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-center text-sm font-bold text-amber-800 dark:text-amber-200">{rappel}</p>)
               : <p className="text-[11px] text-muted-foreground">Une nouvelle question chaque jour.</p>}
             <button type="button" onClick={() => setOuvert(false)} className="w-full rounded-xl bg-orange-500 text-white py-2 text-sm font-bold">Fermer</button>
