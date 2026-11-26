@@ -253,7 +253,7 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
       <div aria-hidden className={`saison-decor contents pointer-events-none ${calme ? 'saison-calme' : ''}`}>
         {a.feuilles && !calme && <canvas ref={arriereRef} className="pointer-events-none fixed inset-0 -z-10 h-full w-full" />}
         {a.arbre && (
-          <svg ref={arbreRef} viewBox={`0 0 ${ARBRE_VB.w} ${ARBRE_VB.h}`} className="pointer-events-none absolute -z-[5] overflow-visible"
+          <svg ref={arbreRef} data-cachette="L'arbre" data-cachette-bord="0.16" data-cachette-place="0.5" viewBox={`0 0 ${ARBRE_VB.w} ${ARBRE_VB.h}`} className="pointer-events-none absolute -z-[5] overflow-visible"
             style={{ top: 6, left: -6, width: largeurArbre }} dangerouslySetInnerHTML={{ __html: arbre.svg }} />
         )}
       </div>
@@ -262,7 +262,8 @@ export function DecorAutomne({ r, soir, userId }: { r: ReglagesSaisons; soir: bo
           {/* 🍂 Tapis de feuilles à gauche de la cheminée (sous elle : la cheminée reste devant) */}
           <TapisFeuilles a={a} userId={userId} calme={calme} defile={defile} largeurCheminee={a.cheminee ? Math.min(window.innerWidth * 0.3, 112) * (paysage ? 0.5 : 1) : 0} />
           {a.cheminee && (
-            <svg viewBox={`0 0 ${CHEMINEE_VB.w} ${CHEMINEE_VB.h}`}
+            // 🙈 data-cachette (2026-11-26) : une cachette du cache-cache (le personnage dépasse sur le côté gauche)
+            <svg data-cachette="La cheminée" data-cachette-cote="gauche" data-cachette-bord="0.23" data-cachette-place="0.83" viewBox={`0 0 ${CHEMINEE_VB.w} ${CHEMINEE_VB.h}`}
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && a.petitFeuJour ? 'saison-feu-jour' : ''}`}
               style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />

@@ -398,8 +398,12 @@ const handleModuleClick = (mod) => {
           </SilentBoundary>
 
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
-              Vide (et cachée) tant que le jeu ne la remplit pas */}
-          <div id="bulle-cache-cache" className="flex justify-start ps-1 empty:hidden" />
+              🏡 À droite (2026-11-26) : la maisonnette de l'écureuil qui se cache dans toute l'appli (à la place de l'ancienne cachette
+              du décor). Rangée cachée tant que les jeux ne la remplissent pas ; l'écureuil ne se cache jamais dedans (data-pas-ecureuil) */}
+          <div data-pas-ecureuil className="rangee-jeux flex items-end justify-between gap-2 ps-1">
+            <div id="bulle-cache-cache" className="min-w-0 empty:hidden" />
+            <div id="maison-ecureuil" className="ms-auto shrink-0 empty:hidden" />
+          </div>
           {/* 🏮 Ramadan (2026-11-16) : 30 lanternes (une s'allume par jour passé), compte à rebours et moment de l'iftar */}
           {ramadan && fete?.mode === 'ramadan' && (reglagesSaison.ramadan.lanternesMois || reglagesSaison.ramadan.compteRebours || reglagesSaison.ramadan.iftar) && (
             <SilentBoundary name="Lanternes du Ramadan">
@@ -604,6 +608,7 @@ const handleModuleClick = (mod) => {
                   <button
                     onClick={() => handleModuleClick(mod)}
                     data-carte-nom={mod.title}
+                    data-carte-chemin={mod.is_builtin && mod.builtin_path ? mod.builtin_path : `/module/${mod.id}`}
                     className={cn(
                       'carte-accueil relative bg-card rounded-2xl p-4 shadow-sm border border-border w-full',
                       'flex flex-col items-center justify-center min-h-[160px]',

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
 import { usePaysage } from '@/hooks/usePaysage';
+import { BONHOMME_VB, GRAND_BONHOMME_SVG } from './dessinsCachettes';
 import { EVT_VALIDATION, preparerSon, sonCristal } from '@/lib/sonSaison';
 import {
   CHALET_VB, LANTERNES_SVG, MOTS_HIVER, NEIGE_SVG, OURS_SVG, PERSOS, TAS_NEIGE_SVG, dessinerChalet, dessinerChemineeHiver,
@@ -371,7 +372,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
           </div>
         )}
         {h.chalet && (
-          <svg viewBox={`0 0 ${CHALET_VB.w} ${CHALET_VB.h}`} className="pointer-events-none absolute -z-[5] overflow-visible"
+          <svg data-cachette="Le chalet" data-cachette-bord="0.2" data-cachette-place="0.5" viewBox={`0 0 ${CHALET_VB.w} ${CHALET_VB.h}`} className="pointer-events-none absolute -z-[5] overflow-visible"
             style={{ top: 10, left: -4, width: largeurChalet }} dangerouslySetInnerHTML={{ __html: chalet }} />
         )}
       </div>
@@ -384,6 +385,12 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
               <svg aria-hidden viewBox="0 0 340 60" preserveAspectRatio="none" className="fixed inset-x-0 bottom-0 z-[27] h-[60px] paysage:h-[30px] w-full"
                 style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }} dangerouslySetInnerHTML={{ __html: NEIGE_SVG + (h.lanternes ? LANTERNES_SVG : '') }} />
               <svg ref={tracesRef} aria-hidden className="fixed bottom-0 left-0 z-[28] h-10 paysage:h-5 w-full" viewBox={`0 0 ${typeof window !== 'undefined' ? window.innerWidth : 390} 40`} preserveAspectRatio="none" />
+              {/* ⛄ 2026-11-26 : grand bonhomme de neige posé dans la neige = une cachette du cache-cache (seulement si le jeu est allumé) */}
+              {r.jeux.cacheCache && (
+                <svg aria-hidden data-cachette="Le bonhomme de neige" data-cachette-bord="0.12" data-cachette-place="0.5" viewBox={BONHOMME_VB}
+                  className="pointer-events-none fixed bottom-1 z-[29] h-16 w-[50px] paysage:h-8 paysage:w-[25px] overflow-visible" style={{ left: 'calc(42% + 40px)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                  dangerouslySetInnerHTML={{ __html: GRAND_BONHOMME_SVG }} />
+              )}
               {h.ours && (
                 <button type="button" aria-label="L'ours polaire : touche-le pour voir le mot de l'hiver" onClick={() => h.motOurs && montrerMot()}
                   className={`pointer-events-auto fixed bottom-2 left-1.5 z-[28] w-[58px] paysage:bottom-1 paysage:w-[29px] ${ourEveil ? 'hiver-ours-reveil' : ''}`}>
@@ -399,7 +406,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
                   style={{ transform: 'translateX(70px)', transformOrigin: '50% 100%' }} dangerouslySetInnerHTML={{ __html: PERSOS[perso] + habitSvg(habit, 30, 38) }} />
               )}
               {h.personnage && h.plongeon && (
-                <svg ref={tasRef} aria-hidden viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] paysage:bottom-px paysage:h-[13px] paysage:w-[30px] overflow-visible" style={{ left: paysage ? 'calc(42% - 15px)' : 'calc(42% - 30px)' }}
+                <svg ref={tasRef} aria-hidden data-cachette="Le tas de neige" data-cachette-prep="dans" data-cachette-bord="0.3" data-cachette-place="0.5" viewBox="0 0 60 26" className="fixed bottom-[3px] z-[30] h-[26px] w-[60px] paysage:bottom-px paysage:h-[13px] paysage:w-[30px] overflow-visible" style={{ left: paysage ? 'calc(42% - 15px)' : 'calc(42% - 30px)' }}
                   dangerouslySetInnerHTML={{ __html: TAS_NEIGE_SVG }} />
               )}
             </>
@@ -424,7 +431,7 @@ export function DecorHiver({ r, soir, matin, userId }: { r: ReglagesSaisons; soi
             </div>
           )}
           {h.cheminee && (
-            <svg aria-hidden viewBox="0 0 200 172"
+            <svg aria-hidden data-cachette="La cheminée" data-cachette-cote="gauche" data-cachette-bord="0.23" data-cachette-place="0.83" viewBox="0 0 200 172"
               className={`fixed bottom-0 z-30 transition-opacity duration-500 ${feuDeJour && h.petitFeuJour ? 'hiver-feu-jour' : ''} ${h.chocolat && soir ? 'hiver-chocolat-visible' : ''}`}
               style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: cheminee }} />

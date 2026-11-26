@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +12,7 @@ import { COMPAGNONS, compagnonSvg } from './dessinsRamadan';
 import { EVT_SON_FEU, arreterSonFeu, basculerSonFeu, lireSonFeu, sonFeuEnCours } from '@/lib/sonFeu';
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 import { dire, fichierVoix } from '@/lib/voixFabriquees';
+import { FENETRE, cheminTraces, choisirCachette, fenetreCachette, gene, pointVisible, type Boite, type Cote } from './cacheCacheLogique';
 
 /**
  * 🔥 Flamme de la cheminée + 🙈 cache-cache (Nadia, 2026-11-11 : cheminée idées 1, 2, 4, 5 ; cache-cache les 5 idées).
@@ -158,9 +158,9 @@ export function FeuSemaine({ userId, regle, buches, decor, etincelles }: { userI
 
 // ——— 🙈 Cache-cache ———
 /** 🔁 Un personnage différent à chaque partie (Nadia, 2026-11-12) ; c'est LUI qui dit « Essaie de me trouver ! » */
-/** `repos` : de combien il redescend derrière la carte (plus petit = on en voit plus) ; il doit TOUJOURS dépasser un peu (Nadia, 17/11 : le tapis caché ne se voyait plus du tout) */
-type AnimalCache = { vb: string; svg: string; nom: string; repos?: string };
-const A48 = (k: string, nom: string): AnimalCache => ({ vb: '0 0 48 48', svg: IMAGES_AUTOMNE[k]?.svg ?? '', nom });
+/** `repos` : de combien il redescend derrière sa cachette (plus petit = on en voit plus) ; il doit TOUJOURS dépasser un peu (Nadia, 17/11 : le tapis caché ne se voyait plus du tout) */
+type AnimalCache = { vb: string; svg: string; nom: string; repos?: string; cle?: string };
+const A48 = (k: string, nom: string): AnimalCache => ({ vb: '0 0 48 48', svg: IMAGES_AUTOMNE[k]?.svg ?? '', nom, cle: k });
 const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
   automne: [A48('ecureuil', 'L\'écureuil'), A48('herisson', 'Le hérisson'), A48('hibou', 'Le hibou'), A48('renard', 'Le renard')],
   hiver: [{ vb: '0 0 30 38', svg: PERSOS.pingouin, nom: 'Le pingouin' }, { vb: '0 0 30 38', svg: PERSOS.bonhomme, nom: 'Le bonhomme de neige' }, A48('hibou', 'Le hibou')],
@@ -169,9 +169,10 @@ const ANIMAUX_CACHE: Record<Saison, AnimalCache[]> = {
   ramadan: (['dromadaire', 'colombe', 'tapis'] as const).map((k) => ({ vb: `0 0 ${COMPAGNONS[k].vb[0]} ${COMPAGNONS[k].vb[1]}`, svg: compagnonSvg(k, `cache-${k}`), nom: COMPAGNONS[k].nom, repos: ({ dromadaire: '50%', colombe: '46%', tapis: '38%' } as const)[k] })),
   ete: [{ vb: '0 0 40 34', svg: ANIMAUX.crabe.svg, nom: 'Le crabe', repos: '54%' }, { vb: '0 0 40 34', svg: ANIMAUX.dauphin.svg, nom: 'Le dauphin', repos: '54%' }],
 };
+/** 🐿️ 2026-11-26 : quand l'écureuil qui se cache PARTOUT est allumé, le cache-cache de l'accueil prend un autre animal (pas deux écureuils) */
+const animauxDe = (saison: Saison, sansEcureuil: boolean) => ANIMAUX_CACHE[saison].filter((a) => !(sansEcureuil && a.cle === 'ecureuil'));
 /** Tire un personnage, jamais le même que la partie d'avant */
-function tirerAnimal(saison: Saison): number {
-  const n = ANIMAUX_CACHE[saison].length;
+function tirerAnimal(n: number): number {
   let avant = -1;
   try { avant = Number(sessionStorage.getItem('dinislam_cache_animal') ?? -1); } catch { /* stockage indisponible */ }
   let i = Math.floor(Math.random() * n);
@@ -181,125 +182,182 @@ function tirerAnimal(saison: Saison): number {
 }
 const PLUIE: Record<Saison, string> = { automne: '🍂', hiver: '❄️', printemps: '🌸', ete: '🐚', ramadan: '⭐' };
 
-/** B · la cachette dans le décor (un petit tas d'où dépasse sa queue), dans la rangée de la bulle */
-const CACHETTES_DECOR: Record<Saison, { nom: string; tas: string }[]> = {
-  automne: [{ nom: 'le tas de feuilles', tas: '🍂🍁' }, { nom: 'les branches de l\'arbre', tas: '🍁🍂' }, { nom: 'les pommes tombées', tas: '🍎🍂🍎' }, { nom: 'les champignons', tas: '🍄🍂' }],
-  hiver: [{ nom: 'le tas de neige', tas: '❄️⛄' }, { nom: 'la luge', tas: '🛷❄️' }, { nom: 'les flocons', tas: '❄️❄️' }, { nom: 'le bonhomme de neige', tas: '⛄' }],
-  printemps: [{ nom: 'les fleurs', tas: '🌷🌼' }, { nom: 'l\'arbre en fleurs', tas: '🌸🌳' }, { nom: 'le buisson', tas: '🌿🌱' }, { nom: 'les papillons', tas: '🦋🌼' }],
-  ramadan: [{ nom: 'la dune', tas: '🏜️' }, { nom: 'les lanternes', tas: '🏮🏮' }, { nom: 'le palmier', tas: '🌴' }, { nom: 'les étoiles', tas: '⭐🌙' }],
-  ete: [{ nom: 'le sable', tas: '🏖️🐚' }, { nom: 'le parasol', tas: '⛱️' }, { nom: 'les vagues', tas: '🌊🌊' }, { nom: 'le seau de plage', tas: '🪣🐚' }],
-};
+/**
+ * 🙈 2026-11-26 (Nadia) : il se cache PARTOUT dans l'accueil — derrière une carte, mais aussi derrière tout élément du décor
+ * marqué `data-cachette="Le nom"` (logo, titre, arbre, cheminée, tas de feuilles, bonhomme de neige, soleil, papillon,
+ * dromadaire…). Options de l'élément : `data-cachette-prep` (« dans », sinon « derrière »), `data-cachette-cote`
+ * (haut | gauche | droite : par où il dépasse), `data-cachette-bord` (0 à 1 : de combien on rentre dans l'élément, quand le
+ * dessin a du vide autour), `data-cachette-place` (0 à 1 : où le long du bord ; sinon au hasard), `data-cachette-repos`
+ * (ex. « 34% » : il dépasse plus, quand il se confondrait avec le décor, comme dans le tas de feuilles).
+ */
+type Cachette = { el: HTMLElement; nom: string; prep: string; cote: Cote; bord: number; place: number; fixe: boolean; repos?: string };
+const COTES: Cote[] = ['haut', 'gauche', 'droite'];
+const PLACES = [0.5, 0.15, 0.85, 0.3, 0.7];
+const nombre = (v: string | undefined, d: number) => { const n = Number(v); return v != null && v !== '' && Number.isFinite(n) ? n : d; };
+/** Collé à l'écran (cheminée, tas de feuilles…) ou dans la page (cartes, logo…) */
+function estFixe(el: HTMLElement) {
+  for (let n: HTMLElement | null = el; n && n !== document.body; n = n.parentElement) if (getComputedStyle(n).position === 'fixed') return true;
+  return false;
+}
+const visible = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return r.width > 8 && r.height > 8; };
+/** Boutons et liens de l'écran : on ne cache jamais un petit bouton (les grandes cartes ne comptent pas). La zone à toucher
+ *  posée SUR l'élément lui-même (ex. « secoue l'arbre », aussi grande que l'arbre) n'est pas un obstacle. */
+function obstacles(el: HTMLElement): Boite[] {
+  const e = el.getBoundingClientRect(), aireEl = e.width * e.height;
+  return [...document.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [role="button"]')]
+    .filter((o) => o !== el && !o.contains(el) && !el.contains(o) && !o.closest('[data-cache-perso]'))
+    .map((o) => o.getBoundingClientRect()).filter((r) => r.width > 0)
+    .filter((r) => {
+      const ix = Math.max(0, Math.min(r.right, e.right) - Math.max(r.left, e.left)), iy = Math.max(0, Math.min(r.bottom, e.bottom) - Math.max(r.top, e.top));
+      const aire = r.width * r.height;
+      return !(ix * iy >= aire * 0.5 && aire >= aireEl * 0.5);
+    });
+}
+function chercherCachette(tirage: { h1: number; h2: number; place: number }, nomAnimal: string): Cachette | null {
+  // Jamais derrière lui-même (le dromadaire caché derrière le dromadaire, le bonhomme de neige derrière le bonhomme…)
+  const decor = [...document.querySelectorAll<HTMLElement>('[data-cachette]')].filter(visible)
+    .filter((el) => (el.dataset.cachette || '').toLowerCase() !== nomAnimal.toLowerCase());
+  const cartes = [...document.querySelectorAll<HTMLElement>('.carte-accueil')].filter(visible);
+  const choix = choisirCachette(decor.length, cartes.length, tirage.h1, tirage.h2);
+  if (!choix) return null;
+  const premiere = choix.type === 'decor' ? decor[choix.i] : cartes[choix.i];
+  const ordre = [premiere, ...decor, ...cartes].filter((x, i, t) => t.indexOf(x) === i);
+  for (const el of ordre) {
+    const d = el.dataset;
+    const cote = (COTES as string[]).includes(d.cachetteCote ?? '') ? d.cachetteCote as Cote : 'haut';
+    const bord = nombre(d.cachetteBord, 0);
+    const places = d.cachettePlace != null ? [nombre(d.cachettePlace, 0.5), ...PLACES] : [tirage.place, ...PLACES];
+    const obs = obstacles(el);
+    const r = el.getBoundingClientRect();
+    const aireMax = 6 * FENETRE[cote].l * FENETRE[cote].h;
+    const place = places.find((p) => !gene(fenetreCachette(r, cote, p, bord), obs, aireMax));
+    if (place === undefined) continue;
+    return { el, nom: d.cachette || d.carteNom || 'une carte', prep: d.cachettePrep || 'derrière', cote, bord, place, fixe: estFixe(el), repos: d.cachetteRepos };
+  }
+  return null;
+}
+const CLASSE_COTE: Record<Cote, string> = { haut: 'jeux-tete', gauche: 'jeux-cote-g', droite: 'jeux-cote-d' };
+const NB_TRACES = 14;
 
-export function CacheCache({ saison, userId }: { saison: Saison; userId: string }) {
+export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: Saison; userId: string; sansEcureuil?: boolean }) {
   const cleAlbum = `dinislam_cache_album_${userId}`;
   // 🔁 Nadia, 2026-11-12 : le jeu revient À CHAQUE retour sur l'accueil (nouvelle partie à chaque fois que l'accueil s'affiche)
   const [trouveIci, setTrouveIci] = useState(false);
-  const [hote, setHote] = useState<{ el: HTMLElement; nom: string } | null>(null);
+  const [cachette, setCachette] = useState<Cachette | null>(null);
   const [bulle, setBulle] = useState<HTMLElement | null>(null);
   const [trouve, setTrouve] = useState<null | { cachette: string; album: string[] }>(null);
   const [danse, setDanse] = useState(false);
   // Une cachette différente à chaque partie
-  const [tirage] = useState(() => ({ carte: Math.random(), coin: Math.floor(Math.random() * 4), animal: tirerAnimal(saison) }));
-  const animal = ANIMAUX_CACHE[saison][tirage.animal] ?? ANIMAUX_CACHE[saison][0];
-  const cachette = CACHETTES_DECOR[saison][tirage.coin];
-  const decorRef = useRef<HTMLButtonElement>(null);
+  const liste = useMemo(() => animauxDe(saison, sansEcureuil), [saison, sansEcureuil]);
+  const [tirage] = useState(() => ({ h1: Math.random(), h2: Math.random(), place: 0.1 + Math.random() * 0.8, animal: tirerAnimal(liste.length) }));
+  const animal = liste[tirage.animal] ?? liste[0];
+  const nomAnimal = animal.nom;
+  const fenRef = useRef<HTMLButtonElement>(null);
+  const departRef = useRef<SVGSVGElement>(null);
+  const tracesRef = useRef<HTMLDivElement>(null);
 
-  // La carte de la partie (cherchée dans l'accueil ; retrouvée si l'accueil se redessine) + la place de la bulle
-  const hoteRef = useRef(hote);
-  hoteRef.current = hote;
+  // La cachette de la partie (cherchée dans l'accueil ; retrouvée si l'accueil se redessine) + la place de la bulle
+  const cachetteRef = useRef(cachette);
+  cachetteRef.current = cachette;
   useEffect(() => {
     if (trouveIci) return;
     const chercher = () => {
       const place = document.getElementById('bulle-cache-cache');
       setBulle((b) => (b === place ? b : place));
-      if (hoteRef.current?.el.isConnected) return;
-      const cartes = [...document.querySelectorAll<HTMLElement>('.carte-accueil')];
-      const carte = cartes.length ? cartes[Math.floor(tirage.carte * cartes.length)] : null;
-      const parent = carte?.parentElement;
-      if (carte && parent) setHote({ el: parent, nom: carte.dataset.carteNom || 'une carte' });
+      const c = cachetteRef.current;
+      if (c?.el.isConnected && visible(c.el)) return;
+      const n = chercherCachette(tirage, nomAnimal);
+      if (n) setCachette(n);
     };
-    chercher();
+    // Un petit délai : le décor (chargé à part) a le temps de s'afficher
+    const t0 = setTimeout(chercher, 600);
     const t = setInterval(chercher, 2000);
-    return () => clearInterval(t);
-  }, [trouveIci, tirage]);
+    return () => { clearTimeout(t0); clearInterval(t); };
+  }, [trouveIci, tirage, nomAnimal]);
 
-  // 🐾 Les traces partent de sa cachette dans le décor (B) et mènent à la carte où il se cache (A) — les 3 façons en même temps
-  const [traces, setTraces] = useState<{ x: number; y: number; r: number }[]>([]);
   // ⏱️ Les traces n'arrivent qu'au bout de 20 s : l'enfant a d'abord le temps de chercher tout seul (Nadia, 2026-11-12)
   const [indice, setIndice] = useState(false);
   useEffect(() => { const t = setTimeout(() => setIndice(true), 20_000); return () => clearTimeout(t); }, []);
+
+  // 📍 Il suit SA cachette à chaque image (défilement, changement de taille, dromadaire qui marche…) et
+  // 🐾 les traces vont TOUJOURS vers le bout de lui qui dépasse (bug signalé par les élèves le 26/11 : elles visaient un
+  // coin de la carte, bornés, et se décalaient après un défilement)
   useEffect(() => {
-    if (!hote || trouveIci || !indice) { setTraces([]); return; }
-    let raf = 0;
-    const calculer = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const r = hote.el.getBoundingClientRect();
-        const d = decorRef.current?.getBoundingClientRect();
-        const h = window.innerHeight, w = window.innerWidth;
-        const x1 = d ? d.left + d.width / 2 : w * 0.5, y1 = d ? d.top + d.height / 2 : h - 70;
-        const x2 = Math.min(w - 30, Math.max(30, r.right - 40)), y2 = Math.max(70, Math.min(h - 120, r.top + 10));
-        const n = 9, ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI + 90;
-        setTraces(Array.from({ length: n }, (_, i) => {
-          const t = (i + 1) / (n + 1), dec = (i % 2 ? 9 : -9);
-          return { x: x1 + (x2 - x1) * t + dec, y: y1 + (y2 - y1) * t, r: ang };
-        }));
+    if (!cachette || trouveIci) return;
+    let raf = 0, dernier = '';
+    const tour = () => {
+      raf = requestAnimationFrame(tour);
+      const b = fenRef.current;
+      if (!b || document.hidden) return;
+      const r = cachette.el.getBoundingClientRect();
+      if (r.width < 1) { b.style.visibility = 'hidden'; return; }
+      const f = fenetreCachette(r, cachette.cote, cachette.place, cachette.bord);
+      const dx = cachette.fixe ? 0 : window.scrollX, dy = cachette.fixe ? 0 : window.scrollY;
+      b.style.visibility = 'visible';
+      b.style.transform = `translate(${(f.left + dx).toFixed(1)}px, ${(f.top + dy).toFixed(1)}px)`;
+      const boite = tracesRef.current;
+      if (!boite) return;
+      const w = window.innerWidth, h = window.innerHeight;
+      const d = departRef.current?.getBoundingClientRect();
+      const depart = d && d.width ? { x: d.left + d.width / 2, y: d.top + d.height / 2 } : { x: w / 2, y: h - 80 };
+      const traces = cheminTraces(depart, pointVisible(f, cachette.cote), { x0: 14, y0: 64, x1: w - 14, y1: h - 14 });
+      const cle = traces.map((p) => `${p.x | 0},${p.y | 0}`).join(';');
+      if (cle === dernier) return;
+      dernier = cle;
+      [...boite.children].forEach((s, i) => {
+        const el = s as HTMLElement, p = traces[i];
+        el.style.display = p ? '' : 'none';
+        if (p) el.style.transform = `translate(${(p.x - 10).toFixed(1)}px, ${(p.y - 10).toFixed(1)}px) rotate(${p.r.toFixed(0)}deg)`;
       });
     };
-    calculer();
-    window.addEventListener('scroll', calculer, true);
-    window.addEventListener('resize', calculer);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', calculer, true); window.removeEventListener('resize', calculer); };
-  }, [hote, trouveIci, indice]);
+    raf = requestAnimationFrame(tour);
+    return () => cancelAnimationFrame(raf);
+  }, [cachette, trouveIci, indice]);
 
   const trouver = () => {
-    const nom = hote?.nom || 'une carte';
+    const nom = cachette?.nom || 'une carte';
     const album = [...new Set([...lireJ<string[]>(cleAlbum, []), nom])];
     ecrireJ(cleAlbum, album);
     porterHabit(userId, HABIT[saison].cle);
     setDanse(true);
     setTimeout(() => setDanse(false), 2600);
-    setTrouve({ cachette: nom, album });
+    setTrouve({ cachette: `${cachette?.prep || 'derrière'} « ${nom} »`, album });
     setTrouveIci(true);
-    setHote(null);
+    setCachette(null);
   };
-  const rate = () => toast(indice ? `🍃 Raté ! Plus personne ici… Suis les traces 🐾` : `🍃 Raté ! Plus personne ici… Cherche encore !`);
 
   const mot = motArabeDuJour(jour(), saison === 'ramadan');
   const gentil = motGentilDuJour(jour());
   // 🔊 Voix fabriquée de Hamed (choix de Nadia du 26/11, gardée hors ligne une fois entendue), sinon la voix de l'appareil
   const ecouterMot = () => dire(mot.arabe, 'ar', 'hamed');
   const voix = !!fichierVoix(mot.arabe, 'ar', 'hamed') || (typeof window !== 'undefined' && 'speechSynthesis' in window);
+  const { l: FL, h: FH } = cachette ? FENETRE[cachette.cote] : FENETRE.haut;
 
   return (
     <>
-      {/* 💬 La bulle « Essaie de me trouver ! » (dite par le personnage de la partie) et, à droite, B · sa cachette dans le décor
-          (un petit tas d'où dépasse sa queue). Dans la rangée entre l'arbre et le carnet : plus rien de collé à l'écran (Nadia, 12/11) */}
+      {/* 💬 La bulle « Essaie de me trouver ! » (dite par le personnage de la partie), entre l'arbre / le message de bienvenue et
+          le carnet (Nadia, 12/11). Les traces partent d'elle. (26/11 : l'ancienne « cachette dans le décor » est retirée) */}
       {bulle && !trouveIci && createPortal(
-        <div className="flex w-full items-end justify-between gap-2">
-          <div className="jeux-bulle-cache flex items-end gap-1 pointer-events-none">
-            <svg viewBox={animal.vb} aria-hidden className="h-10 w-10 shrink-0" dangerouslySetInnerHTML={{ __html: animal.svg }} />
-            <span className="relative mb-5 rounded-2xl rounded-bl-none border-2 border-amber-300 bg-white dark:bg-card px-2.5 py-1 text-[11px] sm:text-xs font-extrabold text-amber-800 dark:text-amber-200 shadow-md max-w-[6.5rem] sm:max-w-none leading-tight">Essaie de me trouver !</span>
-          </div>
-          <button ref={decorRef} type="button" onClick={rate} aria-label={`Une cachette : ${cachette.nom}`}
-            className="flex items-end pe-1 outline-none [-webkit-tap-highlight-color:transparent]">
-            <svg viewBox={animal.vb} aria-hidden className="order-2 -ml-5 h-8 w-8 opacity-70 jeux-decor-d" dangerouslySetInnerHTML={{ __html: animal.svg }} />
-            <span aria-hidden className="relative text-2xl leading-none drop-shadow">{cachette.tas}</span>
-          </button>
+        <div className="jeux-bulle-cache flex items-end gap-1 pointer-events-none">
+          <svg ref={departRef} viewBox={animal.vb} aria-hidden className="h-10 w-10 shrink-0" dangerouslySetInnerHTML={{ __html: animal.svg }} />
+          <span className="relative mb-5 rounded-2xl rounded-bl-none border-2 border-amber-300 bg-white dark:bg-card px-2.5 py-1 text-[11px] sm:text-xs font-extrabold text-amber-800 dark:text-amber-200 shadow-md max-w-[6.5rem] sm:max-w-none leading-tight">Essaie de me trouver !</span>
         </div>, bulle)}
-      {/* A · sa tête sort de derrière la carte (les oreilles restent visibles) */}
-      {hote && !trouveIci && createPortal(
-        <button type="button" onClick={(e) => { e.stopPropagation(); trouver(); }} aria-label={`${animal.nom} se cache ici : touche-le !`}
-          className="pointer-events-none absolute -top-11 right-3 z-[2] h-11 w-12 overflow-hidden outline-none [-webkit-tap-highlight-color:transparent]">
-          <svg viewBox={animal.vb} className="pointer-events-auto cursor-pointer jeux-tete h-12 w-12" style={animal.repos ? { ['--repos' as string]: animal.repos } : undefined} dangerouslySetInnerHTML={{ __html: animal.svg }} />
+      {/* Il dépasse de sa cachette (la tête par le haut, ou le côté) : seul le bout visible se touche */}
+      {cachette && !trouveIci && createPortal(
+        <button ref={fenRef} type="button" data-cache-perso onClick={(e) => { e.preventDefault(); e.stopPropagation(); trouver(); }}
+          aria-label={`${animal.nom} se cache ${cachette.prep} ${cachette.nom} : touche-le !`}
+          className={`pointer-events-none ${cachette.fixe ? 'fixed' : 'absolute'} left-0 top-0 z-[33] overflow-hidden outline-none [-webkit-tap-highlight-color:transparent]`}
+          style={{ width: FL, height: FH, visibility: 'hidden' }}>
+          <svg viewBox={animal.vb} className={`pointer-events-auto cursor-pointer h-12 w-12 ${CLASSE_COTE[cachette.cote]} ${cachette.cote === 'droite' ? 'ml-auto' : ''}`}
+            style={cachette.repos || animal.repos ? { ['--repos' as string]: cachette.repos || animal.repos } : undefined} dangerouslySetInnerHTML={{ __html: animal.svg }} />
         </button>,
-        hote.el,
+        document.body,
       )}
-      {/* C · les empreintes, du décor jusqu'à la carte */}
-      {traces.length > 0 && createPortal(
-        <div aria-hidden className="pointer-events-none fixed inset-0 z-[25]">
-          {traces.map((p, i) => (
-            <span key={i} className="jeux-trace absolute text-lg" style={{ left: p.x - 10, top: p.y - 10, transform: `rotate(${p.r}deg)`, animationDelay: `${i * 0.25}s` }}>🐾</span>
+      {/* 🐾 Les empreintes, de la bulle jusqu'à lui (placées à chaque image, voir plus haut) */}
+      {cachette && !trouveIci && indice && createPortal(
+        <div ref={tracesRef} aria-hidden className="pointer-events-none fixed inset-0 z-[25] overflow-hidden">
+          {Array.from({ length: NB_TRACES }, (_, i) => (
+            <span key={i} className="jeux-trace absolute left-0 top-0 text-lg leading-none" style={{ display: 'none', animationDelay: `${i * 0.25}s` }}>🐾</span>
           ))}
         </div>, document.body)}
       {/* 💃 Il sort, fait une pirouette, et la saison tombe sur tout l'écran */}
@@ -313,7 +371,7 @@ export function CacheCache({ saison, userId }: { saison: Saison; userId: string 
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/30 px-4" onClick={() => setTrouve(null)}>
           <div className="jeux-bulle max-w-sm w-full max-h-[90dvh] overflow-y-auto rounded-3xl bg-card p-5 space-y-3 shadow-2xl border-2 border-emerald-300 text-center" onClick={(e) => e.stopPropagation()}>
             <svg viewBox={animal.vb} className="jeux-pirouette mx-auto h-16 w-16" aria-hidden dangerouslySetInnerHTML={{ __html: animal.svg }} />
-            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🙈 Trouvé ! {animal.nom} se cachait derrière « {trouve.cachette} »</p>
+            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🙈 Trouvé ! {animal.nom} se cachait {trouve.cachette}</p>
             <p className="text-sm font-semibold [overflow-wrap:anywhere]">{gentil.texte}</p>
             {gentil.source && <p className="text-[11px] text-muted-foreground">Rapporté par {gentil.source}</p>}
             <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 space-y-1">
