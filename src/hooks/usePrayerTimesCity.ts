@@ -152,7 +152,11 @@ export function usePrayerTimesCity(city: CityOption, method?: PrayerMethod) {
     const now = new Date();
     const msToMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
     const timeout = setTimeout(fetchTimes, msToMidnight);
-    return () => clearTimeout(timeout);
+    // 2026-11-26 (Nadia : « l'heure doit être à jour tous les jours ») : téléphone en veille à minuit → recalcul au retour dans l'appli
+    const jour = now.toDateString();
+    const auRetour = () => { if (document.visibilityState === 'visible' && new Date().toDateString() !== jour) void fetchTimes(); };
+    document.addEventListener('visibilitychange', auRetour);
+    return () => { clearTimeout(timeout); document.removeEventListener('visibilitychange', auRetour); };
   }, [fetchTimes]);
 
   const getNextPrayer = useCallback(() => {

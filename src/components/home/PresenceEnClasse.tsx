@@ -77,6 +77,13 @@ export default function PresenceEnClasse({ eleveId, onOuvrir, vide }: { eleveId?
           ))}
         </div>
       </div>
+      {/* 🎨 Légende des couleurs (Nadia, 2026-11-26) : discrète mais lisible par les élèves */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 border-t border-border/60 pt-1 text-[10px] leading-tight text-muted-foreground">
+        <span className="font-bold">Légende :</span>
+        {Object.values(COULEUR).map((c) => (
+          <span key={c.l} className="inline-flex items-center gap-1"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.c}`} aria-hidden />{c.l}</span>
+        ))}
+      </div>
     </Boite>
   );
 }

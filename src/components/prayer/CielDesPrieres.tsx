@@ -1,13 +1,43 @@
-import { useMemo } from 'react';
-import { AMBIANCES, type Moment } from '@/lib/momentPriere';
+import { useEffect, useMemo, useState } from 'react';
+import { Volume2 } from 'lucide-react';
+import { AMBIANCES, type Horaires, type Moment } from '@/lib/momentPriere';
+import { parler } from '@/lib/petits';
 
 /**
  * 🌅 Ciel des prières (Nadia, 2026-11-26, choix A + présentation 1) : SON image, en haut de la page, avec la couleur du moment
  * (voile + filtre), des étoiles à Icha, un anneau doré sur la prière en cours et la prochaine prière posée dessus.
+ * 26/11 (2ᵉ demande) : sous chaque prière DE L'IMAGE, 🔊 (son nom en arabe) et son heure du jour (recalculée chaque jour) ;
+ * idée a : compte à rebours vivant jusqu'à la prochaine prière.
  * Image dans `public/images/priere/` → gardée sur le téléphone, marche sans Internet.
  */
-export function CielDesPrieres({ moment, prochaine }: { moment: Moment; prochaine: { name: string; time: string; arabic?: string } | null }) {
+
+// Sous l'étiquette dessinée de chaque prière dans l'image (en % de l'image)
+const REPERES: { cle: keyof Horaires; nom: string; arabe: string; x: number; y: number }[] = [
+  { cle: 'fajrDate', nom: 'Sobh', arabe: 'الصُّبْح', x: 9.8, y: 55 },
+  { cle: 'sunriseDate', nom: 'Chourouk', arabe: 'الشُّرُوق', x: 26.2, y: 40.5 },
+  { cle: 'dhuhrDate', nom: 'Dhohr', arabe: 'الظُّهْر', x: 49.4, y: 30.5 },
+  { cle: 'asrDate', nom: 'Asr', arabe: 'العَصْر', x: 66.8, y: 34.5 },
+  { cle: 'maghribDate', nom: 'Maghreb', arabe: 'المَغْرِب', x: 82.4, y: 48.5 },
+  { cle: 'ishaDate', nom: 'Icha', arabe: 'العِشَاء', x: 88.6, y: 28.5 },
+];
+
+const hm = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+/** « 1 h 20 min 05 s » jusqu'à `cible` (le lendemain si l'heure est déjà passée) */
+function reste(cible: Date, maintenant: Date): string {
+  let ms = cible.getTime() - maintenant.getTime();
+  if (ms < 0) ms += 24 * 3600 * 1000;
+  const t = Math.floor(ms / 1000);
+  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  return `${h ? `${h} h ` : ''}${String(m).padStart(h ? 2 : 1, '0')} min ${String(s).padStart(2, '0')} s`;
+}
+
+export function CielDesPrieres({ moment, horaires, prochaine }: {
+  moment: Moment; horaires: Horaires; prochaine: { name: string; time: string; date: Date; arabic?: string } | null;
+}) {
   const a = AMBIANCES[moment];
+  const [maintenant, setMaintenant] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setMaintenant(new Date()), 1000); return () => clearInterval(t); }, []);
   // Étoiles placées une fois pour toutes (pas de saut à chaque rendu)
   const etoiles = useMemo(() => Array.from({ length: 50 }, (_, i) => ({ l: (i * 37.7) % 100, t: (i * 23.3) % 55, d: (i % 8) * 0.3 })), []);
   return (
@@ -26,13 +56,19 @@ export function CielDesPrieres({ moment, prochaine }: { moment: Moment; prochain
       {/* Anneau doré sur la prière du moment */}
       <span className="absolute aspect-square w-[9%] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#ffe27a] shadow-[0_0_18px_#ffd84d] transition-all duration-1000 motion-safe:animate-pulse"
         style={{ left: `${a.x}%`, top: `${a.y}%` }} aria-hidden />
+      {/* 🔊 + heure du jour sous chaque prière de l'image */}
+      {REPERES.map((r) => (
+        <button key={r.nom} type="button" onClick={() => parler(r.arabe, 'ar')} aria-label={`${r.nom} à ${hm(horaires[r.cle])} : écouter en arabe`}
+          className="absolute flex -translate-x-1/2 items-center gap-0.5 rounded-full bg-white/90 px-1.5 py-0.5 text-[#1f2240] shadow-sm active:scale-95 sm:gap-1 sm:px-2"
+          style={{ left: `${r.x}%`, top: `${r.y}%` }}>
+          <Volume2 className="h-2.5 w-2.5 shrink-0 text-[#2d4a9a] sm:h-3.5 sm:w-3.5" aria-hidden />
+          <span className="font-mono text-[9px] font-extrabold leading-none tabular-nums sm:text-xs">{hm(horaires[r.cle])}</span>
+        </button>
+      ))}
       {prochaine && (
-        <div className="absolute bottom-[5%] left-[3%] max-w-[80%] rounded-2xl bg-white/90 px-3 py-1.5 text-[#1f2240] shadow-md backdrop-blur-sm">
-          <p className="text-[11px] font-semibold leading-tight text-[#5b5a7a]">Prochaine prière</p>
-          <p className="text-sm font-extrabold leading-tight sm:text-base [overflow-wrap:anywhere]">
-            {prochaine.name} · <span className="font-mono">{prochaine.time}</span>
-            {prochaine.arabic && <span className="ms-1.5 font-arabic font-normal">{prochaine.arabic}</span>}
-          </p>
+        <div className="absolute bottom-[4%] left-[50%] max-w-[62%] -translate-x-1/2 rounded-2xl bg-white/90 px-2.5 py-1 text-center text-[#1f2240] shadow-md backdrop-blur-sm sm:px-3 sm:py-1.5">
+          <p className="text-[10px] font-semibold leading-tight text-[#5b5a7a] sm:text-[11px]">Prochaine prière : <b className="text-[#1f2240]">{prochaine.name}</b></p>
+          <p className="text-xs font-extrabold leading-tight tabular-nums sm:text-sm" aria-live="off">⏳ dans {reste(prochaine.date, maintenant)}</p>
         </div>
       )}
       <span className="sr-only">Maintenant : {a.nom}</span>

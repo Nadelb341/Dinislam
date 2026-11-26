@@ -43,10 +43,3 @@ export const CINQ_PRIERES = [
   { cle: 'maghrib', nom: 'Maghreb', arabe: 'المَغْرِب', rakat: 3, heure: (h: Horaires) => h.maghribDate },
   { cle: 'isha', nom: 'Icha', arabe: 'العِشَاء', rakat: 4, heure: (h: Horaires) => h.ishaDate },
 ] as const;
-
-/** Position (0 → 1) de l'heure actuelle sur la frise, de Sobh à Icha */
-export function positionFrise(h: Horaires, maintenant = new Date()): number {
-  const debut = minutes(h.fajrDate), fin = minutes(h.ishaDate), m = minutes(maintenant);
-  if (fin <= debut) return 0;
-  return Math.max(0, Math.min(1, (m - debut) / (fin - debut)));
-}

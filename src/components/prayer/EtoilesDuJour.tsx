@@ -46,6 +46,11 @@ export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false
               <Etoile pleine={faite} />
               <span className="text-[11px] font-extrabold leading-tight sm:text-xs" style={{ color: texte }}>{p.nom}</span>
               <span className="font-mono text-[10px] leading-tight opacity-80 sm:text-[11px]" style={{ color: texte }}>{hm(p.heure(horaires))}</span>
+              {/* Idée c (Nadia, 26/11) : le nombre de rak'ât en petits carrés verts */}
+              <span className="flex flex-wrap justify-center gap-[2px]" aria-label={`${p.rakat} rak'ât`}>
+                {Array.from({ length: p.rakat }, (_, i) => <i key={i} className="h-2 w-2 rounded-[3px] bg-gradient-to-b from-emerald-300 to-emerald-600" />)}
+              </span>
+              <span className="text-[9px] font-bold leading-none sm:text-[10px]" style={{ color: texte, opacity: 0.85 }}>{p.rakat} rak'ât</span>
             </button>
           );
         })}

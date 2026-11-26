@@ -13,7 +13,6 @@ import { usePrayerTimesCity, PRIORITY_CITIES, OTHER_CITIES, CityOption, PRAYER_M
 
 import { CielDesPrieres } from '@/components/prayer/CielDesPrieres';
 import { EtoilesDuJour } from '@/components/prayer/EtoilesDuJour';
-import { FriseDuJour } from '@/components/prayer/FriseDuJour';
 import { AMBIANCES, momentDe } from '@/lib/momentPriere';
 import QiblaCompass from '@/components/prayer/QiblaCompass';
 import PrayerWeeklyCalendar from '@/components/prayer/PrayerWeeklyCalendar';
@@ -126,33 +125,24 @@ const Priere = () => {
           <p className="text-sm font-semibold" style={{ color: ambiance.texte, opacity: 0.85 }}>La Prière</p>
         </div>
 
-        {/* Présentation 9 : téléphone tourné ou tablette → 2 colonnes (le ciel à gauche, la journée à droite) */}
-        <div className="grid gap-4 lg:grid-cols-2 [@media(orientation:landscape)_and_(max-height:500px)]:grid-cols-2">
-          <div className="space-y-4 min-w-0">
-            {prayerTimes && <CielDesPrieres moment={moment} prochaine={nextPrayer} />}
-            {prayerTimes && <EtoilesDuJour horaires={prayerTimes} cochees={todayChecked} onToggle={basculerPriere} texte={ambiance.texte} nuit={ambiance.etoiles} />}
-            <PrayerWeeklyCalendar prayerData={calendarData} />
-          </div>
-          <div className="space-y-4 min-w-0">
-        <div className="space-y-3 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              {duProfil ? (
-                <div className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground">
-                  <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                  <span className="flex-1 text-left font-medium [overflow-wrap:anywhere]">{selectedCity.label}</span>
-                  <span className="text-[11px] text-muted-foreground text-right">se change dans ⚙️ › Paramètres du profil</span>
-                </div>
-              ) : (
+        {/* 26/11 (Nadia) : la ville sur une ligne courte AU-DESSUS du ciel, puis « Qibla » et « Méthode calcul » à droite (moins chargé) */}
+        <div className="relative z-20 flex items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:max-w-sm">
+            {duProfil ? (
+              <div className="flex w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground" title="La ville se change dans ⚙️ › Paramètres du profil">
+                <MapPin className="h-4 w-4 shrink-0 text-green-600" />
+                <span className="min-w-0 flex-1 text-left font-medium leading-tight [overflow-wrap:anywhere]">{selectedCity.label}</span>
+              </div>
+            ) : (
               <button
                 onClick={() => setShowCitySelector(!showCitySelector)}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-colors"
+                className="flex w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted/50"
               >
-                <MapPin className="h-4 w-4 text-green-600 shrink-0" />
-                <span className="flex-1 text-left font-medium">{selectedCity.label}</span>
-                <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showCitySelector && 'rotate-180')} />
+                <MapPin className="h-4 w-4 shrink-0 text-green-600" />
+                <span className="min-w-0 flex-1 text-left font-medium leading-tight [overflow-wrap:anywhere]">{selectedCity.label}</span>
+                <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', showCitySelector && 'rotate-180')} />
               </button>
-              )}
+            )}
               {showCitySelector && !duProfil && (
                 <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated max-h-56 overflow-y-auto">
                   <div className="px-4 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30 sticky top-0">── Votre région ──</div>
@@ -185,30 +175,21 @@ const Priere = () => {
                   ))}
                 </div>
               )}
-            </div>
-            <Button onClick={() => setShowQibla(true)} className="gap-2 bg-green-700 hover:bg-green-800 text-white shrink-0">
-              <Navigation className="h-4 w-4" />
-              Qibla
-            </Button>
           </div>
-
-          {/* Sélecteur de méthode de calcul */}
-          <div className="relative">
-            <button
-              onClick={() => setShowMethodSelector(!showMethodSelector)}
-              className="w-full flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-colors"
-            >
-              <Clock className="h-4 w-4 text-amber-600 shrink-0" />
-              <span className="flex-1 text-left">
-                <span className="font-medium text-amber-700 dark:text-amber-400">{selectedMethod.label}</span>
-                <span className="text-muted-foreground ml-1.5 text-xs">— méthode de calcul</span>
-              </span>
-              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showMethodSelector && 'rotate-180')} />
-            </button>
+          <Button size="sm" onClick={() => setShowQibla(true)} className="h-9 shrink-0 gap-1.5 bg-green-700 px-3 text-white hover:bg-green-800">
+            <Navigation className="h-4 w-4" />
+            Qibla
+          </Button>
+          <div className="relative shrink-0">
+            <Button size="sm" variant="outline" onClick={() => setShowMethodSelector(!showMethodSelector)} aria-expanded={showMethodSelector}
+              className="h-9 gap-1.5 border-amber-300 bg-card px-3 text-amber-800 dark:text-amber-300">
+              <Clock className="h-4 w-4" />
+              Méthode calcul
+            </Button>
             {showMethodSelector && (
-              <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-card border border-border rounded-xl shadow-elevated overflow-hidden">
-                <div className="px-4 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30">
-                  Choisir la méthode de calcul
+              <div className="absolute right-0 top-full z-30 mt-1 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
+                <div className="bg-muted/30 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Méthode de calcul · {selectedMethod.label}
                 </div>
                 {PRAYER_METHODS.map((method) => (
                   <button
@@ -228,23 +209,27 @@ const Priere = () => {
               </div>
             )}
           </div>
-
-          {prayerLoading ? (
-            <div className="rounded-2xl bg-slate-800 h-40 flex items-center justify-center">
-              <div className="flex items-center gap-2 text-slate-400">
-                <Clock className="h-5 w-5 animate-spin" />
-                <span className="text-sm">Chargement des horaires...</span>
-              </div>
-            </div>
-          ) : prayerError ? (
-            <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-4 text-center text-sm text-destructive">
-              {prayerError}
-            </div>
-          ) : prayerTimes ? (
-            <FriseDuJour horaires={prayerTimes} moment={moment} cochees={todayChecked} texte={ambiance.texte} nuit={ambiance.etoiles} />
-          ) : null}
         </div>
 
+        {/* Présentation 9 : téléphone tourné ou tablette → 2 colonnes (le ciel à gauche, les étoiles et la semaine à droite) */}
+        <div className="grid gap-4 lg:grid-cols-2 [@media(orientation:landscape)_and_(max-height:500px)]:grid-cols-2">
+          <div className="min-w-0">
+            {prayerLoading ? (
+              <div className="flex h-40 items-center justify-center rounded-2xl bg-slate-800">
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Clock className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">Chargement des horaires...</span>
+                </div>
+              </div>
+            ) : prayerError ? (
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-center text-sm text-destructive">{prayerError}</div>
+            ) : prayerTimes ? (
+              <CielDesPrieres moment={moment} horaires={prayerTimes} prochaine={nextPrayer} />
+            ) : null}
+          </div>
+          <div className="min-w-0 space-y-4">
+            {prayerTimes && <EtoilesDuJour horaires={prayerTimes} cochees={todayChecked} onToggle={basculerPriere} texte={ambiance.texte} nuit={ambiance.etoiles} />}
+            <PrayerWeeklyCalendar prayerData={calendarData} />
           </div>
         </div>
 
