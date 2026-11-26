@@ -184,7 +184,10 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
       {surprise && createPortal(
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/30 px-4" onClick={() => setSurprise(null)}>
           <div className="jeux-bulle max-w-sm w-full rounded-3xl bg-card p-5 text-center space-y-2 shadow-2xl border-2 border-amber-300" onClick={(e) => e.stopPropagation()}>
-            <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{surprise.deja ? '🎁 Ta surprise du jour (déjà ouverte)' : '🎁 Surprise ! Le nom d\'Allah du jour'}</p>
+            {/* 26/11 (Nadia) : déjà ouverte → message plus gros, en rouge doux (pas agressif) */}
+            {surprise.deja
+              ? <p className="mx-auto w-fit rounded-2xl bg-rose-50 px-3 py-1.5 text-base font-extrabold text-rose-600 ring-1 ring-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:ring-rose-900">🎁 Ta surprise du jour (déjà ouverte)</p>
+              : <p className="text-xs font-bold text-amber-700 dark:text-amber-300">🎁 Surprise ! Le nom d'Allah du jour</p>}
             <p className="font-arabic text-5xl leading-snug">{surprise.arabe}</p>
             <p className="font-bold text-lg">{surprise.translit}</p>
             <p className="text-sm">{surprise.sens}</p>
@@ -213,10 +216,13 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
   const [choix, setChoix] = useState<string | null>(() => (lire(cle) === jourLocal() ? lire(cleChoix) : null));
   const q: Question = useMemo(() => questionDuJour(jourLocal()), []);
   const repondre = (o: string) => { setChoix(o); setRepondu(true); ecrire(cle, jourLocal()); ecrire(cleChoix, o); };
+  // 26/11 (Nadia) : quand l'élève ROUVRE la question déjà répondue, le rappel « nouvelle question demain » passe EN HAUT (rouge clair)
+  const [rouverte, setRouverte] = useState(false);
+  const rappel = '🌙 Tu auras une nouvelle question demain, in shā\' Allah ! ✨🤲';
   return createPortal(
     <>
       {/* Petit bouton posé sur la cheminée (44 px) : il ne cache jamais les cartes */}
-      <button type="button" onClick={() => setOuvert(true)} aria-label={COIN[saison]}
+      <button type="button" onClick={() => { setRouverte(!!choix); setOuvert(true); }} aria-label={COIN[saison]}
         className={`fixed z-[31] grid place-items-center rounded-full w-11 h-11 ${repondu ? 'opacity-40' : 'jeux-question'}`}
         style={{ right: 'calc(max(4px, env(safe-area-inset-right, 0px)) + 22px)', bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 58px)' }}>
         <span className={`rounded-full text-sm font-extrabold w-7 h-7 grid place-items-center shadow ${repondu ? 'bg-white/80 text-orange-700' : 'bg-amber-400 text-amber-950'}`}>{repondu ? '🔥' : '?'}</span>
@@ -225,6 +231,7 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/30 px-4" onClick={() => setOuvert(false)}>
           <div className="jeux-bulle max-w-sm w-full rounded-3xl bg-card p-5 space-y-3 shadow-2xl border-2 border-orange-300" onClick={(e) => e.stopPropagation()}>
             <p className="text-xs font-bold text-orange-700 dark:text-orange-300">{COIN[saison]}</p>
+            {rouverte && <p className="rounded-2xl bg-rose-50 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900 px-3 py-2 text-center text-sm font-bold text-rose-600 dark:text-rose-300">{rappel}</p>}
             <p className="font-bold text-base">{q.question}</p>
             <div className="grid gap-2">
               {q.options.map((o) => (
@@ -235,7 +242,7 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
             {choix && <p className="text-sm font-bold">{choix === q.bonne ? '🎉 Bravo, ma shā\' Allah !' : `Presque ! La bonne réponse : ${q.bonne}`}</p>}
             {choix && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source}</p>}
             {choix
-              ? <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-center text-sm font-bold text-amber-800 dark:text-amber-200">🌙 Tu auras une nouvelle question demain, in shā' Allah ! ✨🤲</p>
+              ? (!rouverte && <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-center text-sm font-bold text-amber-800 dark:text-amber-200">{rappel}</p>)
               : <p className="text-[11px] text-muted-foreground">Une nouvelle question chaque jour.</p>}
             <button type="button" onClick={() => setOuvert(false)} className="w-full rounded-xl bg-orange-500 text-white py-2 text-sm font-bold">Fermer</button>
           </div>

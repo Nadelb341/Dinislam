@@ -27,15 +27,15 @@ export const HADITHS_SECOURS: HadithAffiche[] = [
   { text: "Celui qui prend un chemin pour chercher la science, Allah lui facilite par cela un chemin vers le Paradis.", source: "Sahih Mouslim 2699", theme: "Savoir", arabic: "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ" }, // 26/11 : remplacé (règle n°1)
   { text: "Nul d'entre vous n'est croyant tant qu'il n'aime pas pour son frère ce qu'il aime pour lui-même.", source: "Sahih Boukhari", theme: "Fraternité", arabic: "" },
   { text: "Le Musulman est celui dont les autres Musulmans sont préservés de sa langue et de sa main.", source: "Sahih Boukhari", theme: "Bienveillance", arabic: "" },
-  { text: "Souriez à votre frère, c'est de la charité.", source: "Tirmidhi", theme: "Générosité", arabic: "تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ" },
+  { text: "Ne méprise aucune bonne action, même le fait d'accueillir ton frère avec un visage souriant.", source: "Sahih Mouslim 2626", theme: "Générosité", arabic: "لَا تَحْقِرَنَّ مِنَ الْمَعْرُوفِ شَيْئًا وَلَوْ أَنْ تَلْقَى أَخَاكَ بِوَجْهٍ طَلْقٍ" },
   { text: "Un homme demanda : « Qui mérite le plus ma bonne compagnie ? » Le Prophète ﷺ répondit : « Ta mère. » Puis ? « Ta mère. » Puis ? « Ta mère. » Puis ? « Ton père. »", source: "Sahih Boukhari 5971 et Mouslim 2548", theme: "Famille", arabic: "أُمُّكَ ثُمَّ أُمُّكَ ثُمَّ أُمُّكَ ثُمَّ أَبُوكَ" }, // 26/11 : remplacé (règle n°1)
   { text: "On demanda au Prophète ﷺ quelle action Allah aime le plus. Il répondit : « La prière à son heure. » Puis ? « La bonté envers les parents. »", source: "Sahih Boukhari 527 et Mouslim 85", theme: "Parents", arabic: "الصَّلَاةُ عَلَى وَقْتِهَا ثُمَّ بِرُّ الْوَالِدَيْنِ" }, // 26/11 : remplacé (règle n°1)
-  { text: "Celui qui ne remercie pas les gens ne remercie pas Allah.", source: "Tirmidhi", theme: "Gratitude", arabic: "مَنْ لَمْ يَشْكُرِ النَّاسَ لَمْ يَشْكُرِ اللَّه" },
+  { text: "Comme l'affaire du croyant est étonnante ! Tout est un bien pour lui : s'il lui arrive une joie, il remercie Allah, et c'est un bien pour lui ; s'il lui arrive une épreuve, il patiente, et c'est un bien pour lui.", source: "Sahih Mouslim 2999", theme: "Gratitude", arabic: "عَجَبًا لِأَمْرِ الْمُؤْمِنِ إِنَّ أَمْرَهُ كُلَّهُ خَيْرٌ" },
   { text: "La propreté est la moitié de la foi.", source: "Sahih Muslim", theme: "Pureté", arabic: "الطَّهُورُ شَطْرُ الإِيمَانِ" },
   { text: "Le fort n'est pas celui qui terrasse les gens, mais celui qui se maîtrise quand il est en colère.", source: "Sahih Boukhari", theme: "Maîtrise de soi", arabic: "" },
   { text: "Dis la vérité même si elle est amère.", source: "Ibn Hibbane", theme: "Honnêteté", arabic: "قُلِ الحَقَّ وَلَوْ كَانَ مُرًّا" },
   { text: "Quiconque croit en Allah et au Jour dernier doit honorer son voisin.", source: "Sahih Boukhari", theme: "Voisinage", arabic: "" },
-  { text: "La miséricorde n'est accordée qu'à ceux qui sont miséricordieux.", source: "Tirmidhi", theme: "Miséricorde", arabic: "" },
+  { text: "Allah a fait la miséricorde en cent parts : Il en a gardé quatre-vingt-dix-neuf auprès de Lui et en a fait descendre une seule sur la terre. C'est grâce à elle que les créatures sont douces entre elles, au point que la jument soulève son sabot pour ne pas blesser son petit.", source: "Sahih Boukhari 6000 et Mouslim 2752", theme: "Miséricorde", arabic: "جَعَلَ اللَّهُ الرَّحْمَةَ مِائَةَ جُزْءٍ" },
   { text: "Le meilleur des gens est celui qui est le plus utile aux autres.", source: "Tabarani", theme: "Utilité", arabic: "خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ" },
   { text: "Ne méprise aucune bonne action, même si c'est d'accueillir ton frère avec un visage souriant.", source: "Sahih Muslim", theme: "Bonne action", arabic: "" },
   { text: "Aide ton frère, qu'il soit oppresseur ou opprimé.", source: "Sahih Boukhari", theme: "Fraternité", arabic: "" },
@@ -44,8 +44,8 @@ export const HADITHS_SECOURS: HadithAffiche[] = [
   { text: "Allah ne fait pas miséricorde à celui qui ne fait pas miséricorde aux gens.", source: "Sahih Boukhari 7376 et Mouslim 2319", theme: "Miséricorde", arabic: "لَا يَرْحَمُ اللَّهُ مَنْ لَا يَرْحَمُ النَّاسَ" }, // 26/11 : remplacé (règle n°1)
   { text: "Les croyants, dans leur amour et leur tendresse les uns pour les autres, sont comme un seul corps : quand un membre a mal, tout le corps veille et a de la fièvre.", source: "Sahih Mouslim 2586", theme: "Solidarité", arabic: "مَثَلُ الْمُؤْمِنِينَ فِي تَوَادِّهِمْ وَتَرَاحُمِهِمْ وَتَعَاطُفِهِمْ مَثَلُ الْجَسَدِ" }, // 26/11 : remplacé (règle n°1)
   { text: "Les signes de l'hypocrite sont trois : quand il parle, il ment ; quand il promet, il ne tient pas sa promesse ; quand on lui confie quelque chose, il trahit.", source: "Sahih Boukhari 33 et Mouslim 59", theme: "Confiance", arabic: "آيَةُ الْمُنَافِقِ ثَلَاثٌ إِذَا حَدَّثَ كَذَبَ وَإِذَا وَعَدَ أَخْلَفَ وَإِذَا اؤْتُمِنَ خَانَ" }, // 26/11 : remplacé (règle n°1)
-  { text: "Craignez Allah où que vous soyez, et faites suivre la mauvaise action d'une bonne qui l'effacera.", source: "Tirmidhi", theme: "Taqwa", arabic: "اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ" },
-  { text: "Le savant dépasse l'adorateur comme la lune dépasse les autres étoiles.", source: "Tirmidhi", theme: "Savoir", arabic: "" },
+  { text: "Le Prophète ﷺ montra sa poitrine trois fois et dit : « La piété (at-taqwâ) est ici. »", source: "Sahih Mouslim 2564", theme: "Taqwa", arabic: "التَّقْوَى هَاهُنَا" },
+  { text: "Quand Allah veut du bien à quelqu'un, Il lui donne la compréhension de la religion.", source: "Sahih Boukhari 71 et Mouslim 1037", theme: "Savoir", arabic: "مَنْ يُرِدِ اللَّهُ بِهِ خَيْرًا يُفَقِّهْهُ فِي الدِّينِ" },
   { text: "Celui qui suit une voie pour y chercher un savoir, Allah lui facilite une voie vers le Paradis.", source: "Sahih Muslim", theme: "Savoir", arabic: "" },
   { text: "Le croyant fort est meilleur et plus aimé d'Allah que le croyant faible, et dans chacun il y a du bien.", source: "Sahih Mouslim 2664", theme: "Santé", arabic: "الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ وَفِي كُلٍّ خَيْرٌ" }, // 26/11 : remplacé (règle n°1)
   { text: "Ne regardez pas vers ceux qui sont au-dessus de vous, regardez vers ceux qui sont en dessous.", source: "Sahih Boukhari", theme: "Gratitude", arabic: "" },
@@ -60,7 +60,7 @@ export const HADITHS_SECOURS: HadithAffiche[] = [
   { text: "Le meilleur de vous est celui qui apprend le Coran et l'enseigne.", source: "Sahih Boukhari", theme: "Coran", arabic: "خَيْرُكُمْ مَنْ تَعَلَّمَ القُرْآنَ وَعَلَّمَهُ" },
   { text: "Toute bonne action est de la charité.", source: "Sahih Boukhari", theme: "Générosité", arabic: "كُلُّ مَعْرُوفٍ صَدَقَةٌ" },
   { text: "Le Prophète ﷺ acceptait les cadeaux et offrait quelque chose en retour.", source: "Sahih Boukhari 2585", theme: "Générosité", arabic: "كَانَ رَسُولُ اللَّهِ ﷺ يَقْبَلُ الْهَدِيَّةَ وَيُثِيبُ عَلَيْهَا" }, // 26/11 : remplacé (règle n°1)
-  { text: "Invoque Allah avec la certitude d'être exaucé.", source: "Tirmidhi", theme: "Dou'a", arabic: "" },
+  { text: "Chacun de vous est exaucé tant qu'il ne s'impatiente pas en disant : « J'ai invoqué, mais je n'ai pas été exaucé. »", source: "Sahih Boukhari 6340 et Mouslim 2735", theme: "Dou'a", arabic: "يُسْتَجَابُ لِأَحَدِكُمْ مَا لَمْ يَعْجَلْ" },
 ];
 
 /** Ligne de la base → hadith affiché (champs vides = texte vide, comme dans l'ancienne liste) */

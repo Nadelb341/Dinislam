@@ -170,7 +170,7 @@ export const MOTS_ARABES: MotArabe[] = [
 /** 💬 Un mot gentil, ou une parole du Prophète ﷺ adaptée aux enfants (hadiths authentiques, source indiquée) */
 export const MOTS_GENTILS: { texte: string; source?: string }[] = [
   { texte: 'Tu m\'as trouvé ! Tu as l\'œil d\'un vrai détective 🔎' },
-  { texte: 'Le Prophète ﷺ a dit : « Ton sourire pour ton frère est une aumône. »', source: 'At-Tirmidhî' },
+  { texte: 'Le Prophète ﷺ a dit : « Ne méprise aucune bonne action, même accueillir ton frère avec un visage souriant. »', source: 'Mouslim' },
   { texte: 'Le Prophète ﷺ a dit : « Les actes les plus aimés d\'Allah sont ceux qu\'on fait régulièrement, même s\'ils sont petits. »', source: 'Al-Bukhârî et Muslim' },
   { texte: 'Le Prophète ﷺ a dit : « Le meilleur d\'entre vous est celui qui apprend le Coran et l\'enseigne. »', source: 'Al-Bukhârî' },
   { texte: 'Le Prophète ﷺ a dit : « Facilitez et ne compliquez pas, annoncez de bonnes nouvelles et ne faites pas fuir. »', source: 'Al-Bukhârî' },

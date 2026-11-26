@@ -83,9 +83,9 @@ export const TREASURES: { emoji: string; text: string; source: string }[] = [
   { emoji: '💚', text: "Les actions les plus aimées d'Allah sont les plus régulières, même si elles sont peu nombreuses.", source: 'Al-Bukhârî n° 6464 · Muslim n° 783' },
   { emoji: '📖', text: "Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne.", source: 'Al-Bukhârî n° 5027' },
   { emoji: '🛤️', text: "Celui qui emprunte un chemin pour chercher une science, Allah lui facilite un chemin vers le Paradis.", source: 'Muslim n° 2699' },
-  { emoji: '🌟', text: "Celui qui lit une lettre du Livre d'Allah a une bonne action, et la bonne action vaut dix fois plus.", source: 'At-Tirmidhî n° 2910 (authentique)' },
+  { emoji: '🌟', text: "Celui qui lit le Coran avec aisance sera avec les nobles anges, et celui qui le lit avec difficulté, en hésitant, aura une double récompense.", source: 'Al-Boukhârî n° 4937 et Mouslim n° 798' },
   { emoji: '🏅', text: "Celui qui récite le Coran avec aisance sera avec les nobles anges, et celui qui le récite avec difficulté aura deux récompenses.", source: 'Al-Bukhârî n° 4937 · Muslim n° 798' },
-  { emoji: '😊', text: "Ton sourire à ton frère est une aumône.", source: 'At-Tirmidhî n° 1956 (hasan)' },
+  { emoji: '😊', text: "Ne méprise aucune bonne action, même le fait d'accueillir ton frère avec un visage souriant.", source: 'Mouslim n° 2626' },
   { emoji: '🤝', text: "Aucun de vous n'est vraiment croyant tant qu'il n'aime pas pour son frère ce qu'il aime pour lui-même.", source: 'Al-Bukhârî n° 13 · Muslim n° 45' },
 ];
 export const treasureFor = (programId: string) => TREASURES[seed(programId) % TREASURES.length];
