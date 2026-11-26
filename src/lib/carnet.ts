@@ -8,7 +8,31 @@ export interface MessageCarnet {
   piece_url: string | null; piece_nom: string | null; piece_type: string | null;
   epingle: boolean; signature: boolean; relance: boolean;
   envoyer_le: string; created_at: string;
+  /** 🔗 2026-11-26 (Nadia : liens entre cartes, L17) : carte de l'appli à ouvrir (« 🔗 Ouvrir la leçon »), facultatif */
+  lien?: string | null;
 }
+
+/** 🔗 2026-11-26 (L17) : la liste simple des cartes qu'un message du carnet peut ouvrir (liens internes seulement) */
+export const LIENS_CARNET: { chemin: string; libelle: string }[] = [
+  { chemin: '/coran', libelle: '📖 Coran' },
+  { chemin: '/sourates', libelle: '🎙️ Sourates' },
+  { chemin: '/nourania', libelle: '📗 Nourania' },
+  { chemin: '/alphabet', libelle: '🔤 Alphabet' },
+  { chemin: '/invocations', libelle: '🤲 Invocations' },
+  { chemin: '/allah-names', libelle: '🌟 99 noms d\'Allah' },
+  { chemin: '/priere', libelle: '🕌 Prière' },
+  { chemin: '/ramadan', libelle: '🌙 Ramadan' },
+  { chemin: '/module/hadiths', libelle: '📚 Hadiths' },
+  { chemin: '/module/histoires-prophetes', libelle: '📚 Histoires des Prophètes' },
+  { chemin: '/grammaire', libelle: '✏️ Grammaire et conjugaison' },
+  { chemin: '/module/vocabulaire', libelle: '🗣️ Vocabulaire' },
+  { chemin: '/module/dhikr', libelle: '📿 Dhikr' },
+  { chemin: '/classement', libelle: '🏆 Classement' },
+  { chemin: '/attendance', libelle: '📋 Présence' },
+];
+/** Le lien d'un message, seulement s'il fait partie de la liste (jamais une adresse extérieure) */
+export const lienCarnetValide = (lien: string | null | undefined) => LIENS_CARNET.find((l) => l.chemin === lien) ?? null;
+
 export interface LectureCarnet { id?: string; message_id: string; user_id: string; role: string; lu_le: string; reponse: string | null }
 export interface EleveCarnet { id: string; nom: string; groupes: string[]; parents: string[] }
 

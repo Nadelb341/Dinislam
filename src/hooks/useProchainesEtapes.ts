@@ -26,6 +26,15 @@ export function apresDernierFait<T>(liste: T[], fait: (x: T) => boolean): T | un
 
 const CARTE_DE: Record<string, string> = { nourania: '/nourania', sourate: '/sourates', alphabet: '/alphabet', allah_names: '/allah-names', invocations: '/invocations' };
 
+/** 🔗 2026-11-26 (Nadia : liens entre cartes, L18) : la carte qui ouvre cette étape, sur l'élément (format `?item=` des cartes) */
+export function lienEtape(s: Suggestion): string | null {
+  const route = CARTE_DE[s.type];
+  return route ? `${route}?item=${encodeURIComponent(s.cible.v)}` : null;
+}
+
+/** Nom lisible de la carte d'une étape */
+export const NOM_CARTE_ETAPE: Record<string, string> = { nourania: '📗 Nourania', sourate: '🎙️ Sourates', alphabet: '🔤 Alphabet', allah_names: '🌟 99 noms', invocations: '🤲 Invocations' };
+
 /** Prochaines étapes de PLUSIEURS élèves d'un coup (mêmes règles ; utilisé aussi par « ✨ Donner au groupe ») */
 export async function chargerProchainesEtapes(ids: string[]): Promise<Record<string, Suggestion[]>> {
   if (!ids.length) return {};

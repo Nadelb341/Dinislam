@@ -464,7 +464,11 @@ const handleModuleClick = (mod) => {
           {!isAdmin && <SilentBoundary name="Présence en classe"><PresenceEnClasse /></SilentBoundary>}
           <div className="grid gap-4 sm:grid-cols-2 items-stretch">
           <Encadre carte="priere">
-          <div className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-indigo-300 dark:border-indigo-700 flex flex-col">
+          {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L1) : toucher la carte ouvre la page Prière ; le 🔔 garde son action */}
+          <div role="link" tabIndex={0} aria-label="Ouvrir la page Prière"
+            onClick={() => navigate('/priere')}
+            onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigate('/priere'); } }}
+            className="carte-givre relative rounded-2xl overflow-hidden shadow-md animate-fade-in border-2 border-indigo-300 dark:border-indigo-700 flex flex-col cursor-pointer hover:shadow-lg transition-shadow">
             <div className="bg-gradient-to-r from-violet-100 via-indigo-100 to-blue-100 dark:from-violet-900/40 dark:via-indigo-900/40 dark:to-blue-900/40 px-3 py-2 relative">
               <div className="absolute inset-0 opacity-40 pointer-events-none select-none overflow-hidden">
                 <span className="absolute top-0 right-2 text-2xl">🌙</span>
@@ -484,7 +488,7 @@ const handleModuleClick = (mod) => {
                     </span>
                   )}
                   <span className="text-[11px] text-indigo-500 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-full">{prayerCity.label}</span>
-                  <button type="button" onClick={() => navigate('/settings#notifications')}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); navigate('/settings#notifications'); }}
                     className={`text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${rappelsPriereActifs ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
                     {rappelsPriereActifs ? '🔔 Rappels activés' : '🔔 Me rappeler'}
                   </button>

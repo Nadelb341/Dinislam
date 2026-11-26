@@ -11,6 +11,8 @@ import { useMyAge } from '@/hooks/useMyAge';
 export interface FichePetit {
   id: string; rubrique: CleRubrique; titre: string; arabe: string | null; texte: string | null; emoji: string | null;
   image_url: string | null; audio_url: string | null; versets: string[] | null; position: number;
+  /** 🔗 2026-11-26 (Nadia : liens entre cartes, L6) : numéro de la sourate liée à l'histoire (facultatif) */
+  sourate_liee?: number | null;
 }
 export interface Etoile { source: string; ref: string; created_at: string }
 
@@ -62,7 +64,8 @@ export function useFichesPetits() {
   return useQuery({
     queryKey: ['petits-fiches'],
     queryFn: async () => {
-      const { data, error } = await untypedDb.from('petits_fiches').select('id, rubrique, titre, arabe, texte, emoji, image_url, audio_url, versets, position').order('position').order('created_at');
+      // 2026-11-26 : « * » pour lire aussi `sourate_liee` sans planter tant que la migration n'est pas passée
+      const { data, error } = await untypedDb.from('petits_fiches').select('*').order('position').order('created_at');
       if (error) throw error;
       return (data || []) as FichePetit[];
     },

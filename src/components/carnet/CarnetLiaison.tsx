@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/hooks/useDraftRecovery';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useConvocations } from '@/components/convocations/useConvocations';
 import { NOM_DESTINATAIRE, lienSms, lienWhatsApp, numeroPour, type Destinataire } from '@/lib/convocations';
-import { dateCarnet, elevesVises, libelleMois, resumeCible, separerPourEleve, separerPourProf, suiviLecture, texteCarnetPartage, trierCarnet, type LectureCarnet, type MessageCarnet } from '@/lib/carnet';
+import { dateCarnet, elevesVises, libelleMois, resumeCible, separerPourEleve, separerPourProf, suiviLecture, texteCarnetPartage, trierCarnet, lienCarnetValide, type LectureCarnet, type MessageCarnet } from '@/lib/carnet';
 import { useCarnet } from './useCarnet';
 import { CarnetEditeur } from './CarnetEditeur';
 
@@ -192,6 +192,8 @@ function Note({ m, isAdmin, userId, lectures, miennes, estParent, classe, onLu, 
   const signe = miennes.some((l) => l.role === 'parent') || (estParent && lu);
   const reponse = miennes.find((l) => l.reponse)?.reponse;
   const estImage = (m.piece_type || '').startsWith('image/');
+  const navigate = useNavigate();
+  const lienMessage = lienCarnetValide(m.lien);
   const eleves = useMemo(() => (classe?.eleves ?? []).map((e) => ({ id: e.id, nom: e.nom, groupes: e.groupes, parents: e.parents })), [classe?.eleves]);
   const suivi = isAdmin && classe ? suiviLecture(m, eleves, lectures) : null;
   void userId;
@@ -221,6 +223,13 @@ function Note({ m, isAdmin, userId, lectures, miennes, estParent, classe, onLu, 
           <button type="button" onClick={() => void ouvrirPiece()} className="flex items-center gap-2 rounded-lg border bg-card px-2 py-1.5 text-xs font-semibold max-w-full">
             {estImage ? <ImgPrive src={m.piece_url} alt="" className="h-14 w-14 rounded object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded bg-red-100 text-red-700 font-black text-[10px]">PDF</span>}
             <span className="min-w-0 [overflow-wrap:anywhere] text-start">📎 {m.piece_nom || 'Pièce jointe'}</span>
+          </button>
+        )}
+        {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L17) : la carte de l'appli choisie par le professeur */}
+        {lienMessage && (
+          <button type="button" onClick={() => navigate(lienMessage.chemin)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-sky-600 text-white px-3 py-1.5 text-xs font-extrabold max-w-full [overflow-wrap:anywhere]">
+            🔗 Ouvrir la leçon : {lienMessage.libelle}
           </button>
         )}
 

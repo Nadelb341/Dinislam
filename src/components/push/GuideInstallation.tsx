@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { appareil, iphoneHorsSafari, useInvitationInstallation } from '@/lib/installationAppli';
+import { appareil, iphoneAutreNavigateur, iphoneHorsSafari, useInvitationInstallation } from '@/lib/installationAppli';
 import { toast } from 'sonner';
 
 /**
@@ -127,6 +127,7 @@ export function GuideInstallation({ open, onOpenChange }: { open: boolean; onOpe
   const qui = appareil();
   const { dispo, installer } = useInvitationInstallation();
   const horsSafari = iphoneHorsSafari();
+  const autreNavigateur = iphoneAutreNavigateur();
   const installerDirect = async () => {
     const ok = await installer();
     if (ok) { toast.success('✅ Dinislam est installée ! Ouvre-la depuis son icône.'); onOpenChange(false); }
@@ -150,10 +151,27 @@ export function GuideInstallation({ open, onOpenChange }: { open: boolean; onOpe
         {qui === 'iphone' && horsSafari ? (
           <ol className="space-y-3">
             <Etape n={1} titre="Ouvre cette page dans Safari" dessin={<EcranAccueil />}>
-              Sur iPhone et iPad, seul Safari (la boussole bleue) sait installer l'appli. Copie l'adresse de cette page, ouvre Safari et colle-la.
+              Ici, l'appli ne peut pas s'installer (lien ouvert dans une autre appli, ou iPhone pas à jour). Copie l'adresse de cette page, ouvre Safari (la boussole bleue) et colle-la.
             </Etape>
             <Etape n={2} titre="Puis suis les étapes de Safari" dessin={<IphonePartager />}>
               Bouton Partager ⬆️, puis « Sur l'écran d'accueil ».
+            </Etape>
+          </ol>
+        ) : qui === 'iphone' && autreNavigateur ? (
+          // 🔄 2026-11-26 (M3) : depuis iOS 16.4, Chrome, Edge et Firefox savent aussi installer l'appli
+          <ol className="space-y-3">
+            <Etape n={1} titre={<>Touche le bouton Partager ⬆️</>} dessin={<IphonePartager />}>
+              {autreNavigateur === 'chrome'
+                ? 'Dans Chrome : en haut à droite, dans la barre d\'adresse (ou dans le menu « … » en bas).'
+                : autreNavigateur === 'edge' ? 'Dans Edge : touche le menu ☰ en bas, puis « Partager ».'
+                  : 'Dans Firefox : touche le menu ☰ en bas, puis « Partager ».'}
+            </Etape>
+            <Etape n={2} titre="Touche « Sur l'écran d'accueil »" dessin={<IphoneMenu />}>
+              Descends un peu dans la liste si tu ne le vois pas. Puis touche « Ajouter » en haut à droite.
+            </Etape>
+            <Etape n={3} titre="Ouvre Dinislam depuis son icône" dessin={<EcranAccueil />}>
+              Ouvre l'appli avec la nouvelle icône. Ensuite, touche « Activer » sur le bandeau rouge pour les notifications.
+              Tu ne trouves pas « Sur l'écran d'accueil » ? Ouvre cette page dans Safari et refais les mêmes étapes.
             </Etape>
           </ol>
         ) : qui === 'iphone' ? (

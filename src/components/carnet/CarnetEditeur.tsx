@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { BoutonDictee } from '@/components/shared/BoutonDictee';
 import { ajouterDicte } from '@/lib/dictee';
 import { groupColorProps } from '@/lib/studentGroups';
-import { elevesVises, resumeCible, type MessageCarnet } from '@/lib/carnet';
+import { elevesVises, resumeCible, LIENS_CARNET, lienCarnetValide, type MessageCarnet } from '@/lib/carnet';
 import type { useConvocations } from '@/components/convocations/useConvocations';
 
 type Classe = ReturnType<typeof useConvocations>['data'];
@@ -31,20 +31,27 @@ interface Formulaire {
   epingle: boolean; signature: boolean; relance: boolean;
   /** vide = tout de suite ; sinon « 2026-12-18T18:00 » (heure de l'appareil) */
   programme: string;
+  /** 🔗 2026-11-26 (L17) : « 🔗 Ouvrir la leçon » = chemin d'une carte de l'appli (vide = pas de lien) */
+  lien: string;
 }
-const VIDE: Formulaire = { emoji: '📒', titre: '', texte: '', cible: 'tous', group_ids: [], student_ids: [], piece_url: null, piece_nom: null, piece_type: null, epingle: false, signature: false, relance: true, programme: '' };
+const VIDE: Formulaire = { emoji: '📒', titre: '', texte: '', cible: 'tous', group_ids: [], student_ids: [], piece_url: null, piece_nom: null, piece_type: null, epingle: false, signature: false, relance: true, programme: '', lien: '' };
 const EMOJIS = ['📒', '📚', '🕌', '🎒', '🏖️', '🙏', '🌙', '📅', '⚠️', '🎉'];
 const versLocal = (iso: string) => { const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
 
 /** ✏️ Écrire / modifier un message du carnet (enseignante) */
-export function CarnetEditeur({ message, modeles, classe, onClose }: { message: MessageCarnet | null; modeles: Modele[]; classe: Classe; onClose: () => void }) {
+export function CarnetEditeur({ message, modeles, classe, onClose, initial }: {
+  message: MessageCarnet | null; modeles: Modele[]; classe: Classe; onClose: () => void;
+  /** 🔗 2026-11-26 (Nadia : liens entre cartes, L16) : message pré-rempli (ex. absence d'un élève depuis la Présence) */
+  initial?: Partial<Formulaire>;
+}) {
   const { user } = useAuth();
   const { data: vacances = [] } = useHolidays();
   const [f, setF] = useState<Formulaire>(() => message ? {
     emoji: message.emoji, titre: message.titre, texte: message.texte, cible: message.cible as Formulaire['cible'], group_ids: message.group_ids, student_ids: message.student_ids,
     piece_url: message.piece_url, piece_nom: message.piece_nom, piece_type: message.piece_type, epingle: message.epingle, signature: message.signature, relance: message.relance,
     programme: new Date(message.envoyer_le).getTime() > Date.now() ? versLocal(message.envoyer_le) : '',
-  } : VIDE);
+    lien: message.lien ?? '',
+  } : { ...VIDE, ...initial });
   const [vue, setVue] = useState<'message' | 'modeles'>('message');
   const [envoi, setEnvoi] = useState(false);
   const [confirmer, setConfirmer] = useState(false);
@@ -98,6 +105,8 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
       group_ids: f.cible === 'groupes' ? f.group_ids : [], student_ids: f.cible === 'eleves' ? f.student_ids : [],
       piece_url: f.piece_url, piece_nom: f.piece_nom, piece_type: f.piece_type,
       epingle: f.epingle, signature: f.signature, relance: f.relance, envoyer_le: envoyerLe, updated_at: maintenant,
+      // 🔗 L17 : envoyé seulement s'il y a (ou s'il y avait) un lien — la colonne arrive avec la migration 20261126120000
+      ...(f.lien || message?.lien ? { lien: lienCarnetValide(f.lien)?.chemin ?? null } : {}),
     };
     try {
       let r: 'ok' | 'en_attente';
@@ -193,6 +202,16 @@ export function CarnetEditeur({ message, modeles, classe, onClose }: { message: 
               )}
               <p className="text-[11px] text-muted-foreground">{resumeCible(f, classe?.groupes ?? [])} · {vises.length} élève{vises.length > 1 ? 's' : ''}</p>
             </div>
+
+            {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L17) : « Ouvrir la leçon » = une carte de l'appli */}
+            <label className="flex flex-wrap items-center gap-2 text-xs font-bold" htmlFor="carnet-lien">
+              🔗 Ouvrir la leçon :
+              <select id="carnet-lien" value={f.lien} onChange={(e) => maj({ lien: e.target.value })}
+                className="rounded-full border bg-card px-2.5 py-1 text-xs font-semibold max-w-full">
+                <option value="">Pas de lien</option>
+                {LIENS_CARNET.map((l) => <option key={l.chemin} value={l.chemin}>{l.libelle}</option>)}
+              </select>
+            </label>
 
             {/* Pièce jointe */}
             <div className="flex flex-wrap items-center gap-2">

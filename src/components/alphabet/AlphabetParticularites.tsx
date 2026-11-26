@@ -22,6 +22,8 @@ import { SortableCardList, type DragItemProps } from '@/components/shared/Sortab
 import { errorMessage } from '@/lib/utils';
 import { QuizParticularite } from './QuizParticularite';
 import { CommentairesParticularite } from './CommentairesParticularite';
+import { BoutonVersNourania } from './LiensAlphabetNourania';
+import { leconDeParticularite } from '@/lib/alphabetNourania';
 import { FormeColoree } from './FormeColoree';
 
 /**
@@ -390,6 +392,8 @@ function FicheParticularite({ p, items, messageInitial, blocs, isAdmin, userId, 
 
           {/* 🎯 L'évaluation, juste sous la vidéo */}
           <QuizParticularite key={p.id} particuliereId={p.id} titre={p.titre} titreArabe={p.titre_arabe} video={videoHaut?.url ?? null} isAdmin={isAdmin} userId={userId} />
+          {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L15) : la leçon Nourania qui travaille cette particularité (si c'est certain) */}
+          <BoutonVersNourania numero={leconDeParticularite(p.titre)} onAvant={onClose} />
 
           {isAdmin ? (
             // ✋ Appui long + glisser pour ranger les zones

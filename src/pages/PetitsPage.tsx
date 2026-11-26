@@ -7,6 +7,10 @@ import { ModeInvocations } from '@/components/petits/InvocationsPetits';
 import { QuizHistoire } from '@/components/petits/QuizHistoire';
 import { VideosHistoire } from '@/components/petits/VideosHistoire';
 import { useSonErreurChoisi } from '@/hooks/useSonErreur';
+import { useDatesRamadanRetenues } from '@/lib/saisons';
+
+/** Valeur de départ du réglage `ramadan_debut` (migration 20261122030000) : elle ne compte pas comme « changée à la main » */
+const RAMADAN_DEBUT_DEPART = '2027-02-08';
 import { FicheEnGrand } from '@/components/petits/FicheEnGrand';
 import { EditionFichePetit, GererFichesPetits } from '@/components/petits/FichesPetitsAdmin';
 import { confettiLettres } from '@/lib/confettiLettres';
@@ -250,7 +254,12 @@ function JeuOrdre({ fiches, gagner, fin }: { fiches: FichePetit[]; gagner: () =>
 function ModeCalendrier({ fiches, aid, isAdmin, aEtoile, gagnerEtoile }: {
   fiches: FichePetit[]; aid: FichePetit[]; isAdmin: boolean; aEtoile: (s: string, r: string) => boolean; gagnerEtoile: (s: string, r: string) => Promise<boolean>;
 }) {
-  const { valeur: debut, changer } = useReglage<string>('ramadan_debut', '2027-02-08');
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L7) : une seule date pour toute l'appli. Le réglage des petits ne compte
+  // que s'il a été changé à la main ; vide ou valeur de départ (« 2027-02-08 », mise par la migration) = la date retenue.
+  const { valeur: reglage, changer } = useReglage<string>('ramadan_debut', '');
+  const retenue = useDatesRamadanRetenues().debut;
+  const aLaMain = !!reglage && reglage !== RAMADAN_DEBUT_DEPART && /^\d{4}-\d{2}-\d{2}$/.test(reglage);
+  const debut = aLaMain ? reglage : (retenue || RAMADAN_DEBUT_DEPART);
   const [vue, setVue] = useState<number | null>(null);
   const jour = jourRamadan(debut);
   const annee = debut.slice(0, 4);
@@ -272,6 +281,9 @@ function ModeCalendrier({ fiches, aid, isAdmin, aEtoile, gagnerEtoile }: {
         <label className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/90 dark:bg-slate-900/80 p-3 text-sm font-semibold">
           ✏️ 1er jour du Ramadan :
           <input type="date" value={debut} onChange={(e) => { if (e.target.value) void changer(e.target.value); }} className="rounded-lg border bg-background px-2 py-1" />
+          {aLaMain
+            ? <button type="button" onClick={() => void changer('')} className="rounded-lg border px-2 py-1 text-xs">↩️ Prendre la date de l'appli ({retenue ? new Date(`${retenue}T12:00:00`).toLocaleDateString('fr-FR') : '—'})</button>
+            : <span className="text-xs text-muted-foreground">(même date que le décor du Ramadan)</span>}
           <span className="text-xs text-muted-foreground">(toi, tu peux ouvrir toutes les cases pour voir)</span>
         </label>
       )}

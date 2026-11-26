@@ -239,6 +239,11 @@ const AdminCommandModal = ({
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-violet-100 text-violet-900 dark:bg-violet-950/50 dark:text-violet-100">
                 <span>⚙️ Réglages des devoirs (diamants 💎)</span>
               </button>
+              {/* 🔄 2026-11-26 (Nadia : mises à jour de janvier et de juin, M2) : ce qui change d'une année à l'autre */}
+              <button onClick={() => { onClose(); navigate('/admin?section=revue-semestre'); }}
+                className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-teal-100 text-teal-900 dark:bg-teal-950/50 dark:text-teal-100">
+                <span>🔄 À revoir chaque semestre</span>
+              </button>
               {/* 👻 Mode fantôme (2026-11-05) : entrer dans le compte d'un élève et agir comme lui */}
               <button onClick={() => setFantomeOuvert(true)}
                 className="col-span-3 flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl font-semibold text-sm transition-all active:scale-95 bg-fuchsia-100 text-fuchsia-900 dark:bg-fuchsia-950/50 dark:text-fuchsia-100">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RenameStudentDialog } from '@/components/admin/RenameStudentDialog';
 import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge';
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
@@ -33,6 +33,7 @@ import AdminStudentGroups from './AdminStudentGroups';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import SesCartesEleve from '@/components/admin/SesCartesEleve';
 import StudentSettingsOverview from '@/components/admin/StudentSettingsOverview';
+import { CarnetPresenceEleve } from '@/components/admin/CarnetPresenceEleve';
 import { FicheEspaceParents } from '@/components/admin/FicheEspaceParents';
 import { AlphabetStudentSummary } from '@/components/alphabet/AlphabetStudentSummary';
 import { StudentFollowUp } from './StudentFollowUp';
@@ -54,14 +55,17 @@ interface AdminStudentDetailsProps {
   onBack: () => void;
   /** Recherche pré-remplie (ex. ouverte depuis une tâche liée à un élève) */
   initialSearch?: string;
+  /** 🔗 2026-11-26 (Nadia : liens entre cartes, L18) : fiche de cet élève ouverte tout de suite (ex. depuis le Classement) */
+  initialStudentId?: string | null;
 }
 
-const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps) => {
+const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminStudentDetailsProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(initialSearch ?? '');
   const [selectedStudent, setSelectedStudent] = useState<{
     id: string; email: string; full_name: string | null;
   } | null>(null);
+  const ficheInitialeOuverte = useRef<string | null>(null);
 
   // DOB dialog state
   const [parentsEleve, setParentsEleve] = useState<{ id: string; full_name: string | null } | null>(null);
@@ -110,6 +114,15 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
       return (profiles || []).filter((profile) => studentIds.has(profile.user_id));
     },
   });
+
+  // 🔗 L18 : la fiche demandée s'ouvre une seule fois, dès que la liste des élèves est là
+  useEffect(() => {
+    if (!initialStudentId || !students || ficheInitialeOuverte.current === initialStudentId) return;
+    const s = students.find((x) => x.user_id === initialStudentId);
+    if (!s) return;
+    ficheInitialeOuverte.current = initialStudentId;
+    setSelectedStudent({ id: s.user_id, email: s.email || '', full_name: s.full_name });
+  }, [initialStudentId, students]);
 
   const basculerReglage = async (id: string, champ: 'hors_classement' | 'presence_tous_groupes', valeur: boolean) => {
     const { error } = await supabase.from('profiles').update(champ === 'hors_classement' ? { hors_classement: valeur } : { presence_tous_groupes: valeur }).eq('user_id', id);
@@ -626,6 +639,8 @@ const AdminStudentDetails = ({ onBack, initialSearch }: AdminStudentDetailsProps
               </div>
 
               {/* Réglages de notifications + Espace parents (2026-09-30) */}
+              {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L20) : sa présence et son carnet au même endroit */}
+              {selectedStudent?.id && <CarnetPresenceEleve eleveId={selectedStudent.id} nom={selectedStudent.full_name} />}
               {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
               {selectedStudent?.id && <SesCartesEleve userId={selectedStudent.id} />}
               {selectedStudent?.id && <StudentFollowUp userId={selectedStudent.id} />}

@@ -35,7 +35,8 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   nourania_validation_requests: [...PROGRESS_VIEWS],
   sourate_validation_requests: [...PROGRESS_VIEWS],
   sourate_recitations: [...PROGRESS_VIEWS],
-  user_sourate_progress: [...PROGRESS_VIEWS],
+  // 🔗 2026-11-26 (Nadia : liens entre cartes) : pastilles ✅ du sommaire du Coran
+  user_sourate_progress: [...PROGRESS_VIEWS, 'coran-sourates-validees'],
   user_invocation_progress: [...PROGRESS_VIEWS],
   admin_card_order: ['admin-card-ordering'],
   admin_task_templates: ['admin-task-templates'],
@@ -106,7 +107,9 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   module_visibility: ['module-visibility', 'weekly-program', 'weekly-program-admin', 'cartes-visibles', 'cartes-acces'],
   cartes_journal: ['cartes-journal'],
   // 📨 Convocations (2026-11-11)
-  convocations: ['convocations', 'convocations-eleve'],
+  convocations: ['convocations', 'convocations-eleve', 'convocations-enfant'],
+  // 🔄 2026-11-26 : liste « À revoir chaque semestre » (enseignante, sur tous ses appareils)
+  revue_semestre: ['revue-semestre'],
   convocation_modeles: ['convocations'],
   convocation_programmations: ['convocations'],
   // 📒 Carnet de liaison (2026-11-12)

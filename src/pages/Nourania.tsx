@@ -22,6 +22,7 @@ import { extractYoutubeVideoId } from '@/utils/youtube';
 import { YoutubePlayer } from '@/utils/youtube';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import NouraniaPdfViewer from '@/components/nourania/NouraniaPdfViewer';
+import { BoutonVersAlphabet } from '@/components/alphabet/LiensAlphabetNourania';
 import NouraniaPathView from '@/components/nourania/NouraniaPathView';
 import { ModifierLeconDialog, BoutonModifierLecon, type LeconAModifier } from '@/components/nourania/ModifierLecon';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -546,6 +547,8 @@ const Nourania = () => {
                   <div className="px-4 pb-4 space-y-4 animate-fade-in">
                     {/* ✏️ Zones de contenu de la leçon (texte, images, vidéos, PDF) — 2026-11-21 */}
                     <ZonesContenu cible={`nourania:${lesson.id}`} isAdmin={isAdmin} libelle={`Nourania, leçon ${lesson.lesson_number}`} />
+                    {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L15) : la même notion dans l'Alphabet (si c'est certain) */}
+                    <BoutonVersAlphabet numero={lesson.lesson_number} />
                     {/* Personal teacher comment */}
                     {(() => {
                       const personalComment = personalComments.find((c) => c.lecon_id === lesson.id);

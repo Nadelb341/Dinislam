@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { Pencil } from 'lucide-react';
 import { untypedDb } from '@/lib/untypedDb';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
@@ -33,6 +34,7 @@ async function lireHadiths(): Promise<HadithDuJour[]> {
 
 export function HadithDuJourCarte({ isAdmin, userId }: { isAdmin: boolean; userId: string | null }) {
   const [gestion, setGestion] = useState(false);
+  const navigate = useNavigate();
   const { data } = useQuery({ queryKey: CLE, queryFn: lireHadiths, retry: 1 });
   // data absent (chargement, erreur, hors ligne sans copie) → la liste de secours prend le relais
   const todayHadith = choisirHadithDuJour(data);
@@ -72,6 +74,13 @@ export function HadithDuJourCarte({ isAdmin, userId }: { isAdmin: boolean; userI
           <span className="text-emerald-400 font-serif font-bold">{' »'}</span>
           {todayHadith.source && <span className="text-xs text-muted-foreground whitespace-nowrap"> — {todayHadith.source}</span>}
         </p>
+      </div>
+      {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L14) : vers la carte Hadiths */}
+      <div className="bg-white dark:bg-slate-800 px-3 pb-2 flex justify-end">
+        <button type="button" onClick={() => navigate('/module/hadiths')}
+          className="text-xs font-bold text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-300 dark:border-emerald-700 px-3 py-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
+          📚 Voir tous les hadiths ›
+        </button>
       </div>
       {isAdmin && gestion && <GestionHadiths items={data ?? []} userId={userId} onClose={() => setGestion(false)} />}
     </div>

@@ -10,6 +10,7 @@ import { pickEncouragement } from '@/lib/coranEncouragements';
 import { withName } from '@/lib/encouragements';
 import { cn } from '@/lib/utils';
 import { CoranCertificate } from './CoranCertificate';
+import { useDatesRamadanRetenues } from '@/lib/saisons';
 
 interface Props {
   programme: Programme | null;
@@ -26,7 +27,11 @@ export function CoranProgrammeTab({ programme, onSave, onStop, onReadDay }: Prop
   const { user } = useAuth();
   const [plan, setPlan] = useState<PlanKind>('ramadan');
   const [ppd, setPpd] = useState(5);
-  const [start, setStart] = useState(localDay());
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L8) : « 1 Juz' par jour » commence par défaut le 1er jour du Ramadan
+  // (même date que le décor et la page Ramadan) ; la date reste modifiable
+  const debutRamadan = useDatesRamadanRetenues().debut;
+  const [startChoisi, setStart] = useState<string | null>(null);
+  const start = startChoisi ?? (plan === 'ramadan' && debutRamadan ? debutRamadan : localDay());
   // « À mon rythme » : par nombre de pages par jour, ou par date de fin (demande de Nadia, 2026-10-25)
   const [by, setBy] = useState<'pages' | 'date'>('date');
   const [end, setEnd] = useState(() => dateOfDay(localDay(), 120));
@@ -83,6 +88,9 @@ export function CoranProgrammeTab({ programme, onSave, onStop, onReadDay }: Prop
           <label htmlFor="start" className="text-sm font-bold">📅 Je commence le</label>
           <input id="start" type="date" value={start} onChange={(e) => setStart(e.target.value || localDay())}
             className="block w-full rounded-xl border border-input bg-background px-3 py-2 text-sm" />
+          {plan === 'ramadan' && !startChoisi && debutRamadan && (
+            <p className="text-xs text-[#2457a5] dark:text-[#9ec3f5] font-semibold">🌙 Proposé : le 1er jour du Ramadan ({fmt(debutRamadan)}). Tu peux changer la date.</p>
+          )}
           <p className="text-sm text-muted-foreground">
             {total} jours de lecture · tout le Coran lu le <b className="text-foreground">{fmt(dateOfDay(start, total))}</b> in shā' Allah
           </p>

@@ -125,6 +125,7 @@ export type Database = {
           epingle: boolean
           group_ids: string[]
           id: string
+          lien: string | null
           notifie_le: string | null
           piece_nom: string | null
           piece_type: string | null
@@ -146,6 +147,7 @@ export type Database = {
           epingle?: boolean
           group_ids?: string[]
           id?: string
+          lien?: string | null
           notifie_le?: string | null
           piece_nom?: string | null
           piece_type?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           epingle?: boolean
           group_ids?: string[]
           id?: string
+          lien?: string | null
           notifie_le?: string | null
           piece_nom?: string | null
           piece_type?: string | null
@@ -3547,6 +3550,51 @@ export type Database = {
           start_enabled?: boolean | null
           started_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      revue_semestre: {
+        Row: {
+          cle: string
+          created_at: string
+          fait: boolean
+          fichier: string | null
+          id: string
+          position: number
+          quoi: string
+          source_nom: string | null
+          source_url: string | null
+          titre: string
+          updated_at: string
+          verifie_le: string | null
+        }
+        Insert: {
+          cle: string
+          created_at?: string
+          fait?: boolean
+          fichier?: string | null
+          id?: string
+          position?: number
+          quoi?: string
+          source_nom?: string | null
+          source_url?: string | null
+          titre: string
+          updated_at?: string
+          verifie_le?: string | null
+        }
+        Update: {
+          cle?: string
+          created_at?: string
+          fait?: boolean
+          fichier?: string | null
+          id?: string
+          position?: number
+          quoi?: string
+          source_nom?: string | null
+          source_url?: string | null
+          titre?: string
+          updated_at?: string
+          verifie_le?: string | null
         }
         Relationships: []
       }

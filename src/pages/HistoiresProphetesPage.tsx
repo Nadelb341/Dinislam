@@ -10,6 +10,9 @@ import { VideosHistoire } from '@/components/petits/VideosHistoire';
 import { QuizHistoire } from '@/components/petits/QuizHistoire';
 import { useSonErreurChoisi } from '@/hooks/useSonErreur';
 import { refEtoileDuJour } from '@/lib/petits';
+import { useNavigate } from 'react-router-dom';
+import { SURA_PAGE } from '@/data/coranMeta';
+import { SOURATES_DATA } from '@/data/sourates';
 
 /**
  * 📚 Carte « Histoires des Prophètes » (les grands, Nadia 22/11) : les mêmes outils que les histoires des tout-petits :
@@ -21,6 +24,7 @@ const COULEURS = ['from-violet-400 to-purple-600', 'from-sky-400 to-indigo-600',
 export default function HistoiresProphetesPage() {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const titre = useTitreCarte('/module/histoires-prophetes', 'Histoires des Prophètes');
   const { data: toutes = [], isLoading } = useFichesPetits();
   const fiches = useMemo(() => toutes.filter((f) => f.rubrique === 'prophetes'), [toutes]);
@@ -54,7 +58,18 @@ export default function HistoiresProphetesPage() {
       {ouverte !== null && (
         <FicheEnGrand fiches={fiches} index={ouverte} isAdmin={isAdmin} onIndex={setOuverte} onClose={() => setOuverte(null)}
           etoileDuJour={(f) => aEtoile('fiche', refEtoileDuJour(f))} onModifier={setEdition}
-          auMilieu={(f) => <VideosHistoire key={`v${f.id}`} ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />}
+          auMilieu={(f) => (
+            <>
+              {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L6) : la sourate liée à l'histoire, ouverte dans le Coran */}
+              {typeof f.sourate_liee === 'number' && f.sourate_liee >= 1 && f.sourate_liee <= 114 && (
+                <button type="button" onClick={() => navigate(`/coran?item=${SURA_PAGE[(f.sourate_liee as number) - 1]}`)}
+                  className="w-full rounded-2xl bg-gradient-to-r from-[#7a1d22] to-[#561216] text-white px-4 py-3 font-extrabold text-sm sm:text-base shadow active:scale-[0.98] transition-transform [overflow-wrap:anywhere]">
+                  📖 La sourate : {SOURATES_DATA.find((s) => s.number === f.sourate_liee)?.name_french ?? `n° ${f.sourate_liee}`}
+                </button>
+              )}
+              <VideosHistoire key={`v${f.id}`} ficheId={f.id} titreFiche={f.titre} isAdmin={isAdmin} />
+            </>
+          )}
           enBas={(f) => <QuizHistoire key={`q${f.id}`} ficheId={f.id} titre={f.titre} isAdmin={isAdmin} aEtoile={aEtoile} gagnerEtoile={gagnerEtoile} />} />
       )}
       {edition && <EditionFichePetit rubrique="prophetes" fiche={edition} fiches={fiches} userId={user?.id ?? null} onClose={() => setEdition(null)}
