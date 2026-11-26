@@ -13,14 +13,16 @@ import { ModifierVocabDialog } from '@/components/coran/ModifierVocabDialog';
 import { couleurVocab } from '@/components/coran/couleursVocab';
 import { useCoranVocabulaire, CLE_VOCAB } from '@/hooks/useCoranVocabulaire';
 import { enregistrerOrdre } from '@/lib/alphabetMedias';
-import { badgeVisibilite, cibleZones, enfantsDe, textePages, type CarteVocab } from '@/lib/coranVocabulaire';
+import { badgeVisibilite, cibleZones, enfantsDe, lettreChapitre, pageDeLAdresse, textePages, type CarteVocab } from '@/lib/coranVocabulaire';
 import { cn, errorMessage } from '@/lib/utils';
 
 /**
  * 📖 Coran › onglet « Vocabulaire du Coran » (Nadia, 2026-11-26).
  * Niveau 1 : les sous-cartes (une par PDF de Nadia). Niveau 2 : les parties de son sommaire (+ « PDF entier »
- * en haut à droite). Niveau 3 : le PDF de la partie. Navigation dans l'adresse (?vc=<sous-carte>&vp=<partie|entier>)
- * → la flèche « retour » du téléphone revient d'un cran.
+ * en haut à droite). Niveau 2 bis (2026-11-26) : le SOUS-SOMMAIRE d'une partie qui a des chapitres (A, B, C…,
+ * lignes enfants de la partie). Niveau 3 : le PDF de la partie, ouvert à la page du chapitre touché.
+ * Navigation dans l'adresse (?vc=<sous-carte>&vk=<partie> pour le sous-sommaire, &vp=<partie|entier>&vpg=<page>&vch=<chapitre>
+ * pour le PDF) → la flèche « retour » du téléphone revient d'un cran.
  * Enseignante : ✏️ titre / PDF, ✋ ranger (appui long), ➕ ajouter, 🗑️ corbeille, « Afficher à » (= « Qui voit »).
  */
 const texteAcces = (c: CarteVocab) => (c.mode === 'personne' ? '🔒 Personne' : c.mode === 'certains' ? `🎯 Certains (${(c.group_ids?.length || 0) + (c.user_ids?.length || 0)})` : '🌍 Tout le monde');
@@ -34,24 +36,33 @@ export function CoranVocabulaireTab() {
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const { data: toutes = [], isLoading, isError } = useCoranVocabulaire();
-  const [edition, setEdition] = useState<{ carte: CarteVocab | null; parentId: string | null } | null>(null);
+  const [edition, setEdition] = useState<{ carte: CarteVocab | null; parentId: string | null; chapitre?: boolean } | null>(null);
   const [acces, setAcces] = useState<CarteVocab | null>(null);
 
   const sousCarte = toutes.find((c) => c.id === params.get('vc') && !c.parent_id) ?? null;
   const vp = params.get('vp');
   const partie = sousCarte && vp && vp !== 'entier' ? toutes.find((c) => c.id === vp && c.parent_id === sousCarte.id) ?? null : null;
   const entier = !!sousCarte && vp === 'entier';
+  const vk = params.get('vk');
+  const partieSommaire = sousCarte && vk && !vp ? toutes.find((c) => c.id === vk && c.parent_id === sousCarte.id) ?? null : null;
+  const pageDepart = pageDeLAdresse(params.get('vpg'));
 
   // Ouvrir = nouvelle entrée dans l'historique (le « retour » du téléphone referme) ; page affichée depuis le haut
-  const aller = (vc: string | null, p: string | null) => {
+  const aller = (vc: string | null, p: string | null, plus: { vk?: string | null; vpg?: number | null; vch?: string | null } = {}) => {
     setParams((old) => {
       const n = new URLSearchParams(old);
-      if (vc) n.set('vc', vc); else n.delete('vc');
-      if (p) n.set('vp', p); else n.delete('vp');
+      const mettre = (cle: string, v: string | null | undefined) => { if (v) n.set(cle, v); else n.delete(cle); };
+      mettre('vc', vc); mettre('vp', p); mettre('vk', plus.vk); mettre('vpg', plus.vpg ? String(plus.vpg) : null); mettre('vch', plus.vch);
       return n;
     });
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   };
+  // 📑 Une partie qui a des chapitres ouvre son sous-sommaire ; sans chapitres, son PDF (comme avant)
+  const ouvrirPartie = (s: CarteVocab, p: CarteVocab) => {
+    if (enfantsDe(toutes, p.id).length) aller(s.id, null, { vk: p.id }); else aller(s.id, p.id);
+  };
+  const nbChapitres = (p: CarteVocab) => enfantsDe(toutes, p.id).length;
+  const texteChapitres = (n: number) => (n ? `📑 ${n} chapitre${n > 1 ? 's' : ''}` : '');
 
   const ranger = async (liste: CarteVocab[]) => {
     const positions = new Map(liste.map((c, i) => [c.id, (i + 1) * 10]));
@@ -69,9 +80,12 @@ export function CoranVocabulaireTab() {
   const dialogues = (
     <>
       {isAdmin && edition && (
-        <ModifierVocabDialog carte={edition.carte} parentId={edition.parentId} userId={user?.id ?? null}
+        <ModifierVocabDialog carte={edition.carte} parentId={edition.parentId} userId={user?.id ?? null} chapitre={!!edition.chapitre}
           freres={enfantsDe(toutes, edition.parentId)} onClose={() => setEdition(null)}
-          onSupprimee={() => { if (edition.carte?.id === sousCarte?.id) aller(null, null); else if (edition.carte?.id === partie?.id) aller(sousCarte?.id ?? null, null); }} />
+          onSupprimee={() => {
+            if (edition.carte?.id === sousCarte?.id) aller(null, null);
+            else if (edition.carte && edition.carte.id === (partie ?? partieSommaire)?.id) aller(sousCarte?.id ?? null, null);
+          }} />
       )}
       {isAdmin && <AccesVocabDialog carte={acces} onClose={() => setAcces(null)} />}
     </>
@@ -83,6 +97,11 @@ export function CoranVocabulaireTab() {
     const parties = enfantsDe(toutes, sousCarte.id);
     const i = partie ? parties.findIndex((p) => p.id === partie.id) : -1;
     const url = entier ? sousCarte.pdf_url : partie?.pdf_url;
+    const chapitres = partie ? enfantsDe(toutes, partie.id) : [];
+    // Chapitre touché (son id dans l'adresse ; sinon le 1er chapitre qui commence à cette page)
+    const vch = params.get('vch');
+    const kParId = vch ? chapitres.findIndex((ch) => ch.id === vch) : -1;
+    const kChap = kParId >= 0 ? kParId : pageDepart ? chapitres.findIndex((ch) => ch.page_debut === pageDepart) : -1;
     return (
       <div className="space-y-3">
         <button type="button" onClick={() => aller(sousCarte.id, null)} className={cn('text-sm font-bold [overflow-wrap:anywhere] text-left', c.texte)}>
@@ -93,14 +112,21 @@ export function CoranVocabulaireTab() {
             <div className="flex-1 min-w-0">
               <h2 className="font-extrabold leading-snug [overflow-wrap:anywhere]">{entier ? `📄 ${sousCarte.titre} : PDF entier` : partie!.titre}</h2>
               {partie && textePages(partie) && <p className="text-xs text-white/85">{textePages(partie)}{sousCarte.pdf_url ? ' du PDF entier' : ' du livre'}</p>}
+              {kChap >= 0 && <p className="mt-1 text-xs font-bold [overflow-wrap:anywhere]">📍 {lettreChapitre(kChap)} · {chapitres[kChap].titre}</p>}
             </div>
             {isAdmin && partie && (
               <button type="button" onClick={() => setEdition({ carte: partie, parentId: sousCarte.id })} aria-label={`Modifier ${partie.titre}`}
                 className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-white/20 hover:bg-white/30"><Pencil className="h-4 w-4" /></button>
             )}
           </div>
+          {partie && (chapitres.length > 0 || isAdmin) && (
+            <button type="button" onClick={() => aller(sousCarte.id, null, { vk: partie.id })}
+              className="mt-2 rounded-full bg-white/20 hover:bg-white/30 px-3 py-1 text-xs font-bold">
+              📑 {chapitres.length ? `Sommaire de la partie (${chapitres.length})` : 'Ajouter des chapitres'}
+            </button>
+          )}
         </div>
-        {url ? <VocabPdfLecteur url={url} /> : <p className="text-sm text-center text-muted-foreground py-6">🛠️ En cours de mise à jour : pas encore de PDF.</p>}
+        {url ? <VocabPdfLecteur url={url} pageDepart={partie ? pageDepart : null} /> : <p className="text-sm text-center text-muted-foreground py-6">🛠️ En cours de mise à jour : pas encore de PDF.</p>}
         {partie && <ZonesContenu cible={cibleZones(partie.id)} isAdmin={isAdmin} libelle={`${partie.titre} (Vocabulaire du Coran)`} />}
         {partie && parties.length > 1 && (
           <div className="flex gap-2">
@@ -121,6 +147,69 @@ export function CoranVocabulaireTab() {
     );
   }
 
+  // ─── Niveau 2 bis : le sous-sommaire d'une partie (ses chapitres A, B, C…) ───
+  if (sousCarte && partieSommaire) {
+    const c = couleurVocab(sousCarte.couleur);
+    const p = partieSommaire;
+    const chapitres = enfantsDe(toutes, p.id);
+    const ligneChap = (ch: CarteVocab, k: number, drag?: DragItemProps) => {
+      const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
+      return (
+        <div key={ch.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
+          <button type="button" onClick={() => aller(sousCarte.id, p.id, { vpg: ch.page_debut, vch: ch.id })}
+            className={cn('w-full flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-transform active:scale-[0.99]', c.doux, isAdmin && 'ps-10 pe-11')}>
+            <span className={cn('shrink-0 h-9 w-9 grid place-items-center rounded-full text-white text-sm font-extrabold bg-gradient-to-br', c.degrade)}>{lettreChapitre(k)}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-bold leading-snug [overflow-wrap:anywhere]">{ch.titre}</span>
+              {ch.page_debut && <span className="block text-[11px] text-muted-foreground">page {ch.page_debut} de la partie</span>}
+            </span>
+          </button>
+          {isAdmin && <PoigneeDrag />}
+          {isAdmin && (
+            <button type="button" onClick={() => setEdition({ carte: ch, parentId: p.id, chapitre: true })} onPointerDown={(e) => e.stopPropagation()} aria-label={`Modifier ${ch.titre}`}
+              className="absolute top-1/2 -translate-y-1/2 end-2 h-8 w-8 grid place-items-center rounded-full bg-card/90 shadow-sm border border-border"><Pencil className="h-3.5 w-3.5" /></button>
+          )}
+        </div>
+      );
+    };
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => aller(sousCarte.id, null)} className={cn('text-sm font-bold [overflow-wrap:anywhere] text-left', c.texte)}>
+          ← {sousCarte.emoji} {sousCarte.titre}
+        </button>
+        <div className={cn('rounded-2xl px-4 py-3 text-white shadow-sm bg-gradient-to-br', c.degrade)}>
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-white/90">📑 Sommaire de la partie</p>
+              <h2 className="text-lg font-extrabold leading-snug [overflow-wrap:anywhere]">{p.titre}</h2>
+              <p className="text-xs text-white/85">{[textePages(p) ? `${textePages(p)}${sousCarte.pdf_url ? ' du PDF entier' : ' du livre'}` : '', texteChapitres(chapitres.length)].filter(Boolean).join(' · ')}</p>
+            </div>
+            {isAdmin && (
+              <button type="button" onClick={() => setEdition({ carte: p, parentId: sousCarte.id })} aria-label={`Modifier ${p.titre}`}
+                className="shrink-0 h-8 w-8 grid place-items-center rounded-full bg-white/20 hover:bg-white/30"><Pencil className="h-4 w-4" /></button>
+            )}
+          </div>
+          <button type="button" onClick={() => aller(sousCarte.id, p.id)}
+            className="mt-2 rounded-full bg-white text-slate-900 px-3 py-1.5 text-xs font-extrabold shadow-sm active:scale-95 transition-transform">
+            📄 Ouvrir toute la partie
+          </button>
+        </div>
+        {isAdmin && <p className="text-[11px] text-muted-foreground px-1">👆 Touche un chapitre pour ouvrir le PDF à sa page · ✏️ pour le modifier · ✋ appui long puis glisser pour le ranger (les élèves voient le même ordre).</p>}
+        <div className="space-y-2">
+          {isAdmin ? (
+            <SortableCardList items={chapitres} onReorder={(l) => void ranger(l)} onDragStart={vibrer} renderItem={(ch, drag) => ligneChap(ch, chapitres.indexOf(ch), drag)} />
+          ) : chapitres.map((ch, k) => ligneChap(ch, k))}
+          {!chapitres.length && <p className="text-sm text-center text-muted-foreground py-4">Pas encore de chapitre : touche « 📄 Ouvrir toute la partie ».</p>}
+          {isAdmin && (
+            <button type="button" onClick={() => setEdition({ carte: null, parentId: p.id, chapitre: true })}
+              className="w-full rounded-xl border-2 border-dashed border-primary/50 py-3 text-sm font-bold text-primary hover:bg-primary/5">➕ Ajouter un chapitre</button>
+          )}
+        </div>
+        {dialogues}
+      </div>
+    );
+  }
+
   // ─── Niveau 2 : une sous-carte et les parties de son sommaire ───
   if (sousCarte) {
     const c = couleurVocab(sousCarte.couleur);
@@ -130,12 +219,14 @@ export function CoranVocabulaireTab() {
       const { ref, style, isDragging, ...attrs } = drag ?? ({} as Partial<DragItemProps>);
       return (
         <div key={p.id} ref={ref} style={style} {...attrs} className={cn('relative touch-manipulation', isDragging && 'opacity-40')}>
-          <button type="button" onClick={() => aller(sousCarte.id, p.id)}
+          <button type="button" onClick={() => ouvrirPartie(sousCarte, p)}
             className={cn('w-full flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-transform active:scale-[0.99]', c.doux, isAdmin && 'ps-10 pe-11')}>
             <span className={cn('shrink-0 h-9 w-9 grid place-items-center rounded-full text-white text-sm font-extrabold bg-gradient-to-br', c.degrade)}>{n}</span>
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-bold leading-snug [overflow-wrap:anywhere]">{p.titre}</span>
-              {textePages(p) && <span className="block text-[11px] text-muted-foreground">{textePages(p)}</span>}
+              {(textePages(p) || nbChapitres(p) > 0) && (
+                <span className="block text-[11px] text-muted-foreground">{[textePages(p), texteChapitres(nbChapitres(p))].filter(Boolean).join(' · ')}</span>
+              )}
             </span>
           </button>
           {isAdmin && <PoigneeDrag />}
@@ -218,11 +309,11 @@ export function CoranVocabulaireTab() {
               <ol className="max-h-56 overflow-y-auto overscroll-contain space-y-0.5 pe-1">
                 {parties.map((p, k) => (
                   <li key={p.id}>
-                    <button type="button" onClick={() => aller(s.id, p.id)} onPointerDown={(e) => e.stopPropagation()}
+                    <button type="button" onClick={() => ouvrirPartie(s, p)} onPointerDown={(e) => e.stopPropagation()}
                       className="w-full flex items-start gap-2 rounded-lg px-1.5 py-1 text-left text-xs font-semibold leading-snug hover:bg-white/20 active:bg-white/25">
                       <span className="shrink-0 min-w-5 text-white/80 tabular-nums">{k + 1}.</span>
                       <span className="flex-1 min-w-0 [overflow-wrap:anywhere]">{p.titre}</span>
-                      <span aria-hidden className="shrink-0 text-white/70">›</span>
+                      <span aria-hidden className="shrink-0 text-white/70">{nbChapitres(p) ? '📑' : '›'}</span>
                     </button>
                   </li>
                 ))}

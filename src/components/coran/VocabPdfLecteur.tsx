@@ -10,6 +10,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
  * mais les pages ne sont dessinées que lorsqu'elles approchent de l'écran (un PDF entier peut faire 178 pages :
  * tout dessiner d'un coup ferait planter un vieux téléphone). Hors ligne : le service worker garde le PDF
  * sur l'appareil dès la 1re ouverture (`/pdf/`, mémoire `dinislam-pdf`).
+ * 📑 `pageDepart` (2026-11-26, sous-sommaire) : une fois le document prêt, on descend jusqu'à cette page.
  */
 const OuvrirAilleurs = ({ url }: { url: string }) => (
   <div className="py-6 text-center space-y-2">
@@ -41,7 +42,7 @@ function PageParesseuse({ numero, largeur, ratio }: { numero: number; largeur: n
     return () => obs.disconnect();
   }, []);
   return (
-    <div ref={ref} className="relative bg-white shadow-sm rounded-sm overflow-hidden" style={{ width: largeur, minHeight: Math.round(largeur * ratio) }}>
+    <div ref={ref} data-page={numero} className="relative bg-white shadow-sm rounded-sm overflow-hidden scroll-mt-20" style={{ width: largeur, minHeight: Math.round(largeur * ratio) }}>
       {proche ? (
         <Page pageNumber={numero} width={largeur} renderAnnotationLayer={false} renderTextLayer={false} className="block w-full"
           loading={<div className="grid place-items-center text-xs text-muted-foreground" style={{ height: Math.round(largeur * ratio) }}>Page {numero}…</div>} />
@@ -52,11 +53,27 @@ function PageParesseuse({ numero, largeur, ratio }: { numero: number; largeur: n
   );
 }
 
-function Lecteur({ url }: { url: string }) {
+function Lecteur({ url, pageDepart }: { url: string; pageDepart?: number | null }) {
   const boite = useRef<HTMLDivElement>(null);
   const [largeur, setLargeur] = useState(0);
   const [nbPages, setNbPages] = useState(0);
   const [ratio, setRatio] = useState(1.414);
+  // La place de chaque page dépend du ratio : on attend de le connaître avant de descendre à la bonne page
+  const [ratioPret, setRatioPret] = useState(false);
+  const pageAtteinte = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!pageDepart || pageDepart <= 1 || !nbPages || !ratioPret || !largeur) return;
+    const cible = Math.min(pageDepart, nbPages);
+    if (pageAtteinte.current === cible) return;
+    const id = window.setTimeout(() => {
+      const el = boite.current?.querySelector<HTMLElement>(`[data-page="${cible}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
+      pageAtteinte.current = cible;
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [pageDepart, nbPages, ratioPret, largeur]);
 
   useEffect(() => {
     const el = boite.current;
@@ -74,7 +91,7 @@ function Lecteur({ url }: { url: string }) {
         <Document file={url}
           onLoadSuccess={(pdf) => {
             setNbPages(pdf.numPages);
-            pdf.getPage(1).then((p) => { const v = p.getViewport({ scale: 1 }); if (v.width > 0) setRatio(v.height / v.width); }, () => { /* ratio A4 gardé */ });
+            pdf.getPage(1).then((p) => { const v = p.getViewport({ scale: 1 }); if (v.width > 0) setRatio(v.height / v.width); setRatioPret(true); }, () => { setRatioPret(true); /* ratio A4 gardé */ });
           }}
           loading={<div className="py-8 text-center text-sm text-muted-foreground">Chargement du document…</div>}
           error={<OuvrirAilleurs url={url} />}>
@@ -87,7 +104,7 @@ function Lecteur({ url }: { url: string }) {
   );
 }
 
-export function VocabPdfLecteur({ url }: { url: string }) {
+export function VocabPdfLecteur({ url, pageDepart }: { url: string; pageDepart?: number | null }) {
   // key = url : un nouveau document repart de zéro (et le filet d'erreur aussi)
-  return <FiletPdf key={url} url={url}><Lecteur url={url} /></FiletPdf>;
+  return <FiletPdf key={url} url={url}><Lecteur url={url} pageDepart={pageDepart} /></FiletPdf>;
 }
