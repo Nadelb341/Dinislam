@@ -2,7 +2,10 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
-import { Check } from 'lucide-react';
+import { Check, Mic, MicOff } from 'lucide-react';
+import { ZOOM_RACINE_ID, ZOOM_URL, basculerMicro, rejoindreCours, useZoomCours } from '@/lib/zoomCours';
+import { supabase } from '@/integrations/supabase/client';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { BoutonEntete, PASTILLE } from '@/components/layout/IconeEntete';
 import UserSettingsDialog from '@/components/settings/UserSettingsDialog';
 import AccountSwitcher from '@/components/auth/AccountSwitcher';
@@ -22,7 +25,6 @@ import { SilentBoundary } from '@/components/shared/SilentBoundary';
 const AdminCommandModal = lazy(() => import('@/components/admin/AdminCommandModal'));
 const AdminMessagingDialog = lazy(() => import('@/components/messaging/AdminMessagingDialog'));
 
-const ZOOM_URL = 'https://us06web.zoom.us/j/4080361371?pwd=UHVDc1o0RDE3WFBmNTBNTENaMDJnUT09';
 
 const ZoomIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -45,6 +47,14 @@ const Header = ({
   const location = useLocation();
   const { isAdmin, user } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
+  const zoom = useZoomCours();
+  const rejoindre = async () => {
+    const racine = document.getElementById(ZOOM_RACINE_ID);
+    if (!racine) return;
+    let nom = '';
+    try { nom = (await supabase.from('profiles').select('full_name').eq('user_id', user?.id ?? '').maybeSingle()).data?.full_name || ''; } catch { /* hors ligne */ }
+    await rejoindreCours(racine, nom);
+  };
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminInitial, setAdminInitial] = useState<OpenAdminDetail | null>(null);
   const [groupMessagePrefill, setGroupMessagePrefill] = useState<GroupMessageDetail | null>(null);
@@ -122,14 +132,31 @@ const Header = ({
                 className="absolute -bottom-0.5 -right-0.5 text-[10px]"
               />
             </BoutonEntete>
-            <Button
-              variant="ghost" size="icon"
-              onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')}
-              className="hover:bg-primary-foreground/10 p-1"
-              title="Rejoindre le cours Zoom"
-            >
-              <ZoomIcon />
-            </Button>
+            {/* 🎥 27/11 (Nadia, choix A + D) : l'élève rejoint le cours DANS Dinislam ; l'enseignante garde son appli Zoom (organisatrice) */}
+            {isAdmin ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 p-1" title="Cours Zoom"><ZoomIcon /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => window.open(ZOOM_URL, '_blank', 'noopener,noreferrer')}>🎥 Ouvrir mon appli Zoom (organisatrice)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void rejoindre()}>🧪 Essayer le cours dans Dinislam (comme un élève)</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={() => void rejoindre()} className="hover:bg-primary-foreground/10 p-1" title="Rejoindre le cours Zoom">
+                <ZoomIcon />
+              </Button>
+            )}
+            {/* 🎤 Le micro, à côté du logo Zoom, dès que la salle est ouverte : vert = ouvert, rouge = coupé */}
+            {zoom.etat === 'en-cours' && (
+              <button type="button" onClick={() => void basculerMicro().then((m) => { if (m) toast(m); })}
+                aria-label={zoom.micro === 'ouvert' ? 'Micro ouvert : touche pour le couper' : 'Micro coupé : touche pour l\'ouvrir'}
+                title={zoom.micro === 'ouvert' ? 'Micro ouvert' : 'Micro coupé'}
+                className={`grid h-8 w-8 place-items-center rounded-full text-white shadow ring-2 ring-white/70 transition-transform active:scale-90 ${zoom.micro === 'ouvert' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                {zoom.micro === 'ouvert' ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              </button>
+            )}
             <BoutonEntete nom="classement" onClick={() => navigate('/classement')} aria-label="Classement" title="Classement" />
             <BoutonEntete nom="presence" onClick={() => navigate('/attendance')} aria-label="Présence" title="Présence" />
             {/* Admin: monitoring icon */}
