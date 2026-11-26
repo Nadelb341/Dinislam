@@ -94,7 +94,7 @@ const TEMPLATES: TemplateSet[] = [
       { front_text: 'Se laver le visage', back_arabic: 'غَسْلُ الْوَجْه', back_transliteration: 'ghaslu al-wajh' },
       { front_text: 'Se laver les bras', back_arabic: 'غَسْلُ الْيَدَيْن وَالذِّرَاعَيْن', back_transliteration: 'ghaslu al-dhira\'ayn' },
       { front_text: 'Se passer la main sur la tête', back_arabic: 'مَسْحُ الرَّأْس', back_transliteration: 'mashu ar-ra\'s' },
-      { front_text: 'Se laver les oreilles', back_arabic: 'مَسْحُ الأُذُنَيْن', back_transliteration: 'mashu al-udhnayn' },
+      { front_text: 'Passer les mains mouillées sur les oreilles', back_arabic: 'مَسْحُ الأُذُنَيْن', back_transliteration: 'mashu al-udhnayn' },
       { front_text: 'Se laver les pieds', back_arabic: 'غَسْلُ الْقَدَمَيْن', back_transliteration: 'ghaslu al-qadamayn' },
       { front_text: 'Intention', back_arabic: 'النِّيَّة', back_transliteration: 'an-niyya' },
       { front_text: 'Ce qui annule l\'ablution', back_arabic: 'نَوَاقِضُ الْوُضُوء', back_transliteration: 'nawaqidh al-wudu' },

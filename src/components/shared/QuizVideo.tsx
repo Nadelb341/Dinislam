@@ -17,6 +17,7 @@ import { useDeuxChances } from '@/hooks/useDeuxChances';
 import { MessageReponse } from '@/components/shared/MessageReponse';
 import { sonErreur } from '@/lib/sonsErreur';
 import { dire } from '@/lib/voixFabriquees';
+import { EditeurQuestionsQuiz } from '@/components/shared/EditeurQuestionsQuiz';
 
 /**
  * 🎯 Le quiz de 10 questions d'une vidéo, n'importe où dans l'appli (Nadia, 22/11 : « je ne veux pas avoir à le redemander »).
@@ -103,23 +104,13 @@ export function QuizVideo({ cible, sujet, video, isAdmin, petits = false }: {
                 <p className="font-bold">{visibleEleves ? '✅ Quiz visible par les élèves' : '🪄 Quiz préparé automatiquement : caché aux élèves tant que tu ne valides pas'}
                   {quiz.source === 'sujet' && <span className="block text-xs font-normal text-muted-foreground">Préparé d'après le sujet (l'IA ne peut pas regarder une vidéo envoyée en fichier) : relis-le bien.</span>}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  <Button size="sm" variant="outline" onClick={() => setRelire((v) => !v)}>{relire ? 'Fermer' : '✏️ Relire les questions'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setRelire((v) => !v)}>{relire ? 'Fermer' : '✏️ Relire et modifier'}</Button>
                   {visibleEleves
                     ? <Button size="sm" variant="outline" onClick={() => void changer({ statut: 'brouillon' })}>🙈 Cacher aux élèves</Button>
                     : <Button size="sm" onClick={() => void changer({ statut: 'valide' })}>✅ Montrer aux élèves</Button>}
                   <Button size="sm" variant="ghost" onClick={() => setRefaire(true)}>🔁 Refaire</Button>
                 </div>
-                {relire && (
-                  <ol className="space-y-1.5 list-decimal ps-5">
-                    {quiz.questions.map((q, i) => (
-                      <li key={i} className="[overflow-wrap:anywhere]">
-                        <span className="font-semibold">{q.question}</span>{q.arabe && <span className="font-arabic ms-1" dir="rtl">{q.arabe}</span>}
-                        <span className="block text-xs text-muted-foreground">✅ {q.choix[q.bonne]} · ✖️ {q.choix.filter((_, j) => j !== q.bonne).join(' · ')}</span>
-                        <button type="button" className="text-xs text-destructive font-bold" onClick={() => void changer({ questions: quiz.questions.filter((_, j) => j !== i) })}>✕ retirer cette question</button>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                {relire && <EditeurQuestionsQuiz questions={quiz.questions} onEnregistrer={(q) => changer({ questions: q })} />}
               </>
             )}
         </div>

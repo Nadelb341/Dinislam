@@ -37,11 +37,11 @@ import { describeIndex, BOOKMARK_COLORS } from '@/lib/coranPages';
 type Tab = 'lire' | 'juz' | 'vocab' | 'lieu' | 'programme' | 'savoir' | 'eleves';
 type Reading = { kind: 'free' } | { kind: 'juz'; juz: number; sura: number } | { kind: 'prog'; day: number };
 
-const TABS: { id: Tab; emoji: string; label: string; admin?: boolean }[] = [
+const TABS: { id: Tab; emoji: string; label: string; admin?: boolean; image?: string }[] = [
   { id: 'lire', emoji: '📖', label: 'Lire' },
   { id: 'juz', emoji: '📚', label: "Juz'" },
   // 📖 Nadia, 2026-11-26 : entre « Juz' » et « Lieu révélation »
-  { id: 'vocab', emoji: '🗣️', label: 'Vocabulaire du Coran' },
+  { id: 'vocab', emoji: '📖', label: 'Vocabulaire du Coran', image: '/images/coran/icone-vocabulaire.jpg' }, // icône = image choisie par Nadia (26/11)
   { id: 'lieu', emoji: '🕋', label: 'Lieu révélation' },
   { id: 'programme', emoji: '🗓️', label: 'Programme' },
   { id: 'savoir', emoji: '💡', label: 'À savoir' },
@@ -208,7 +208,7 @@ const CoranPage = () => {
                 onClick={() => { if (t.id === 'lire' && reading.kind !== 'free') { setReading({ kind: 'free' }); setIndex(lecture.index > 1 ? lecture.index : 1); } setTab(t.id); }}
                 className={cn('px-1 pt-1.5 pb-2 text-center text-[11px] sm:text-xs font-bold leading-tight border-b-[3px] transition-colors', t.id === 'vocab' ? 'min-w-[84px]' : 'min-w-[64px]',
                   tab === t.id ? 'text-white border-[#f3d38b]' : 'text-white/70 border-transparent hover:text-white')}>
-                <span className="block text-lg leading-none mb-0.5">{t.emoji}</span>{t.label}
+                {t.image ? <img src={t.image} alt="" aria-hidden className="mx-auto mb-0.5 h-[20px] w-[30px] rounded-md bg-white object-contain" /> : <span className="block text-lg leading-none mb-0.5">{t.emoji}</span>}{t.label}
               </button>
             ))}
           </div>

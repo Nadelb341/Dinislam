@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * 💍 Ma semaine en anneaux (Nadia, 2026-11-26 : présentation D « les anneaux », placée comme la E = juste sous
+ * 🗓️ Ma semaine en anneaux (Nadia, 2026-11-26 : présentation D « les anneaux », placée comme la E = juste sous
  * « Mes 5 étoiles du jour », et un peu plus mise en valeur). Chaque jour (lundi → dimanche) = un anneau en 5 morceaux,
  * un morceau coloré par prière faite ; 5/5 = anneau doré qui brille. Aujourd'hui entouré. Remplace l'ancienne carte
  * « Suivi de la semaine » (pastilles + légende).
@@ -42,9 +42,9 @@ export function SemaineAnneaux({ dates, texte, nuit = false }: { dates: Record<s
   }, [jourCle]);
   const total = semaine.reduce((s, d) => s + (d <= aujourdhui ? Math.min(5, dates[cle(d)] ?? 0) : 0), 0);
   return (
-    <div className={cn('mt-3 rounded-2xl p-2.5', nuit ? 'bg-white/10' : 'bg-gradient-to-br from-sky-50 to-indigo-50 dark:from-white/5 dark:to-white/10')}>
+    <div className={cn('mt-3 rounded-2xl p-2.5', nuit ? 'bg-emerald-300/20 ring-1 ring-emerald-200/40' : 'bg-gradient-to-br from-emerald-50 to-green-100 ring-1 ring-emerald-200 dark:from-emerald-950/40 dark:to-green-900/30 dark:ring-emerald-800')}>
       <div className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
-        <h3 className="text-sm font-extrabold" style={{ color: texte }}>💍 Ma semaine</h3>
+        <h3 className="text-sm font-extrabold" style={{ color: texte }}>🗓️ Ma semaine</h3>
         <span className="text-[11px] font-bold tabular-nums" style={{ color: texte, opacity: 0.85 }}>{total} prières faites</span>
       </div>
       <ol className="grid grid-cols-7 gap-0.5">

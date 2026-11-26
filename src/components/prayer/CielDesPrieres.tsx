@@ -18,7 +18,7 @@ const REPERES: { cle: keyof Horaires; nom: string; arabe: string; x: number; y: 
   { cle: 'dhuhrDate', nom: 'Dhohr', arabe: 'الظُّهْر', x: 49.4, y: 30.5 },
   { cle: 'asrDate', nom: 'Asr', arabe: 'العَصْر', x: 66.8, y: 34.5 },
   { cle: 'maghribDate', nom: 'Maghreb', arabe: 'المَغْرِب', x: 82.4, y: 48.5 },
-  { cle: 'ishaDate', nom: 'Icha', arabe: 'العِشَاء', x: 92.8, y: 57 }, // 26/11 (Nadia) : au bout de l'arche (nuit tombée), comme Sobh au début
+  { cle: 'ishaDate', nom: 'Icha', arabe: 'العِشَاء', x: 92.6, y: 60.5 }, // 26/11 (Nadia, 2ᵉ retour) : l'étiquette « Isha » de l'IMAGE est descendue au bout de l'arche (v2), l'heure dessous
 ];
 
 const hm = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -42,7 +42,7 @@ export function CielDesPrieres({ moment, horaires, prochaine }: {
   const etoiles = useMemo(() => Array.from({ length: 50 }, (_, i) => ({ l: (i * 37.7) % 100, t: (i * 23.3) % 55, d: (i % 8) * 0.3 })), []);
   return (
     <div className="relative w-full overflow-hidden rounded-3xl shadow-lg" style={{ aspectRatio: '1148 / 648' }}>
-      <img src="/images/priere/ciel-des-prieres.jpg" alt="Le ciel des prières : Sobh, Chourouk, Dhohr, Asr, Maghreb et Icha le long de la course du soleil"
+      <img src="/images/priere/ciel-des-prieres-v2.jpg" alt="Le ciel des prières : Sobh, Chourouk, Dhohr, Asr, Maghreb et Icha le long de la course du soleil"
         className="absolute inset-0 h-full w-full object-cover transition-[filter] duration-1000" style={{ filter: a.filtre }} />
       <div className="absolute inset-0 mix-blend-multiply transition-[background] duration-1000" style={{ background: a.voile }} aria-hidden />
       {a.etoiles && (
@@ -65,10 +65,11 @@ export function CielDesPrieres({ moment, horaires, prochaine }: {
           <span className="font-mono text-[9px] font-extrabold leading-none tabular-nums sm:text-xs">{hm(horaires[r.cle])}</span>
         </button>
       ))}
+      {/* ⏳ 26/11 (Nadia) : « Prochaine prière » mise en valeur : pastille dorée qui brille, compte à rebours plus gros */}
       {prochaine && (
-        <div className="absolute bottom-[4%] left-[50%] max-w-[62%] -translate-x-1/2 rounded-2xl bg-white/90 px-2.5 py-1 text-center text-[#1f2240] shadow-md backdrop-blur-sm sm:px-3 sm:py-1.5">
-          <p className="text-[10px] font-semibold leading-tight text-[#5b5a7a] sm:text-[11px]">Prochaine prière : <b className="text-[#1f2240]">{prochaine.name}</b></p>
-          <p className="text-xs font-extrabold leading-tight tabular-nums sm:text-sm" aria-live="off">⏳ dans {reste(prochaine.date, maintenant)}</p>
+        <div className="absolute bottom-[4%] left-[50%] max-w-[70%] -translate-x-1/2 rounded-2xl border-2 border-[#ffe27a] bg-gradient-to-br from-[#fff8e1] to-[#ffe6b0] px-3 py-1 text-center text-[#3b2a06] shadow-[0_0_18px_rgba(255,216,77,.75)] sm:px-4 sm:py-2">
+          <p className="text-[10px] font-bold leading-tight text-[#7a5a12] sm:text-xs">Prochaine prière : <b className="text-[11px] font-extrabold text-[#3b2a06] sm:text-sm">{prochaine.name}</b></p>
+          <p className="text-sm font-black leading-tight tabular-nums sm:text-lg" aria-live="off"><span className="inline-block motion-safe:animate-pulse">⏳</span> dans {reste(prochaine.date, maintenant)}</p>
         </div>
       )}
       <span className="sr-only">Maintenant : {a.nom}</span>
