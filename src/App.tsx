@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useSwNavigate } from "@/hooks/useSwNavigate";
 import { Loader2 } from "lucide-react";
@@ -155,7 +155,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        {/* React Router 7 (2026-11-27) : useTransitions={false} = même comportement qu'en v6 (changement de page immédiat,
+            roue de chargement pendant qu'une page se charge), sans l'attente « transition » ajoutée par défaut en v7. */}
+        <BrowserRouter useTransitions={false}>
           <AuthProvider>
             <RealtimeSync />
             <EcranTourne />

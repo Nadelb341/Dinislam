@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccesPetits, useEtoiles, useFichesPetits, useGagnerEtoile, useReglage, type FichePetit } from '@/hooks/usePetits';

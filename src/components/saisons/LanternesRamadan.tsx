@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReglagesRamadan } from '@/lib/saisons';
 import { LANTERNE_VB, NB_LANTERNES, lanterneSvg } from './dessinsRamadan';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useLienInvocationRupture } from '@/hooks/useInvocationRupture';
 
 /**

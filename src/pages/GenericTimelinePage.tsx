@@ -6,7 +6,7 @@ import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useAuth } from '@/contexts/AuthContext';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import FlashcardPlayer from '@/components/FlashcardPlayer';

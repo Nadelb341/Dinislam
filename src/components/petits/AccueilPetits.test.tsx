@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type { FichePetit } from '@/hooks/usePetits';
 
 const navigate = vi.fn();
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useParams: () => ({ rubrique: 'ablutions' }) }));
+vi.mock('react-router', () => ({ useNavigate: () => navigate, useParams: () => ({ rubrique: 'ablutions' }) }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn(), setQueryData: vi.fn() }), useQuery: () => ({ data: null }) }));
 vi.mock('@/lib/confettiLettres', () => ({ confettiLettres: vi.fn() }));
 vi.mock('@/hooks/useSonErreur', () => ({ useSonErreurChoisi: () => ({ data: 1 }) }));

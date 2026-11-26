@@ -3,7 +3,7 @@ import { AdminAlphabetValidations } from '@/components/admin/AdminAlphabetValida
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { LoginTroubleBanner } from '@/components/admin/LoginTroubleBanner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { X } from 'lucide-react';
 import { CorrectionsGrille, RienACorriger, totalCorrections, useTuilesCorrections } from '@/components/admin/CorrectionsGrille';
 import AdminInvocationValidations from '@/components/admin/AdminInvocationValidations';

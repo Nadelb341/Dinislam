@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CrashAlertsPanel } from '@/components/admin/CrashAlertsPanel';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

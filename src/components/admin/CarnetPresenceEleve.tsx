@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import PresenceEnClasse from '@/components/home/PresenceEnClasse';
 import { useCarnet } from '@/components/carnet/useCarnet';

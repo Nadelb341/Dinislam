@@ -10,7 +10,7 @@ import { VideosHistoire } from '@/components/petits/VideosHistoire';
 import { QuizHistoire } from '@/components/petits/QuizHistoire';
 import { useSonErreurChoisi } from '@/hooks/useSonErreur';
 import { refEtoileDuJour } from '@/lib/petits';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { SURA_PAGE } from '@/data/coranMeta';
 import { SOURATES_DATA } from '@/data/sourates';
 

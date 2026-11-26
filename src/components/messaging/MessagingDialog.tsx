@@ -1,6 +1,6 @@
 import { texteBoutonCorrection } from '@/lib/messageCorrection';
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { withName } from '@/lib/encouragements';
 import { Mic, Send, X, Mail, MailOpen, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -6,7 +6,7 @@ import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { toast } from 'sonner';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage } from '@/lib/utils';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown } from 'lucide-react';
 import { DRAFT_RESUME_EVENT, takeDraftResume } from '@/lib/pendingDrafts';

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { useAuth, AuthProvider } from '../AuthContext';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 
 vi.mock('@/integrations/supabase/client', () => ({
   AUTH_STORAGE_KEY: 'sb-test-auth-token',

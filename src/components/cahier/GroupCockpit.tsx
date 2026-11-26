@@ -12,7 +12,7 @@ import { saveDraft, loadDraft, clearDraft } from '@/hooks/useDraftRecovery';
 import { errorMessage, cn } from '@/lib/utils';
 import { isLate, type AdminTask, type TodoGroup } from '@/lib/adminTasks';
 import type { WeeklyProgram } from '@/lib/weeklyProgram';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { CartesGroupe } from './CartesGroupe';
 
 

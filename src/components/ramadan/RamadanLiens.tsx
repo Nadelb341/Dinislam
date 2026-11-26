@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useVillePriere } from '@/hooks/useVillePriere';
 import { usePrayerTimesCity, getSavedMethod } from '@/hooks/usePrayerTimesCity';
 import { useLienInvocationRupture } from '@/hooks/useInvocationRupture';

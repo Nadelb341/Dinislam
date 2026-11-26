@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { HadithDuJourCarte } from '@/components/home/HadithDuJour';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Moon, BookOpen, Hand, BookMarked, Sparkles, MessageSquare, Star, Music, Video, FileText, Image, Heart, List, Scroll, Users, MoreVertical, EyeOff, Eye, X, Sun, MessageCircle, Book, Languages, Library, RefreshCw, Feather, BookHeart, NotebookPen, ClipboardList, ScrollText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
