@@ -1615,6 +1615,12 @@ export type Database = {
           titre: string
           type: string
           visible_a: string | null
+          libre_groupe: string | null
+          libre_lot: string | null
+          libre_modele: string | null
+          questions: Json
+          reponses_attendues: string[]
+          video_lien: string | null
         }
         Insert: {
           assigned_to: string
@@ -1638,6 +1644,12 @@ export type Database = {
           titre: string
           type: string
           visible_a?: string | null
+          libre_groupe?: string | null
+          libre_lot?: string | null
+          libre_modele?: string | null
+          questions?: Json
+          reponses_attendues?: string[]
+          video_lien?: string | null
         }
         Update: {
           assigned_to?: string
@@ -1661,6 +1673,12 @@ export type Database = {
           titre?: string
           type?: string
           visible_a?: string | null
+          libre_groupe?: string | null
+          libre_lot?: string | null
+          libre_modele?: string | null
+          questions?: Json
+          reponses_attendues?: string[]
+          video_lien?: string | null
         }
         Relationships: [
           {
@@ -1684,6 +1702,8 @@ export type Database = {
           rendu_at: string | null
           statut: string | null
           student_id: string
+          reponse_texte: string | null
+          reponses: Json
         }
         Insert: {
           a_ete_refait?: boolean
@@ -1696,6 +1716,8 @@ export type Database = {
           rendu_at?: string | null
           statut?: string | null
           student_id: string
+          reponse_texte?: string | null
+          reponses?: Json
         }
         Update: {
           a_ete_refait?: boolean
@@ -1708,6 +1730,8 @@ export type Database = {
           rendu_at?: string | null
           statut?: string | null
           student_id?: string
+          reponse_texte?: string | null
+          reponses?: Json
         }
         Relationships: [
           {

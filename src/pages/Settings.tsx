@@ -180,6 +180,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   coran_progress: 'Programme de lecture du Coran',
   admin_task_attachment: 'Fichier d\'une ligne du Cahier de texte',
   devoir_piece_jointe: 'Fichier ou consigne audio d\'un nouveau devoir',
+  devoir_libre_piece: 'Fichier ou consigne audio d\'un devoir libre',
   devoir_ligne: 'Ligne de devoir d\'un groupe',
   cahier_carte: 'Carte d\'un groupe du Cahier de texte',
   nourania_lignes: 'Réglage des numéros de lignes d\'une leçon Nourania',

@@ -25,6 +25,8 @@ import type { GroupSchedule } from "@/lib/groupCourse";
 import { Encadre } from "@/components/home/Encadre";
 import { useReglagesEncadrements } from "@/lib/encadrements";
 import { carteDevoirAuto } from "@/lib/devoirTravail";
+import { questionsDe, regleReponse, reponsesDe } from "@/lib/devoirsLibres";
+import { VideoDevoir } from "./VideoDevoir";
 
 type Devoir = {
   id: string;
@@ -57,6 +59,14 @@ type Devoir = {
   group_id: string | null;
   visible_a: string | null;
   rendu_at: string | null;
+  /** 📝 Devoirs libres (2026-11-26) : modèle, réponses attendues, questions, vidéo ; réponse déjà envoyée */
+  libre_modele: string | null;
+  reponses_attendues: string[];
+  questions: string[];
+  video_lien: string | null;
+  rendu_id: string | null;
+  reponse_texte: string | null;
+  reponses: string[];
 };
 
 /** Un devoir est fait (pour l'élève) dès qu'il l'a envoyé : en attente de validation ou validé ; « à refaire » = à faire */
@@ -83,12 +93,19 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
         <div className="min-w-0">
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-foreground">{matiereDe(devoir).label}</p>
           <p className="font-bold text-foreground text-sm [overflow-wrap:anywhere]">{devoir.titre}</p>
-          {devoir.description && <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{devoir.description}</p>}
+          {devoir.description && devoir.type !== 'libre' && <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">{devoir.description}</p>}
           {devoir.date_limite && (
             <p className="text-xs font-semibold mt-0.5">📅 À rendre pour le {new Date(devoir.date_limite).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}{devoir.audio_requis ? ' · 🎙️ audio demandé' : ''}</p>
           )}
         </div>
       </div>
+
+      {/* 📖 Devoir libre : la consigne ou le texte à lire, en grand et lisible */}
+      {devoir.type === 'libre' && devoir.description && (
+        <p className="rounded-xl border-2 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 cahier-main text-lg leading-7 whitespace-pre-wrap [overflow-wrap:anywhere]">{devoir.description}</p>
+      )}
+      {/* 🎬 Vidéo d'un devoir libre (YouTube sans sortie possible, ou fichier vidéo) */}
+      {devoir.type === 'libre' && devoir.video_lien && statut !== 'corrige' && <VideoDevoir lien={devoir.video_lien} titre={devoir.titre} />}
 
       {/* 📎 Documents et photos du professeur, ouverts dans l'appli (idée 8) */}
       {devoir.pieces_jointes.length > 0 && (
@@ -123,7 +140,8 @@ function CarteDevoir({ devoir, onEtape, onSent }: { devoir: Devoir; onEtape: (id
 
       {/* ▶️ Commencer mon travail · ✅ Je valide mon devoir (audio si demandé) · états envoyé / validé / à refaire */}
       <DevoirValider onSent={onSent}
-        devoir={{ id: devoir.id, titre: devoir.titre, type: devoir.type, cible_id: devoir.cible_id, audio_requis: devoir.audio_requis, statut, commentaire: devoir.commentaire_admin, correction_audio_url: devoir.correction_audio_url }} />
+        devoir={{ id: devoir.id, titre: devoir.titre, type: devoir.type, cible_id: devoir.cible_id, audio_requis: devoir.audio_requis, statut, commentaire: devoir.commentaire_admin, correction_audio_url: devoir.correction_audio_url,
+          libre: devoir.type === 'libre' ? { regle: regleReponse(devoir), questions: devoir.questions, renduId: devoir.rendu_id, reponseTexte: devoir.reponse_texte, reponses: devoir.reponses } : null }} />
 
       {/* ⭐ Petit mot automatique quand le devoir est validé */}
       {statut === 'corrige' && user && (
@@ -215,9 +233,10 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
       .order('created_at', { ascending: false });
 
     // Fetch rendus for this student
+    // '*' : aussi le texte et les réponses des devoirs libres (2026-11-26)
     const { data: rendus } = await supabase
       .from('devoirs_rendus')
-      .select('devoir_id, statut, commentaire_admin, correction_audio_url, rendu_at')
+      .select('*')
       .eq('student_id', uid);
     // Cases « J'ai travaillé ce devoir »
     const { data: checks } = await supabase.from('devoir_checks').select('devoir_id').eq('student_id', uid);
@@ -257,6 +276,13 @@ export default function BlocDevoirsEleve({ eleveId }: { eleveId?: string } = {})
         group_id: d.group_id ?? null,
         visible_a: d.visible_a ?? null,
         rendu_at: rendu?.rendu_at ?? null,
+        libre_modele: d.libre_modele ?? null,
+        reponses_attendues: d.reponses_attendues ?? [],
+        questions: questionsDe(d.questions),
+        video_lien: d.video_lien ?? null,
+        rendu_id: rendu?.id ?? null,
+        reponse_texte: rendu?.reponse_texte ?? null,
+        reponses: reponsesDe(rendu?.reponses),
       };
     });
 

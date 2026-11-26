@@ -66,7 +66,7 @@ function itemDepuisEtape(s: Suggestion, audio: boolean): ItemDevoir {
   };
 }
 
-export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCetteSemaine, maxSemaine, ouvrirAuDemarrage, toujoursOuvert, formulaire, dejaDonnes, persoInitial }: {
+export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCetteSemaine, maxSemaine, ouvrirAuDemarrage, toujoursOuvert, formulaire, dejaDonnes, persoInitial, avantMatieres }: {
   eleves: { user_id: string; full_name: string | null }[];
   nomGroupe: string | null;
   dateLimite: string;
@@ -82,6 +82,8 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
   dejaDonnes?: (id: string) => { titre: string; emoji?: string | null }[];
   /** Élève dont « Personnaliser » est ouvert en arrivant (lien depuis le cahier de texte) */
   persoInitial?: string | null;
+  /** 📝 2026-11-26 : ligne « Devoirs libres » placée AU-DESSUS de Nourania (elle ouvre la zone des devoirs libres) */
+  avantMatieres?: ReactNode;
 }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -168,6 +170,7 @@ export function DonnerAuGroupe({ eleves, nomGroupe, dateLimite, visibleA, dejaCe
         <p className="text-xs text-violet-900 dark:text-violet-100">Chaque élève reçoit son devoir là où il en est (sa ligne, sa sourate, son invocation…).{formulaire ? ' Le carré choisit l\'élève ; touche sa case pour personnaliser ses devoirs.' : ''}</p>
         {/* 2026-11-26 (Nadia) : les matières l'une SOUS l'autre (plus côte à côte) */}
         <div className="flex flex-col gap-1.5">
+          {avantMatieres}
           {MATIERES_GROUPE.map((m) => {
             const v = matieres[m.type] ?? { on: false, audio: m.audio };
             return (

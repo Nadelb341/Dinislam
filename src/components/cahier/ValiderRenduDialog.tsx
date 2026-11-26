@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { sendPushNotification } from '@/lib/pushHelper';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { matiereOf } from '@/lib/devoirMatieres';
+import { etiquetteLibre } from '@/lib/devoirsLibres';
+import { RenduLibreVue } from './RenduLibreVue';
 import { errorMessage } from '@/lib/utils';
 import { dateCourte, prenomOf, type CahierDevoir, type CahierEleve, type CahierRendu } from './useCahierClasse';
 
@@ -98,6 +100,7 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
           <DialogTitle className="pe-8 [overflow-wrap:anywhere]">👤 {eleve?.full_name || 'Élève'}</DialogTitle>
           <DialogDescription asChild>
             <div className="rounded-xl border-2 border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40 p-3 text-sky-950 dark:text-sky-100">
+              {devoir?.type === 'libre' && <p className="text-[11px] font-extrabold text-fuchsia-800 dark:text-fuchsia-200">{etiquetteLibre(devoir.libre_modele)}</p>}
               <p className="font-bold [overflow-wrap:anywhere]">{matiere?.emoji} {titre}</p>
               {devoir?.date_limite && <p className="text-xs mt-0.5">📅 À rendre {dateCourte(devoir.date_limite)}</p>}
             </div>
@@ -109,7 +112,7 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
           {statut === 'rendu' && (
             <p className="rounded-xl bg-orange-100 text-orange-900 dark:bg-orange-950/50 dark:text-orange-200 p-3 text-sm font-semibold">
               🟠 Envoyé{rendu?.rendu_at ? ` le ${dateCourte(rendu.rendu_at)}` : ''} : à valider
-              {!rendu?.audio_url && <span className="block text-xs font-normal mt-0.5">(sans audio : aucun audio n'était demandé)</span>}
+              {!rendu?.audio_url && devoir?.type !== 'libre' && <span className="block text-xs font-normal mt-0.5">(sans audio : aucun audio n'était demandé)</span>}
             </p>
           )}
           {statut === 'a_refaire' && (
@@ -128,6 +131,8 @@ export default function ValiderRenduDialog({ open, onClose, eleve, devoir, rendu
           {asPJ(rendu?.photos).length > 0 && (
             <div className="space-y-1"><p className="text-xs font-bold">📷 Photos envoyées par {prenom}</p><PiecesJointesVue items={asPJ(rendu?.photos)} grand /></div>
           )}
+
+          <RenduLibreVue rendu={rendu} devoir={devoir} />
 
           {statut === 'rendu' && !refaire && (
             <div className="grid grid-cols-2 gap-2">

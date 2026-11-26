@@ -43,7 +43,9 @@ export function lienTravail(d: { id: string; type: string; cible_id?: string | n
 }
 
 /** L'élève valide son devoir : rendu « en attente » (avec ou sans audio) + notification à l'enseignante */
-export async function envoyerDevoir(opts: { devoirId: string; userId: string; userName: string; titre: string; audio?: Blob | null; photos?: File[] }) {
+export async function envoyerDevoir(opts: { devoirId: string; userId: string; userName: string; titre: string; audio?: Blob | null; photos?: File[];
+  /** 📝 Devoirs libres (2026-11-26) : texte écrit et réponses aux questions */
+  reponse_texte?: string | null; reponses?: string[] }) {
   const { devoirId, userId, userName, titre, audio } = opts;
   // 📷 Idée 2 (2026-11-04) : photos du travail de l'élève (compressées), dans SON dossier
   const photos: PieceJointe[] = [];
@@ -57,7 +59,11 @@ export async function envoyerDevoir(opts: { devoirId: string; userId: string; us
     audioUrl = supabase.storage.from('devoirs-audios').getPublicUrl(fileName).data.publicUrl;
   }
   const { data: existing } = await supabase.from('devoirs_rendus').select('id').eq('devoir_id', devoirId).eq('student_id', userId).maybeSingle();
-  const row = { audio_url: audioUrl, photos: photos as unknown as Json, statut: 'rendu', commentaire_admin: null, rendu_at: new Date().toISOString() };
+  const row = {
+    audio_url: audioUrl, photos: photos as unknown as Json, statut: 'rendu', commentaire_admin: null, rendu_at: new Date().toISOString(),
+    // Seulement pour un devoir libre : les autres devoirs n'écrivent pas ces colonnes
+    ...(opts.reponse_texte !== undefined || opts.reponses !== undefined ? { reponse_texte: opts.reponse_texte?.trim() || null, reponses: (opts.reponses ?? []) as unknown as Json } : {}),
+  };
   const { error } = existing
     ? await supabase.from('devoirs_rendus').update(row).eq('id', existing.id)
     : await supabase.from('devoirs_rendus').insert({ ...row, devoir_id: devoirId, student_id: userId });
@@ -66,7 +72,7 @@ export async function envoyerDevoir(opts: { devoirId: string; userId: string; us
   const adminIds = (admins || []).map((a) => a.user_id);
   if (adminIds.length) {
     sendPushNotification({
-      userIds: adminIds, title: audio ? '🎙️ Devoir à valider (avec audio)' : photos.length ? '📷 Devoir à valider (avec photo)' : '📚 Devoir à valider', category: 'adm_hw',
+      userIds: adminIds, title: audio ? '🎙️ Devoir à valider (avec audio)' : photos.length ? '📷 Devoir à valider (avec photo)' : opts.reponse_texte?.trim() || opts.reponses?.length ? '✏️ Devoir à valider (texte écrit)' : '📚 Devoir à valider', category: 'adm_hw',
       body: `${userName || 'Un élève'} a validé : ${titre}`, data: { url: '/?open=todo&cahier=1' },
     });
   }

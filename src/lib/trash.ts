@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { brouillonDe, enregistrerBrouillon, lireBrouillons } from "@/lib/devoirsEleve";
-import { saveDraft } from "@/hooks/useDraftRecovery";
+import { loadDraft, saveDraft } from "@/hooks/useDraftRecovery";
 import { untypedDb } from "@/lib/untypedDb";
 import type { Json } from '@/integrations/supabase/types';
 
@@ -13,7 +13,7 @@ export type TrashItemType =
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
   | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video"
-  | "coran_vocabulaire" | "coran_vocabulaire_pdf";
+  | "coran_vocabulaire" | "coran_vocabulaire_pdf" | "devoir_libre_piece";
 
 export interface TrashItem {
   id: string;
@@ -25,7 +25,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image" | "coran_vocabulaire_pdf">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image" | "coran_vocabulaire_pdf" | "devoir_libre_piece">, string> = {
   convocation_modele: "convocation_modeles",
   convocation_programmation: "convocation_programmations",
   carnet_message: "carnet_messages",
@@ -229,6 +229,38 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     const consignes = { ...f.consignes };
     if (d.audio_url) consignes[ligne] = d.audio_url;
     enregistrerBrouillon(eleveId, lireBrouillons().parEleve[eleveId]?.nom || "Élève", { ...f, pj, consignes });
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 📝 Fichier / consigne audio retiré d'un devoir libre (2026-11-26) : remis sur TOUTES les copies du devoir s'il est
+  // déjà donné (`lot`), sinon dans le brouillon du formulaire du groupe (`cle`)
+  if (item.item_type === "devoir_libre_piece") {
+    const d = item.item_data as { lot?: string | null; cle?: string; attachment?: { path: string; name: string; type: string } | null; audio_url?: string | null } | null;
+    if (!d) return false;
+    if (d.lot) {
+      const { data: copies, error: lErr } = await supabase.from("devoirs").select("id, pieces_jointes").eq("libre_lot", d.lot);
+      if (lErr) return false;
+      if (copies?.length) {
+        for (const c of copies) {
+          const pj = Array.isArray(c.pieces_jointes) ? (c.pieces_jointes as { path: string }[]) : [];
+          const maj: Record<string, unknown> = {};
+          if (d.attachment) maj.pieces_jointes = [...pj.filter((x) => x?.path !== d.attachment!.path), d.attachment];
+          if (d.audio_url) maj.consigne_audio_url = d.audio_url;
+          const { error } = await supabase.from("devoirs").update(maj as never).eq("id", c.id);
+          if (error) return false;
+        }
+        await supabase.from("trash_items").delete().eq("id", item.id);
+        return true;
+      }
+    }
+    if (!d.cle) return false;
+    const f = (loadDraft<Record<string, unknown>>(d.cle) ?? {}) as { pj?: { path: string }[]; consigne_audio_url?: string | null } & Record<string, unknown>;
+    if (!Object.keys(f).length) return false; // plus de brouillon ni de devoir : rien où le remettre
+    saveDraft(d.cle, {
+      ...f,
+      ...(d.attachment ? { pj: [...(f.pj || []).filter((x) => x.path !== d.attachment!.path), d.attachment] } : {}),
+      ...(d.audio_url ? { consigne_audio_url: d.audio_url } : {}),
+    });
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;
   }
