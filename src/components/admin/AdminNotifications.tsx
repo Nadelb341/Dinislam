@@ -81,7 +81,7 @@ const AdminNotifications = () => {
     const prenom = (e.full_name || '').split(' ')[0];
     const texte = `Salam ${prenom} ! Pour recevoir les messages et les devoirs de Dinislam :\n`
       + `1. Ouvre ${window.location.origin} sur ton téléphone.\n`
-      + `2. Installe l'appli sur l'écran d'accueil (iPhone : dans Safari, bouton Partager ⬆️ puis « Sur l'écran d'accueil » ; Android : menu ⋮ puis « Installer l'appli »).\n`
+      + `2. Installe l'appli sur l'écran d'accueil (iPhone : dans Safari, Chrome, Edge ou Firefox, bouton Partager ⬆️ puis « Sur l'écran d'accueil » ; Android : menu ⋮ puis « Installer l'appli »).\n`
       + `3. Ouvre Dinislam depuis son icône et touche « Activer » sur le bandeau rouge.\n`
       + `Le bandeau rouge t'explique tout pas à pas. Merci !`;
     return lienWhatsApp(e.tel, texte);

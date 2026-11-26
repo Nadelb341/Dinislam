@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReglagesRamadan } from '@/lib/saisons';
 import { LANTERNE_VB, NB_LANTERNES, lanterneSvg } from './dessinsRamadan';
+import { useNavigate } from 'react-router-dom';
+import { useLienInvocationRupture } from '@/hooks/useInvocationRupture';
 
 /**
  * 🏮 Sous le message de bienvenue, pendant le Ramadan (Nadia, 2026-11-15/16) :
@@ -13,6 +15,8 @@ import { LANTERNE_VB, NB_LANTERNES, lanterneSvg } from './dessinsRamadan';
 const fmt = (ms: number) => { const m = Math.max(0, Math.round(ms / 60000)); const h = Math.floor(m / 60); return h ? `${h} h ${String(m % 60).padStart(2, '0')}` : `${m} min`; };
 
 export function LanternesRamadan({ jour, r, maghrib }: { jour: number; r: ReglagesRamadan; maghrib: Date | null }) {
+  const navigate = useNavigate();
+  const lienInvocation = useLienInvocationRupture();
   const [maintenant, setMaintenant] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setMaintenant(Date.now()), 30000); return () => clearInterval(t); }, []);
   const avant = maghrib ? maghrib.getTime() - maintenant : null;
@@ -59,6 +63,11 @@ export function LanternesRamadan({ jour, r, maghrib }: { jour: number; r: Reglag
             <p className="font-arabic text-xl leading-loose text-[#1d7f78]" dir="rtl" lang="ar">ذَهَبَ الظَّمَأُ، وَابْتَلَّتِ الْعُرُوقُ، وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللَّهُ</p>
             <p className="text-sm text-[#5a4a3a]">« La soif est partie, les veines sont humectées, et la récompense est acquise, si Allah le veut. »</p>
             <p className="text-[11px] text-[#8a7a6a]">Abou Dawoud n° 2357</p>
+            {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L10) : la fiche de l'invocation dans la carte Invocations */}
+            <button type="button" onClick={(e) => { e.stopPropagation(); setAnim(false); navigate(lienInvocation); }}
+              className="mt-1 rounded-full bg-[#1d7f78] text-white px-4 py-1.5 text-sm font-bold active:scale-95 transition-transform">
+              🤲 Voir l'invocation
+            </button>
           </div>
         </div>,
         document.body,

@@ -58,6 +58,9 @@ export function EditionFichePetit({ rubrique, fiche, fiches, userId, onClose, ra
   const [texte, setTexte] = useState(fiche?.texte ?? '');
   const [emoji, setEmoji] = useState(fiche?.emoji ?? '⭐');
   const [versets, setVersets] = useState((fiche?.versets ?? []).join('\n'));
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L6) : sourate liée (Histoires des Prophètes)
+  const avecSourate = rubrique === 'prophetes';
+  const [sourateLiee, setSourateLiee] = useState(fiche?.sourate_liee ? String(fiche.sourate_liee) : '');
   const [image, setImage] = useState(fiche?.image_url ?? null);
   const [audio, setAudio] = useState(fiche?.audio_url ?? null);
   const [envoi, setEnvoi] = useState<'image' | 'audio' | null>(null);
@@ -81,12 +84,16 @@ export function EditionFichePetit({ rubrique, fiche, fiches, userId, onClose, ra
 
   const enregistrer = async () => {
     if (!titre.trim()) { toast.error('Écris un titre'); return; }
+    const numSourate = sourateLiee.trim() ? Number(sourateLiee) : null;
+    if (numSourate !== null && (!Number.isInteger(numSourate) || numSourate < 1 || numSourate > 114)) { toast.error('La sourate liée : un numéro de 1 à 114 (ou vide)'); return; }
     setSaving(true);
     try {
       const valeurs = {
         titre: titre.trim(), arabe: arabe.trim() || null, texte: texte.trim() || null, emoji: emoji.trim() || null,
         image_url: image, audio_url: audio, updated_at: new Date().toISOString(),
         ...(rubrique === 'coran' ? { versets: versets.split('\n').map((v) => v.trim()).filter(Boolean) } : {}),
+        // Envoyé seulement s'il change (la colonne arrive avec la migration 20261126120000)
+        ...(avecSourate && numSourate !== (fiche?.sourate_liee ?? null) ? { sourate_liee: numSourate } : {}),
       };
       const r = fiche
         ? await ecrireOuGarder({ table: 'petits_fiches', op: 'update', id: fiche.id, values: valeurs })
@@ -131,6 +138,14 @@ export function EditionFichePetit({ rubrique, fiche, fiches, userId, onClose, ra
           <>
             <label className="text-xs font-semibold" htmlFor="pf-versets">Versets (un par ligne)</label>
             <textarea id="pf-versets" dir="rtl" rows={6} className="w-full rounded-lg border bg-background p-2 font-arabic text-lg" value={versets} onChange={(e) => setVersets(e.target.value)} />
+          </>
+        )}
+        {avecSourate && (
+          <>
+            <label className="text-xs font-semibold" htmlFor="pf-sourate">📖 Sourate liée (numéro de 1 à 114, facultatif)</label>
+            <Input id="pf-sourate" inputMode="numeric" placeholder="Ex. 105 pour Al-Fîl" value={sourateLiee}
+              onChange={(e) => setSourateLiee(e.target.value.replace(/\D/g, '').slice(0, 3))}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
           </>
         )}
         <div className="flex flex-wrap items-center gap-2">

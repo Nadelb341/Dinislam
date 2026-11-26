@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CARTES_DU_BAREME, useCartesVisibles } from '@/hooks/useCartesVisibles';
 import AppLayout from '@/components/layout/AppLayout';
 import { Crown, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ProchaineEtapeDialog } from '@/components/classement/ProchaineEtapeDialog';
 import { toast } from 'sonner';
 
 interface BaremeItem {
@@ -59,6 +61,20 @@ const Classement = () => {
   const { data: annivJour = [] } = useAnniversairesDuJour();
   const annivIds = new Set(annivJour.map((a) => a.user_id));
   const [editBareme, setEditBareme] = useState(false);
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L18) : l'élève touche SA ligne → sa prochaine étape ;
+  // l'enseignante touche un élève → sa fiche (bouclier › Élèves)
+  const navigate = useNavigate();
+  const [etapesOuvertes, setEtapesOuvertes] = useState(false);
+  const toucherLigne = (id: string) => {
+    if (isAdmin) navigate(`/admin?section=students&eleve=${id}`);
+    else if (id === user?.id) setEtapesOuvertes(true);
+  };
+  const ligneTouchable = (id: string) => isAdmin || id === user?.id;
+  const propsLigne = (id: string, nom: string) => ligneTouchable(id) ? {
+    role: 'button' as const, tabIndex: 0, onClick: () => toucherLigne(id),
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toucherLigne(id); } },
+    'aria-label': isAdmin ? `Ouvrir la fiche de ${nom}` : 'Ta prochaine étape pour gagner des points',
+  } : {};
   const [bareme, setBareme] = useState<BaremeItem[]>([]);
   const [classement, setClassement] = useState<ClassementEntry[]>([]);
   const [groupMembers, setGroupMembers] = useState<GroupMemberEntry[]>([]);
@@ -238,8 +254,14 @@ const Classement = () => {
               {myGlobalDenseRank === 1 ? '1er' : `${myGlobalDenseRank}ème`} au classement général
             </p>
             <p className="text-sm text-muted-foreground">{classement[myGlobalIndex].total} points</p>
+            {/* 🔗 2026-11-26 (L18) */}
+            <button type="button" onClick={() => setEtapesOuvertes(true)}
+              className="mt-1 rounded-full bg-amber-500 text-white px-4 py-1.5 text-sm font-extrabold active:scale-95 transition-transform">
+              ⭐ Ma prochaine étape pour gagner des points
+            </button>
           </div>
         )}
+        {etapesOuvertes && user && <ProchaineEtapeDialog userId={user.id} onClose={() => setEtapesOuvertes(false)} />}
 
         {/* Toggle — Global visible pour tous (les noms sont anonymisés côté élève) */}
         <div className="flex gap-2 justify-center">
@@ -285,7 +307,8 @@ const Classement = () => {
                 return (
                   <div
                     key={eleve.user_id}
-                    className="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
+                    {...propsLigne(eleve.user_id, eleve.full_name || 'Élève')}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${ligneTouchable(eleve.user_id) ? 'cursor-pointer active:scale-[0.99]' : ''}`}
                     style={{
                       backgroundColor: m.bg,
                       borderColor: isMe ? 'hsl(38 92% 50%)' : m.border,
@@ -327,7 +350,7 @@ const Classement = () => {
                         const rank = groupRanks[index];
                         const med = getMedaille(rank);
                         return (
-                          <div key={m.user_id} className="flex items-center gap-3 px-4 py-2"
+                          <div key={m.user_id} {...propsLigne(m.user_id, m.full_name || 'Élève')} className="flex items-center gap-3 px-4 py-2 cursor-pointer"
                             style={{ backgroundColor: med.bg }}>
                             <span className="text-lg w-6 text-center font-bold">
                               {med.emoji || `${rank}.`}
@@ -368,7 +391,7 @@ const Classement = () => {
                     const med = getMedaille(rank);
                     const isMe = membre.user_id === user?.id;
                     return (
-                      <div key={membre.user_id} className="flex items-center gap-3 px-4 py-2"
+                      <div key={membre.user_id} {...propsLigne(membre.user_id, 'Moi')} className={`flex items-center gap-3 px-4 py-2 ${isMe ? 'cursor-pointer' : ''}`}
                         style={{ backgroundColor: isMe ? 'hsl(48 96% 89%)' : med.bg }}>
                         <span className="text-lg w-6 text-center font-bold">
                           {med.emoji || `${rank}.`}

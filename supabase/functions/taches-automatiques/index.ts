@@ -12,6 +12,7 @@ import { datesRetenues } from "../_shared/ramadanDates.ts";
  *  - le MARDI à partir de 18 h : « 🤖 Les devoirs de la semaine sont prêts » (pré-remplis élève par élève, à relire puis donner).
  *  - les tâches « À faire » cochées depuis plus de 30 jours → corbeille de Paramètres (règle « coché en bas 1 mois ») ;
  *  Une seule fois par semaine : table taches_auto_journal.
+ * 🔄 Le 2 janvier et le 2 juin (dès 9 h) : rappel à l'enseignante « Mise à jour de janvier / juin » (2026-11-26).
  */
 serve(async () => {
   try {
@@ -121,6 +122,16 @@ serve(async () => {
         if (eleves.length) await sendPushInternal({ userIds: eleves, category: 'act', title: '🎉 Aïd Moubarak Saïd !', body: 'Connecte-toi à l\'application, car Dinislam aussi est en fête !', data: { url: '/' } }).catch((e) => console.error('aid', e));
         bilan.aid = `${aid} : ${eleves.length} élèves`;
       }
+    }
+    // 🔄 2026-11-26 (Nadia : mises à jour de janvier et de juin, M1) : le 2 janvier et le 2 juin, dès 9 h (heure de Paris),
+    // UNE notification à l'enseignante (admin) pour relire la liste « 🔄 À revoir chaque semestre » (bouclier). Anti-doublon : taches_auto_journal.
+    const moisJour = p.day.slice(5);
+    if ((moisJour === '01-02' || moisJour === '06-02') && p.hour >= 9 && adminIds.length && await uneFois(`revue-semestre-${p.day}`)) {
+      const saison = moisJour === '01-02' ? 'janvier' : 'juin';
+      await sendPushInternal({ userIds: adminIds, title: `🔄 Mise à jour de ${saison}`,
+        body: 'C\'est le moment de relire la liste « À revoir chaque semestre » : vacances, dates du Ramadan, horaires, vidéos, forfaits gratuits…',
+        data: { url: '/admin?section=revue-semestre' } }).catch((e) => console.error('revue-semestre', e));
+      bilan.revue_semestre = saison;
     }
     return Response.json({ success: true, bilan });
   } catch (e) {

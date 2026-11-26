@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { lundiDeLaSemaine, type ReglagesSaisons, type Saison } from '@/lib/saisons';
@@ -141,7 +142,8 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
       return res.reduce((s, x) => s + (x.count ?? 0), 0);
     },
   });
-  const [surprise, setSurprise] = useState<null | { arabe: string; translit: string; sens: string; explication: string | null; audio: string | null; deja: boolean }>(null);
+  const navigate = useNavigate();
+  const [surprise, setSurprise] = useState<null | { id: number; arabe: string; translit: string; sens: string; explication: string | null; audio: string | null; deja: boolean }>(null);
   const [tombe, setTombe] = useState(false);
   const places = useMemo(() => Array.from({ length: 12 }, (_, i) => {
     const a = (i * 137.5 * Math.PI) / 180, d = 0.18 + 0.22 * ((i * 7) % 10) / 10;
@@ -155,10 +157,10 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
     const debut = new Date(new Date().getFullYear(), 0, 0).getTime();
     const ordre = (Math.floor((Date.now() - debut) / 86400000) % 99) + 1;
     try {
-      const { data } = await supabase.from('allah_names').select('name_arabic, transliteration, name_french, explanation, audio_url').eq('display_order', ordre).maybeSingle();
+      const { data } = await supabase.from('allah_names').select('id, name_arabic, transliteration, name_french, explanation, audio_url').eq('display_order', ordre).maybeSingle();
       if (!data) return;
       ecrire(cle, jourLocal());
-      setTimeout(() => setSurprise({ arabe: data.name_arabic, translit: data.transliteration || '', sens: data.name_french, explication: data.explanation, audio: data.audio_url, deja }), 700);
+      setTimeout(() => setSurprise({ id: data.id, arabe: data.name_arabic, translit: data.transliteration || '', sens: data.name_french, explication: data.explanation, audio: data.audio_url, deja }), 700);
     } catch { /* hors ligne et jamais vu : rien */ }
   };
   const nbFruits = Math.min(n, 12);
@@ -184,7 +186,12 @@ function ArbreSemaine({ saison, userId, fruits, secoue, largeur }: { saison: Sai
             {surprise.explication && <p className="text-xs text-muted-foreground">{surprise.explication}</p>}
             {surprise.audio && <audio controls src={surprise.audio} className="w-full h-10" />}
             <p className="text-[11px] text-muted-foreground">Reviens demain : un nouveau fruit t'attendra {FRUIT[saison]}</p>
-            <button type="button" onClick={() => setSurprise(null)} className="mt-1 rounded-xl bg-amber-500 text-white px-4 py-2 text-sm font-bold">Merci !</button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L13) : sa fiche dans la carte des 99 noms */}
+              <button type="button" onClick={() => { const id = surprise.id; setSurprise(null); navigate(`/allah-names?item=${id}`); }}
+                className="mt-1 rounded-xl border-2 border-amber-400 px-4 py-2 text-sm font-bold text-amber-800 dark:text-amber-200">🌟 Voir sa fiche</button>
+              <button type="button" onClick={() => setSurprise(null)} className="mt-1 rounded-xl bg-amber-500 text-white px-4 py-2 text-sm font-bold">Merci !</button>
+            </div>
           </div>
         </div>, document.body)}
     </>

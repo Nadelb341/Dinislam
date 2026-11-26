@@ -17,6 +17,8 @@ import { localDay, dateOfDay } from '@/lib/coranPlan';
 import { errorMessage } from '@/lib/utils';
 import type { Bookmark, BookmarkColor, BookmarkNote } from '@/hooks/useCoranProgress';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { lienSourate, useSouratesValidees } from '@/hooks/useSouratesValidees';
 
 
 const toolBtn = 'rounded-full px-3 py-1.5 text-xs font-extrabold bg-[#f1e5da] text-[#2a1414] dark:bg-[#33201e] dark:text-[#f3e9e4] active:scale-95 transition-transform';
@@ -161,6 +163,10 @@ const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').r
 
 /** 📑 Sommaire : aller à une page ou à une sourate, marque-pages, pages « À savoir » */
 export function SommaireButton({ bookmarks, onGo }: { bookmarks: Bookmark[]; onGo: (index: number) => void }) {
+  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+  const { data: validees = [] } = useSouratesValidees(isAdmin ? null : user?.id);
+  const valideesSet = useMemo(() => new Set(validees), [validees]);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [page, setPage] = useState('');
@@ -198,16 +204,26 @@ export function SommaireButton({ bookmarks, onGo }: { bookmarks: Bookmark[]; onG
             onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) { e.preventDefault(); go(indexOfPage(SURA_PAGE[list[0].number - 1])); } }} aria-label="Chercher une sourate" />
           <div className="space-y-1.5">
             {list.map((s) => (
-              <button key={s.number} type="button" onClick={() => go(indexOfPage(SURA_PAGE[s.number - 1]))}
-                className="w-full flex items-center gap-2.5 rounded-xl border px-3 py-2 text-left">
-                <span className="h-7 w-7 shrink-0 rounded-lg bg-[#f5ead1] text-[#8a6512] dark:bg-[#3b2e14] dark:text-[#e0bb62] grid place-items-center text-xs font-extrabold tabular-nums">{s.number}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-bold [overflow-wrap:anywhere]">{s.name_french}</span>
-                  <span className="block text-[11px] text-muted-foreground">page {SURA_PAGE[s.number - 1]} · Juz' {juzOfPage(SURA_PAGE[s.number - 1])}</span>
-                </span>
-                <span className="font-arabic text-lg text-[#7a1d22] dark:text-[#e08a8f]">{s.name_arabic}</span>
-              </button>
+              <div key={s.number} className="w-full flex items-center gap-2 rounded-xl border px-2 py-1.5">
+                <button type="button" onClick={() => go(indexOfPage(SURA_PAGE[s.number - 1]))}
+                  className="flex-1 min-w-0 flex items-center gap-2.5 px-1 py-0.5 text-left">
+                  <span className="relative h-7 w-7 shrink-0 rounded-lg bg-[#f5ead1] text-[#8a6512] dark:bg-[#3b2e14] dark:text-[#e0bb62] grid place-items-center text-xs font-extrabold tabular-nums">
+                    {s.number}
+                    {valideesSet.has(s.number) && <span className="absolute -top-1.5 -right-1.5 text-[12px] leading-none" aria-label="Sourate validée">✅</span>}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-bold [overflow-wrap:anywhere]">{s.name_french}</span>
+                    <span className="block text-[11px] text-muted-foreground">page {SURA_PAGE[s.number - 1]} · Juz' {juzOfPage(SURA_PAGE[s.number - 1])}{valideesSet.has(s.number) ? ' · ✅ validée' : ''}</span>
+                  </span>
+                  <span className="font-arabic text-lg text-[#7a1d22] dark:text-[#e08a8f] shrink-0">{s.name_arabic}</span>
+                </button>
+                {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L3) */}
+                <button type="button" onClick={() => { setOpen(false); navigate(lienSourate(s.number)); }}
+                  aria-label={`L'apprendre / la réciter : ${s.name_french}`} title="L'apprendre / la réciter"
+                  className="shrink-0 h-9 w-9 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 grid place-items-center text-base active:scale-95 transition-transform">🎙️</button>
+              </div>
             ))}
+            <p className="text-[11px] text-muted-foreground text-center">🎙️ = l'apprendre / la réciter dans la carte Sourates{validees.length ? ' · ✅ = déjà validée' : ''}</p>
             {!list.length && <p className="text-sm text-muted-foreground text-center py-4">Aucune sourate ne correspond 🤔</p>}
           </div>
           <div className="space-y-1.5">

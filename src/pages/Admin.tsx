@@ -7,6 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import AdminModuleProgress from '@/components/admin/AdminModuleProgress';
 import AdminUsersList from '@/components/admin/AdminUsersList';
 import AdminStudentDetails from '@/components/admin/AdminStudentDetails';
+import { AdminRevueSemestre } from '@/components/admin/AdminRevueSemestre';
 import AdminRamadanManager from '@/components/admin/AdminRamadanManager';
 import AdminMessaging from '@/components/admin/AdminMessaging';
 import AdminNouraniaContent from '@/components/admin/AdminNouraniaContent';
@@ -38,7 +39,7 @@ import AdminCartesAcces from '@/components/admin/AdminCartesAcces';
  * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
  * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
  */
-type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces' | 'reglages-devoirs';
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces' | 'reglages-devoirs' | 'revue-semestre';
 
 const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
@@ -58,6 +59,8 @@ const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<ViewType | null>(() => searchParams.get('section') as ViewType | null);
   const [moduleId, setModuleId] = useState<string | null>(() => searchParams.get('module') ?? searchParams.get('groupe'));
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L18) : /admin?section=students&eleve=<id> ouvre directement la fiche de cet élève
+  const [eleveId, setEleveId] = useState<string | null>(() => searchParams.get('eleve'));
 
   // Un nouvel écran demandé alors que la page est déjà ouverte (notification, bouclier, menu ⋮ de l'accueil)
   useEffect(() => {
@@ -65,6 +68,7 @@ const Admin = () => {
     if (section) {
       setCurrentView(section as ViewType);
       setModuleId(searchParams.get('module') ?? searchParams.get('groupe'));
+      setEleveId(searchParams.get('eleve'));
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -100,7 +104,7 @@ const Admin = () => {
 
   switch (currentView) {
     case 'users': return page(<AdminUsersList onBack={handleBack} />);
-    case 'students': return page(<AdminStudentDetails onBack={handleBack} />);
+    case 'students': return page(<AdminStudentDetails onBack={handleBack} initialStudentId={eleveId} />);
     case 'ramadan-manage': return page(<AdminRamadanManager onBack={handleBack} />);
     case 'ramadan-quiz-tracking': return page(<AdminRamadanQuizTracking onBack={handleBack} />);
     case 'nourania-manage': return withBack(<AdminNouraniaContent />);
@@ -125,6 +129,8 @@ const Admin = () => {
     case 'bilan-trimestriel': return page(<BilanTrimestriel onBack={handleBack} groupeInitial={moduleId} />);
     case 'apparence': return page(<ApparenceAppli onBack={handleBack} />);
     // ⚙️ Réglages des devoirs (22/11) : le « Chemin de la semaine (automatique) » 💎, sorti de l'écran « Distribuer les devoirs »
+    // 🔄 2026-11-26 (Nadia : mises à jour de janvier et de juin, M2)
+    case 'revue-semestre': return page(<AdminRevueSemestre onBack={handleBack} />);
     case 'reglages-devoirs': return page(<div className="space-y-4"><Button variant="ghost" onClick={handleBack}><ArrowLeft className="h-4 w-4 mr-1" /> Retour</Button><h2 className="text-xl font-extrabold">⚙️ Réglages des devoirs</h2><WeeklyProgramAdmin /></div>);
     case 'cartes-acces': return page(<AdminCartesAcces onBack={handleBack} />);
     default: break;

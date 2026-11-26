@@ -13,6 +13,8 @@ import { useConfetti } from '@/hooks/useConfetti';
 import UnlockConfirmDialog from '@/components/ramadan/UnlockConfirmDialog';
 import RamadanDayDialog from '@/components/ramadan/RamadanDayDialog';
 import FastingTracker from '@/components/ramadan/FastingTracker';
+import { RamadanLiens } from '@/components/ramadan/RamadanLiens';
+import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { Quiz, DayVideo } from '@/types/ramadan';
 
 interface RamadanDay {
@@ -274,6 +276,9 @@ const Ramadan = () => {
           </div>
           <p className="text-muted-foreground">30 Jours de Spiritualité</p>
         </div>
+
+        {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L8/L9/L10) : imsak + iftar de SA ville, Coran du Ramadan, invocation */}
+        <SilentBoundary name="Liens du Ramadan"><RamadanLiens /></SilentBoundary>
 
         {/* Fasting Tracker */}
         <FastingTracker />

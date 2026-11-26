@@ -18,6 +18,8 @@ import { cn, errorMessage } from '@/lib/utils';
 import { BilanVue, type BilanContenu } from '@/components/bilan/BilanVue';
 import { CodeParentsDialog } from './CodeParentsDialog';
 import { SignalerAbsenceDialog } from './SignalerAbsence';
+import { CarnetConvocationsEnfant } from './CarnetConvocationsEnfant';
+import PresenceEnClasse from '@/components/home/PresenceEnClasse';
 import { ChoixEnfants } from './MessagesProfil';
 import { CodeInput } from './CodeInput';
 import { Button } from '@/components/ui/button';
@@ -173,6 +175,9 @@ function EspaceEnfant({ enfant, onClose }: { enfant: EnfantEspace; onClose: () =
                 <button type="button" onClick={() => setAbsence(true)} className="rounded-xl bg-red-600 text-white px-3 py-2 text-sm font-extrabold">🙋 Signaler une absence</button>
                 <button type="button" onClick={() => setCodes(true)} className="rounded-xl border-2 border-violet-300 px-3 py-2 text-sm font-bold">🔐 Codes parents</button>
               </div>
+              {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L11/L12) : présence de l'enfant, carnet à signer et convocations au même endroit */}
+              <PresenceEnClasse eleveId={enfant.child_id} vide={`Pas encore de présence notée pour ${prenom}.`} />
+              <CarnetConvocationsEnfant childId={enfant.child_id} prenom={prenom} onFermer={onClose} />
               {!enfant.soiMeme && (
                 <div role="tablist" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
                   {([['bilans', '📊 Bilans'], ['cahier', '📓 Cahier de texte']] as const).map(([k, t]) => (

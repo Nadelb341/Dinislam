@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BoutonVersNourania } from './LiensAlphabetNourania';
+import { LECON_DES_LETTRES } from '@/lib/alphabetNourania';
 import { Button } from '@/components/ui/button';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
@@ -289,6 +291,9 @@ export function AlphabetLetterSheet({
           {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
           <ZonesContenu cible={`lettre:${letter.id}`} isAdmin={isAdmin} libelle={`Lettre ${letter.name_french}`} />
           <AlphabetLetterResources letterId={letter.id} contents={contents} isAdmin={isAdmin} />
+
+          {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L15) : la leçon Nourania qui travaille les lettres seules */}
+          <BoutonVersNourania numero={LECON_DES_LETTRES} onAvant={onClose} />
 
           {/* Mot du prof */}
           {lastComment && !isAdmin && lastFinal?.status !== 'to_review' && (

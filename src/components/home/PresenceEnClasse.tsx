@@ -21,17 +21,22 @@ const COLONNE = 44; // largeur d'une date (px)
 
 const jjmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
-export default function PresenceEnClasse() {
+/**
+ * 🔗 2026-11-26 (Nadia : liens entre cartes, L11/L20) : `eleveId` = la présence d'un AUTRE élève (son enfant dans
+ * l'Espace parents, ou un élève dans sa fiche côté enseignante) ; `onOuvrir` remplace l'ouverture de la page Présence.
+ */
+export default function PresenceEnClasse({ eleveId, onOuvrir, vide }: { eleveId?: string; onOuvrir?: () => void; vide?: string } = {}) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const boite = useRef<HTMLDivElement>(null);
   const [largeur, setLargeur] = useState(0);
+  const qui = eleveId ?? user?.id;
 
-  const { data: lignes = [] } = useQuery({
-    queryKey: ['my-attendance', user?.id],
-    enabled: !!user,
+  const { data: lignes = [], isFetched } = useQuery({
+    queryKey: ['my-attendance', qui],
+    enabled: !!qui,
     queryFn: async () => {
-      const { data, error } = await supabase.from('attendance_records').select('*').eq('user_id', user!.id).order('date', { ascending: false });
+      const { data, error } = await supabase.from('attendance_records').select('*').eq('user_id', qui!).order('date', { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -45,7 +50,7 @@ export default function PresenceEnClasse() {
     return () => ro.disconnect();
   }, []);
 
-  if (!lignes.length) return null;
+  if (!lignes.length) return vide && isFetched ? <p className="rounded-xl bg-muted p-3 text-sm">📋 {vide}</p> : null;
   // Une seule note par date (la plus récente si doublon), de la plus ancienne à la plus récente
   const parDate = new Map<string, string>();
   for (const r of lignes) if (!parDate.has(r.date)) parDate.set(r.date, r.status);
@@ -53,10 +58,13 @@ export default function PresenceEnClasse() {
   const place = largeur ? Math.max(1, Math.floor(largeur / COLONNE)) : toutes.length;
   const visibles = toutes.slice(-place);
 
+  // Présence d'un autre élève sans action : simple affichage (la page Présence montre celle du compte connecté)
+  const simple = !!eleveId && !onOuvrir;
+  const Boite = simple ? 'div' : 'button';
   return (
-    <button type="button" onClick={() => navigate('/attendance')}
-      className="w-full rounded-2xl border border-border bg-card px-3 py-2 text-left shadow-sm transition active:scale-[0.99]"
-      aria-label="Présence en classe : ouvrir la page Présence">
+    <Boite {...(simple ? {} : { type: 'button' as const, onClick: () => (onOuvrir ? onOuvrir() : navigate('/attendance')),
+      'aria-label': onOuvrir ? 'Présence en classe : ouvrir' : 'Présence en classe : ouvrir la page Présence' })}
+      className="w-full rounded-2xl border border-border bg-card px-3 py-2 text-left shadow-sm transition active:scale-[0.99]">
       <p className="text-sm font-extrabold text-foreground">📋 Présence en classe</p>
       <div ref={boite} className="mt-1 overflow-hidden">
         <div className="flex">
@@ -69,6 +77,6 @@ export default function PresenceEnClasse() {
           ))}
         </div>
       </div>
-    </button>
+    </Boite>
   );
 }

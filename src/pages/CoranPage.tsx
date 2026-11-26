@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ import { REVIEW_NEXT_DAYS } from '@/lib/coranPages';
 import type { Json } from '@/integrations/supabase/types';
 import { CoranReader, type ReaderMode } from '@/components/coran/CoranReader';
 import { BookmarkButton, SommaireButton, ListenButton } from '@/components/coran/CoranTools';
+import { lienSourate } from '@/hooks/useSouratesValidees';
 import { CoranJuzTab } from '@/components/coran/CoranJuzTab';
 import { CoranRevelationTab } from '@/components/coran/CoranRevelationTab';
 import { CoranProgrammeTab } from '@/components/coran/CoranProgrammeTab';
@@ -48,6 +49,7 @@ const CoranPage = () => {
   const titrePage = useTitreCarte('/coran', 'Coran');
   const { isAdmin, user } = useAuth();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   // « Commencer mon travail » d'un devoir : ?item=<page du Coran 1..604> → lecteur ouvert sur cette page, onglet Lire
   const itemIndex = (() => { const p = Number(params.get('item')); return Number.isInteger(p) && p >= 1 && p <= 604 ? indexOfPage(p) : null; })();
   const initialTab = itemIndex !== null ? 'lire' : (params.get('tab') === 'programme' ? 'programme' : (params.get('tab') as Tab)) || 'lire';
@@ -150,11 +152,19 @@ const CoranPage = () => {
   if (reading.kind === 'juz') {
     const done = juzDone(reading.juz).includes(reading.sura);
     mode = { kind: 'juz', label: `📚 Juz' ${reading.juz} · ${nameOf(reading.sura)}`, sub: 'ne change pas « Ma lecture »' };
+    const souratePourLien = reading.sura;
     action = (
-      <button type="button" onClick={() => done ? void toggleSura(reading.juz, reading.sura) : askValidation('Sourate terminée ?', `${nameOf(reading.sura)} sera cochée dans le parcours du Juz' ${reading.juz}.`, () => void toggleSura(reading.juz, reading.sura))}
-        className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold text-white active:scale-95 transition-transform', done ? 'bg-[#7a1d22]' : 'bg-[#c39a3e]')}>
-        {done ? '✓ Terminée' : '✅ Sourate terminée'}
-      </button>
+      <span className="inline-flex flex-wrap items-center justify-center gap-1.5">
+        <button type="button" onClick={() => done ? void toggleSura(reading.juz, reading.sura) : askValidation('Sourate terminée ?', `${nameOf(reading.sura)} sera cochée dans le parcours du Juz' ${reading.juz}.`, () => void toggleSura(reading.juz, reading.sura))}
+          className={cn('rounded-full px-3 py-1.5 text-xs font-extrabold text-white active:scale-95 transition-transform', done ? 'bg-[#7a1d22]' : 'bg-[#c39a3e]')}>
+          {done ? '✓ Terminée' : '✅ Sourate terminée'}
+        </button>
+        {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L3) : fin de sourate → la carte Sourates sur cette sourate */}
+        <button type="button" onClick={() => navigate(lienSourate(souratePourLien))}
+          className="rounded-full px-3 py-1.5 text-xs font-extrabold bg-rose-600 text-white active:scale-95 transition-transform">
+          🎙️ L'apprendre / la réciter
+        </button>
+      </span>
     );
   } else if (reading.kind === 'prog' && programme) {
     range = pagesForDay(programme, reading.day);

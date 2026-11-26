@@ -26,11 +26,46 @@ export function appareil(): Appareil {
   return 'ordinateur';
 }
 
-/** Sur iPhone, seul Safari sait installer l'appli (Chrome, Firefox, Instagram… ne le proposent pas) */
+/**
+ * 🔄 2026-11-26 (Nadia : mises à jour de janvier et de juin, M3) : depuis iOS 16.4, Chrome, Edge et Firefox sur iPhone
+ * savent AUSSI « Ajouter à l'écran d'accueil » (bouton Partager). Restent obligés de passer par Safari :
+ * les applis qui ouvrent les liens à l'intérieur (Instagram, Facebook, Snapchat, WhatsApp, Google…), les navigateurs
+ * moins connus, et les iPhone plus anciens qu'iOS 16.4.
+ * - 'safari' : Safari ;
+ * - 'navigateur' : Chrome / Edge / Firefox avec iOS 16.4 ou plus récent → même pas à pas (Partager › Sur l'écran d'accueil) ;
+ * - 'safari-obligatoire' : il faut ouvrir la page dans Safari.
+ */
+export type NavigateurIphone = 'safari' | 'navigateur' | 'safari-obligatoire';
+
+/** Version d'iOS lue dans l'identité du navigateur (« OS 17_2 » → 17.2), ou null si on ne la trouve pas */
+export function versionIos(ua: string): number | null {
+  const m = ua.match(/OS (\d+)[_.](\d+)/);
+  return m ? Number(m[1]) + Number(m[2]) / 100 : null;
+}
+
+export function navigateurIphone(ua: string): NavigateurIphone {
+  if (/Instagram|FBAN|FBAV|Snapchat|WhatsApp|GSA\/|Line\//i.test(ua)) return 'safari-obligatoire';
+  if (/CriOS|EdgiOS|FxiOS/i.test(ua)) {
+    const v = versionIos(ua);
+    // Prudence : version inconnue ou plus ancienne que 16.4 → Safari
+    return v !== null && v >= 16.04 ? 'navigateur' : 'safari-obligatoire';
+  }
+  if (/OPiOS/i.test(ua) || !/Safari/i.test(ua)) return 'safari-obligatoire';
+  return 'safari';
+}
+
+/** iPhone où il FAUT passer par Safari pour installer l'appli (applis qui ouvrent les liens, vieux iOS…) */
 export function iphoneHorsSafari(): boolean {
   if (appareil() !== 'iphone') return false;
+  return navigateurIphone(navigator.userAgent) === 'safari-obligatoire';
+}
+
+/** iPhone avec Chrome / Edge / Firefox récent : il installe lui aussi l'appli par le bouton Partager */
+export function iphoneAutreNavigateur(): 'chrome' | 'edge' | 'firefox' | null {
+  if (appareil() !== 'iphone') return null;
   const ua = navigator.userAgent;
-  return /CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Snapchat|WhatsApp/i.test(ua) || !/Safari/i.test(ua);
+  if (navigateurIphone(ua) !== 'navigateur') return null;
+  return /EdgiOS/i.test(ua) ? 'edge' : /FxiOS/i.test(ua) ? 'firefox' : 'chrome';
 }
 
 export function estInstallee(): boolean {

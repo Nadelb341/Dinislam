@@ -13,6 +13,7 @@ import { groupColorProps, groupStudents } from '@/lib/studentGroups';
 import { attendanceDates, cycleAttendance, fetchAttendanceSessions, markAllPresent, todayIso } from '@/lib/attendanceSessions';
 import { useConfirmValidation } from '@/hooks/useConfirmValidation';
 import { AttendanceDateDialog } from '@/components/attendance/AttendanceDateDialog';
+import { AbsencesVersCarnet, type AbsenceNotee } from '@/components/attendance/AbsencesVersCarnet';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'justified';
 
@@ -162,6 +163,18 @@ const Attendance = () => {
       return (counts.get(parts[0].toLowerCase()) ?? 0) > 1 && parts[1] ? `${parts[0]} ${parts[1][0].toUpperCase()}.` : parts[0];
     };
   }, [students]);
+
+  // 🔗 2026-11-26 (Nadia : liens entre cartes, L16) : absences (🔴) des 7 dernières séances, la plus récente en haut
+  const absencesRecentes = useMemo<AbsenceNotee[]>(() => {
+    if (!isAdmin) return [];
+    const dernieres = new Set(dates.slice(-7));
+    const noms = new Map(students.map((s) => [s.user_id, s.full_name || 'Élève']));
+    return allRecords
+      .filter((r) => r.status === 'absent' && dernieres.has(r.date) && noms.has(r.user_id))
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 15)
+      .map((r) => ({ studentId: r.user_id, nom: noms.get(r.user_id)!, date: r.date }));
+  }, [isAdmin, dates, students, allRecords]);
 
   return (
     <AppLayout title="Ma Présence">
@@ -365,6 +378,7 @@ const Attendance = () => {
             </CardContent>
           </Card>
         )}
+        {isAdmin && <AbsencesVersCarnet absences={absencesRecentes} />}
         {validationDialog}
         {isAdmin && (
           <AttendanceDateDialog open={editDate !== undefined} date={editDate ?? null} existing={savedDates} onClose={() => setEditDate(undefined)} />

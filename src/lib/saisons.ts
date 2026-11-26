@@ -286,6 +286,15 @@ export function useReglagesSaisons() {
   });
 }
 
+/**
+ * 🔗 2026-11-26 (Nadia : liens entre cartes, L7/L8/L9) : UNE seule date de début du Ramadan pour toute l'appli
+ * (dates réglées par Nadia dans Décorations saisons › 🌙 Ramadan, sinon le calcul). Hors ligne : calcul de l'appareil.
+ */
+export function useDatesRamadanRetenues(): DatesRamadan {
+  const { data: r = SAISONS_DEFAUT } = useReglagesSaisons();
+  return datesRetenues(r.ramadanDates);
+}
+
 /* ---------- Préférences de CE téléphone (élève ou admin) ---------- */
 const CLE_COUPE = 'dinislam_deco_saison_off';
 const CLE_APERCU = 'dinislam_deco_saison_apercu';
