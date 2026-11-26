@@ -50,3 +50,17 @@ export function textePages(c: Pick<CarteVocab, 'page_debut' | 'page_fin'>): stri
 }
 
 export const cibleZones = (id: string) => `coran-vocab:${id}`;
+
+/**
+ * 📑 Sous-sommaire (2026-11-26) : les chapitres d'une partie sont ses enfants. Leur `page_debut` = la page
+ * DANS LE FICHIER DE LA PARTIE (1 = première page du fichier), pas dans le livre entier.
+ * Lettre affichée devant un chapitre : A, B, C… d'après son rang (puis 27, 28… au-delà de Z).
+ */
+export const lettreChapitre = (rang: number) => (rang >= 0 && rang < 26 ? String.fromCharCode(65 + rang) : String(rang + 1));
+
+/** Page de départ lue dans l'adresse (`vpg`) : un entier ≥ 1, sinon rien */
+export function pageDeLAdresse(v: string | null): number | null {
+  if (!v || !/^\d{1,4}$/.test(v)) return null;
+  const n = Number(v);
+  return n >= 1 ? n : null;
+}

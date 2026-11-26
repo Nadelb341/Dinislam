@@ -18,16 +18,19 @@ import { COULEURS_VOCAB } from '@/components/coran/couleursVocab';
 
 /**
  * ✏️ Créer / modifier une sous-carte (titre, emoji, couleur, PDF entier) ou une partie (titre, pages, PDF) du
- * Vocabulaire du Coran ; 🗑️ la mettre à la corbeille avec ses parties et ses zones (restaurées d'un coup).
+ * Vocabulaire du Coran, ou un chapitre d'une partie (titre + page dans le PDF de la partie, 2026-11-26) ;
+ * 🗑️ la mettre à la corbeille avec ses parties, leurs chapitres et ses zones (restaurés d'un coup).
  * Hors ligne : titre / pages gardés et envoyés au retour du réseau ; un nouveau PDF demande Internet.
  */
-export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, onSupprimee }: {
+export function ModifierVocabDialog({ carte, parentId, freres, userId, chapitre = false, onClose, onSupprimee }: {
   /** null = nouvelle carte */
   carte: CarteVocab | null;
   /** null = sous-carte du haut ; sinon l'id de la sous-carte (nouvelle partie) */
   parentId: string | null;
   freres: CarteVocab[];
   userId: string | null;
+  /** true = un chapitre (enfant d'une partie) : titre + page dans le PDF de la partie, pas de PDF à lui */
+  chapitre?: boolean;
   onClose: () => void;
   onSupprimee?: () => void;
 }) {
@@ -45,16 +48,17 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
 
   const enregistrer = async () => {
     if (!titre.trim()) { toast.error('Écris un titre'); return; }
+    if (chapitre && !debut.trim()) { toast.error('Écris la page du chapitre'); return; }
     const a = debut.trim() ? Number(debut) : null;
-    const b = fin.trim() ? Number(fin) : null;
+    const b = !chapitre && fin.trim() ? Number(fin) : null;
     if ((a !== null && (!Number.isInteger(a) || a < 1)) || (b !== null && (!Number.isInteger(b) || b < 1)) || (a !== null && b !== null && b < a)) {
       toast.error('Les pages ne sont pas bonnes (ex. : de 3 à 21)'); return;
     }
-    if (fichier && horsLigne()) { toast.error('📡 Nécessite Internet pour envoyer un PDF'); return; }
+    if (fichier && !chapitre && horsLigne()) { toast.error('📡 Nécessite Internet pour envoyer un PDF'); return; }
     setSaving(true);
     try {
       let pdfUrl = carte?.pdf_url ?? null;
-      if (fichier) {
+      if (fichier && !chapitre) {
         pdfUrl = (await envoyerFichierAlphabet(fichier, 'coran-vocabulaire')).url;
         // L'ancien PDF n'est jamais perdu : il part dans la corbeille (« Restaurer » le remet)
         if (carte?.pdf_url && userId) {
@@ -79,12 +83,15 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
   const mettreCorbeille = async () => {
     if (!carte || !userId) return;
     try {
+      // Enfants (parties ou chapitres) PUIS petits-enfants (chapitres des parties) : la base les efface en cascade,
+      // la corbeille doit donc tout garder, dans l'ordre où la restauration les remet (parent avant enfant).
       const parties = await collectChildren('coran_vocabulaire', 'parent_id', [carte.id]);
-      const ids = [carte.id, ...parties.rows.map((r) => String(r.id))];
+      const chapitres = await collectChildren('coran_vocabulaire', 'parent_id', parties.rows.map((r) => String(r.id)));
+      const ids = [carte.id, ...parties.rows.map((r) => String(r.id)), ...chapitres.rows.map((r) => String(r.id))];
       const zones = await collectChildren('zones_contenu', 'cible', ids.map(cibleZones));
       await trashThenDelete({
         userId, type: 'coran_vocabulaire', id: carte.id, label: `${carte.titre} (Vocabulaire du Coran)`, data: carte,
-        children: [parties, zones],
+        children: [parties, chapitres, zones],
         remove: async () => {
           const r1 = await supabase.from('coran_vocabulaire').delete().eq('id', carte.id);
           if (r1.error) return r1;
@@ -103,8 +110,8 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-sm max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{carte ? '✏️ Modifier' : estSousCarte ? '➕ Nouvelle sous-carte' : '➕ Nouvelle partie'}</DialogTitle>
-          <DialogDescription>{estSousCarte ? 'Le titre, l’emoji, la couleur et le PDF entier.' : 'Le titre, les pages et le PDF de cette partie.'}</DialogDescription>
+          <DialogTitle>{carte ? '✏️ Modifier' : estSousCarte ? '➕ Nouvelle sous-carte' : chapitre ? '➕ Nouveau chapitre' : '➕ Nouvelle partie'}</DialogTitle>
+          <DialogDescription>{estSousCarte ? 'Le titre, l’emoji, la couleur et le PDF entier.' : chapitre ? 'Le titre du chapitre et sa page dans le PDF de la partie.' : 'Le titre, les pages et le PDF de cette partie.'}</DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <label className="text-xs font-semibold" htmlFor="vocab-titre">Titre</label>
@@ -123,6 +130,14 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
               </div>
             </>
           )}
+          {chapitre ? (
+            <>
+              <label className="text-xs font-semibold pt-1 block" htmlFor="vocab-debut">Page dans le PDF de la partie (1 = première page)</label>
+              <Input id="vocab-debut" inputMode="numeric" value={debut} onChange={(e) => setDebut(e.target.value.replace(/\D/g, ''))} className="w-24"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
+            </>
+          ) : (
+          <>
           <p className="text-xs font-semibold pt-1">{estSousCarte ? 'Pages du PDF entier (facultatif)' : 'Pages dans le PDF entier (facultatif)'}</p>
           <div className="flex items-center gap-2">
             <span className="text-sm">de</span>
@@ -138,6 +153,8 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
             <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
           </label>
           {fichier && <p className="text-[11px] text-muted-foreground">📡 L’envoi du PDF nécessite Internet{carte?.pdf_url ? ' ; l’ancien PDF ira dans la corbeille.' : '.'}</p>}
+          </>
+          )}
         </div>
         <DialogFooter className="gap-2 sm:justify-between">
           {carte ? (
@@ -152,7 +169,7 @@ export function ModifierVocabDialog({ carte, parentId, freres, userId, onClose, 
         </DialogFooter>
         <ConfirmDeleteDialog open={supprimer} onOpenChange={setSupprimer} onConfirm={() => { setSupprimer(false); void mettreCorbeille(); }}
           title={`Supprimer « ${carte?.titre ?? ''} » ?`}
-          description={estSousCarte ? 'La sous-carte, toutes ses parties et leurs contenus vont dans la corbeille de Paramètres (restaurables d’un coup).' : 'La partie et son contenu vont dans la corbeille de Paramètres (restaurables).'} />
+          description={estSousCarte ? 'La sous-carte, toutes ses parties, leurs chapitres et leurs contenus vont dans la corbeille de Paramètres (restaurables d’un coup).' : chapitre ? 'Le chapitre va dans la corbeille de Paramètres (restaurable).' : 'La partie, ses chapitres et son contenu vont dans la corbeille de Paramètres (restaurables d’un coup).'} />
       </DialogContent>
     </Dialog>
   );
