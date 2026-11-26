@@ -19,7 +19,6 @@ import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import OfflineBanner from '@/components/shared/OfflineBanner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSaisonActive } from '@/lib/saisons';
-import { DecorPages } from '@/components/saisons/DecorPages';
 import { TapisPromeneur } from '@/components/saisons/TapisPromeneur';
 import { FondEcran } from '@/components/fonds/FondEcran';
 import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
@@ -92,7 +91,8 @@ const AppLayout = ({
         <ErrorBoundary scope="page">{children}</ErrorBoundary>
       </main>
       {showBottomNav && <BottomNav />}
-      <SilentBoundary name="Petit décor des pages"><DecorPages /></SilentBoundary>
+      {/* 🍂 2026-11-26 (Nadia) : plus aucun décor qui tombe dans les pages des cours (l'ancien « petit décor des pages » est retiré) ;
+          l'objet qui se promène (tapis, feuille dorée…) ne s'affiche plus que sur l'accueil. L'écureuil, lui, est partout (App.tsx). */}
       <SilentBoundary name="Tapis volant"><TapisPromeneur /></SilentBoundary>
       <VersionChangelogModal />
       <StarMascot />

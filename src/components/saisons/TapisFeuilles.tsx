@@ -112,6 +112,8 @@ export function TapisFeuilles({ a, userId, calme, defile, largeurCheminee }: {
         </div>
       )}
 
+      {/* 🙈 2026-11-26 : cachette du cache-cache « dans le tas de feuilles » (repère invisible posé sur le tas) */}
+      <div aria-hidden data-cachette="Le tas de feuilles" data-cachette-prep="dans" data-cachette-place="0.5" data-cachette-repos="34%" className="pointer-events-none absolute bottom-0" style={{ left: tasX - 40, width: 80, height: 20 }} />
       {/* le tas passe DEVANT le personnage : on le voit vraiment entrer dedans */}
       <svg className={`absolute bottom-0 left-0 ${anime && montrerPerso && a.plongeon ? 'saison-tas-secoue' : ''}`} width={L} height={H} viewBox={`0 0 ${L} ${H}`}
         style={{ transformOrigin: `${tasX}px ${H}px` }} dangerouslySetInnerHTML={{ __html: tapis.tas }} />

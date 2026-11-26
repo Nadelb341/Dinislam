@@ -185,14 +185,16 @@ export interface ReglagesJeux {
   feuDecor: boolean;
   /** ✨ Étincelles à la 1ʳᵉ visite du jour */
   feuEtincelles: boolean;
-  /** 🙈 Cache-cache : l'animal se cache derrière une carte de l'accueil */
+  /** 🙈 Cache-cache : l'animal se cache derrière une carte ou un élément du décor de l'accueil */
   cacheCache: boolean;
+  /** 🐿️ 2026-11-26 : l'écureuil qui se cache dans TOUTE l'appli (indices, maisonnette sur l'accueil). Clé absente = allumé. */
+  ecureuil: boolean;
   /** Groupes concernés (vide = tout le monde) */
   groupes: string[];
 }
 export const JEUX_DEFAUT: ReglagesJeux = {
   compagnon: true, parle: true, arbreSemaine: true, secoue: true, questionFeu: true,
-  feuSemaine: true, feuDevoirs: true, feuDecor: true, feuEtincelles: true, cacheCache: true, groupes: [],
+  feuSemaine: true, feuDevoirs: true, feuDecor: true, feuEtincelles: true, cacheCache: true, ecureuil: true, groupes: [],
 };
 
 export interface ReglagesSaisons {
@@ -207,7 +209,8 @@ export interface ReglagesSaisons {
   themeSombre: boolean;
   /** Pluie d'étoiles du titre pendant une saison décorée (non par défaut : « ça fait chargé avec les feuilles », Nadia 2026-11-04) */
   pluieEtoiles: boolean;
-  /** 🍂 Petit décor léger dans les pages autres que l'accueil (Nadia, 2026-11-12) */
+  /** 🍂 Petit décor léger dans les pages autres que l'accueil (Nadia, 2026-11-12) — ⏸️ SANS EFFET depuis le 2026-11-26
+   *  (Nadia : plus rien ne tombe pendant les cours, le décor reste sur l'accueil seulement). Gardé pour les anciens réglages. */
   decorPages: boolean;
   /** Animer même si le téléphone a « Réduire les animations » (Nadia 2026-11-04 : tout était figé sur son iPhone) */
   animerToujours: boolean;

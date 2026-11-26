@@ -38,7 +38,7 @@ const GROUPES_AUTOMNE: { titre: string; items: { k: keyof ReglagesAutomne; label
     { k: 'erable', label: '🍂 Érable' }, { k: 'chene', label: '🌿 Chêne' }, { k: 'ginkgo', label: '💛 Ginkgo' }, { k: 'simple', label: '🍃 Feuille simple' },
     { k: 'vent', label: '💨 Coups de vent' }, { k: 'eclate', label: '💥 Feuille qui éclate quand on la touche' }, { k: 'son', label: '🔊 Petit son de cristal (comme les flocons)' },
     { k: 'grandesFeuilles', label: '🍁 Grandes feuilles faciles à attraper' },
-    { k: 'promeneur', label: '🍂 Feuille géante dorée qui se promène dans l\'appli' },
+    { k: 'promeneur', label: '🍂 Feuille géante dorée qui se promène sur l\'accueil' },
     { k: 'messageSemaine', label: '💬 Message « Attrape les feuilles ! » chaque semaine' },
     { k: 'ventDefile', label: '🌬️ Feuilles soufflées quand on fait défiler' },
     { k: 'pluieValidation', label: '🌰 Pluie de glands, pommes de pin et feuilles à chaque validation' },
@@ -64,7 +64,7 @@ const GROUPES_HIVER: { titre: string; items: { k: keyof ReglagesHiver; label: st
     { k: 'eclate', label: '💥 Flocon qui éclate quand on le touche' }, { k: 'son', label: '🔊 Petit son de cristal' },
     { k: 'messageSemaine', label: '💬 Message « Attrape les flocons ! » chaque semaine' }, { k: 'ventDefile', label: '🌬️ Flocons soufflés quand on fait défiler' },
     { k: 'pluieDoree', label: '✨ Pluie de flocons dorés à chaque validation' }, { k: 'floconDore', label: '🌟 Flocon doré rare à attraper' },
-    { k: 'promeneur', label: '⛄ Bonhomme de neige qui se promène dans l\'appli' },
+    { k: 'promeneur', label: '⛄ Bonhomme de neige qui se promène sur l\'accueil' },
   ] },
   { titre: 'Le chalet et le ciel (en haut)', items: [
     { k: 'chalet', label: '🏠 Chalet en haut à gauche' }, { k: 'cielSoir', label: '🌌 Ciel du soir avec petites étoiles' },
@@ -94,7 +94,7 @@ const groupesClair = (ete: boolean): { titre: string; items: { k: keyof Reglages
     { k: 'son', label: ete ? '🔊 Petit « plop »' : '🔊 Petit tintement' }, { k: 'messageSemaine', label: ete ? '💬 Message « Éclate les bulles ! » chaque semaine' : '💬 Message « Attrape les papillons ! » chaque semaine' },
     { k: 'ventDefile', label: '🌬️ Soufflés quand on fait défiler' }, { k: 'pluieValidation', label: ete ? '⭐ Pluie d\'étoiles de mer et coquillages à chaque validation' : '🌼 Pluie de pétales et coccinelles à chaque validation' },
     { k: 'rare', label: ete ? '🌟 Bulle dorée rare' : '🌟 Papillon doré rare' },
-    { k: 'promeneur', label: ete ? '☀️ Soleil brillant qui se promène dans l\'appli' : '🐦 Oiseau bleu et blanc qui se promène dans l\'appli' },
+    { k: 'promeneur', label: ete ? '☀️ Soleil brillant qui se promène sur l\'accueil' : '🐦 Oiseau bleu et blanc qui se promène sur l\'accueil' },
   ] },
   { titre: 'Le soleil et les nuages (en haut)', items: [
     { k: 'soleil', label: ete ? '☀️ Grand soleil qui brille' : '🌞 Soleil qui brille et tourne' }, { k: 'nuages', label: '☁️ Nuages autour du titre' },
@@ -219,7 +219,7 @@ export default function DecorationsSaisons() {
           {ligne('ramadanDabord', '🌙 Pendant le Ramadan et les Aïds : le décor du Ramadan', 'Il remplace la saison aux dates de l\'onglet 🌙 Ramadan')}
           {ligne('themeSombre', 'Décorer aussi le thème sombre', 'Décoché au départ')}
           {ligne('animerToujours', '📱 Animer même si le téléphone demande « Réduire les animations »', reduitAnimations ? "⚠️ CE téléphone a « Réduire les animations » activé (Réglages › Accessibilité › Mouvement) : décoché, tout serait figé ici" : "Ce téléphone ne demande pas moins d'animations")}
-          {ligne('decorPages', '🍂 Petit décor dans les pages', "Quelques feuilles (ou flocons, pétales) qui tombent doucement dans les autres pages que l'accueil")}
+          {ligne('decorPages', '🍂 Petit décor dans les pages (en pause)', "Depuis le 26/11, plus rien ne tombe dans les pages des cours (ça gênait les élèves) : le décor reste sur l'accueil. Ce réglage n'a plus d'effet.")}
           {ligne('pluieEtoiles', "Garder la pluie d'étoiles du titre", "Décoché : pendant une saison, il y a déjà les feuilles ou les flocons qui tombent")}
           <label className="block text-sm font-semibold">Quantité de feuilles : <b>{r.quantite <= 12 ? 'Très discret' : r.quantite <= 24 ? 'Normal' : 'Festif'}</b> ({r.quantite})
             <input type="range" min={5} max={40} value={r.quantite} onChange={(e) => maj('quantite', Number(e.target.value))} className="w-full accent-[#b5562b]" />
@@ -478,7 +478,8 @@ function JeuxReglages({ jeux, setJeux }: { jeux: ReglagesJeux; setJeux: (v: Part
       {ligne('feuDevoirs', '🪵 Une bûche par devoir validé', 'Chaque devoir validé de la semaine ajoute une bûche ; tous les devoirs faits = grand feu')}
       {ligne('feuDecor', '🐈 Le chat et la théière', 'Grand feu : la théière fume et le chat dort devant ; feu éteint : le chat attend en regardant l\'élève')}
       {ligne('feuEtincelles', '✨ Les étincelles du bonjour', 'À la 1ʳᵉ visite du jour, quelques étincelles montent de la cheminée')}
-      {ligne('cacheCache', '🙈 Cache-cache', 'L\'animal se cache chaque jour derrière une carte : le trouver = un mot gentil, le mot arabe du jour, une danse, son habit du jour et l\'album des cachettes')}
+      {ligne('cacheCache', '🙈 Cache-cache', 'L\'animal se cache partout sur l\'accueil (une carte, le logo, le titre, le décor de la saison) : le trouver = un mot gentil, le mot arabe du jour, une danse, son habit du jour et l\'album des cachettes')}
+      {ligne('ecureuil', '🐿️ L\'écureuil qui se cache partout', 'Il se cache dans toutes les pages (derrière un titre, une carte, une image), sans jamais cacher un bouton. Indices au bout de 20 s, 35 s et 45 s. Trouvé : il rentre dans sa maisonnette de l\'accueil, puis repart se cacher 1 à 2 minutes plus tard')}
       <div className="space-y-1.5">
         <p className="text-xs font-bold">Pour qui ?</p>
         <div className="flex flex-wrap gap-1.5">
@@ -501,7 +502,7 @@ const GROUPES_RAMADAN: { titre: string; items: { k: CleOuiNon; label: string }[]
     { k: 'guirlande', label: '🏮 Guirlande de lanternes qui défilent' }, { k: 'kaaba', label: '🕋 Kaaba en haut à gauche' }, { k: 'mosquee', label: '🕌 Mosquée en bas à droite' },
     { k: 'dunes', label: '🏜️ Désert en bas (palmiers, cactus, rochers)' }, { k: 'compagnon', label: '🐪 Dromadaire qui marche dans le désert' }, { k: 'etoiles', label: '⭐ Étoiles et croissants qui tombent' },
     { k: 'images', label: '🖼️ Images sur les cartes' }, { k: 'couleurs', label: '🎨 Couleurs or et bleu clair' }, { k: 'son', label: '🔔 Petits sons' },
-    { k: 'tapisPromeneur', label: '🧞 Tapis volant qui se promène dans l\'appli' },
+    { k: 'tapisPromeneur', label: '🧞 Tapis volant qui se promène sur l\'accueil' },
   ] },
   { titre: 'Pendant le mois', items: [
     { k: 'lanternesMois', label: '🏮 30 lanternes (une par jour passé)' }, { k: 'compteRebours', label: '⏳ Compte à rebours de l\'iftar' }, { k: 'iftar', label: '🍽️ Moment de l\'iftar (invocation)' },

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import type { ReglagesSaisons } from '@/lib/saisons';
 import { lundiDeLaSemaine } from '@/lib/saisons';
 import { usePaysage } from '@/hooks/usePaysage';
+import { PAPILLON_VB, grandPapillonSvg } from './dessinsCachettes';
 import { EVT_VALIDATION, preparerSon, sonPlop, sonTintement } from '@/lib/sonSaison';
 import {
   ANIMAUX, LUNE_SVG, MOTS, NUAGE_SVG, OISEAU_SVG, TORTUE_SVG, arbrePrintemps, bandeEte, bandePrintemps, palmiersEte, soleilEte, soleilPrintemps,
@@ -491,6 +492,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
   const etapeChateau = ((new Date().getDay() + 6) % 7) + 1;
   const reposer = (oui: boolean) => { setBulle(false); if (oui) { setRepos(true); try { sessionStorage.setItem(cleRepos, '1'); } catch { /* */ } } };
   const largeurSoleil = [0, 76, 92, 110][r.tailleArbre] ?? 92;
+  const papillon = grandPapillonSvg('cachette');
   const nomAnimal = ANIMAUX[animal].nom;
   const emojiAnimal: Record<AnimalClair, string> = { lapin: '🐰', escargot: '🐌', biche: '🦌', crabe: '🦀', dauphin: '🐬' };
 
@@ -505,10 +507,10 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
           </div>
         )}
         {c.soleil && (!soir || !c.lune) && (
-          <svg viewBox="0 0 120 120" className="pointer-events-none absolute -z-[5] overflow-visible" style={{ top: 4, left: -6, width: largeurSoleil }} dangerouslySetInnerHTML={{ __html: soleil }} />
+          <svg data-cachette="Le soleil" data-cachette-bord="0.24" data-cachette-place="0.5" viewBox="0 0 120 120" className="pointer-events-none absolute -z-[5] overflow-visible" style={{ top: 4, left: -6, width: largeurSoleil }} dangerouslySetInnerHTML={{ __html: soleil }} />
         )}
         {c.lune && soir && (
-          <svg viewBox="0 0 120 120" className="pe-lune pointer-events-none absolute -z-[5]" style={{ top: 8, left: -2, width: largeurSoleil * 0.8 }} dangerouslySetInnerHTML={{ __html: LUNE_SVG }} />
+          <svg data-cachette="La lune" data-cachette-bord="0.2" data-cachette-place="0.5" viewBox="0 0 120 120" className="pe-lune pointer-events-none absolute -z-[5]" style={{ top: 8, left: -2, width: largeurSoleil * 0.8 }} dangerouslySetInnerHTML={{ __html: LUNE_SVG }} />
         )}
         {c.nuages && (
           <>
@@ -534,7 +536,7 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
               <svg aria-hidden width={W} height={HB * kb} viewBox={`0 0 ${WV} ${HB}`} className="fixed bottom-0 left-0 z-[27]" style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
                 dangerouslySetInnerHTML={{ __html: bande.fond }} />
               {ete && c.chateau && (
-                <svg aria-hidden viewBox="0 0 60 46" className="pe-chateau fixed z-[28]" key={etapeChateau}
+                <svg aria-hidden data-cachette="Le château de sable" data-cachette-bord="0.2" data-cachette-place="0.5" viewBox="0 0 60 46" className="pe-chateau fixed z-[28]" key={etapeChateau}
                   style={{ left: Math.round(W * 0.2), bottom: `calc(env(safe-area-inset-bottom, 0px) + ${12 * kb}px)`, width: 54 * kb }}
                   dangerouslySetInnerHTML={{ __html: chateauSable(etapeChateau) }} />
               )}
@@ -557,7 +559,12 @@ export function DecorClair({ saison, r, soir, matin, userId }: { saison: Clair; 
           )}
           {c.decor && (
             <div className="fixed bottom-0 z-[32] transition-opacity duration-500" style={{ right: 'max(-8px, env(safe-area-inset-right, 0px))', width: ete ? (kb < 1 ? 'min(21vw, 83px)' : 'min(42vw, 165px)') : (kb < 1 ? 'min(18vw, 70px)' : 'min(36vw, 140px)'), marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}>
-              <svg aria-hidden viewBox={ete ? '0 0 200 220' : '0 0 200 240'} className="block w-full" dangerouslySetInnerHTML={{ __html: decor }} />
+              <svg aria-hidden data-cachette={ete ? 'Les palmiers' : 'Le grand arbre'} data-cachette-bord="0.12" data-cachette-place="0.3" viewBox={ete ? '0 0 200 220' : '0 0 200 240'} className="block w-full" dangerouslySetInnerHTML={{ __html: decor }} />
+              {/* 🦋 2026-11-26 : grand papillon posé sur l'arbre en fleurs = une cachette du cache-cache (printemps, si le jeu est allumé) */}
+              {!ete && r.jeux.cacheCache && (
+                <svg aria-hidden data-cachette="Le grand papillon" data-cachette-bord="0.08" data-cachette-place="0.5" viewBox={PAPILLON_VB}
+                  className="grand-papillon pointer-events-none absolute overflow-visible" style={{ left: '56%', top: '6%', width: '36%' }} dangerouslySetInnerHTML={{ __html: papillon }} />
+              )}
               {!ete && c.motDuJour && (
                 <button type="button" aria-label="L'oiseau : touche-le pour voir le mot du printemps" onClick={montrerMot} className="pe-oiseau pointer-events-auto absolute" style={{ left: '22%', top: '40%', width: '24%' }}>
                   <svg viewBox="0 0 40 34" aria-hidden dangerouslySetInnerHTML={{ __html: OISEAU_SVG }} />

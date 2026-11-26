@@ -22,6 +22,7 @@ import { FeuArtificeDore, type ThemeFeu } from './FeuArtificeDore';
  * tournoie en planant), ☀️ soleil brillant (été, ses rayons tournent), 🐦 oiseau bleu et blanc (printemps, il bat des ailes).
  * Le toucher = feu d'artifice aux couleurs de la saison + un petit son doux. Réglage : Décorations des saisons › chaque saison.
  * Seul l'objet se touche (le reste de l'écran reste cliquable).
+ * ⏸️ 2026-11-26 (Nadia : « ça perturbe les élèves pendant le cours ») : il ne se promène plus QUE sur l'accueil.
  */
 type Mode = 'tapis' | 'sautille' | 'tournoie' | 'soleil' | 'vole';
 type Etat = { x: number; y: number; ang: number; cx: number; cy: number; reste: number; sortie: boolean; retour: number; vite: number };
@@ -53,6 +54,7 @@ const OBJET_DE: Record<Exclude<Saison, 'ramadan'>, { objet: ObjetSaison; mode: M
 /** Choisit l'objet de la saison en cours (le nom reste « TapisPromeneur » : AppLayout l'affiche déjà) */
 export function TapisPromeneur() {
   const { saison, r } = useSaisonActive();
+  const { pathname } = useLocation();
   const reduit = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches, []);
   const bouge = !reduit || r.animerToujours;
   const config = useMemo<Config | null>(() => {
@@ -65,7 +67,8 @@ export function TapisPromeneur() {
     const d = OBJETS_SAISON[o.objet];
     return { cle: o.objet, svg: objetSvg(o.objet, `pr${o.objet}`), vb: d.vb, larg: d.larg, haut: d.haut, mode: o.mode, son: o.son, theme: saison, label: o.label, classe: `objet-promeneur objet-${o.objet}` };
   }, [saison]);
-  if (!saison || !config || !bouge) return null;
+  // Seulement sur l'accueil (2026-11-26) : sa place reste gardée (`etats`) et il revient en entrant par un côté
+  if (!saison || !config || !bouge || pathname !== '/') return null;
   const reglage = saison === 'ramadan' ? r.ramadan.tapisPromeneur : r[saison].promeneur;
   if (reglage === false) return null;
   const son = saison === 'ramadan' ? r.ramadan.son : r[saison].son;

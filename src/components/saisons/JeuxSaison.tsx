@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lundiDeLaSemaine, type ReglagesSaisons, type Saison } from '@/lib/saisons';
 import { annoncerNiveau, EVT_TOUCHE, PAUSE_MS, type DetailTouche } from './compagnonEvenement';
 import { CacheCache, FeuSemaine } from './FeuEtCacheCache';
+import { MaisonEcureuil } from './Ecureuil';
 import { messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
 import { depuisJour } from '@/lib/depuisJour';
 
@@ -45,7 +46,9 @@ export function JeuxSaison({ saison, r, userId, prenom, isAdmin, largeurHautGauc
       {cheminee && (j.feuSemaine || j.feuDevoirs || j.feuDecor || j.feuEtincelles) && (
         <FeuSemaine userId={userId} regle={j.feuSemaine} buches={j.feuDevoirs} decor={j.feuDecor} etincelles={j.feuEtincelles} />
       )}
-      {j.cacheCache && <CacheCache saison={saison} userId={userId} />}
+      {j.cacheCache && <CacheCache saison={saison} userId={userId} sansEcureuil={j.ecureuil} />}
+      {/* 🐿️ 2026-11-26 : la maisonnette de l'écureuil qui se cache dans toute l'appli (lui est monté dans App.tsx) */}
+      {j.ecureuil && <MaisonEcureuil userId={userId} prenom={prenom} />}
     </>
   );
 }

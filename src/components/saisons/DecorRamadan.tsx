@@ -137,7 +137,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
           </div>
         )}
         {c.kaaba && (
-          <svg viewBox={`0 0 ${KAABA_VB.w} ${KAABA_VB.h}`} className="ramadan-kaaba pointer-events-none absolute -z-[5] overflow-visible"
+          <svg data-cachette="La Kaaba" data-cachette-bord="0.3" data-cachette-place="0.5" viewBox={`0 0 ${KAABA_VB.w} ${KAABA_VB.h}`} className="ramadan-kaaba pointer-events-none absolute -z-[5] overflow-visible"
             style={{ top: c.guirlande ? 58 : 10, left: -4, width: [0, 78, 94, 112][r.tailleArbre] ?? 94 }} dangerouslySetInnerHTML={{ __html: kaaba }} />
         )}
       </div>
@@ -224,7 +224,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
 
           {/* 🐪 Le dromadaire marche dans le désert */}
           {c.compagnon && (
-            <button ref={persoRef} type="button" onClick={toucherPerso} aria-label={`${p.nom} : touche-le pour qu'il te parle`}
+            <button ref={persoRef} type="button" onClick={toucherPerso} aria-label={`${p.nom} : touche-le pour qu'il te parle`} data-cachette="Le dromadaire" data-cachette-bord="0.12" data-cachette-place="0.45"
               className={`ramadan-perso pointer-events-auto fixed left-0 z-[29] outline-none [-webkit-tap-highlight-color:transparent] ${pause || calme ? 'pause' : ''}`}
               style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)', height: hauteurPerso, width: Math.round(hauteurPerso * p.vb[0] / p.vb[1]) }}>
               <svg viewBox={`0 0 ${p.vb[0]} ${p.vb[1]}`} className="ramadan-dromadaire h-full w-full overflow-visible" aria-hidden
@@ -234,7 +234,7 @@ export function DecorRamadan({ r, soir, fete, userId }: { r: ReglagesSaisons; so
 
           {/* 🕌 Mosquée en bas à droite */}
           {c.mosquee && (
-            <svg aria-hidden viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
+            <svg aria-hidden data-cachette="La mosquée" data-cachette-cote="gauche" data-cachette-bord="0.12" data-cachette-place="0.85" viewBox={`0 0 ${MOSQUEE_VB.w} ${MOSQUEE_VB.h}`} className="ramadan-mosquee fixed bottom-0 z-30 transition-opacity duration-500"
               style={{ right: 'max(-6px, env(safe-area-inset-right, 0px))', width: paysage ? 'min(15vw, 56px)' : 'min(30vw, 112px)', marginBottom: 'env(safe-area-inset-bottom, 0px)', opacity: defile ? 0.3 : 1 }}
               dangerouslySetInnerHTML={{ __html: mosquee }} />
           )}
