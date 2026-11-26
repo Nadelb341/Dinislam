@@ -789,8 +789,8 @@ html.feu-eteint .saison-feu, html.feu-eteint .hiver-feu { opacity: 0 !important;
 @keyframes jeux-pluie { to { transform: translate(18px, 105vh) rotate(260deg); } }
 
 /* 🐿️ L'écureuil qui se cache dans toute l'appli (2026-11-26) */
-/* Rangée du cache-cache + maisonnette de l'accueil : cachée tant que rien n'y est affiché */
-.rangee-jeux:not(:has(> :not(:empty))) { display: none; }
+/* Rangée du cache-cache + maisonnette de l'accueil : PLUS de règle « :has(… :empty) » ici (26/11) — Safari ne la recalculait
+   pas quand la maisonnette arrivait après coup, la rangée restait cachée. La rangée n'existe que si un des 2 jeux est allumé. */
 /* Caché : il regarde à droite et à gauche de temps en temps */
 .ecureuil-guette { animation: ecureuil-guette 6s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes ecureuil-guette { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-7deg); } 84% { transform: rotate(7deg); } 90% { transform: rotate(0) translateY(-2px); } }
