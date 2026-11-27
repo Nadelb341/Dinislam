@@ -29,9 +29,20 @@ describe('Hadith du jour', () => {
     expect(h.theme).toBe('');
   });
 
+  it('🕌 chaque hadith a son degré : Al-Boukhârî / Mouslim = SAHIH, degré de la base prioritaire', () => {
+    const sansDegre = HADITHS_SECOURS.filter((x) => !x.degre).map((x) => x.source);
+    expect(sansDegre).toEqual(['Ibn Hibbane']); // seul degré à vérifier
+    expect(HADITHS_SECOURS.find((x) => /tabar/i.test(x.source))).toMatchObject({ degre: 'hasan' });
+    const jour = new Date(2026, 0, 1);
+    expect(choisirHadithDuJour([{ ...ligne(1), source: 'Sahih Boukhari' }], jour).degre).toBe('sahih');
+    const h2 = choisirHadithDuJour([{ ...ligne(1), source: 'Sahih Boukhari', degre: 'daif', degre_divergence: ' Avis ' }], jour);
+    expect(h2).toMatchObject({ degre: 'daif', divergence: 'Avis' });
+  });
+
   it('avec les 40 hadiths en base, le résultat est le même qu\'avec l\'ancienne liste', () => {
     const base: HadithDuJour[] = HADITHS_SECOURS.map((h, i) => ({
       id: String(i), texte_arabe: h.arabic || null, texte: h.text, source: h.source, theme: h.theme, position: (i + 1) * 10,
+      degre: h.degre, degre_divergence: h.divergence,
     }));
     for (let m = 0; m < 12; m++) {
       const jour = new Date(2026, m, 15);

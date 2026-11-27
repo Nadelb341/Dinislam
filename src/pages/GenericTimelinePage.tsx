@@ -16,6 +16,7 @@ import { FileText, Video, Volume2, BookOpen, ChevronRight, Play, Image as ImageI
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
+import { OngletsHadiths } from '@/components/hadiths/OngletsHadiths';
 import type { Tables } from '@/integrations/supabase/types';
 
 interface ModuleConfig {
@@ -160,8 +161,8 @@ const GenericTimelinePage = () => {
           </div>
         </div>
 
-        {/* Content */}
-        {isLoading ? (
+        {/* Content — 📚 carte Hadiths (27/11) : onglets « Les hadiths » / « 📊 Niveaux d'authenticité » / « Leçons » */}
+        {(() => { const contenu = isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="flex items-center gap-4">
@@ -262,7 +263,11 @@ const GenericTimelinePage = () => {
               );
             })}
           </div>
-        )}
+        );
+        return moduleSlug === 'hadiths'
+          ? <OngletsHadiths isAdmin={estAdminZones} nbLecons={cards.length}>{contenu}</OngletsHadiths>
+          : contenu;
+        })()}
       </div>
 
       {/* Detail Dialog */}

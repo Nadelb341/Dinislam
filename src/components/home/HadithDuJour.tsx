@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { CLE_HADITHS_DU_JOUR, useHadithsDuJour } from '@/hooks/useHadithsDuJour';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 import { Pencil } from 'lucide-react';
@@ -16,26 +17,21 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { TextareaDictee } from '@/components/shared/TextareaDictee';
 import { SortableCardList, type DragItemProps } from '@/components/shared/SortableCardList';
 import { errorMessage } from '@/lib/utils';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
+import { ChoixDegre } from '@/components/shared/ChoixDegre';
 
 /**
  * 🕊️ Carte « Hadith du jour » de l'accueil (2026-11-21) : les hadiths sont lus dans la table `hadiths_du_jour`.
  * Même règle de choix qu'avant (jour de l'année). Liste vide ou illisible → ancienne liste du code (jamais de carte vide).
  * Enseignante : ✏️ ouvre « Hadiths du jour » (ajouter, modifier, supprimer → corbeille, ranger par appui long + glisser).
  */
-const CLE = ['hadiths-du-jour'];
+const CLE = CLE_HADITHS_DU_JOUR;
 const MSG_ATTENTE = '📡 Gardé sur cet appareil, envoyé au retour du réseau';
-
-async function lireHadiths(): Promise<HadithDuJour[]> {
-  const { data, error } = await untypedDb.from('hadiths_du_jour')
-    .select('id, texte_arabe, texte, source, theme, position').order('position').order('created_at');
-  if (error) throw error;
-  return (data || []) as HadithDuJour[];
-}
 
 export function HadithDuJourCarte({ isAdmin, userId }: { isAdmin: boolean; userId: string | null }) {
   const [gestion, setGestion] = useState(false);
   const navigate = useNavigate();
-  const { data } = useQuery({ queryKey: CLE, queryFn: lireHadiths, retry: 1 });
+  const { data } = useHadithsDuJour();
   // data absent (chargement, erreur, hors ligne sans copie) → la liste de secours prend le relais
   const todayHadith = choisirHadithDuJour(data);
 
@@ -73,6 +69,8 @@ export function HadithDuJourCarte({ isAdmin, userId }: { isAdmin: boolean; userI
           {todayHadith.text}
           <span className="text-emerald-400 font-serif font-bold">{' »'}</span>
           {todayHadith.source && <span className="text-xs text-muted-foreground whitespace-nowrap"> — {todayHadith.source}</span>}
+          {/* 🕌 27/11 : degré d'authenticité (toucher = explication) */}
+          <PastilleSource source={todayHadith.source} degre={todayHadith.degre} divergence={todayHadith.divergence} compact className="ml-1" />
         </p>
       </div>
       {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L14) : vers la carte Hadiths */}
@@ -132,6 +130,7 @@ function GestionHadiths({ items, userId, onClose }: { items: HadithDuJour[]; use
           <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
             {h.source || 'Sans source'}{h.theme ? ` · ${h.theme}` : ''}
           </p>
+          <PastilleSource source={h.source} degre={h.degre} divergence={h.degre_divergence} aVerifier interactif={false} />
         </div>
         <Button type="button" size="sm" variant="outline" onClick={() => setEdition(h)} onPointerDown={(e) => e.stopPropagation()}
           aria-label="Modifier ce hadith"><Pencil className="h-3.5 w-3.5" /></Button>
@@ -184,6 +183,7 @@ function EditionHadith({ h, items, onClose, rafraichir }: {
   const [texte, setTexte] = useState(h?.texte ?? '');
   const [source, setSource] = useState(h?.source ?? '');
   const [theme, setTheme] = useState(h?.theme ?? '');
+  const [degre, setDegre] = useState<{ degre: string | null; divergence: string | null }>({ degre: h?.degre ?? null, divergence: h?.degre_divergence ?? null });
   const [saving, setSaving] = useState(false);
   const suivant = (id: string) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); document.getElementById(id)?.focus(); }
@@ -194,7 +194,8 @@ function EditionHadith({ h, items, onClose, rafraichir }: {
     if (!texte.trim()) { toast.error('Écris le texte du hadith'); return; }
     setSaving(true);
     try {
-      const valeurs = { texte_arabe: arabe.trim() || null, texte: texte.trim(), source: source.trim() || null, theme: theme.trim() || null };
+      const valeurs = { texte_arabe: arabe.trim() || null, texte: texte.trim(), source: source.trim() || null, theme: theme.trim() || null,
+        degre: degre.degre, degre_divergence: degre.divergence?.trim() || null };
       const r = h
         ? await ecrireOuGarder({ table: 'hadiths_du_jour', op: 'update', id: h.id, values: valeurs })
         : await ecrireOuGarder({ table: 'hadiths_du_jour', op: 'insert',
@@ -224,6 +225,7 @@ function EditionHadith({ h, items, onClose, rafraichir }: {
         <label className="text-xs font-semibold" htmlFor="hadith-theme">Thème (facultatif, petite étiquette sur la carte)</label>
         <Input id="hadith-theme" value={theme} maxLength={40} onChange={(e) => setTheme(e.target.value)} placeholder="Ex. : Intention"
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
+        <ChoixDegre degre={degre.degre} divergence={degre.divergence} source={source} onChange={setDegre} />
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="ghost" onClick={onClose}>Annuler</Button>
           <Button type="button" disabled={saving} onClick={() => void enregistrer()}>{saving ? 'Enregistrement…' : 'Enregistrer'}</Button>

@@ -6,8 +6,10 @@
  *    (1re ouverture sans réseau, erreur…), la carte affiche un hadith de cette liste, jamais une carte vide.
  */
 
-/** Un hadith tel qu'affiché sur la carte */
-export interface HadithAffiche { text: string; source: string; theme: string; arabic: string }
+import { degreDeSource, normaliserDegre, type Degre } from '@/lib/degreAuthenticite';
+
+/** Un hadith tel qu'affiché sur la carte (avec son degré d'authenticité, règle n°1 du 27/11) */
+export interface HadithAffiche { text: string; source: string; theme: string; arabic: string; degre: Degre | null; divergence: string | null }
 
 /** Une ligne de la table `hadiths_du_jour` */
 export interface HadithDuJour {
@@ -17,10 +19,13 @@ export interface HadithDuJour {
   source: string | null;
   theme: string | null;
   position: number;
+  /** 🕌 27/11 : sahih / hasan / daif / mawdou / coran (vide = deviné d'après la source, sinon « à vérifier ») */
+  degre?: string | null;
+  degre_divergence?: string | null;
 }
 
 /** Filet de secours : les 40 hadiths d'origine (mêmes textes, même ordre que l'INSERT de la migration 20261121190000) */
-export const HADITHS_SECOURS: HadithAffiche[] = [
+const LISTE_SECOURS: Omit<HadithAffiche, 'degre' | 'divergence'>[] = [
   { text: "Les actions ne valent que par leurs intentions.", source: "Sahih Boukhari", theme: "Intention", arabic: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ" },
   { text: "Facilite les choses et ne les complique pas. Réjouis les gens et ne les fais pas fuir.", source: "Sahih Boukhari", theme: "Douceur", arabic: "يَسِّرُوا وَلَا تُعَسِّرُوا" },
   { text: "Les meilleurs d'entre vous sont ceux qui ont le meilleur caractère.", source: "Sahih Boukhari 3559", theme: "Caractère", arabic: "إِنَّ مِنْ خِيَارِكُمْ أَحْسَنَكُمْ أَخْلَاقًا" }, // 26/11 : remplacé (règle n°1)
@@ -66,7 +71,14 @@ export const HADITHS_SECOURS: HadithAffiche[] = [
 /** Ligne de la base → hadith affiché (champs vides = texte vide, comme dans l'ancienne liste) */
 export const versAffiche = (h: HadithDuJour): HadithAffiche => ({
   text: h.texte, source: h.source ?? '', theme: h.theme ?? '', arabic: h.texte_arabe ?? '',
+  degre: normaliserDegre(h.degre) ?? degreDeSource(h.source), divergence: h.degre_divergence?.trim() || null,
 });
+
+/** Degrés de la liste de secours = ceux de la migration 20261127180000 (Al-Boukhârî / Mouslim = sahih ; At-Tabarânî = hasan avec divergence) */
+const DIVERGENCE_TABARANI = "Jugé hasan (bon) par Al-Albânî (As-Silsila as-Sahîha n° 426) ; d'autres spécialistes ont jugé sa chaîne faible.";
+export const HADITHS_SECOURS: HadithAffiche[] = LISTE_SECOURS.map((h): HadithAffiche => (/tabar/i.test(h.source)
+  ? { ...h, degre: 'hasan', divergence: DIVERGENCE_TABARANI }
+  : { ...h, degre: degreDeSource(h.source), divergence: null }));
 
 /** Numéro du jour dans l'année (même calcul qu'avant) */
 export function jourDeLAnnee(maintenant = new Date()): number {
