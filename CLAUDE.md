@@ -301,6 +301,10 @@ Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très long
 - Page Prière : après avoir coché une prière (5 étoiles), « 📿 … le tasbih d'après la prière ? Faire › » (5 min, si la carte Dhikr est ouverte).
 - ⚠️ À FAIRE (pas fait dans la branche) : appliquer la migration, puis redéployer `taches-automatiques` (rappels) et `send-push-notification` (catégories `dhikr_matin/soir/nuit`).
 
+## ✨ 99 noms d'Allah : recherche + fiches en 9 parties (2026-11-27)
+- 🔍 recherche tolérante (français, sens, phonétique avec/sans accents/« Al- », arabe avec/sans voyelles, numéro) `lib/nomsAllahRecherche.ts` ; tuiles 2× plus grandes (`TexteAjuste`) ; fiche en 9 parties dans l'ordre de Nadia (`lib/ficheNomAllah.ts`, `components/allahNames/*`), pastille de degré, ✏️ par partie (file d'attente hors ligne ; vider une partie → corbeille, 📡). Colonnes `fiche_*` (migration 20261127150000 appliquée le 27/11 ; copie `supabase/data/allah_names_fiches_2026-11-27.json`). ⏳ Les 99 fiches sont « à relire par Nadia » (bouton « ✅ J'ai relu cette fiche ») ; doutes signalés : 64 Al-Wâjid, 91 Ad-Dârr, 81 Al-Mountaqim, 93 An-Noûr, 94 Al-Hâdî (« Le Guide »), 76 Al-Bâtin, 82 Al-'Afouww, 36 Al-'Alî (parole de l'imam Mâlik), 26 As-Samî'.
+- Hors ligne : recherche ✅ ; ✏️ fiche ✅ (file d'attente) ; vider une partie ❌ 📡.
+
 ## 🎥 Cours Zoom DANS Dinislam (2026-11-27, choix A + D de Nadia)
 - Kit officiel Zoom « Meeting SDK » (vue composant, `@zoom/meetingsdk` 6.10.0 épinglé), appli Marketplace « Cours en ligne » (General App, compte Zoom Pro de Nadia, gérée par l'utilisateur, Meeting SDK activé, option bot/IA éteinte). Salle = salle personnelle 408 036 1371 (même compte → pas besoin de jeton OBF, règle Zoom du 02/03/2026).
 - Secrets Supabase : `ZOOM_SDK_KEY` (ID client), `ZOOM_SDK_SECRET` (posé par Nadia elle-même, jamais vu), `ZOOM_MEETING_NUMBER`, `ZOOM_MEETING_PASSCODE`. Fonction `zoom-signature` (compte connecté obligatoire → signature role 0, 2 h).
