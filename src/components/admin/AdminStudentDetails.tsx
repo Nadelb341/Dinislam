@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Version99NomsEleve } from '@/components/allahNames/Version99NomsEleve';
 import { RenameStudentDialog } from '@/components/admin/RenameStudentDialog';
 import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge';
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
@@ -676,6 +677,7 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
               {selectedStudent?.id && <CarnetPresenceEleve eleveId={selectedStudent.id} nom={selectedStudent.full_name} />}
               {selectedStudent?.id && <StudentSettingsOverview userId={selectedStudent.id} />}
               {selectedStudent?.id && <SesCartesEleve userId={selectedStudent.id} />}
+              {selectedStudent?.id && <Version99NomsEleve userId={selectedStudent.id} />}
               {selectedStudent?.id && <StudentFollowUp userId={selectedStudent.id} />}
               {selectedStudent?.id && <AlphabetStudentSummary userId={selectedStudent.id} />}
 

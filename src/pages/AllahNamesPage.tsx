@@ -10,6 +10,9 @@ import { TuileNom } from '@/components/allahNames/TuileNom';
 import { FicheAdulte } from '@/components/allahNames/FicheAdulte';
 import { BoutonAuthenticite } from '@/components/allahNames/BoutonAuthenticite';
 import { lireFicheAdulte } from '@/lib/ficheAdulte';
+import { FicheEnfant } from '@/components/allahNames/FicheEnfant';
+import { lireFicheEnfant, type Version99Noms } from '@/lib/ficheEnfant';
+import { useVersion99Noms } from '@/hooks/useVersion99Noms';
 import { rechercherNoms } from '@/lib/nomsAllahRecherche';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
 import { useConfetti } from '@/hooks/useConfetti';
@@ -40,6 +43,10 @@ const AllahNamesPage = () => {
   const { fireSuccess } = useConfetti();
   // Moins de 20 ans : chaque nom s'ouvre quand l'enseignante a validé l'audio du nom précédent (2026-10-19)
   const needsAudio = !isAdmin && !isOver20;
+  // 🧒🧑 Version des fiches (Nadia, 27/11) : l'élève voit SA version (âge ou choix de l'enseignante) ; l'enseignante bascule
+  const { version: versionEleve } = useVersion99Noms();
+  const [vueAdmin, setVueAdmin] = useState<Version99Noms>('adulte');
+  const vue: Version99Noms = isAdmin ? vueAdmin : (versionEleve ?? 'enfant');
 
   const { data: names = [], isLoading, isFetched: namesFetched } = useQuery({
     queryKey: ['allah-names'],
@@ -172,7 +179,10 @@ const AllahNamesPage = () => {
   const ficheSelection = selected ? names.find((n) => n.id === selected.id) : undefined;
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
   // 🌟 27/11 : la fiche ADULTE de Nadia (si elle existe) remplace l'ancienne fiche en 9 parties, gardée pour l'enseignante en bas
-  const ficheAdulte = lireFicheAdulte((ficheSelection ?? selected)?.fiche_adulte);
+  const ficheAdulteLue = lireFicheAdulte((ficheSelection ?? selected)?.fiche_adulte);
+  const ficheEnfant = vue === 'adulte' ? null : lireFicheEnfant((ficheSelection ?? selected)?.fiche_enfant);
+  // Version enfant affichée → la fiche adulte n'est pas montrée (un enfant ne voit QUE sa version)
+  const ficheAdulte = ficheEnfant ? null : ficheAdulteLue;
 
   const openName = (name, index) => {
     if (!isNameAccessible(index)) {
@@ -316,9 +326,25 @@ const AllahNamesPage = () => {
               </div>
 
               {/* 🌟 Fiche en 9 parties (Nadia, 27/11) : 1. arabe, 2. translittération, 3. signification… */}
-              {ficheAdulte
-                ? <FicheAdulte fiche={ficheAdulte} numero={selected.display_order} nameId={selected.id} isAdmin={isAdmin} partie="entete" />
-                : <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={3} />}
+              {/* 🧒🧑 Enseignante : elle voit les 2 versions (les élèves ne voient que la leur) */}
+              {isAdmin && (
+                <div role="group" aria-label="Version de la fiche" className="flex flex-wrap justify-center gap-2">
+                  {([['petit', '🧸 Petit'], ['enfant', '🧒 Enfant'], ['adulte', '🧑 Adulte']] as [Version99Noms, string][]).map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => setVueAdmin(v)} aria-pressed={vueAdmin === v}
+                      className="rounded-full border-2 px-4 py-1.5 text-sm font-extrabold shadow-sm"
+                      style={vueAdmin === v
+                        ? { background: 'hsl(38 92% 55%)', borderColor: 'white', color: 'hsl(222 65% 9%)' }
+                        : { background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(217,119,6,0.5)', color: 'white' }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {ficheEnfant
+                ? <FicheEnfant fiche={ficheEnfant} nameId={selected.id} isAdmin={isAdmin} petit={vue === 'petit'} audioUrl={getMedia('audio')?.file_url ?? null} />
+                : ficheAdulte
+                  ? <FicheAdulte fiche={ficheAdulte} numero={selected.display_order} nameId={selected.id} isAdmin={isAdmin} partie="entete" />
+                  : <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={3} />}
 
               {/* 🎙️ Enregistrement en HAUT, juste sous le nom : même place que dans les sourates (Nadia, 2026-11-19) */}
               {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
@@ -382,7 +408,7 @@ const AllahNamesPage = () => {
                     </details>
                   )}
                 </>
-              ) : <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={4} fin={9} />}
+              ) : !ficheEnfant && <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={4} fin={9} />}
 
               {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
               <ZonesContenu cible={`nom-allah:${selected.id}`} isAdmin={isAdmin} libelle={selected.name_french} />

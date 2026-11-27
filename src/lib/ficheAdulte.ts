@@ -4,7 +4,7 @@ import type { Degre } from '@/lib/degreAuthenticite';
  * 🌟 99 noms d'Allah — fiche ADULTE écrite par Nadia (textes validés par elle, 27/11/2026), colonne `allah_names.fiche_adulte`.
  * Source de vérité : scripts/fiches-99-noms/lot_*.py → supabase/data/allah_names_fiches_adultes_2026-11-27.json → migration 20261127200000.
  * Les numéros suivent TOUJOURS l'ordre de l'appli (display_order). `numero_source` = numéro dans la liste de ChatGPT (décalée d'1 dès 67).
- * Une future version « enfant » (colonne `fiche_enfant`) attend la validation de Nadia : elle n'est pas affichée.
+ * La version « enfant » (colonne `fiche_enfant`) est dans `src/lib/ficheEnfant.ts` (élève enfant = seulement elle).
  */
 export type StatutNom = 'etabli' | 'divergence' | 'non_etabli';
 export type ClassementNom = 'coran' | 'sunna' | 'coran_sunna' | 'discute';

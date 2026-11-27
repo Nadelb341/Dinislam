@@ -629,6 +629,24 @@ export type Database = {
           },
         ]
       }
+      allah_names_version_eleve: {
+        Row: {
+          updated_at: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          updated_at?: string
+          user_id: string
+          version?: string
+        }
+        Update: {
+          updated_at?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       allah_names: {
         Row: {
           audio_url: string | null

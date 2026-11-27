@@ -31,6 +31,7 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   hadiths_du_jour: ['hadiths-du-jour'],
   // 🤲 Besoin d'Allah (2026-11-27) : émotions et leurs noms, modifiés par l'enseignante
   besoins_allah: ['besoins-allah'],
+  allah_names_version_eleve: ['version-99-noms'],
   besoins_allah_noms: ['besoins-allah'],
   // 📿 Carte Dhikr (2026-11-27) : contenu modifié par l'enseignante + compteur du défi du groupe EN DIRECT
   dhikr_items: ['dhikr-items'],
