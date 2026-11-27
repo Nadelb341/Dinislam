@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { fondMatiere, matiereDe } from '@/lib/devoirFichiers';
@@ -63,6 +65,15 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
 }) {
   const [onglet, setOnglet] = useState<Onglet>('semaine');
   const [ouvertId, setOuvertId] = useState<string | null>(null);
+  // La page du devoir se ferme avec « Retour » ou la touche Échap ; la page de derrière ne défile pas pendant ce temps
+  useEffect(() => {
+    if (!ouvertId) return;
+    const echap = (e: KeyboardEvent) => { if (e.key === 'Escape') setOuvertId(null); };
+    window.addEventListener('keydown', echap);
+    const avant = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', echap); document.body.style.overflow = avant; };
+  }, [ouvertId]);
   const [semaineChoisie, setSemaineChoisie] = useState<string | null>(null);
   const [matiere, setMatiere] = useState<string | null>(null);
   const [tourne, setTourne] = useState(false);
@@ -118,7 +129,22 @@ export function CahierRotation({ devoirs, renderDetail, prochainCours, pageKey, 
           </span>
           <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-extrabold', chip.c)}>{chip.t}</span>
         </button>
-        {ouvert && <div className="mt-1.5">{renderDetail(d)}</div>}
+        {/* 📄 27/11 (Nadia : « le fait de déplier, ça perturbe ») : le devoir s'ouvre dans SA page, plein écran, avec « Retour » */}
+        {ouvert && createPortal(
+          <div role="dialog" aria-modal="true" aria-label={d.titre}
+            className="fixed inset-0 z-[75] flex flex-col bg-background">
+            <div className="flex items-center gap-2 border-b bg-card px-3 py-2 shadow-sm" style={{ paddingTop: 'max(8px, env(safe-area-inset-top, 0px))' }}>
+              <button type="button" onClick={() => setOuvertId(null)}
+                className="flex items-center gap-1.5 rounded-full border-2 border-border bg-background px-3 py-1.5 text-sm font-bold">
+                <ArrowLeft className="h-4 w-4" /> Retour
+              </button>
+              <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xl', fondMatiere(d.type))}>{m.emoji}</span>
+              <span className="min-w-0 flex-1 cahier-main text-lg leading-6 [overflow-wrap:anywhere]">{d.titre}</span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
+              <div className="mx-auto max-w-2xl">{renderDetail(d)}</div>
+            </div>
+          </div>, document.body)}
       </div>
     );
   };

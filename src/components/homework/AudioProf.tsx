@@ -41,24 +41,39 @@ export function ConsigneAudioGrande({ url, onEcoute, compact = false }: { url: s
   const [joue, setJoue] = useState(false);
   const [p, setP] = useState(0);
   const dejaSignale = useRef(false);
+  // 27/11 (Nadia : « je n'arrive pas à l'ouvrir, rien ne se passe ») : si le gros bouton n'arrive pas à jouer,
+  // on affiche le lecteur classique de l'appareil en dessous (toujours un moyen d'écouter) + un message clair
+  const [secours, setSecours] = useState(false);
   // 🔒 Lien signé ; tant qu'il n'est pas prêt, le bouton attend (désactivé)
   const src = useUrlLisible(url ? audioProfUrl(url) : null);
   if (!url) return null;
   const basculer = () => {
     const a = ref.current; if (!a) return;
-    if (a.paused) { void a.play().catch(() => { /* lecture refusée */ }); } else a.pause();
+    if (a.paused) {
+      if (a.readyState === 0) a.load();
+      void a.play().catch(() => setSecours(true));
+    } else a.pause();
   };
   return (
+    <>
     <button type="button" onClick={basculer} disabled={!src} aria-label={joue ? 'Mettre la consigne en pause' : 'Écouter la consigne de ton professeur'}
       className={cn('relative w-full overflow-hidden flex items-center gap-3 rounded-2xl bg-[#2457a5] text-white text-left font-extrabold shadow-md active:scale-[0.99] transition-transform disabled:opacity-70',
         compact ? 'px-2.5 py-2 text-sm' : 'px-3 py-3 text-base')}>
       <span className={cn('grid shrink-0 place-items-center rounded-full bg-white text-[#2457a5]', compact ? 'h-10 w-10 text-lg' : 'h-14 w-14 text-2xl', !joue && 'consigne-pouls')}>{joue ? '❚❚' : '▶'}</span>
       <span className="min-w-0 flex-1">🎧 Écoute ce que ton professeur te demande</span>
       <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-white/25"><span className="block h-full bg-amber-300 transition-[width]" style={{ width: `${p * 100}%` }} /></span>
-      <audio key={src ?? 'attente'} ref={ref} src={src} preload="none"
+      <audio key={src ?? 'attente'} ref={ref} src={src} preload="metadata"
         onPlay={() => { setJoue(true); if (!dejaSignale.current) { dejaSignale.current = true; onEcoute?.(); } }}
         onPause={() => setJoue(false)} onEnded={() => { setJoue(false); setP(0); }}
+        onError={() => setSecours(true)}
         onTimeUpdate={(e) => { const a = e.currentTarget; if (a.duration) setP(a.currentTime / a.duration); }} />
     </button>
+    {secours && src && (
+      <div className="rounded-xl border-2 border-sky-300 bg-sky-50 dark:bg-sky-950/30 px-3 py-2 space-y-1">
+        <p className="text-xs font-bold text-sky-800 dark:text-sky-200">🎧 Si le gros bouton ne marche pas, écoute ici (et vérifie que le son de ton appareil est allumé) :</p>
+        <audio controls src={src} preload="metadata" className="w-full h-10" onPlay={() => { if (!dejaSignale.current) { dejaSignale.current = true; onEcoute?.(); } }} />
+      </div>
+    )}
+    </>
   );
 }
