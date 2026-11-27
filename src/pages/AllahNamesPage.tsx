@@ -3,7 +3,11 @@ import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { ImageCadree } from '@/components/shared/ImageCadree';
 import { BoutonBesoinAllah } from '@/components/besoinAllah/BesoinAllah';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { RechercheNoms } from '@/components/allahNames/RechercheNoms';
+import { FicheNom } from '@/components/allahNames/FicheNom';
+import { TuileNom } from '@/components/allahNames/TuileNom';
+import { rechercherNoms } from '@/lib/nomsAllahRecherche';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
 import { useConfetti } from '@/hooks/useConfetti';
 import { withMoodEmojis } from '@/lib/moodEmojis';
@@ -16,7 +20,7 @@ import { useOpenItemFromUrl, lockedItemMessage, MISSING_ITEM_MESSAGE } from '@/h
 import AppLayout from '@/components/layout/AppLayout';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Play, FileText, Lock, CheckCircle2, Star } from 'lucide-react';
+import { X, Play, FileText, CheckCircle2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -28,6 +32,8 @@ const AllahNamesPage = () => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<Tables<'allah_names'> | null>(null);
   const [mediaOpen, setMediaOpen] = useState<'video' | 'pdf' | null>(null);
+  // 🔍 Recherche (demande de Nadia, 27/11) : résultats en direct, calculés sur l'appareil
+  const [recherche, setRecherche] = useState('');
   const { fireSuccess } = useConfetti();
   // Moins de 20 ans : chaque nom s'ouvre quand l'enseignante a validé l'audio du nom précédent (2026-10-19)
   const needsAudio = !isAdmin && !isOver20;
@@ -80,6 +86,10 @@ const AllahNamesPage = () => {
   });
 
   const validatedIds = new Set(progress.filter((p) => p.is_validated).map((p) => p.name_id));
+  const nomsAffiches = useMemo(() => {
+    if (!recherche.trim()) return names.map((nom, index) => ({ nom, index }));
+    return rechercherNoms(names, recherche).map((r) => ({ nom: r.nom, index: names.findIndex((n) => n.id === r.nom.id) }));
+  }, [names, recherche]);
   const validatedCount = validatedIds.size;
   const totalCount = names.length;
 
@@ -155,6 +165,8 @@ const AllahNamesPage = () => {
   }, [user, names, queryClient, fireSuccess]);
 
   const getMedia = (type: string) => selectedMedia.find((m) => m.media_type === type);
+  // La fiche ouverte suit les changements (✏️ de l'enseignante, direct) : on relit la dernière version dans la liste
+  const ficheSelection = selected ? names.find((n) => n.id === selected.id) : undefined;
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
 
   const openName = (name, index) => {
@@ -226,6 +238,11 @@ const AllahNamesPage = () => {
             </div>
           </div>
 
+          {/* 🔍 Barre de recherche en haut de la carte (demande de Nadia, 27/11) */}
+          {!isLoading && names.length > 0 && (
+            <RechercheNoms valeur={recherche} onChange={setRecherche} nbResultats={recherche.trim() ? nomsAffiches.length : null} />
+          )}
+
           {/* 🤲 Besoin d'Allah (choix K-L-M de Nadia, 27/11) : émotions → noms à invoquer → histoire animée */}
           <BoutonBesoinAllah isAdmin={isAdmin} userId={user?.id ?? null} nomsBase={names}
             onOuvrirNom={(id) => {
@@ -236,103 +253,17 @@ const AllahNamesPage = () => {
 
           {/* Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-40 rounded-2xl animate-pulse" style={{ background: 'hsl(222 50% 12%)' }} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {names.map((name, index) => {
-                const accessible = isNameAccessible(index);
-                const validated = validatedIds.has(name.id);
-                return (
-                  <button
-                    key={name.id}
-                    onClick={() => openName(name, index)}
-                    className="relative flex flex-col items-center rounded-2xl p-4 active:scale-95 transition-all duration-200 overflow-hidden text-left border"
-                    style={{
-                      background: accessible
-                        ? 'linear-gradient(145deg, hsl(222 55% 11%), hsl(222 65% 8%))'
-                        : 'hsl(222 40% 8%)',
-                      borderColor: validated
-                        ? 'rgba(234,179,8,0.65)'
-                        : accessible
-                          ? 'rgba(217, 119, 6, 0.2)'
-                          : 'rgba(217,119,6,0.07)',
-                      minHeight: '148px',
-                      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-                      // Verrouillé : plus de grisé fade, on garde le noir et l'or de la carte (2026-10-23)
-                      opacity: accessible ? 1 : 0.85,
-                    }}
-                  >
-                    {/* Order badge */}
-                    <span
-                      className="absolute top-2 left-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md"
-                      style={{ color: 'hsl(38 92% 55%)', background: 'rgba(217,119,6,0.18)' }}
-                    >
-                      {name.display_order}
-                    </span>
-
-                    {/* Lock or check icon */}
-                    {validated ? (
-                      <span className="absolute top-2 right-2">
-                        {/* Tailles voulues par Nadia (2026-10-23) : coche et cadenas ×3, badge « En attente » ×1,5 */}
-                        <CheckCircle2 className="h-12 w-12" style={{ color: 'hsl(45 93% 55%)', filter: 'drop-shadow(0 0 6px hsla(45, 93%, 55%, 0.45))' }} />
-                      </span>
-                    ) : pendingIds.has(name.id) ? (
-                      <span className="absolute top-2 right-2 text-[15px] font-bold px-2 py-1 rounded-lg"
-                        style={{ color: 'hsl(38 92% 62%)', background: 'rgba(217,119,6,0.18)', border: '1px solid rgba(217,119,6,0.4)' }}>
-                        ⏳ En attente
-                      </span>
-                    ) : !accessible ? (
-                      <span className="absolute top-2 right-2">
-                        <Lock className="h-[42px] w-[42px]" style={{ color: 'hsl(38 70% 45%)' }} />
-                      </span>
-                    ) : null}
-
-                    {/* Image or decorative element */}
-                    {name.image_url ? (
-                      <ImageCadree src={name.image_url} alt={name.name_french} cadrages={name.image_cadrage} emplacement="carte"
-                        className="w-full h-14 rounded-xl mb-2 mt-12 opacity-80" />
-                    ) : (
-                      <div className="w-full flex items-center justify-center mt-12 mb-1">
-                        <svg width="44" height="28" viewBox="0 0 44 28" fill="none" opacity={accessible ? 0.3 : 0.12}>
-                          <path d="M2 28 Q2 6 22 2 Q42 6 42 28" stroke="hsl(38 92% 55%)" strokeWidth="1.5" fill="none"/>
-                          <line x1="2" y1="28" x2="42" y2="28" stroke="hsl(38 92% 55%)" strokeWidth="1.5"/>
-                        </svg>
-                      </div>
-                    )}
-
-                    {accessible ? (
-                      <p className="font-arabic text-2xl font-bold text-center leading-tight w-full mt-1" style={{ color: 'hsl(0 0% 95%)' }}>
-                        {name.name_arabic}
-                      </p>
-                    ) : (
-                      <p className="text-4xl text-center leading-none w-full mt-1" aria-hidden="true"
-                        style={{ filter: 'drop-shadow(0 0 10px hsla(38, 92%, 55%, 0.55))' }}>
-                        ✨
-                      </p>
-                    )}
-                    {name.transliteration && accessible && (
-                      <p className="text-xs font-semibold text-center mt-1" style={{ color: 'hsl(38 92% 58%)' }}>
-                        {name.transliteration}
-                      </p>
-                    )}
-                    <p className="text-[11px] text-center mt-1 leading-tight" style={{ color: accessible ? 'hsl(222 15% 65%)' : 'hsl(38 60% 62%)' }}>
-                      {accessible ? name.name_french : '🔒 Verrouillé'}
-                    </p>
-
-                    <div
-                      className="absolute bottom-0 left-0 right-0 h-0.5"
-                      style={{ background: validated
-                        ? 'linear-gradient(90deg, transparent, hsl(142 70% 45%), transparent)'
-                        : 'linear-gradient(90deg, transparent, hsl(38 92% 50%), transparent)'
-                      }}
-                    />
-                  </button>
-                );
-              })}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+              {nomsAffiches.map(({ nom: name, index }) => (
+                <TuileNom key={name.id} name={name} accessible={isNameAccessible(index)} validated={validatedIds.has(name.id)}
+                  pending={pendingIds.has(name.id)} onOpen={() => openName(name, index)} />
+              ))}
             </div>
           )}
         </div>
@@ -342,7 +273,7 @@ const AllahNamesPage = () => {
       {selected && (
         <Dialog open onOpenChange={() => { setSelected(null); setMediaOpen(null); }}>
           <DialogContent
-            className="max-w-md max-h-[90vh] overflow-y-auto p-0 border-0"
+            className="max-w-md md:max-w-xl max-h-[90vh] overflow-y-auto p-0 border-0"
             style={{
               background: 'linear-gradient(180deg, hsl(222 65% 9%) 0%, hsl(222 75% 6%) 100%)',
               border: '1px solid rgba(217,119,6,0.25)',
@@ -370,23 +301,10 @@ const AllahNamesPage = () => {
                     className="w-full h-40 rounded-2xl mb-4 opacity-90" />
                 )}
 
-                <p className="font-arabic text-5xl font-bold leading-tight mb-3" style={{ color: 'hsl(0 0% 97%)' }}>
-                  {selected.name_arabic}
-                </p>
-
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <div className="h-px w-12" style={{ background: 'hsl(38 92% 50%)' }} />
-                  <span style={{ color: 'hsl(38 92% 58%)' }}>✦</span>
-                  <div className="h-px w-12" style={{ background: 'hsl(38 92% 50%)' }} />
-                </div>
-
-                {selected.transliteration && (
-                  <p className="text-lg font-bold mb-1" style={{ color: 'hsl(38 92% 58%)' }}>
-                    {selected.transliteration}
-                  </p>
-                )}
-                <p className="text-base text-white/75">{selected.name_french}</p>
               </div>
+
+              {/* 🌟 Fiche en 9 parties (Nadia, 27/11) : 1. arabe, 2. translittération, 3. signification… */}
+              <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={3} />
 
               {/* 🎙️ Enregistrement en HAUT, juste sous le nom : même place que dans les sourates (Nadia, 2026-11-19) */}
               {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
@@ -396,8 +314,6 @@ const AllahNamesPage = () => {
                 </div>
               )}
 
-              {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
-              <ZonesContenu cible={`nom-allah:${selected.id}`} isAdmin={isAdmin} libelle={selected.name_french} />
 
               {/* Validation button */}
               {!isAdmin && (
@@ -440,12 +356,11 @@ const AllahNamesPage = () => {
                 </div>
               )}
 
-              {selected.explanation && (
-                <div className="rounded-xl p-4" style={{ background: 'rgba(217,119,6,0.07)', border: '1px solid rgba(217,119,6,0.18)' }}>
-                  <p className="text-xs font-bold mb-2" style={{ color: 'hsl(38 92% 58%)' }}>Explication</p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'hsl(222 15% 72%)' }}>{selected.explanation}</p>
-                </div>
-              )}
+              {/* … 4. explication détaillée, 5. preuve, 6. moment, 7. invocation, 8. référence et degré, 9. divergences */}
+              <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={4} fin={9} />
+
+              {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
+              <ZonesContenu cible={`nom-allah:${selected.id}`} isAdmin={isAdmin} libelle={selected.name_french} />
 
               {/* Media */}
               {(getMedia('video') || getMedia('pdf')) && (

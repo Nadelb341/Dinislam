@@ -139,6 +139,7 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   hadith_du_jour: 'Hadith du jour',
   besoin_allah: 'Besoin d\'Allah (émotion)',
   besoin_allah_nom: 'Besoin d\'Allah (nom)',
+  allah_name_partie: 'Partie d\'une fiche des 99 noms',
   alphabet_particularite: 'Particularité (Alphabet)',
   alphabet_particularite_bloc: 'Contenu d\'une particularité',
   alphabet_petits_video: 'Vidéo des tout-petits',
