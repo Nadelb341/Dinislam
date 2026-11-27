@@ -1,5 +1,7 @@
 // Contenu authentique des invocations — textes tirés du Coran et des hadiths (domaine public)
 // Correspondance par mots-clés sur le titre français de la BD
+// 🕌 27/11 (règle n°1) : `degre` = degré d'authenticité des hadiths HORS Al-Boukhârî / Mouslim (ceux-là = SAHIH, deviné tout seul)
+import type { Degre } from '@/lib/degreAuthenticite';
 
 export interface InvocationEnrichment {
   keywords: string[];
@@ -8,6 +10,10 @@ export interface InvocationEnrichment {
   translation: string;
   virtue: string;
   source: string;
+  /** Degré d'authenticité (vide = deviné d'après la source : Al-Boukhârî / Mouslim = SAHIH) */
+  degre?: Degre;
+  /** ⚖️ Phrase courte si les spécialistes ne sont pas d'accord */
+  degre_divergence?: string;
   extra?: string; // info complémentaire (ex: si on oublie...)
   videoUrl?: string; // URL YouTube (watch) pour la vidéo d'apprentissage (seulement si pas de vidéo de l'appli)
   /** Vidéo de l'appli (extrait), venue du canal Telegram de Nadia (2026-11-08) — prioritaire sur YouTube, gardée hors ligne */
@@ -26,6 +32,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah, au début et à la fin.",
     virtue: "Si l'on a oublié de dire « Bismillâh » au début du repas, on le dit dès qu'on s'en souvient : le repas reste béni et le shaytan ne profite pas de la nourriture.",
     source: "Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)",
+    degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     video: "/videos/invocations/04-oubli-bismillah.mp4",
   },
   // En sortant de la maison
@@ -36,6 +43,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah, je m'en remets à Allah, il n'y a de force ni de puissance qu'en Allah.",
     virtue: "Le Prophète ﷺ a dit : à celui qui dit cela en sortant de chez lui, il est répondu : « Tu es guidé, tu es suffi et tu es protégé », et le shaytan s'écarte de lui.",
     source: "Rapporté par Abû Dâwûd (n°5095) et At-Tirmidhî (n°3426)",
+    degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     video: "/videos/invocations/06-sortir-maison-extrait.mp4",
     videoEntiere: "/videos/invocations/06-sortir-maison-entiere.mp4",
   },
@@ -47,6 +55,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah nous entrons, au nom d'Allah nous sortons, et c'est en notre Seigneur que nous plaçons notre confiance.",
     virtue: "En entrant, on dit « Bismillâh » puis on salue sa famille (« As-salâmu 'alaykum ») : la maison est ainsi protégée et le shaytan n'y trouve pas de place.",
     source: "Rapporté par Abû Dâwûd (n°5096)",
+    degre: 'daif', // Al-Albânî : faible (chaîne interrompue) — degré à faire confirmer par Nadia
     extra: "Après l'invocation, on salue les personnes de la maison : « As-salâmu 'alaykum ».",
     video: "/videos/invocations/07-entrer-maison-extrait.mp4",
     videoEntiere: "/videos/invocations/07-entrer-maison-entiere.mp4",
@@ -71,6 +80,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "La soif s'en est allée, les veines sont irriguées et la récompense est assurée, si Allah le veut.",
     virtue: "Le Prophète ﷺ disait cette invocation au moment de rompre le jeûne. Le moment de l'iftar est un moment où les invocations sont exaucées.",
     source: "Rapporté par Abû Dâwûd (n°2357)",
+    degre: 'hasan', // Ad-Dâraqoutnî et Al-Albânî : hasan
     video: "/videos/invocations/11-rupture-jeune.mp4",
   },
   // Tachahoud — 1re partie
@@ -81,6 +91,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Les salutations sont pour Allah, ainsi que les bénédictions et les excellentes prières. Salut à toi, ô Prophète, ainsi que la miséricorde d'Allah et Sa bénédiction. Salut à nous et aux vertueux serviteurs d'Allah. J'atteste qu'il n'y a de divinité qu'Allah et j'atteste que Muhammad est Son serviteur et Son messager.",
     virtue: "Le tachahoud se récite assis pendant la prière, après la 2e unité (rak'a) et à la fin de la prière. C'est la version enseignée par 'Umar ibn al-Khattâb.",
     source: "Rapporté par Mâlik dans Al-Muwatta' (livre de la prière, chapitre du tachahoud)",
+    degre: 'sahih', // chaîne authentique (enseignement de 'Umar ibn al-Khattâb, rapporté par Mâlik)
     video: "/videos/invocations/12-tachahoud-1.mp4",
   },
   // Tachahoud — 2e partie (salât ibrâhîmiyya)
@@ -145,6 +156,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah.",
     virtue: "Dire Bismillâh avant de manger permet à la nourriture d'être une bénédiction et protège des méfaits des shaytanes.",
     source: "Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)",
+    degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     extra: "Si tu oublies de dire Bismillâh au début, dis dès que tu t'en souviens : بِسْمِ اللهِ أَوَّلَهُ وَآخِرَهُ (Bismillâhi awwalahu wa âkhirahu — « Au nom d'Allah au début et à la fin »).",
     videoUrl: "https://www.youtube.com/watch?v=zh0toDrooLw",
     video: "/videos/invocations/03-avant-manger-extrait.mp4",
@@ -158,6 +170,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Louange à Allah qui m'a nourri de ceci et me l'a accordé sans force ni puissance de ma part.",
     virtue: "Le Prophète ﷺ a dit : « Celui qui mange un repas et dit ensuite cette invocation, ses péchés passés lui seront pardonnés. » Quelle belle récompense pour un simple remerciement !",
     source: "Rapporté par Abû Dâwûd (n°4023) et At-Tirmidhî (n°3458)",
+    degre: 'hasan', // At-Tirmidhî : hasan gharîb ; Al-Albânî : hasan
     videoUrl: "https://www.youtube.com/watch?v=GIGijvsu9_Y",
     video: "/videos/invocations/05-apres-manger-extrait.mp4",
     videoEntiere: "/videos/invocations/05-apres-manger-entiere.mp4",
@@ -182,6 +195,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Je Te demande Ton pardon.",
     virtue: "On sort par le pied droit. Ce mot, récité par le Prophète ﷺ en sortant des toilettes, est une belle occasion de demander le pardon d'Allah pour nos péchés.",
     source: "Rapporté par Abû Dâwûd (n°30), At-Tirmidhî (n°7) et Ibn Mâjah (n°300)",
+    degre: 'sahih', // Al-Albânî : sahîh (At-Tirmidhî : hasan gharîb)
     videoUrl: "https://www.youtube.com/watch?v=nZbjTojuYic",
     video: "/videos/invocations/09-sortir-toilettes.mp4",
   },
@@ -193,6 +207,7 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     translation: "Au nom d'Allah et louange à Allah ! Gloire à Celui qui nous a soumis cela alors que nous n'aurions pu le maîtriser, et c'est vers notre Seigneur que nous retournerons.",
     virtue: "Cette invocation rappelle que tout véhicule est un don d'Allah. Elle protège le voyageur et lui rappelle que son retour final est vers son Seigneur.",
     source: "Coran (43:13-14) · Abû Dâwûd (n°2602) · At-Tirmidhî (n°3446)",
+    degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     videoUrl: "https://www.youtube.com/watch?v=5DBoa9jbU00",
   },
   // 10. La nuit / dhikr du soir

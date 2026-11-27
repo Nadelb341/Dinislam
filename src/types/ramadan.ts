@@ -7,6 +7,10 @@ export interface Quiz {
   correct_options?: number[];
   explanation?: string | null;
   question_order?: number;
+  /** 🕌 27/11 : source (hadith ou verset) + degré d'authenticité de la question */
+  source?: string | null;
+  degre?: string | null;
+  degre_divergence?: string | null;
 }
 
 export interface DayVideo {
@@ -22,6 +26,9 @@ export interface QuestionForm {
   options: string[];
   correctOptions: number[];
   explanation: string;
+  source?: string;
+  degre?: string | null;
+  divergence?: string | null;
   existingId?: string;
 }
 
@@ -30,4 +37,7 @@ export const emptyQuestion = (): QuestionForm => ({
   options: ['', '', '', ''],
   correctOptions: [],
   explanation: '',
+  source: '',
+  degre: null,
+  divergence: null,
 });

@@ -280,8 +280,11 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
     if (!d?.invocation_id || !d.bloc || !d.valeurs) return false;
     const v = d.valeurs;
     const maj = d.bloc === "principal"
-      ? { content_arabic: v.arabe ?? null, content_prononciation: v.prononciation ?? null, content_french: v.traduction ?? null, content_source: v.source ?? null, texte_principal_masque: false }
-      : { autre_arabe: v.arabe ?? null, autre_prononciation: v.prononciation ?? null, autre_traduction: v.traduction ?? null, autre_source: v.source ?? null };
+      ? { content_arabic: v.arabe ?? null, content_prononciation: v.prononciation ?? null, content_french: v.traduction ?? null, content_source: v.source ?? null, texte_principal_masque: false,
+          // 🕌 27/11 : le degré revient aussi (seulement pour une copie faite après l'ajout des colonnes)
+          ...("degre" in v ? { content_degre: v.degre ?? null, content_degre_divergence: v.divergence ?? null } : {}) }
+      : { autre_arabe: v.arabe ?? null, autre_prononciation: v.prononciation ?? null, autre_traduction: v.traduction ?? null, autre_source: v.source ?? null,
+          ...("degre" in v ? { autre_degre: v.degre ?? null, autre_degre_divergence: v.divergence ?? null } : {}) };
     const { error } = await supabase.from("invocations").update(maj).eq("id", d.invocation_id);
     if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);

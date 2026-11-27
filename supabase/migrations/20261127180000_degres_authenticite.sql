@@ -50,12 +50,13 @@ update public.dhikr_gestes set degre = 'sahih'
   where degre is null and source ~* 'Abou D.woud 5088';   -- At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
 
 -- 4) Invocations (seules 2 lignes ont leur source en base ; les autres prennent celle de l'appli, avec son degré) --
+-- « Allâhoumma bârik lanâ fîmâ razaqtanâ… » (Ibn As-Sounnî) : jugé faible par les spécialistes du hadith
 update public.invocations set content_degre = 'daif'
   where title_french = 'Avant de manger' and content_degre is null and content_source ~* 'Sunn';
 update public.invocations set autre_degre = 'sahih'
   where title_french = 'Avant de manger' and autre_degre is null and autre_source ~* '3767';
-update public.invocations set content_degre = 'daif',
-  content_degre_divergence = 'Al-Albânî l''a jugé faible (un transmetteur inconnu dans la chaîne) : degré à faire confirmer par Nadia.'
+-- « al-hamdou lillâhi-lladhî at'amanâ wa saqânâ wa ja'alanâ mouslimîn » : jugé faible par Al-Albânî (un transmetteur inconnu)
+update public.invocations set content_degre = 'daif'
   where title_french = 'Après avoir mangé' and content_degre is null and content_source ~* '3850';
 update public.invocations set autre_degre = 'hasan'
   where title_french = 'Après avoir mangé' and autre_degre is null and autre_source ~* '4023';

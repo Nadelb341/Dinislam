@@ -2109,10 +2109,14 @@ export type Database = {
         Row: {
           category: string | null
           autre_arabe: string | null
+          autre_degre: string | null
+          autre_degre_divergence: string | null
           autre_prononciation: string | null
           autre_source: string | null
           autre_traduction: string | null
           content_arabic: string | null
+          content_degre: string | null
+          content_degre_divergence: string | null
           content_french: string | null
           content_prononciation: string | null
           content_source: string | null
@@ -2128,10 +2132,14 @@ export type Database = {
         Insert: {
           category?: string | null
           autre_arabe?: string | null
+          autre_degre?: string | null
+          autre_degre_divergence?: string | null
           autre_prononciation?: string | null
           autre_source?: string | null
           autre_traduction?: string | null
           content_arabic?: string | null
+          content_degre?: string | null
+          content_degre_divergence?: string | null
           content_french?: string | null
           content_prononciation?: string | null
           content_source?: string | null
@@ -2147,10 +2155,14 @@ export type Database = {
         Update: {
           category?: string | null
           autre_arabe?: string | null
+          autre_degre?: string | null
+          autre_degre_divergence?: string | null
           autre_prononciation?: string | null
           autre_source?: string | null
           autre_traduction?: string | null
           content_arabic?: string | null
+          content_degre?: string | null
+          content_degre_divergence?: string | null
           content_french?: string | null
           content_prononciation?: string | null
           content_source?: string | null
@@ -3545,6 +3557,8 @@ export type Database = {
           correct_options: Json | null
           created_at: string | null
           day_id: string
+          degre: string | null
+          degre_divergence: string | null
           display_order: number | null
           explanation: string | null
           id: string
@@ -3555,6 +3569,7 @@ export type Database = {
           options: Json | null
           question: string
           question_order: number | null
+          source: string | null
         }
         Insert: {
           correct_answer?: string | null
@@ -3562,6 +3577,8 @@ export type Database = {
           correct_options?: Json | null
           created_at?: string | null
           day_id: string
+          degre?: string | null
+          degre_divergence?: string | null
           display_order?: number | null
           explanation?: string | null
           id?: string
@@ -3572,6 +3589,7 @@ export type Database = {
           options?: Json | null
           question: string
           question_order?: number | null
+          source?: string | null
         }
         Update: {
           correct_answer?: string | null
@@ -3579,6 +3597,8 @@ export type Database = {
           correct_options?: Json | null
           created_at?: string | null
           day_id?: string
+          degre?: string | null
+          degre_divergence?: string | null
           display_order?: number | null
           explanation?: string | null
           id?: string
@@ -3589,6 +3609,7 @@ export type Database = {
           options?: Json | null
           question?: string
           question_order?: number | null
+          source?: string | null
         }
         Relationships: [
           {

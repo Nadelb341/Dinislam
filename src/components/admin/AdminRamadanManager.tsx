@@ -34,6 +34,7 @@ import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import { SortableCardList, DragItemProps } from '@/components/shared/SortableCardList';
 import { Quiz, DayVideo, QuestionForm, emptyQuestion } from '@/types/ramadan';
 import { compressDocument } from '@/lib/compressImage';
+import { ChoixDegre } from '@/components/shared/ChoixDegre';
 
 interface AdminRamadanManagerProps {
   onBack: () => void;
@@ -114,6 +115,15 @@ const SortableQuestionCard = ({
             rows={2}
             className="mt-1 text-sm"
           />
+          {/* 🕌 27/11 : source + degré d'authenticité (règle n°1) */}
+          <Label className="text-xs text-muted-foreground mt-2 block">📚 Source (hadith ou verset, facultatif)</Label>
+          <Input value={qf.source ?? ''} onChange={(e) => updateQuestion(qIdx, 'source', e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+            placeholder="Ex : Al-Boukhârî 1773 et Mouslim 1349" className="mt-1 h-8 text-sm" />
+          <div className="mt-2">
+            <ChoixDegre degre={qf.degre ?? null} divergence={qf.divergence ?? null} source={qf.source}
+              onChange={(x) => { updateQuestion(qIdx, 'degre', x.degre); updateQuestion(qIdx, 'divergence', x.divergence); }} />
+          </div>
         </div>
       </div>
     </div>
@@ -402,6 +412,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               correct_options: qf.correctOptions,
               explanation: qf.explanation || null,
               question_order: i,
+              source: qf.source?.trim() || null,
+              degre: qf.degre ?? null,
+              degre_divergence: qf.divergence?.trim() || null,
             })
             .eq('id', qf.existingId);
           if (error) throw error;
@@ -421,6 +434,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
               correct_options: qf.correctOptions,
               explanation: qf.explanation || null,
               question_order: i,
+              source: qf.source?.trim() || null,
+              degre: qf.degre ?? null,
+              degre_divergence: qf.divergence?.trim() || null,
             });
           if (error) throw error;
           // Track newly added question to prevent intra-batch duplicates
@@ -748,6 +764,9 @@ const AdminRamadanManager = ({ onBack }: AdminRamadanManagerProps) => {
           ? q.correct_options 
           : (q.correct_option !== null ? [q.correct_option] : []),
         explanation: q.explanation || '',
+        source: q.source || '',
+        degre: q.degre ?? null,
+        divergence: q.degre_divergence ?? null,
         existingId: q.id,
       })));
     } else {

@@ -16,10 +16,30 @@ import { toast } from 'sonner';
 import { errorMessage, cn } from '@/lib/utils';
 import { useConfetti } from '@/hooks/useConfetti';
 import { STORIES_WITH_DOUBT } from '@/lib/coranPages';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import type { Tables, Json } from '@/integrations/supabase/types';
 
 type Story = Tables<'sourate_stories'>;
-type Source = { ref: string; url?: string; porte_sur?: string };
+/** 🕌 27/11 : chaque source a son degré (`degre`) et, si les spécialistes ne sont pas d'accord, `degre_divergence` */
+type Source = { ref: string; url?: string; porte_sur?: string; degre?: string; degre_divergence?: string };
+const DEGRES_TEXTE = ['sahih', 'hasan', 'daif', 'mawdou', 'coran'];
+/** Une source par ligne : « référence | lien | degré | avis divergents » (le lien, le degré et l'avis sont facultatifs) */
+const sourcesEnTexte = (j: unknown) => ((j as Source[]) || [])
+  .map((s) => [s.ref, s.url ?? '', s.degre ?? '', s.degre_divergence ?? ''].join(' | ').replace(/( \| )+$/, '')).join('\n');
+function texteEnSources(t: string, avant: Source[]): Source[] {
+  return t.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+    const [ref, url, degre, divergence] = l.split('|').map((x) => x.trim());
+    const ancien = avant.find((s) => s.ref === ref); // garde « porte sur » (circonstances / mérite) de la même référence
+    const d = (degre || '').toLowerCase().replace(/[^a-z]/g, '');
+    return {
+      ref,
+      ...(url ? { url } : {}),
+      ...(ancien?.porte_sur ? { porte_sur: ancien.porte_sur } : {}),
+      ...(DEGRES_TEXTE.includes(d) ? { degre: d } : {}),
+      ...(divergence ? { degre_divergence: divergence } : {}),
+    };
+  });
+}
 
 interface Props {
   /** Ouvre le lecteur sur la page de la sourate */
@@ -177,6 +197,7 @@ function StoryDialog({ n, story, onClose, onRead }: { n: number; story?: Story; 
                   <p key={i} className="text-xs [overflow-wrap:anywhere]">
                     {src.url ? <a href={src.url} target="_blank" rel="noopener noreferrer" className="underline font-semibold">{src.ref}</a> : <b>{src.ref}</b>}
                     {src.porte_sur ? <span className="text-muted-foreground"> · {src.porte_sur}</span> : null}
+                    {' '}<PastilleSource source={src.ref} degre={src.degre} divergence={src.degre_divergence} aVerifier={isAdmin} />
                   </p>
                 ))}
               </div>
@@ -229,10 +250,10 @@ function StoryEditor({ story, onDone }: { story: Story; onDone: () => void }) {
   const [titre, setTitre] = useState(story.titre);
   const [texte, setTexte] = useState(story.texte);
   const [merite, setMerite] = useState(story.merite || '');
-  const [sources, setSources] = useState(((story.sources as unknown as Source[]) || []).map((s) => [s.ref, s.url].filter(Boolean).join(' | ')).join('\n'));
+  const [sources, setSources] = useState(sourcesEnTexte(story.sources));
   const [saving, setSaving] = useState(false);
   // Correction pas enregistrée : gardée comme brouillon (règle des brouillons, 2026-10-25)
-  const original = { titre: story.titre, texte: story.texte, merite: story.merite || '', sources: ((story.sources as unknown as Source[]) || []).map((s) => [s.ref, s.url].filter(Boolean).join(' | ')).join('\n') };
+  const original = { titre: story.titre, texte: story.texte, merite: story.merite || '', sources: sourcesEnTexte(story.sources) };
   const draft = useEditDraft('dinislam_sourate_story', story.sourate_number, {
     active: true,
     value: { titre, texte, merite, sources },
@@ -242,10 +263,7 @@ function StoryEditor({ story, onDone }: { story: Story; onDone: () => void }) {
   const save = async () => {
     setSaving(true);
     try {
-      const src = sources.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
-        const [ref, url] = l.split('|').map((x) => x.trim());
-        return url ? { ref, url } : { ref };
-      });
+      const src = texteEnSources(sources, (story.sources as unknown as Source[]) || []);
       const { error } = await supabase.from('sourate_stories').update({
         titre: titre.trim(), texte: texte.trim(), merite: merite.trim() || null, sources: src as unknown as Json, updated_at: new Date().toISOString(),
       }).eq('sourate_number', story.sourate_number);
@@ -265,7 +283,8 @@ function StoryEditor({ story, onDone }: { story: Story; onDone: () => void }) {
       <TextareaDictee id="st-texte" value={texte} onChange={(e) => setTexte(e.target.value)} rows={7} />
       <label className="text-xs font-bold" htmlFor="st-merite">Mérite (facultatif)</label>
       <TextareaDictee id="st-merite" value={merite} onChange={(e) => setMerite(e.target.value)} rows={3} />
-      <label className="text-xs font-bold" htmlFor="st-sources">Sources (une par ligne : référence | lien)</label>
+      <label className="text-xs font-bold" htmlFor="st-sources">Sources (une par ligne : référence | lien | degré | avis divergents)</label>
+      <p className="text-[11px] text-muted-foreground">Degré : sahih, hasan, daif, mawdou ou coran (vide = deviné : Al-Boukhârî / Mouslim = sahih). Ex. « At-Tirmidhî n° 2891 | https://… | hasan »</p>
       <Textarea id="st-sources" value={sources} onChange={(e) => setSources(e.target.value)} rows={3} />
       <div className="flex gap-2">
         <Button variant="outline" onClick={onDone}>Annuler</Button>

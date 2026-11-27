@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import ConfirmDeleteDialog from '@/components/ui/confirm-delete-dialog';
 import type { InvocationEnrichment } from '@/data/invocationsData';
 import type { Tables } from '@/integrations/supabase/types';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
+import { ChoixDegre } from '@/components/shared/ChoixDegre';
 
 /**
  * 🤲 Textes d'une invocation (2026-11-08, choix de Nadia) :
@@ -21,8 +23,9 @@ import type { Tables } from '@/integrations/supabase/types';
  * L'enseignante peut modifier ✏️ ou supprimer 🗑️ chaque texte ; une suppression passe par la corbeille (restaurable).
  */
 type Bloc = 'principal' | 'autre';
-interface Valeurs { arabe: string; prononciation: string; traduction: string; source: string }
-const VIDE: Valeurs = { arabe: '', prononciation: '', traduction: '', source: '' };
+/** 🕌 27/11 : `degre` / `divergence` = degré d'authenticité de la source (vide = deviné d'après la source) */
+interface Valeurs { arabe: string; prononciation: string; traduction: string; source: string; degre: string | null; divergence: string | null }
+const VIDE: Valeurs = { arabe: '', prononciation: '', traduction: '', source: '', degre: null, divergence: null };
 
 interface Props {
   invocation: Tables<'invocations'>;
@@ -45,16 +48,21 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
   const parDefaut: Valeurs = {
     arabe: enrichment?.arabic ?? '', prononciation: enrichment?.transliteration ?? '',
     traduction: enrichment?.translation ?? '', source: enrichment?.source ?? '',
+    degre: enrichment?.degre ?? null, divergence: enrichment?.degre_divergence ?? null,
   };
   const principal: Valeurs = {
     arabe: inv.content_arabic || parDefaut.arabe,
     prononciation: inv.content_prononciation || parDefaut.prononciation,
     traduction: inv.content_french || parDefaut.traduction,
     source: inv.content_source || parDefaut.source,
+    // Source écrite en base → SON degré (ou celui deviné d'après elle) ; sinon le degré de la source de l'appli
+    degre: inv.content_source ? inv.content_degre ?? null : inv.content_degre ?? parDefaut.degre,
+    divergence: inv.content_source ? inv.content_degre_divergence ?? null : inv.content_degre_divergence ?? parDefaut.divergence,
   };
   const autre: Valeurs = {
     arabe: inv.autre_arabe || '', prononciation: inv.autre_prononciation || '',
     traduction: inv.autre_traduction || '', source: inv.autre_source || '',
+    degre: inv.autre_degre ?? null, divergence: inv.autre_degre_divergence ?? null,
   };
   const aDuTexte = (v: Valeurs) => !!(v.arabe || v.prononciation || v.traduction);
   const principalVisible = !inv.texte_principal_masque && aDuTexte(principal);
@@ -94,12 +102,16 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
         await appliquer({
           content_arabic: garder(form.arabe, parDefaut.arabe), content_prononciation: garder(form.prononciation, parDefaut.prononciation),
           content_french: garder(form.traduction, parDefaut.traduction), content_source: garder(form.source, parDefaut.source),
+          // Même source ET même degré que l'appli → rien d'écrit (il suit l'appli)
+          content_degre: t(form.source) === t(parDefaut.source) && form.degre === parDefaut.degre ? null : form.degre,
+          content_degre_divergence: t(form.source) === t(parDefaut.source) && (form.divergence ?? '') === (parDefaut.divergence ?? '') ? null : t(form.divergence ?? '') || null,
           texte_principal_masque: false,
         });
       } else {
         await appliquer({
           autre_arabe: t(form.arabe) || null, autre_prononciation: t(form.prononciation) || null,
           autre_traduction: t(form.traduction) || null, autre_source: t(form.source) || null,
+          autre_degre: form.degre, autre_degre_divergence: t(form.divergence ?? '') || null,
         });
       }
       toast.success('Texte enregistré ✅');
@@ -118,15 +130,15 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
     try {
       // Copie exacte de ce qui est en base (null = texte par défaut) → la restauration remet la carte à l'identique
       const valeurs = bloc === 'principal'
-        ? { arabe: inv.content_arabic, prononciation: inv.content_prononciation, traduction: inv.content_french, source: inv.content_source }
-        : { arabe: inv.autre_arabe, prononciation: inv.autre_prononciation, traduction: inv.autre_traduction, source: inv.autre_source };
+        ? { arabe: inv.content_arabic, prononciation: inv.content_prononciation, traduction: inv.content_french, source: inv.content_source, degre: inv.content_degre, divergence: inv.content_degre_divergence }
+        : { arabe: inv.autre_arabe, prononciation: inv.autre_prononciation, traduction: inv.autre_traduction, source: inv.autre_source, degre: inv.autre_degre, divergence: inv.autre_degre_divergence };
       const ok = await moveToTrash(user.id, 'invocation_texte', String(inv.id),
         `« ${inv.title_french} » — ${bloc === 'principal' ? 'texte principal' : 'autre invocation'}`,
         { invocation_id: inv.id, bloc, valeurs });
       if (!ok) { toast.error("La mise à la corbeille n'a pas marché : rien n'a été supprimé."); return; }
       await appliquer(bloc === 'principal'
-        ? { content_arabic: null, content_prononciation: null, content_french: null, content_source: null, texte_principal_masque: true }
-        : { autre_arabe: null, autre_prononciation: null, autre_traduction: null, autre_source: null });
+        ? { content_arabic: null, content_prononciation: null, content_french: null, content_source: null, content_degre: null, content_degre_divergence: null, texte_principal_masque: true }
+        : { autre_arabe: null, autre_prononciation: null, autre_traduction: null, autre_source: null, autre_degre: null, autre_degre_divergence: null });
       toast.success('Texte mis à la corbeille (Paramètres › Corbeille pour le remettre)');
     } catch {
       toast.error("La suppression n'a pas marché. Vérifie ta connexion et réessaie.");
@@ -177,9 +189,10 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
             </div>
           )}
           {principal.source && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5 px-1">
               <BookOpen className="h-3 w-3 flex-shrink-0" />
               <span className="[overflow-wrap:anywhere]">{principal.source}</span>
+              <PastilleSource source={principal.source} degre={principal.degre} divergence={principal.divergence} aVerifier={isAdmin} />
             </p>
           )}
         </div>
@@ -199,9 +212,10 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
           {autre.prononciation && <p className="text-sm italic text-violet-700 leading-relaxed [overflow-wrap:anywhere]">{autre.prononciation}</p>}
           {autre.traduction && <p className="text-sm text-gray-700 leading-relaxed italic [overflow-wrap:anywhere]">« {autre.traduction} »</p>}
           {autre.source && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
               <BookOpen className="h-3 w-3 flex-shrink-0" />
               <span className="[overflow-wrap:anywhere]">{autre.source}</span>
+              <PastilleSource source={autre.source} degre={autre.degre} divergence={autre.divergence} aVerifier={isAdmin} />
             </p>
           )}
         </div>
@@ -248,6 +262,8 @@ const InvocationTextes = ({ invocation, enrichment }: Props) => {
               <Input ref={sourceRef} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Ex. : Rapporté par Muslim (n°…)"
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void enregistrer(); } }} />
             </div>
+            <ChoixDegre degre={form.degre} divergence={form.divergence} source={form.source}
+              onChange={(x) => setForm({ ...form, degre: x.degre, divergence: x.divergence })} />
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" onClick={fermer} disabled={enCours}>Annuler</Button>
               <Button type="button" onClick={() => void enregistrer()} disabled={enCours} className="gap-1.5">

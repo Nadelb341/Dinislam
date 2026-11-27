@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Quiz, DayVideo } from '@/types/ramadan';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 
 interface DayActivity {
   id: string;
@@ -998,6 +999,12 @@ const RamadanDayDialog = ({
                         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
                           <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">📖 Explication :</p>
                           <p className="text-sm text-blue-700 dark:text-blue-300">{currentQuiz.explanation}</p>
+                          {currentQuiz.source && (
+                            <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-blue-700 dark:text-blue-300">
+                              📚 <span className="[overflow-wrap:anywhere]">{currentQuiz.source}</span>
+                              <PastilleSource source={currentQuiz.source} degre={currentQuiz.degre} divergence={currentQuiz.degre_divergence} compact />
+                            </p>
+                          )}
                         </div>
                       )}
 
