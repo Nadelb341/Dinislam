@@ -15,6 +15,12 @@ export interface InvocationEnrichment {
   /** ⚖️ Phrase courte si les spécialistes ne sont pas d'accord */
   degre_divergence?: string;
   extra?: string; // info complémentaire (ex: si on oublie...)
+  /** 🕌 27/11 : source (et degré) de la VERTU quand elle cite un autre texte que la source principale → sa pastille */
+  virtueSource?: string;
+  virtueDegre?: Degre;
+  /** Source (et degré) de « À savoir » → sa pastille */
+  extraSource?: string;
+  extraDegre?: Degre;
   videoUrl?: string; // URL YouTube (watch) pour la vidéo d'apprentissage (seulement si pas de vidéo de l'appli)
   /** Vidéo de l'appli (extrait), venue du canal Telegram de Nadia (2026-11-08) — prioritaire sur YouTube, gardée hors ligne */
   video?: string;
@@ -50,13 +56,16 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
   // En entrant à la maison
   {
     keywords: ['entrant à la maison', 'entrer à la maison', 'entrant dans la maison', 'rentrant à la maison'],
-    arabic: 'بِسْمِ اللهِ وَلَجْنَا، وَبِسْمِ اللهِ خَرَجْنَا، وَعَلَى رَبِّنَا تَوَكَّلْنَا',
-    transliteration: "Bismi Llâhi walajnâ, wa bismi Llâhi kharajnâ, wa 'alâ rabbinâ tawakkalnâ.",
-    translation: "Au nom d'Allah nous entrons, au nom d'Allah nous sortons, et c'est en notre Seigneur que nous plaçons notre confiance.",
-    virtue: "En entrant, on dit « Bismillâh » puis on salue sa famille (« As-salâmu 'alaykum ») : la maison est ainsi protégée et le shaytan n'y trouve pas de place.",
-    source: "Rapporté par Abû Dâwûd (n°5096)",
-    degre: 'daif', // Al-Albânî : faible (chaîne interrompue) — degré à faire confirmer par Nadia
-    extra: "Après l'invocation, on salue les personnes de la maison : « As-salâmu 'alaykum ».",
+    // 🕌 27/11 (demande de Nadia) : l'ancien texte (Abû Dâwûd 5096, DA'IF) est remplacé par le texte authentique de Mouslim 2018.
+    // Ancien texte gardé : TEXTES_REMPLACES (en bas de ce fichier) + corbeille de Nadia (migration 20261127200000).
+    arabic: 'بِسْمِ اللهِ',
+    transliteration: 'Bismillâh.',
+    translation: "Au nom d'Allah.",
+    virtue: "Le Prophète ﷺ a dit : « Quand quelqu'un entre chez lui et mentionne Allah en entrant et en mangeant, le Diable dit (à ses compagnons) : \"Pas de gîte ni de dîner pour vous.\" »",
+    source: "Rapporté par Muslim (n°2018)",
+    virtueSource: "Rapporté par Muslim (n°2018)",
+    extra: "En entrant, on salue les personnes de la maison : « As-salâmu 'alaykum ». Allah dit : « Quand vous entrez dans des maisons, adressez-vous mutuellement des salutations venant d'Allah, bénies et agréables. » (Coran, An-Nûr 24:61)",
+    extraSource: "Coran 24:61",
     video: "/videos/invocations/07-entrer-maison-extrait.mp4",
     videoEntiere: "/videos/invocations/07-entrer-maison-entiere.mp4",
   },
@@ -78,7 +87,9 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     arabic: 'ذَهَبَ الظَّمَأُ، وَابْتَلَّتِ العُرُوقُ، وَثَبَتَ الأَجْرُ إِنْ شَاءَ اللهُ',
     transliteration: "Dhahaba z-zama', wa btallati l-'urûq, wa thabata l-ajru in shâ'a Llâh.",
     translation: "La soif s'en est allée, les veines sont irriguées et la récompense est assurée, si Allah le veut.",
-    virtue: "Le Prophète ﷺ disait cette invocation au moment de rompre le jeûne. Le moment de l'iftar est un moment où les invocations sont exaucées.",
+    // 🕌 27/11 : « moment où les invocations sont exaucées » retiré (pas de preuve sûre) → fait authentique. Ancien texte : TEXTES_REMPLACES.
+    virtue: "Le Prophète ﷺ disait cette invocation au moment de rompre le jeûne. Il a dit aussi : « Le jeûneur a deux joies : une joie quand il rompt son jeûne, et une joie quand il rencontrera son Seigneur. » (Al-Bukhârî n°1904, Muslim n°1151)",
+    virtueSource: "Rapporté par Al-Bukhârî (n°1904) et Muslim (n°1151)",
     source: "Rapporté par Abû Dâwûd (n°2357)",
     degre: 'hasan', // Ad-Dâraqoutnî et Al-Albânî : hasan
     video: "/videos/invocations/11-rupture-jeune.mp4",
@@ -151,13 +162,17 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
   // 5. Avant de manger
   {
     keywords: ['avant de manger', 'avant manger'],
+    // 🕌 27/11 (demande de Nadia) : « Bismillâh » d'Al-Bukhârî / Muslim = l'invocation PRINCIPALE ;
+    // l'ancienne (Ibn As-Sunnî, DA'IF) reste en « Autre invocation » (en base, migration 20261127200000).
     arabic: 'بِسْمِ اللهِ',
     transliteration: 'Bismillâh.',
     translation: "Au nom d'Allah.",
-    virtue: "Dire Bismillâh avant de manger permet à la nourriture d'être une bénédiction et protège des méfaits des shaytanes.",
-    source: "Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)",
-    degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
+    virtue: "Le Prophète ﷺ a dit à un enfant : « Ô mon garçon, dis Bismillâh, mange de ta main droite et mange de ce qui est devant toi. »",
+    source: "Rapporté par Al-Bukhârî (n°5376) et Muslim (n°2022)",
+    virtueSource: "Rapporté par Al-Bukhârî (n°5376) et Muslim (n°2022)",
     extra: "Si tu oublies de dire Bismillâh au début, dis dès que tu t'en souviens : بِسْمِ اللهِ أَوَّلَهُ وَآخِرَهُ (Bismillâhi awwalahu wa âkhirahu — « Au nom d'Allah au début et à la fin »).",
+    extraSource: "Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)",
+    extraDegre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     videoUrl: "https://www.youtube.com/watch?v=zh0toDrooLw",
     video: "/videos/invocations/03-avant-manger-extrait.mp4",
     videoEntiere: "/videos/invocations/03-avant-manger-entiere.mp4",
@@ -168,7 +183,9 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     arabic: 'الحَمْدُ للهِ الَّذِي أَطْعَمَنِي هَذَا وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ',
     transliteration: "Al-hamdu lillâhi lladhî at'amanî hâdhâ, wa razaqanîhi min ghayri hawlin minnî wa lâ quwwa.",
     translation: "Louange à Allah qui m'a nourri de ceci et me l'a accordé sans force ni puissance de ma part.",
-    virtue: "Le Prophète ﷺ a dit : « Celui qui mange un repas et dit ensuite cette invocation, ses péchés passés lui seront pardonnés. » Quelle belle récompense pour un simple remerciement !",
+    virtue: "Le Prophète ﷺ a dit : « Celui qui mange un repas et dit ensuite cette invocation, ses péchés passés lui seront pardonnés. »",
+    virtueSource: "Rapporté par Abû Dâwûd (n°4023) et At-Tirmidhî (n°3458)",
+    virtueDegre: 'hasan',
     source: "Rapporté par Abû Dâwûd (n°4023) et At-Tirmidhî (n°3458)",
     degre: 'hasan', // At-Tirmidhî : hasan gharîb ; Al-Albânî : hasan
     videoUrl: "https://www.youtube.com/watch?v=GIGijvsu9_Y",
@@ -205,7 +222,9 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     arabic: 'بِسْمِ اللهِ وَالحَمْدُ للهِ، سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ، وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ',
     transliteration: "Bismillâhi wal-hamdu lillâh. Subhâna lladhî sakhkhara lanâ hâdhâ wa mâ kunnâ lahu muqrinîn, wa innâ ilâ rabbinâ la-munqalibûn.",
     translation: "Au nom d'Allah et louange à Allah ! Gloire à Celui qui nous a soumis cela alors que nous n'aurions pu le maîtriser, et c'est vers notre Seigneur que nous retournerons.",
-    virtue: "Cette invocation rappelle que tout véhicule est un don d'Allah. Elle protège le voyageur et lui rappelle que son retour final est vers son Seigneur.",
+    // 🕌 27/11 : « elle protège le voyageur » retiré (promesse sans preuve) → fait sûr. Ancien texte : TEXTES_REMPLACES.
+    virtue: "C'est l'invocation que le Prophète ﷺ disait en montant sur sa monture pour voyager : il disait 3 fois « Allâhou akbar », puis le verset « Gloire à Celui qui nous a soumis cela… » (Coran 43:13-14).",
+    virtueSource: "Coran (43:13-14) · Rapporté par Muslim (n°1342)",
     source: "Coran (43:13-14) · Abû Dâwûd (n°2602) · At-Tirmidhî (n°3446)",
     degre: 'sahih', // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
     videoUrl: "https://www.youtube.com/watch?v=5DBoa9jbU00",
@@ -219,6 +238,35 @@ export const INVOCATIONS_ENRICHMENT: InvocationEnrichment[] = [
     virtue: "Le Prophète ﷺ récitait cette invocation chaque soir avant de dormir. Elle exprime une confiance totale en Allah pour la nuit, qui est une petite mort.",
     source: "Rapporté par Al-Bukhârî (n°6320) et Muslim (n°2714)",
     videoUrl: "https://www.youtube.com/watch?v=NbQrV6n3AgI",
+  },
+];
+
+/**
+ * 🗂️ Textes REMPLACÉS le 27/11 (demande de Nadia, règle n°1) : gardés ici en copie, jamais affichés.
+ * (L'ancien texte principal « Après avoir mangé » et l'ancienne autre invocation « Avant de manger » sont dans la corbeille de Nadia.)
+ */
+export const TEXTES_REMPLACES = [
+  {
+    invocation: 'En entrant à la maison', partie: 'texte principal + vertu',
+    arabic: 'بِسْمِ اللهِ وَلَجْنَا، وَبِسْمِ اللهِ خَرَجْنَا، وَعَلَى رَبِّنَا تَوَكَّلْنَا',
+    transliteration: "Bismi Llâhi walajnâ, wa bismi Llâhi kharajnâ, wa 'alâ rabbinâ tawakkalnâ.",
+    translation: "Au nom d'Allah nous entrons, au nom d'Allah nous sortons, et c'est en notre Seigneur que nous plaçons notre confiance.",
+    virtue: "En entrant, on dit « Bismillâh » puis on salue sa famille (« As-salâmu 'alaykum ») : la maison est ainsi protégée et le shaytan n'y trouve pas de place.",
+    extra: "Après l'invocation, on salue les personnes de la maison : « As-salâmu 'alaykum ».",
+    source: 'Rapporté par Abû Dâwûd (n°5096)', degre: 'daif' as Degre, // Al-Albânî : faible (chaîne interrompue)
+  },
+  {
+    invocation: 'Rompre le jeûne', partie: 'vertu',
+    virtue: "Le Prophète ﷺ disait cette invocation au moment de rompre le jeûne. Le moment de l'iftar est un moment où les invocations sont exaucées.",
+  },
+  {
+    invocation: 'En montant dans la voiture', partie: 'vertu',
+    virtue: "Cette invocation rappelle que tout véhicule est un don d'Allah. Elle protège le voyageur et lui rappelle que son retour final est vers son Seigneur.",
+  },
+  {
+    invocation: 'Avant de manger', partie: 'vertu',
+    virtue: "Dire Bismillâh avant de manger permet à la nourriture d'être une bénédiction et protège des méfaits des shaytanes.",
+    source: 'Rapporté par Abû Dâwûd (n°3767) et At-Tirmidhî (n°1858)', degre: 'sahih' as Degre,
   },
 ];
 

@@ -24,6 +24,7 @@ import { sendPushNotification } from '@/lib/pushHelper';
 import { useIsOver20, useIsOver20Ready } from '@/hooks/useIsOver20';
 import { useOpenItemFromUrl, MISSING_ITEM_MESSAGE } from '@/hooks/useOpenItemFromUrl';
 import { getInvocationEnrichment } from '@/data/invocationsData';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { useScrollToTop } from '@/hooks/useScrollToTop';
 import { ScrollButtons } from '@/components/ui/ScrollButtons';
 import { SafeYoutubeEmbed } from '@/components/SafeYoutubeEmbed';
@@ -100,6 +101,9 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
   const videoMasquee = !!extras?.masquer_video;
   const vertu = extras?.vertu ?? enrichment?.virtue ?? '';
   const aSavoir = extras?.a_savoir ?? enrichment?.extra ?? '';
+  // 🕌 27/11 : pastille du degré sous la vertu / « À savoir » de l'appli (pas quand Nadia a écrit son propre texte)
+  const vertuSource = extras?.vertu ? null : enrichment?.virtueSource ?? null;
+  const aSavoirSource = extras?.a_savoir ? null : enrichment?.extraSource ?? null;
   const videoAppli = videoMasquee ? null : enrichment?.video ?? null;
   const videoEntiere = videoMasquee ? null : enrichment?.videoEntiere ?? null;
   const embedUrl = !videoMasquee && !videoAppli && enrichment?.videoUrl ? getYoutubeEmbedUrl(enrichment.videoUrl) : null;
@@ -257,6 +261,12 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                   ✨ Vertu
                 </p>
                 <p className="text-sm text-green-800 leading-relaxed whitespace-pre-wrap">{vertu}</p>
+                {vertuSource && (
+                  <p className="mt-2 text-xs text-green-900/80 flex flex-wrap items-center gap-1.5">
+                    <BookOpen className="h-3 w-3 flex-shrink-0" /><span className="[overflow-wrap:anywhere]">{vertuSource}</span>
+                    <PastilleSource source={vertuSource} degre={enrichment?.virtueDegre} />
+                  </p>
+                )}
               </div>
             )}
 
@@ -267,6 +277,12 @@ const InvocationDetailDialog = ({ invocation, contents, progress, validationRequ
                   💡 À savoir
                 </p>
                 <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">{aSavoir}</p>
+                {aSavoirSource && (
+                  <p className="mt-2 text-xs text-blue-900/80 flex flex-wrap items-center gap-1.5">
+                    <BookOpen className="h-3 w-3 flex-shrink-0" /><span className="[overflow-wrap:anywhere]">{aSavoirSource}</span>
+                    <PastilleSource source={aSavoirSource} degre={enrichment?.extraDegre} />
+                  </p>
+                )}
               </div>
             )}
 
