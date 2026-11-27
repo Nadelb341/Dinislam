@@ -36,7 +36,36 @@ let module: { destroyClient?: () => void } | null = null;
 function lireMicro() {
   const u = client?.getCurrentUser();
   if (!u) return;
+  // 🎤 27/11 (Nadia : « simplifier un max pour les petits ») : dès que le son est rejoint, le micro s'ouvre tout seul (une fois)
+  if (u.audio && u.muted && !microOuvertAuto && client) {
+    microOuvertAuto = true;
+    void Promise.resolve(client.mute(false)).catch(() => { /* l'enseignante a peut-être bloqué les micros */ }).then(() => setTimeout(lireMicro, 400));
+  }
   changer({ micro: !u.audio ? 'sans-audio' : u.muted ? 'coupe' : 'ouvert' });
+}
+let microOuvertAuto = false;
+
+/**
+ * 🎧 Rejoindre le son de l'ordinateur / du téléphone : le kit Zoom n'a pas de commande pour ça, on appuie donc nous-mêmes
+ * sur SON bouton « Rejoindre l'audio » (icône `icon-join-audio`) dans la fenêtre du cours.
+ */
+export function rejoindreAudio(): boolean {
+  const icone = document.getElementById(ZOOM_RACINE_ID)?.querySelector('.icon-join-audio');
+  const bouton = icone?.closest('button') as HTMLButtonElement | null;
+  if (!bouton) return false;
+  bouton.click();
+  setTimeout(lireMicro, 800);
+  return true;
+}
+/** Juste après l'entrée : essaie plusieurs fois (le bouton du kit apparaît un peu après) */
+function rejoindreAudioAuto() {
+  let essais = 0;
+  const t = window.setInterval(() => {
+    essais += 1;
+    const u = client?.getCurrentUser();
+    if (!client || (u && u.audio) || essais > 20) { window.clearInterval(t); lireMicro(); return; }
+    rejoindreAudio();
+  }, 700);
 }
 
 /** Message clair pour les erreurs connues du kit Zoom */
@@ -70,7 +99,9 @@ export async function rejoindreCours(racine: HTMLElement, nom: string) {
     });
     await client.join({ signature: data.signature, meetingNumber: String(data.meetingNumber), password: data.passcode || '', userName: nom || 'Élève' });
     changer({ etat: 'en-cours' });
+    microOuvertAuto = false;
     lireMicro();
+    rejoindreAudioAuto();
   } catch (e) {
     client = null;
     changer({ etat: 'erreur', erreur: messageErreurZoom(e) });
@@ -81,7 +112,12 @@ export async function rejoindreCours(racine: HTMLElement, nom: string) {
 export async function basculerMicro(): Promise<string | null> {
   const u = client?.getCurrentUser();
   if (!client || !u) return 'Le cours n\'est pas ouvert.';
-  if (!u.audio) { changer({ reduit: false }); return '🎧 Touche d\'abord le casque (en bas à gauche de la fenêtre du cours) pour rejoindre l\'audio.'; }
+  if (!u.audio) {
+    // le toucher de l'élève sur notre bouton suffit au téléphone pour autoriser le son
+    if (rejoindreAudio()) return null;
+    changer({ reduit: false });
+    return '🎧 Touche le casque (en bas à gauche de la fenêtre du cours) pour rejoindre l\'audio.';
+  }
   try { await client.mute(!u.muted); } catch (e) { return messageErreurZoom(e); }
   setTimeout(lireMicro, 300);
   return null;

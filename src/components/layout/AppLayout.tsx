@@ -23,6 +23,7 @@ import { TapisPromeneur } from '@/components/saisons/TapisPromeneur';
 import { FondEcran } from '@/components/fonds/FondEcran';
 import { NumeroPremiereConnexion } from '@/components/parents/NumeroPremiereConnexion';
 import { BoutonRetour } from '@/components/layout/BoutonRetour';
+import { useZoomCours } from '@/lib/zoomCours';
 
 /** 🍂 Couleurs de la saison sur toute l'appli (fond beige, cartes crème…) ; rien en « Ambiance neutre » */
 function useCouleursSaison() {
@@ -60,6 +61,10 @@ const AppLayout = ({
   usePresenceHeartbeat();
   useCouleursSaison();
   const { showTop, showBottom, scrollToTop, scrollToBottom } = useWindowScrollToTop();
+  // 🎥 27/11 : la pastille « Cours en direct » est fixe en haut à gauche → une place lui est réservée en haut de la page
+  // (sinon elle cacherait le bouton « Retour »)
+  const zoom = useZoomCours();
+  const placeZoom = (zoom.etat === 'connexion' || zoom.etat === 'en-cours') && zoom.reduit;
 
   return (
     <div className="app-racine min-h-screen flex flex-col bg-background">
@@ -76,6 +81,7 @@ const AppLayout = ({
       {/* 2026-11-26 (Nadia : téléphone tourné) : menu du bas de 48 px en paysage peu haut → marge réduite */}
       {/* 2026-11-26 : le menu du bas peut faire 1 à 4 lignes → marge = sa hauteur réelle (--menu-bas) + 1 rem */}
       <main className={`flex-1 ${showBottomNav ? 'pb-[calc(var(--menu-bas,4rem)+1rem)]' : ''}`}>
+        {placeZoom && <div aria-hidden className="h-12" />}
         <div className="p-4">
           <PendingDraftsCenter />
           <TrashPurgeWarning />
