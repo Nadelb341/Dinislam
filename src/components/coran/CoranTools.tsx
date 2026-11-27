@@ -17,7 +17,7 @@ import { localDay, dateOfDay } from '@/lib/coranPlan';
 import { errorMessage } from '@/lib/utils';
 import type { Bookmark, BookmarkColor, BookmarkNote } from '@/hooks/useCoranProgress';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { lienSourate, useSouratesValidees } from '@/hooks/useSouratesValidees';
 
 

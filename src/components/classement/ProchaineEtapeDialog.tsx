@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { lienEtape, NOM_CARTE_ETAPE, useProchainesEtapes } from '@/hooks/useProchainesEtapes';
 

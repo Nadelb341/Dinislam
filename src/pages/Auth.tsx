@@ -2,7 +2,7 @@ import { ChoixVille } from '@/components/ville/ChoixVille';
 import type { VilleTrouvee } from '@/lib/ville';
 import { useState, useEffect, useRef } from 'react';
 import { authErrorFr } from '@/lib/rememberPassword';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { PASSWORD_HINT, PASSWORD_MAX, passwordError as erreurMotDePasse } from '@/lib/passwordRules';

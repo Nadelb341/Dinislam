@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { useRealtimeRefresh } from '@/hooks/useRealtimeRefresh';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
@@ -14,7 +14,7 @@ import { Bell, Moon, Clock, User, Send, Trash2, RotateCcw } from 'lucide-react';
 import PushDiagnostic from '@/components/settings/PushDiagnostic';
 import NotificationFamilies from '@/components/settings/NotificationFamilies';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
   getNotificationPreferences,
   updateNotificationPreferences,

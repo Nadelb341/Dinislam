@@ -3,7 +3,7 @@ import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useState, useEffect, useRef } from 'react';
 import { personalize, withName } from '@/lib/encouragements';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { Check, Lock, Play, FileText, Image as ImageIcon, File, ChevronDown, Moon, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';

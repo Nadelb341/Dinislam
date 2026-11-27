@@ -11,7 +11,7 @@ const buildVersion = () => ({
   apply: "build" as const,
   closeBundle() {
     const version = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || new Date().toISOString();
-    fs.writeFileSync(path.resolve(__dirname, "dist/version.json"), JSON.stringify({ version }));
+    fs.writeFileSync(path.resolve(import.meta.dirname, "dist/version.json"), JSON.stringify({ version }));
   },
 });
 
@@ -61,12 +61,12 @@ export default defineConfig(() => ({
   plugins: [react(), buildVersion(), offlinePrecache()],
   resolve: {
     alias: [
-      { find: "@", replacement: path.resolve(__dirname, "./src") },
-      { find: "react", replacement: path.resolve(__dirname, "node_modules/react") },
-      { find: "react-dom", replacement: path.resolve(__dirname, "node_modules/react-dom") },
+      { find: "@", replacement: path.resolve(import.meta.dirname, "./src") },
+      { find: "react", replacement: path.resolve(import.meta.dirname, "node_modules/react") },
+      { find: "react-dom", replacement: path.resolve(import.meta.dirname, "node_modules/react-dom") },
       // Lecteur PDF (cours Nourania) : version « anciens appareils » de pdf.js, qui apporte elle-même les fonctions
       // manquantes sur les vieux iPad/Safari (ex. Promise.withResolvers). Sans ça, la page Nourania plantait (2026-10-14).
-      { find: /^pdfjs-dist$/, replacement: path.resolve(__dirname, "node_modules/pdfjs-dist/legacy/build/pdf.mjs") },
+      { find: /^pdfjs-dist$/, replacement: path.resolve(import.meta.dirname, "node_modules/pdfjs-dist/legacy/build/pdf.mjs") },
     ],
     dedupe: [
       "react", 

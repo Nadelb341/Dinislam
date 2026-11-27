@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 /**
  * ⬅️ « ← Retour » en haut à gauche de CHAQUE page sauf l'accueil (règle commune de Nadia du 2026-11-05, appliquée à Dinislam le

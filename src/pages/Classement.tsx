@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CARTES_DU_BAREME, useCartesVisibles } from '@/hooks/useCartesVisibles';
 import AppLayout from '@/components/layout/AppLayout';
 import { Crown, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ProchaineEtapeDialog } from '@/components/classement/ProchaineEtapeDialog';
 import { toast } from 'sonner';
 

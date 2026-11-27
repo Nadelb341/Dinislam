@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useCartesAcces } from '@/hooks/useCartesAcces';
 import { dansLaPeriode, raisonAcces, textePeriode } from '@/lib/cartesAcces';
 import ModuleVisibilityDialog from '@/components/admin/ModuleVisibilityDialog';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Pencil } from 'lucide-react';
 import { untypedDb } from '@/lib/untypedDb';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
