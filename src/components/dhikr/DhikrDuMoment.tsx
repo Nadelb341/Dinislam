@@ -66,7 +66,14 @@ function PetitChapelet({ nombre }: { nombre: number }) {
   );
 }
 
-export default function DhikrDuMoment() {
+/**
+ * 🍂 28/11 (Nadia) : en automne, la carte est posée sur SON image (`public/images/accueil/automne-dhikr.jpg`, 788×1110, carte
+ * « Dhikr du jour » dessinée vide) : la vraie carte (chapelet, dhikr du jour, bouton) recouvre exactement la carte dessinée
+ * (mesures en % de la largeur de l'image, `cqw`), on voit le ciel, la mosquée et les feuilles autour.
+ */
+export const FOND_DHIKR_AUTOMNE = '/images/accueil/automne-dhikr.jpg';
+
+export default function DhikrDuMoment({ fond = null }: { fond?: string | null }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const maintenant = useMaintenant();
@@ -83,10 +90,13 @@ export default function DhikrDuMoment() {
     else if (premier) navigate(QUOTIDIENS_TEXTE[premier].lien);
   };
 
-  return (
-    <section aria-label="Dhikr du moment" className="relative rounded-3xl border-2 border-[#e3b341] bg-[#fffaf1] text-[#2b1630] shadow-[0_4px_16px_rgba(150,100,30,.18)] px-3 pb-3 pt-4 mt-3 animate-fade-in">
-      {/* L'étiquette en haut, posée sur le liseré doré */}
-      <span className="absolute -top-3 left-4 rounded-full border-2 border-[#e3b341] bg-gradient-to-b from-[#fff6df] to-[#fbe7b8] px-3 py-0.5 text-xs font-extrabold text-[#6b4200] shadow-sm">
+  const carteJsx = (
+    <section aria-label="Dhikr du moment" style={fond ? { minHeight: '30cqw' } : undefined}
+      className={cn('relative border-2 border-[#e3b341] bg-[#fffaf1] text-[#2b1630] shadow-[0_4px_16px_rgba(150,100,30,.18)] px-3 pb-3 pt-4 mt-3 animate-fade-in',
+        fond ? 'rounded-[2rem] outline outline-1 outline-offset-[-6px] outline-[#ecd6aa] flex flex-col justify-center' : 'rounded-3xl')}>
+      {/* L'étiquette en haut, posée sur le liseré doré (au milieu sur l'image d'automne, comme la carte dessinée) */}
+      <span className={cn('absolute -top-3 rounded-full border-2 border-[#e3b341] bg-gradient-to-b from-[#fff6df] to-[#fbe7b8] px-3 py-0.5 text-xs font-extrabold text-[#6b4200] shadow-sm whitespace-nowrap',
+        fond ? 'left-1/2 -translate-x-1/2 sm:text-sm' : 'left-4')}>
         🍂 Dhikr du jour
       </span>
       {affiche ? (
@@ -118,5 +128,15 @@ export default function DhikrDuMoment() {
         </div>
       )}
     </section>
+  );
+  if (!fond) return carteJsx;
+  return (
+    <div className="relative overflow-hidden rounded-3xl [container-type:inline-size]"
+      style={{ backgroundColor: '#f3cfa8', backgroundImage: `url("${fond}")`, backgroundSize: '100% auto', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }}>
+      {/* La carte dessinée commence à 36,8 % de la largeur (son bord du haut) et occupe 13 % → 87 % : la vraie carte la recouvre */}
+      <div style={{ paddingTop: 'calc(36.8cqw - 0.75rem)', paddingBottom: '7cqw', paddingLeft: 'clamp(10px, 13cqw - 40px, 13cqw)', paddingRight: 'clamp(10px, 13cqw - 40px, 13cqw)' }}>
+        {carteJsx}
+      </div>
+    </div>
   );
 }

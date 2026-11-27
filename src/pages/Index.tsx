@@ -548,7 +548,7 @@ const handleModuleClick = (mod) => {
           {(isAdmin
             ? (modules || []).some((m) => m.builtin_path === '/module/dhikr' && accesDe(m, visibilityMap[m.id]).mode !== 'personne')
             : visibleModules.some((m) => m.builtin_path === '/module/dhikr')) && (
-            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment /></Suspense></SilentBoundary>
+            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment fond={automne ? '/images/accueil/automne-dhikr.jpg' : null} /></Suspense></SilentBoundary>
           )}
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
