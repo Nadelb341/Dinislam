@@ -49,8 +49,17 @@ const offlinePrecache = () => {
   };
 };
 
+/**
+ * 📿 Fond de la carte Dhikr (Nadia, 27/11) : l'image `public/images/dhikr/fond-dhikr.jpg` s'affiche toute seule dès qu'elle existe.
+ * Vide = pas d'image (dégradé seul, aucune demande inutile) ; sinon sa taille en octets = numéro de version de l'adresse.
+ */
+const fondDhikr = () => {
+  try { return String(fs.statSync(path.resolve(import.meta.dirname, "public/images/dhikr/fond-dhikr.jpg")).size); } catch { return ""; }
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
+  define: { __FOND_DHIKR__: JSON.stringify(fondDhikr()) },
   server: {
     host: "::",
     port: 8080,

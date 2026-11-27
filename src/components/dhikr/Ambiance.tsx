@@ -1,12 +1,18 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * 🌅 Les couleurs de la carte Dhikr (Nadia, 27/11) : le jour, ciel bleu clair et mosquée bleue ; au coucher du soleil,
- * orange → violet et mosquée violette ; le soir, nuit bleu marine étoilée. L'or des perles partout.
- * Dessiné dans le code (aucune image) : marche hors ligne.
+ * 🌅 Les couleurs de la carte Dhikr.
+ * 27/11 (2ᵉ demande de Nadia) : UN SEUL fond, une scène « réelle » (ciel rose-doré, mosquée blanche, lanternes, fleurs, lac),
+ * fichier `public/images/dhikr/fond-dhikr.jpg` fourni par Nadia (image propre, SANS texte). Tant que le fichier n'existe pas :
+ * un dégradé doux ciel rose-doré (PAS de mosquée / lanternes / fleurs dessinées : Nadia ne les aime pas).
+ * Le jour où le fichier est posé dans `public/images/dhikr/`, il s'affiche tout seul à la mise en ligne suivante
+ * (`__FOND_DHIKR__`, écrit par vite.config.ts : vide si le fichier manque → aucune demande inutile ; sinon sa taille,
+ * qui change l'adresse quand l'image est remplacée). Fichier de public/ = gardé en mémoire hors ligne (pré-cache).
+ * L'ancienne ambiance jour / couchant / nuit est remplacée par ce fond unique (textes foncés, lisibles partout).
  */
 export type NomAmbiance = 'jour' | 'couchant' | 'nuit';
+/** Moment de la journée (sert encore à la petite carte de l'accueil et aux réglages) */
 export const ambianceDe = (d: Date): NomAmbiance => {
   const h = d.getHours() + d.getMinutes() / 60;
   if (h >= 6.5 && h < 17) return 'jour';
@@ -15,63 +21,31 @@ export const ambianceDe = (d: Date): NomAmbiance => {
 };
 
 export interface Couleurs { nom: NomAmbiance; texte: string; doux: string; or: string; voile: string; bord: string }
-export const COULEURS: Record<NomAmbiance, Couleurs> = {
-  jour: { nom: 'jour', texte: '#13254a', doux: '#3b5277', or: '#9a6700', voile: 'rgba(255,255,255,.72)', bord: 'rgba(59,94,160,.25)' },
-  couchant: { nom: 'couchant', texte: '#2a1238', doux: '#4a2a55', or: '#8a4b00', voile: 'rgba(255,247,240,.78)', bord: 'rgba(120,60,140,.28)' },
-  nuit: { nom: 'nuit', texte: '#f3f6ff', doux: '#c9d3f5', or: '#f5d27a', voile: 'rgba(14,24,70,.72)', bord: 'rgba(245,210,122,.35)' },
-};
+/** Palette unique « ciel rose-doré » : textes prune foncé, or soutenu (contraste vérifié sur le rose clair) */
+export const COULEURS_DHIKR: Couleurs = { nom: 'jour', texte: '#2b1630', doux: '#5b3a52', or: '#8a5300', voile: 'rgba(255,250,244,.78)', bord: 'rgba(196,140,60,.35)' };
+export const COULEURS: Record<NomAmbiance, Couleurs> = { jour: COULEURS_DHIKR, couchant: COULEURS_DHIKR, nuit: COULEURS_DHIKR };
 
-export function useAmbiance(force?: NomAmbiance): Couleurs {
-  const [nom, setNom] = useState<NomAmbiance>(() => force ?? ambianceDe(new Date()));
-  useEffect(() => {
-    if (force) { setNom(force); return; }
-    const t = setInterval(() => setNom(ambianceDe(new Date())), 60_000);
-    return () => clearInterval(t);
-  }, [force]);
-  return COULEURS[nom];
+export function useAmbiance(): Couleurs {
+  return COULEURS_DHIKR;
 }
 
-const FONDS: Record<NomAmbiance, string> = {
-  jour: 'linear-gradient(180deg, #cfe9ff 0%, #e3f2ff 45%, #f6fbff 100%)',
-  couchant: 'linear-gradient(180deg, #ffcf8a 0%, #f59e6b 30%, #c96aa0 65%, #6b4aa0 100%)',
-  nuit: 'linear-gradient(180deg, #0a1438 0%, #14225c 55%, #1d2f73 100%)',
-};
-const MOSQUEE: Record<NomAmbiance, string> = { jour: '#7fa9e0', couchant: '#5a3483', nuit: '#0b1233' };
+declare const __FOND_DHIKR__: string | undefined;
+/** Version de l'image de fond (vide = pas d'image : le dégradé seul) */
+const VERSION_FOND = typeof __FOND_DHIKR__ === 'string' ? __FOND_DHIKR__ : '';
+export const IMAGE_FOND_DHIKR = VERSION_FOND ? `/images/dhikr/fond-dhikr.jpg?v=${VERSION_FOND}` : null;
+/** Dégradé doux ciel rose-doré (aussi sous l'image, le temps qu'elle arrive) */
+export const DEGRADE_DHIKR = 'linear-gradient(180deg, #fde3d3 0%, #f9cfc4 22%, #f6c7a9 45%, #f8dcae 70%, #fff3df 100%)';
 
-/** La silhouette de la mosquée (coupole + 2 minarets), en bas à droite */
-function Mosquee({ couleur, fenetres }: { couleur: string; fenetres: boolean }) {
+/** Le grand fond de la carte : l'image (cover) + un voile très léger pour la lisibilité ; sinon le dégradé */
+export function FondDhikr({ ambiance, children, className }: { ambiance: Couleurs; children: ReactNode; className?: string }) {
   return (
-    <svg viewBox="0 0 200 110" className="absolute bottom-0 right-0 w-[220px] max-w-[60%] h-auto pointer-events-none select-none" aria-hidden>
-      <g fill={couleur}>
-        <rect x="18" y="30" width="12" height="80" rx="2" /><path d="M16 32 L24 8 L32 32 Z" /><rect x="15" y="44" width="18" height="4" rx="1" />
-        <rect x="170" y="30" width="12" height="80" rx="2" /><path d="M168 32 L176 8 L184 32 Z" /><rect x="167" y="44" width="18" height="4" rx="1" />
-        <path d="M60 110 V70 Q60 30 100 22 Q140 30 140 70 V110 Z" />
-        <path d="M100 22 V8" stroke={couleur} strokeWidth="2.5" /><circle cx="100" cy="7" r="3.2" />
-        <rect x="40" y="78" width="120" height="32" />
-      </g>
-      {fenetres && <g fill="#f5d27a" opacity=".85">
-        <path d="M92 110 V92 a8 8 0 0 1 16 0 V110 Z" /><rect x="70" y="86" width="7" height="12" rx="3.5" /><rect x="123" y="86" width="7" height="12" rx="3.5" />
-      </g>}
-    </svg>
-  );
-}
-
-const ETOILES = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37) % 100, y: (i * 53) % 62, s: 1 + (i % 3) * 0.6, d: (i % 5) * 0.7 }));
-
-/** Le grand fond de la carte (bandeau du haut et pages) */
-export function FondDhikr({ ambiance, children, className, mosquee = true }: { ambiance: Couleurs; children: ReactNode; className?: string; mosquee?: boolean }) {
-  const nuit = ambiance.nom === 'nuit';
-  return (
-    <div className={cn('relative overflow-hidden', className)} style={{ background: FONDS[ambiance.nom], color: ambiance.texte }}>
-      {nuit && (
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
-          {ETOILES.map((e, i) => (
-            <span key={i} className="dhk-scintille absolute rounded-full bg-white" style={{ left: `${e.x}%`, top: `${e.y}%`, width: e.s * 2, height: e.s * 2, animationDelay: `${e.d}s` }} />
-          ))}
-          <span className="absolute right-6 top-4 h-9 w-9 rounded-full" style={{ boxShadow: 'inset -9px 3px 0 0 #f5d27a' }} />
-        </div>
+    <div className={cn('relative overflow-hidden', className)} style={{ background: DEGRADE_DHIKR, color: ambiance.texte }}>
+      {IMAGE_FOND_DHIKR && (
+        <div className="absolute inset-0 pointer-events-none" aria-hidden
+          style={{ backgroundImage: `linear-gradient(180deg, rgba(255,248,240,.18) 0%, rgba(255,248,240,.30) 100%), url("${IMAGE_FOND_DHIKR}")`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
       )}
-      {mosquee && <Mosquee couleur={MOSQUEE[ambiance.nom]} fenetres={nuit} />}
+      {/* Petit halo doré en haut, très doux (comme le soleil couchant de la scène) */}
+      <div className="absolute inset-x-0 top-0 h-48 pointer-events-none" aria-hidden style={{ background: 'radial-gradient(60% 100% at 70% 0%, rgba(255,214,150,.45), rgba(255,214,150,0))' }} />
       <div className="relative">{children}</div>
     </div>
   );
@@ -89,7 +63,18 @@ export function StylesDhikr() {
       .dhk-halo { animation: dhk-halo 2s ease-in-out infinite; }
       @keyframes dhk-apparait { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
       .dhk-apparait { animation: dhk-apparait .35s ease-out both; }
-      @media (prefers-reduced-motion: reduce) { .dhk-scintille, .dhk-etoile, .dhk-halo, .dhk-apparait { animation: none !important; } }
+      /* Compteur au centre du cercle : la taille suit la largeur du cercle (cqw) ; vieux navigateurs = tailles fixes */
+      .dhk-cercle { container-type: inline-size; }
+      .dhk-num { font-size: 3rem; font-size: 19cqw; }
+      .dhk-num-long { font-size: 2.4rem; font-size: 14.5cqw; }
+      .dhk-sur { font-size: 1.5rem; font-size: 9cqw; }
+      .dhk-tour { font-size: .8rem; font-size: 4.6cqw; }
+      .dhk-fois { font-size: .7rem; font-size: 3.8cqw; }
+      @keyframes dhk-perle { 0%,100% { transform: scale(1) } 50% { transform: scale(1.07) } }
+      .dhk-perle-active { animation: dhk-perle 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      @keyframes dhk-message { from { opacity: 0; transform: translateY(14px) scale(.97) } to { opacity: 1; transform: none } }
+      .dhk-message { animation: dhk-message .35s ease-out both; }
+      @media (prefers-reduced-motion: reduce) { .dhk-scintille, .dhk-etoile, .dhk-halo, .dhk-apparait, .dhk-perle-active, .dhk-message { animation: none !important; } }
     `}</style>
   );
 }

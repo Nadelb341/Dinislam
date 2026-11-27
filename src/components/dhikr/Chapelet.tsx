@@ -4,111 +4,87 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from '@/lib/utils';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import {
-  avancer, CHAPELETS, CLE_REGLAGES, compteurDepart, ecrireLocal, encouragement, intervalleAuto, lireReglages, reculer,
+  avancer, CHAPELETS, CLE_REGLAGES, compteurDepart, ecrireLocal, encouragement, etatCercle, intervalleAuto, lireReglages, reculer,
   type EtatCompteur, type ReglagesChapelet,
 } from '@/lib/dhikr';
-import { ApercuChapelet, DefsPerles, FIL, Perle, Pompon } from './Perles';
+import { ApercuChapelet, DefsPerles, FIL, Perle } from './Perles';
 import type { Couleurs } from './Ambiance';
 
 /**
  * 📿 LE CHAPELET (Nadia, 27/11, présentation A) — utilisé PARTOUT où l'on compte (chapelet libre, séries, après la prière…).
  * En haut le badge d'encouragement, le mérite + sa source, l'arabe doré, la phonétique, le sens ; le grand compteur « 18/33 » +
- * « Tour : 1 » ; dessous la misbaha : perles enfilées sur un fil courbe, pompon au bout, les perles GLISSENT d'une perle à l'autre.
+ * « Tour : 1 » au CENTRE d'un cercle de 11 perles (27/11, 2ᵉ demande : la perle à compter en doré, 33 = 3 tours de 11) ;
+ * dessous le gros bouton doré « 👆 Touchez pour compter » et le verset (Ghâfir 40:14) avec « En savoir plus ».
  * Deux modes : 👆 À mon rythme (toucher le grand bouton ou le chapelet) / ▶️ Automatique (vitesse ×0,5 / ×1, pause).
  * Petite vibration à chaque perle, plus forte à la fin. Tout marche sans réseau ; le choix du chapelet et du mode est gardé sur l'appareil.
  */
 export interface EtapeChapelet { titre: string; arabe: string; phonetique: string; sens: string; nombre: number }
 
-// ─── Géométrie du fil : une boucle en goutte, les 2 bouts se rejoignent en haut au pompon (viewBox 360 × 250) ───
-const P = { x0: 160, y0: 24, x1: -200, y1: 282, x2: 560, y2: 282, x3: 200, y3: 24 };
-const ECHANTILLONS = (() => {
-  const pts: { x: number; y: number; s: number }[] = [];
-  let s = 0, px = P.x0, py = P.y0;
-  for (let i = 0; i <= 300; i++) {
-    const t = i / 300, u = 1 - t;
-    const x = u * u * u * P.x0 + 3 * u * u * t * P.x1 + 3 * u * t * t * P.x2 + t * t * t * P.x3;
-    const y = u * u * u * P.y0 + 3 * u * u * t * P.y1 + 3 * u * t * t * P.y2 + t * t * t * P.y3;
-    s += Math.hypot(x - px, y - py); px = x; py = y;
-    pts.push({ x, y, s });
-  }
-  return pts;
-})();
-const LONGUEUR = ECHANTILLONS[ECHANTILLONS.length - 1].s;
-function pointA(s: number) {
-  let lo = 0, hi = ECHANTILLONS.length - 1;
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ECHANTILLONS[m].s < s) lo = m; else hi = m; }
-  const a = ECHANTILLONS[lo], b = ECHANTILLONS[hi];
-  const k = b.s === a.s ? 0 : (s - a.s) / (b.s - a.s);
-  return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
-}
-const R = 13, ESPACE = 29.5;
-const CHEMIN = `M${P.x0} ${P.y0} C${P.x1} ${P.y1} ${P.x2} ${P.y2} ${P.x3} ${P.y3}`;
-
+// ─── Le chapelet en CERCLE (Nadia, 27/11, 2ᵉ demande, d'après sa capture) ───
+// 11 perles en cercle autour du compteur ; la perle à compter est DORÉE. 33 = 3 tours de 11 (« Tour : 1, 2, 3 »),
+// 100 = 10 tours (le dernier n'a qu'1 perle), 34 = 4 tours. Moins de 11 (ex. 3 fois) : autant de perles que de fois.
 const sansAnimation = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 const vibrer = (m: number | number[]) => { try { navigator.vibrate?.(m); } catch { /* pas de vibration (iPhone) */ } };
 
-/** La misbaha dessinée : `perles` = nombre de perles déjà passées (glisse doucement vers la nouvelle valeur) */
-export function Misbaha({ perles, style, separateur = 33, onToucher, petit }: {
-  perles: number; style: ReglagesChapelet['chapelet']; separateur?: number; onToucher?: () => void; petit?: boolean;
+/** Le cercle de perles dessiné, avec le compteur au centre ; toucher le cercle = une perle de plus */
+export function CercleChapelet({ compte, nombre, style, onToucher, tourComplet = 1 }: {
+  compte: number; nombre: number; style: ReglagesChapelet['chapelet']; onToucher?: () => void;
+  /** « Encore un tour » : 2, 3… (affiché discrètement) */
+  tourComplet?: number;
 }) {
   const uid = useId().replace(/:/g, '');
-  const [aff, setAff] = useState(perles);
-  const affRef = useRef(perles);
-  useEffect(() => {
-    const de = affRef.current, vers = perles;
-    if (de === vers) return;
-    if (sansAnimation() || Math.abs(vers - de) > 6) { affRef.current = vers; setAff(vers); return; }
-    let raf = 0; const t0 = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / 320);
-      const v = de + (vers - de) * (1 - Math.pow(1 - p, 3));
-      affRef.current = v; setAff(v);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [perles]);
-
-  const balance = Math.max(-1, Math.min(1, (perles - aff) * 2)) * 7; // le pompon se balance un peu quand une perle passe
-  const centre = LONGUEUR / 2;
-  const base = Math.round(aff);
-  const vues: { i: number; x: number; y: number; o: number }[] = [];
-  for (let k = -9; k <= 9; k++) {
-    const i = base + k;
-    const s = centre + (i - aff) * ESPACE;
-    if (s < R + 6 || s > LONGUEUR - R - 6) continue;
-    const bord = Math.min(s, LONGUEUR - s);
-    vues.push({ i, ...pointA(s), o: Math.max(0.3, Math.min(1, (bord - R) / 30)) });
-  }
-  const bas = pointA(centre);
+  const c = etatCercle(compte, nombre);
+  const R = c.parTour === 1 ? 0 : 108;                 // rayon du cercle des perles
+  const r = c.parTour <= 4 ? 24 : 20;                  // rayon d'une perle
+  const anime = !sansAnimation();
+  const perles = Array.from({ length: c.parTour }, (_, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / c.parTour;
+    return { i, x: 150 + R * Math.cos(a), y: (c.parTour === 1 ? 46 : 150) + R * Math.sin(a) };
+  });
   return (
-    <svg viewBox="0 0 360 250" className={cn('w-full h-auto select-none touch-manipulation', onToucher && 'cursor-pointer', petit ? 'max-w-[300px]' : 'max-w-[440px]')}
-      role={onToucher ? 'button' : 'img'} aria-label={onToucher ? 'Toucher le chapelet pour compter une perle' : 'Chapelet'}
-      tabIndex={onToucher ? 0 : undefined}
-      onClick={onToucher} onKeyDown={(e) => { if (onToucher && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onToucher(); } }}>
-      <DefsPerles uid={uid} style={style} />
-      <defs>
-        <radialGradient id={`${uid}-halo`}><stop offset="0" stopColor="#fff4c4" stopOpacity=".95" /><stop offset=".6" stopColor="#f5c542" stopOpacity=".45" /><stop offset="1" stopColor="#f5c542" stopOpacity="0" /></radialGradient>
-      </defs>
-      <path d={CHEMIN} stroke={FIL[style]} strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Halo doré sous la perle à compter (en bas du U) */}
-      <circle className="dhk-halo" cx={bas.x} cy={bas.y} r={R + 9} fill={`url(#${uid}-halo)`} />
-      {vues.map((v) => {
-        const sep = separateur > 1 && ((v.i % separateur) + separateur) % separateur === 0;
-        return (
-          <g key={v.i} transform={`translate(${v.x.toFixed(2)} ${v.y.toFixed(2)})`} opacity={v.o}>
-            <ellipse cx="1.5" cy={R * 0.85} rx={R * 0.8} ry={R * 0.28} fill="#000" opacity=".12" />
-            <Perle uid={uid} style={style} r={sep ? R + 2.5 : R} n={v.i} />
-            {v.i === perles && <circle r={R + 3.5} fill="none" stroke="#e3b341" strokeWidth="2.2" opacity=".9" />}
-          </g>
-        );
-      })}
-      {/* Les 2 bouts du fil se rejoignent en haut : la perle « imam » et le pompon (gland), qui se balance doucement */}
-      <path d={`M${P.x0} ${P.y0} L180 14 L${P.x3} ${P.y3}`} stroke={FIL[style]} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <g transform={`translate(180 8) rotate(${balance.toFixed(2)})`}>
-        <Pompon uid={uid} style={style} taille={1.3} />
-      </g>
-    </svg>
+    <div className="dhk-cercle relative w-full max-w-[310px] paysage:max-w-[250px] mx-auto aspect-square select-none">
+      <svg viewBox="0 0 300 300" className={cn('absolute inset-0 w-full h-full touch-manipulation', onToucher && 'cursor-pointer')}
+        role={onToucher ? 'button' : 'img'} tabIndex={onToucher ? 0 : undefined}
+        aria-label={onToucher ? 'Toucher le chapelet pour compter une perle' : 'Chapelet'}
+        onClick={onToucher} onKeyDown={(e) => { if (onToucher && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onToucher(); } }}>
+        <DefsPerles uid={uid} style={style} />
+        <DefsPerles uid={`${uid}or`} style="dore" />
+        <defs>
+          <radialGradient id={`${uid}-halo`}><stop offset="0" stopColor="#fff4c4" stopOpacity=".95" /><stop offset=".55" stopColor="#f5c542" stopOpacity=".5" /><stop offset="1" stopColor="#f5c542" stopOpacity="0" /></radialGradient>
+          <radialGradient id={`${uid}-centre`} cx="50%" cy="45%" r="60%"><stop offset="0" stopColor="#fffdf8" stopOpacity=".96" /><stop offset="1" stopColor="#fbeedd" stopOpacity=".9" /></radialGradient>
+          <filter id={`${uid}-ombre`} x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2.2" stdDeviation="2.4" floodColor="#7a4b1e" floodOpacity=".28" /></filter>
+        </defs>
+        {/* Le fil du chapelet */}
+        {c.parTour > 1 && <circle cx="150" cy="150" r={R} stroke={FIL[style]} strokeWidth="2.2" fill="none" opacity=".9" />}
+        {/* Le disque crème du compteur, au centre */}
+        <circle cx="150" cy="150" r={c.parTour > 1 ? R - r - 12 : 70} fill={`url(#${uid}-centre)`} stroke="#e8c98a" strokeWidth="1.5" />
+        {perles.map((p) => {
+          const aCompter = !c.fini && p.i === c.position;
+          const passee = c.fini || p.i < c.position;
+          const inutile = p.i >= c.utiles;
+          return (
+            <g key={p.i} transform={`translate(${p.x.toFixed(2)} ${p.y.toFixed(2)})`} opacity={inutile ? 0.28 : 1}>
+              {aCompter && <circle r={r + 12} fill={`url(#${uid}-halo)`} className={anime ? 'dhk-halo' : undefined} />}
+              <g filter={`url(#${uid}-ombre)`} className={aCompter && anime ? 'dhk-perle-active' : undefined}>
+                {aCompter ? <Perle uid={`${uid}or`} style="dore" r={r + 2} n={p.i} /> : <Perle uid={uid} style={style} r={r} n={p.i} />}
+              </g>
+              {aCompter && <circle r={r + 5} fill="none" stroke="#d8a531" strokeWidth="2.4" />}
+              {passee && !aCompter && <circle r={r + 2.5} fill="none" stroke="#e3b341" strokeWidth="1.4" opacity=".55" />}
+            </g>
+          );
+        })}
+      </svg>
+      {/* Le compteur au centre : « 1 /33 » et « Tour : 1 » */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center" aria-live="polite">
+        <p className="font-black tabular-nums leading-none text-[#2b1630]">
+          <span className={nombre >= 100 ? 'dhk-num-long' : 'dhk-num'}>{compte}</span><span className="dhk-sur text-[#8a5300]"> /{nombre}</span>
+        </p>
+        <p className="mt-1.5 rounded-full bg-gradient-to-b from-[#f7d77e] to-[#dfa83a] dhk-tour px-3 py-0.5 font-extrabold text-[#3d2500] shadow-sm">
+          Tour : {c.tour}{c.tours > 1 && <span className="font-bold opacity-75"> / {c.tours}</span>}
+        </p>
+        {tourComplet > 1 && <p className="dhk-fois mt-1 font-bold text-[#5b3a52]">🔁 {tourComplet}ᵉ fois</p>}
+      </div>
+    </div>
   );
 }
 
@@ -147,6 +123,31 @@ export function ChoixChapelet({ ouvert, onFermer, valeur, onChoisir }: { ouvert:
   );
 }
 
+/** Le verset en bas du chapelet (Coran 40:14, texte et traduction Hamidullah relus sur api.alquran.cloud) + « En savoir plus » */
+export function VersetDhikr() {
+  const [ouvert, setOuvert] = useState(false);
+  return (
+    <div className="mx-auto max-w-xl rounded-2xl border border-[#ecd6aa] bg-[#fff8ec]/90 px-3 py-2.5 text-center text-[#4a2c1a] shadow-sm">
+      <p dir="rtl" lang="ar" className="font-arabic text-lg sm:text-xl leading-[1.9] text-[#8a5300] [overflow-wrap:anywhere]">فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ</p>
+      <p className="text-sm italic font-semibold [overflow-wrap:anywhere]">« Et invoquez Allah, en Lui vouant un culte exclusif… »</p>
+      <p className="mt-0.5 flex flex-wrap items-center justify-center gap-1.5 text-xs font-bold text-[#5b3a52]">
+        Sourate Ghâfir, verset 14 (40:14) <PastilleSource source="Coran 40:14" compact />
+      </p>
+      <button type="button" onClick={() => setOuvert((o) => !o)} aria-expanded={ouvert}
+        className="mt-1.5 rounded-full border border-[#d8b46a] bg-white/90 px-3 py-1 text-xs font-extrabold text-[#6b4200] active:scale-95">
+        {ouvert ? '▲ Fermer' : '📖 En savoir plus'}
+      </button>
+      {ouvert && (
+        <div className="dhk-apparait mt-2 space-y-1.5 text-left text-sm leading-snug [overflow-wrap:anywhere]">
+          <p><b>Le verset en entier :</b> « Invoquez Allah donc, en Lui vouant un culte exclusif, quelque répulsion qu'en aient les mécréants. » (traduction Hamidullah)</p>
+          <p>Allah nous demande de L'invoquer, Lui seul, avec un cœur sincère.</p>
+          <p>Allah dit aussi : « Souvenez-vous de Moi donc. Je vous récompenserai. » <span className="whitespace-nowrap font-bold">(Al-Baqara 2:152)</span> <PastilleSource source="Coran 2:152" compact /></p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Chapelet({ etapes, merite, source, degre, divergence, onFini, ambiance, onTerminer, libelleTerminer = '✅ Terminer' }: {
   etapes: EtapeChapelet[]; merite?: string | null; source?: string | null;
   /** 🕌 27/11 : degré d'authenticité de la source (vide = deviné d'après la source) */
@@ -162,7 +163,6 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   const changer = (r: Partial<ReglagesChapelet>) => setReglages((v) => { const n = { ...v, ...r }; ecrireLocal(CLE_REGLAGES, n); return n; });
   const [etat, setEtat] = useState<EtatCompteur>(compteurDepart);
   const etatRef = useRef(etat);
-  const [perles, setPerles] = useState(0);
   const [enMarche, setEnMarche] = useState(false);
   const [passage, setPassage] = useState<string | null>(null);
   const [choix, setChoix] = useState(false);
@@ -176,7 +176,6 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
     const r = avancer(etatRef.current, etapesRef.current);
     if (r.evt === 'rien') return;
     etatRef.current = r.etat; setEtat(r.etat);
-    setPerles((p) => p + 1);
     if (r.evt === 'fini') {
       vibrer([90, 60, 180]);
       setEnMarche(false);
@@ -190,7 +189,7 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   const annulerPerle = () => {
     const e = reculer(etatRef.current, etapesRef.current);
     if (e === etatRef.current) return;
-    etatRef.current = e; setEtat(e); setPerles((p) => Math.max(0, p - 1));
+    etatRef.current = e; setEtat(e);
   };
   const encoreUnTour = () => {
     const e = { etape: 0, compte: 0, tour: etatRef.current.tour + 1, fini: false };
@@ -235,8 +234,11 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
 
       <div className="grid gap-3 lg:grid-cols-2 paysage:grid-cols-2 lg:items-center paysage:items-center">
         <div className="space-y-2 text-center min-w-0">
-          <span key={badge} className={cn('dhk-apparait inline-block rounded-full border-2 px-3 py-1 text-sm font-extrabold shadow-sm', pastille)} style={{ borderColor: '#e3b341', color: ambiance.texte }} aria-live="polite">
+          {/* La bulle d'encouragement (petite pointe vers le chapelet) */}
+          <span key={badge} className="dhk-apparait relative inline-block rounded-2xl border-2 bg-[#fffaf1] px-3.5 py-1.5 text-sm font-extrabold shadow-[0_2px_8px_rgba(150,100,30,.2)] [overflow-wrap:anywhere]"
+            style={{ borderColor: '#e3b341', color: ambiance.texte }} aria-live="polite">
             {badge}
+            <span aria-hidden className="absolute left-1/2 -bottom-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-b-2 border-r-2 bg-[#fffaf1]" style={{ borderColor: '#e3b341' }} />
           </span>
           {merite && (
             <p className="text-xs sm:text-sm leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>
@@ -252,16 +254,10 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
         </div>
 
         <div className="flex flex-col items-center gap-1 min-w-0">
-          {/* Le grand compteur */}
-          <div className="flex items-baseline gap-3" aria-live="polite">
-            <span className="text-5xl sm:text-6xl font-black tabular-nums leading-none" style={{ color: ambiance.texte }}>
-              {etat.compte}<span className="text-3xl sm:text-4xl opacity-60">/{etape.nombre}</span>
-            </span>
-            <span className={cn('rounded-full border px-2 py-0.5 text-xs font-bold whitespace-nowrap', pastille)}>Tour : {etat.tour}</span>
-          </div>
           {passage && <p className="dhk-apparait rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
+          {/* Le chapelet en cercle : 11 perles autour du compteur « 1 /33 » + « Tour : 1 » */}
           <div className="relative w-full flex justify-center">
-            <Misbaha perles={perles} style={reglages.chapelet} separateur={etape.nombre >= 10 ? etape.nombre : 0}
+            <CercleChapelet compte={etat.compte} nombre={etape.nombre} style={reglages.chapelet} tourComplet={etat.tour}
               onToucher={!etat.fini && reglages.mode === 'rythme' ? compter : undefined} />
             {etat.fini && <EtoilesDorees />}
           </div>
@@ -306,8 +302,8 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
             </div>
           ) : (
             <button type="button" onClick={compter}
-              className="mx-auto block w-full max-w-sm rounded-3xl bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 py-4 text-lg font-black shadow-lg ring-2 ring-white/70 active:scale-[0.98] transition-transform">
-              👆 Toucher pour compter
+              className="mx-auto block w-full max-w-sm rounded-full bg-gradient-to-b from-[#f9dc85] via-[#ecb948] to-[#d29a2a] text-[#3d2500] py-4 text-lg font-black shadow-[0_4px_14px_rgba(185,131,31,.45)] ring-2 ring-white/80 active:scale-[0.98] transition-transform">
+              👆 Touchez pour compter
             </button>
           )}
         </div>
@@ -326,6 +322,7 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
           </button>
         )}
       </div>
+      <VersetDhikr />
       <ChoixChapelet ouvert={choix} onFermer={() => setChoix(false)} valeur={reglages.chapelet} onChoisir={(c) => changer({ chapelet: c })} />
     </div>
   );

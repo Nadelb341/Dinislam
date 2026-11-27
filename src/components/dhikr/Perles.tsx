@@ -5,7 +5,7 @@ import type { CleChapelet } from '@/lib/dhikr';
  * très légers, marchent hors ligne. Chaque dessin reçoit un `uid` (identifiants de dégradés uniques par chapelet affiché).
  */
 export const FIL: Record<CleChapelet, string> = {
-  traditionnel: '#cdb88f', nacre: '#c9bfd6', emeraude: '#c8a24a', dore: '#d4a62a',
+  traditionnel: '#cdb88f', nacre: '#d9b98a', emeraude: '#c8a24a', dore: '#d4a62a',
   turquoise: '#b98d4a', bois: '#8a5a2b', minimaliste: '#b9ab92', celeste: '#c9a646',
 };
 /** Couleurs du pompon (gland) : fil clair, fil foncé */
@@ -23,8 +23,10 @@ export function DefsPerles({ uid, style }: { uid: string; style: CleChapelet }) 
       </defs>);
     case 'nacre':
       return (<defs>
-        <radialGradient id={g('p')} cx="36%" cy="30%" r="78%"><stop offset="0" stopColor="#ffffff" /><stop offset=".35" stopColor="#fbeef6" /><stop offset=".62" stopColor="#e2e9fb" /><stop offset=".85" stopColor="#d8cde8" /><stop offset="1" stopColor="#aa9cc0" /></radialGradient>
-        <linearGradient id={g('i')} x1="0" y1="1" x2="1" y2="0"><stop offset="0" stopColor="#ffd1ec" stopOpacity=".55" /><stop offset=".45" stopColor="#c9f7e8" stopOpacity=".25" /><stop offset="1" stopColor="#b9d2ff" stopOpacity=".5" /></linearGradient>
+        {/* 27/11 (2ᵉ demande) : vraie NACRE crème, brillante et irisée (reflets rosés / dorés), jamais mate */}
+        <radialGradient id={g('p')} cx="36%" cy="30%" r="80%"><stop offset="0" stopColor="#ffffff" /><stop offset=".22" stopColor="#fffaf2" /><stop offset=".5" stopColor="#f8eadc" /><stop offset=".74" stopColor="#ecd6c2" /><stop offset=".92" stopColor="#d6b99c" /><stop offset="1" stopColor="#b8977a" /></radialGradient>
+        <linearGradient id={g('i')} x1="0" y1="1" x2="1" y2="0"><stop offset="0" stopColor="#ffc9d9" stopOpacity=".55" /><stop offset=".35" stopColor="#ffe6b8" stopOpacity=".38" /><stop offset=".62" stopColor="#e9f6ee" stopOpacity=".18" /><stop offset="1" stopColor="#f6d2ea" stopOpacity=".45" /></linearGradient>
+        <radialGradient id={g('b')} cx="50%" cy="88%" r="55%"><stop offset="0" stopColor="#fff6e3" stopOpacity=".85" /><stop offset="1" stopColor="#fff6e3" stopOpacity="0" /></radialGradient>
       </defs>);
     case 'emeraude':
       return (<defs>
@@ -64,7 +66,18 @@ export function Perle({ uid, style, r, n = 0 }: { uid: string; style: CleChapele
     case 'traditionnel':
       return <g><circle r={r} fill={g('p')} stroke="#a8915f" strokeOpacity=".35" strokeWidth=".8" />{reflet}{petitReflet}</g>;
     case 'nacre':
-      return <g><circle r={r} fill={g('p')} /><circle r={r} fill={g('i')} /><circle r={r} fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth=".9" />{reflet}{petitReflet}</g>;
+      return (<g>
+        <circle r={r} fill={g('p')} />
+        <circle r={r} fill={g('i')} />
+        {/* Lumière renvoyée par le bas (effet perle) + liseré clair */}
+        <circle r={r} fill={g('b')} />
+        <circle r={r * 0.97} fill="none" stroke="#fff" strokeOpacity=".7" strokeWidth={Math.max(0.9, r * 0.06)} />
+        <circle r={r} fill="none" stroke="#a88566" strokeOpacity=".35" strokeWidth=".8" />
+        {/* Reflet blanc principal, net, et 2 petits éclats */}
+        <ellipse cx={-r * 0.32} cy={-r * 0.4} rx={r * 0.36} ry={r * 0.22} fill="#fff" opacity=".92" transform={`rotate(-30 ${-r * 0.32} ${-r * 0.4})`} />
+        <circle cx={-r * 0.46} cy={-r * 0.46} r={r * 0.09} fill="#fff" />
+        <ellipse cx={r * 0.4} cy={r * 0.42} rx={r * 0.16} ry={r * 0.08} fill="#fff" opacity=".55" transform={`rotate(-30 ${r * 0.4} ${r * 0.42})`} />
+      </g>);
     case 'emeraude': {
       // Perle facettée : un octogone et ses facettes
       const pts = Array.from({ length: 8 }, (_, i) => { const a = (Math.PI / 8) + (i * Math.PI) / 4; return `${(r * Math.cos(a)).toFixed(2)},${(r * Math.sin(a)).toFixed(2)}`; }).join(' ');
