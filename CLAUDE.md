@@ -250,6 +250,10 @@ Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très long
 - « ⚙️ Lignes et maximum du groupe » (Q4-B) : déplacé dans la fiche du groupe (carte « Après le cours », vue `reglages`). Le maximum se compte maintenant PAR ÉLÈVE et par semaine.
 - « En faire un devoir » (cahier de texte) : texte sur la ligne ✏️ Autre du 1er élève, les autres dans « Donner aussi à… », sa carte s'ouvre. « 📋 Copier vers un groupe » : retrouve aussi les devoirs donnés élève par élève et les recopie à chaque élève du groupe visé.
 
+## 🚫 Plus jamais d'étoiles à 8 branches dans les fonds (Nadia, 2026-11-27 : « je n'aime pas du tout !! je ne veux pas qu'ils réapparaissent »)
+- Le motif « deux carrés croisés » (fond « Aube dorée » `jg1`, fonction `motif` de `src/lib/fondsEcran.ts`) est SUPPRIMÉ ; test `fondsEcran.test.ts` qui échoue si un fond redessine `rotate(45`. Ne jamais remettre ce motif dans un fond, un décor ou un cadre. (Les médaillons des leçons du parcours Nourania ont aussi une forme d'étoile à 8 branches : demandé à Nadia le 27/11 s'il faut les changer.)
+- ⏳ Carte Dhikr + « Besoin d'Allah » (99 noms) : 10 + 3 présentations et 6 idées proposées le 27/11 sur https://claude.ai/artifact/RvvRCNEa1erUKYRLg7Uc2g (inspirations : page Facebook « Dhikr Chaque Jour », Hisnul Muslim, Muslim Pro, Pillars, Athan) — attendre ses choix.
+
 ## 🎥 Cours Zoom DANS Dinislam (2026-11-27, choix A + D de Nadia)
 - Kit officiel Zoom « Meeting SDK » (vue composant, `@zoom/meetingsdk` 6.10.0 épinglé), appli Marketplace « Cours en ligne » (General App, compte Zoom Pro de Nadia, gérée par l'utilisateur, Meeting SDK activé, option bot/IA éteinte). Salle = salle personnelle 408 036 1371 (même compte → pas besoin de jeton OBF, règle Zoom du 02/03/2026).
 - Secrets Supabase : `ZOOM_SDK_KEY` (ID client), `ZOOM_SDK_SECRET` (posé par Nadia elle-même, jamais vu), `ZOOM_MEETING_NUMBER`, `ZOOM_MEETING_PASSCODE`. Fonction `zoom-signature` (compte connecté obligatoire → signature role 0, 2 h).
