@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from '@/lib/utils';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import {
-  avancer, CHAPELETS, CLE_REGLAGES, compteurDepart, ecrireLocal, encouragement, etatCercle, intervalleAuto, lireReglages, reculer,
+  avancer, CHAPELETS, CLE_REGLAGES, compteurDepart, ecrireLocal, etatCercle, intervalleAuto, lireReglages, reculer,
   type EtatCompteur, type ReglagesChapelet,
 } from '@/lib/dhikr';
 import { ApercuChapelet, DefsPerles, FIL, Perle } from './Perles';
@@ -12,7 +12,8 @@ import type { Couleurs } from './Ambiance';
 
 /**
  * 📿 LE CHAPELET (Nadia, 27/11, présentation A) — utilisé PARTOUT où l'on compte (chapelet libre, séries, après la prière…).
- * En haut le badge d'encouragement, le mérite + sa source, l'arabe doré, la phonétique, le sens ; le grand compteur « 18/33 » +
+ * En haut l'arabe doré, la phonétique, le sens, puis le mérite + sa source (27/11 soir : sous le sens ; plus de bulle d'encouragement) ;
+ * en dessous, 2 colonnes : à gauche les boutons + le verset, à droite le chapelet ; le grand compteur « 18/33 » +
  * « Tour : 1 » au CENTRE d'un cercle de 11 perles (27/11, 2ᵉ demande : la perle à compter en doré, 33 = 3 tours de 11) ;
  * dessous le gros bouton doré « 👆 Touchez pour compter » et le verset (Ghâfir 40:14) avec « En savoir plus ».
  * Deux modes : 👆 À mon rythme (toucher le grand bouton ou le chapelet) / ▶️ Automatique (vitesse ×0,5 / ×1, pause).
@@ -213,7 +214,6 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   }, [reglages.mode, reglages.vitesse, enMarche, etat.fini, compter, cleEtape]);
 
   const etape = etapes[Math.min(etat.etape, etapes.length - 1)] ?? { titre: '', arabe: '', phonetique: '', sens: '', nombre: 1 };
-  const badge = etat.fini ? 'Qu\'Allah accepte ton dhikr 🤲' : encouragement(etat.compte, etape.nombre);
   const nuit = ambiance.nom === 'nuit';
   const pastille = nuit ? 'bg-white/10 border-white/25' : 'bg-white/80 border-white';
   const nomChapelet = CHAPELETS.find((c) => c.cle === reglages.chapelet)?.titre ?? '';
@@ -236,97 +236,90 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
         </ol>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-2 paysage:grid-cols-2 lg:items-center paysage:items-center">
-        <div className="space-y-2 text-center min-w-0">
-          {/* La bulle d'encouragement (petite pointe vers le chapelet) */}
-          <span key={badge} className="dhk-apparait relative inline-block rounded-2xl border-2 bg-[#fffaf1] px-3.5 py-1.5 text-sm font-extrabold shadow-[0_2px_8px_rgba(150,100,30,.2)] [overflow-wrap:anywhere]"
-            style={{ borderColor: '#e3b341', color: ambiance.texte }} aria-live="polite">
-            {badge}
-            <span aria-hidden className="absolute left-1/2 -bottom-[7px] h-3 w-3 -translate-x-1/2 rotate-45 border-b-2 border-r-2 bg-[#fffaf1]" style={{ borderColor: '#e3b341' }} />
-          </span>
-          {merite && (
-            <p className="text-xs sm:text-sm leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>
-              ✨ {merite}{source && <span className="whitespace-nowrap font-bold"> — {source}</span>}
-              {source && <PastilleSource source={source} degre={degre} divergence={divergence} compact className="ml-1" />}
-            </p>
-          )}
-          <p dir="rtl" lang="ar" className="font-arabic text-2xl sm:text-3xl leading-[1.9] font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.or, textShadow: nuit ? '0 0 12px rgba(245,210,122,.35)' : '0 1px 0 rgba(255,255,255,.7)' }}>
-            {etape.arabe}
+      {/* Le dhikr : arabe, phonétique, sens, puis le mérite et sa source (sous le sens, choix de Nadia du 27/11) */}
+      <div className="space-y-1 text-center min-w-0">
+        <p dir="rtl" lang="ar" className="font-arabic text-2xl sm:text-3xl leading-[1.8] font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.or, textShadow: nuit ? '0 0 12px rgba(245,210,122,.35)' : '0 1px 0 rgba(255,255,255,.7)' }}>
+          {etape.arabe}
+        </p>
+        <p className="italic text-base sm:text-lg font-semibold [overflow-wrap:anywhere]">{etape.phonetique}</p>
+        <p className="text-sm [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>{etape.sens}</p>
+        {merite && (
+          <p className="text-xs sm:text-sm leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>
+            ✨ {merite}{source && <span className="whitespace-nowrap font-bold"> — {source}</span>}
+            {source && <PastilleSource source={source} degre={degre} divergence={divergence} compact className="ml-1" />}
           </p>
-          <p className="italic text-base sm:text-lg font-semibold [overflow-wrap:anywhere]">{etape.phonetique}</p>
-          <p className="text-sm [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>{etape.sens}</p>
-        </div>
-
-        <div className="flex flex-col items-center gap-1 min-w-0">
-          {passage && <p className="dhk-apparait rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
-          {/* Le chapelet en cercle : 11 perles autour du compteur « 1 /33 » + « Tour : 1 » */}
-          <div className="relative w-full flex justify-center">
-            <CercleChapelet compte={etat.compte} nombre={etape.nombre} style={reglages.chapelet} tourComplet={etat.tour}
-              onToucher={!etat.fini && reglages.mode === 'rythme' ? compter : undefined} />
-            {etat.fini && <EtoilesDorees />}
-          </div>
-        </div>
+        )}
       </div>
+      {passage && <p className="dhk-apparait mx-auto w-fit rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
 
-      {etat.fini ? (
-        <div className={cn('dhk-apparait relative overflow-hidden rounded-3xl border-2 p-4 text-center space-y-3', pastille)} style={{ borderColor: '#e3b341' }}>
-          <EtoilesDorees />
-          <p className="relative text-xl sm:text-2xl font-black">Qu'Allah accepte ton dhikr 🤲</p>
-          <p className="relative text-sm" style={{ color: ambiance.doux }}>{totalTour} dhikr ce tour-ci · ajoutés à ton carnet</p>
-          <div className="relative flex flex-wrap justify-center gap-2">
-            <button type="button" onClick={encoreUnTour} className="rounded-full border-2 border-amber-400 bg-white text-slate-900 px-4 py-2 font-bold shadow-sm active:scale-95">🔁 Encore un tour</button>
-            {onTerminer && <button type="button" onClick={onTerminer} className="rounded-full bg-amber-500 hover:bg-amber-600 text-amber-950 px-4 py-2 font-extrabold shadow active:scale-95">{libelleTerminer}</button>}
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Le mode : un interrupteur à 2 positions ; la vitesse n'apparaît QU'EN automatique */}
-          <div role="radiogroup" aria-label="Mode du chapelet" className={cn('mx-auto grid grid-cols-2 max-w-sm rounded-full border p-1', pastille)}>
-            {([['rythme', '👆 À mon rythme'], ['auto', '▶️ Automatique']] as const).map(([m, l]) => (
-              <button key={m} type="button" role="radio" aria-checked={reglages.mode === m}
-                onClick={() => { changer({ mode: m }); setEnMarche(m === 'auto'); }}
-                className={cn('rounded-full px-2 py-2 text-sm font-extrabold transition [overflow-wrap:anywhere]',
-                  reglages.mode === m ? 'bg-amber-400 text-amber-950 shadow' : nuit ? 'text-white/85' : 'text-slate-700')}>
-                {l}
-              </button>
-            ))}
-          </div>
-          {reglages.mode === 'auto' ? (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {([0.5, 1] as const).map((v) => (
-                <button key={v} type="button" onClick={() => changer({ vitesse: v })} aria-pressed={reglages.vitesse === v}
-                  className={cn('rounded-full border-2 px-3 py-1 text-sm font-bold', reglages.vitesse === v ? 'border-amber-400 bg-amber-100 text-amber-950' : cn(pastille, nuit ? 'text-white' : 'text-slate-700'))}>
-                  ×{v === 0.5 ? '0,5' : '1'}
-                </button>
-              ))}
-              <button type="button" onClick={() => setEnMarche((m) => !m)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-amber-950 px-4 py-2 font-extrabold shadow active:scale-95">
-                {enMarche ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> {etat.compte || etat.etape ? 'Reprendre' : 'Commencer'}</>}
-              </button>
+      {/* 2 colonnes (Nadia, 27/11 soir) : à gauche les boutons et le verset, à droite le chapelet */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 items-center">
+        <div className="space-y-2 min-w-0">
+          {etat.fini ? (
+            <div className={cn('dhk-apparait relative overflow-hidden rounded-3xl border-2 p-3 sm:p-4 text-center space-y-2 sm:space-y-3', pastille)} style={{ borderColor: '#e3b341' }}>
+              <EtoilesDorees />
+              <p className="relative text-lg sm:text-2xl font-black">Qu'Allah accepte ton dhikr 🤲</p>
+              <p className="relative text-sm" style={{ color: ambiance.doux }}>{totalTour} dhikr ce tour-ci · ajoutés à ton carnet</p>
+              <div className="relative flex flex-wrap justify-center gap-2">
+                <button type="button" onClick={encoreUnTour} className="rounded-full border-2 border-amber-400 bg-white text-slate-900 px-4 py-2 font-bold shadow-sm active:scale-95">🔁 Encore un tour</button>
+                {onTerminer && <button type="button" onClick={onTerminer} className="rounded-full bg-amber-500 hover:bg-amber-600 text-amber-950 px-4 py-2 font-extrabold shadow active:scale-95">{libelleTerminer}</button>}
+              </div>
             </div>
           ) : (
-            <button type="button" onClick={compter}
-              className="mx-auto block w-full max-w-sm rounded-full bg-gradient-to-b from-[#f9dc85] via-[#ecb948] to-[#d29a2a] text-[#3d2500] py-4 text-lg font-black shadow-[0_4px_14px_rgba(185,131,31,.45)] ring-2 ring-white/80 active:scale-[0.98] transition-transform">
-              👆 Touchez pour compter
-            </button>
+            <div className="space-y-2">
+              {/* Le mode : un interrupteur à 2 positions ; la vitesse n'apparaît QU'EN automatique */}
+              <div role="radiogroup" aria-label="Mode du chapelet" className={cn('mx-auto grid grid-cols-1 min-[560px]:grid-cols-2 max-w-sm rounded-[1.4rem] border p-1 gap-0.5', pastille)}>
+                {([['rythme', '👆 À mon rythme'], ['auto', '▶️ Automatique']] as const).map(([m, l]) => (
+                  <button key={m} type="button" role="radio" aria-checked={reglages.mode === m}
+                    onClick={() => { changer({ mode: m }); setEnMarche(m === 'auto'); }}
+                    className={cn('rounded-full px-2 py-1.5 sm:py-2 text-xs sm:text-sm font-extrabold transition',
+                      reglages.mode === m ? 'bg-amber-400 text-amber-950 shadow' : nuit ? 'text-white/85' : 'text-slate-700')}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              {reglages.mode === 'auto' ? (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {([0.5, 1] as const).map((v) => (
+                    <button key={v} type="button" onClick={() => changer({ vitesse: v })} aria-pressed={reglages.vitesse === v}
+                      className={cn('rounded-full border-2 px-3 py-1 text-sm font-bold', reglages.vitesse === v ? 'border-amber-400 bg-amber-100 text-amber-950' : cn(pastille, nuit ? 'text-white' : 'text-slate-700'))}>
+                      ×{v === 0.5 ? '0,5' : '1'}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => setEnMarche((m) => !m)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-amber-950 px-4 py-2 font-extrabold shadow active:scale-95">
+                    {enMarche ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> {etat.compte || etat.etape ? 'Reprendre' : 'Commencer'}</>}
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={compter}
+                  className="mx-auto block w-full max-w-sm rounded-full bg-gradient-to-b from-[#f9dc85] via-[#ecb948] to-[#d29a2a] text-[#3d2500] py-3 sm:py-4 text-base sm:text-lg font-black shadow-[0_4px_14px_rgba(185,131,31,.45)] ring-2 ring-white/80 active:scale-[0.98] transition-transform">
+                  👆 Touchez pour compter
+                </button>
+              )}
+            </div>
           )}
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+            <button type="button" onClick={() => setChoix(true)} className={cn('rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>🎨 Mon chapelet : {nomChapelet}</button>
+            {!etat.fini && (etat.compte > 0 || etat.etape > 0) && (
+              <button type="button" onClick={annulerPerle} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>
+                <Undo2 className="h-3.5 w-3.5" /> Une perle en arrière
+              </button>
+            )}
+            {(etat.compte > 0 || etat.etape > 0 || etat.tour > 1) && (
+              <button type="button" onClick={recommencer} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>
+                <RotateCcw className="h-3.5 w-3.5" /> Recommencer
+              </button>
+            )}
+          </div>
+          <VersetDhikr />
         </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
-        <button type="button" onClick={() => setChoix(true)} className={cn('rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>🎨 Mon chapelet : {nomChapelet}</button>
-        {!etat.fini && (etat.compte > 0 || etat.etape > 0) && (
-          <button type="button" onClick={annulerPerle} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>
-            <Undo2 className="h-3.5 w-3.5" /> Une perle en arrière
-          </button>
-        )}
-        {(etat.compte > 0 || etat.etape > 0 || etat.tour > 1) && (
-          <button type="button" onClick={recommencer} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-bold', pastille, nuit ? 'text-white' : 'text-slate-800')}>
-            <RotateCcw className="h-3.5 w-3.5" /> Recommencer
-          </button>
-        )}
+        <div className="relative min-w-0 flex justify-center">
+          <CercleChapelet compte={etat.compte} nombre={etape.nombre} style={reglages.chapelet} tourComplet={etat.tour}
+            onToucher={!etat.fini && reglages.mode === 'rythme' ? compter : undefined} />
+          {etat.fini && <EtoilesDorees />}
+        </div>
       </div>
-      <VersetDhikr />
       <ChoixChapelet ouvert={choix} onFermer={() => setChoix(false)} valeur={reglages.chapelet} onChoisir={(c) => changer({ chapelet: c })} />
     </div>
   );

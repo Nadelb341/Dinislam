@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
  * 🌅 Les couleurs de la carte Dhikr.
  * 27/11 (2ᵉ demande de Nadia) : UN SEUL fond, une scène « réelle » (ciel rose-doré, mosquée blanche, lanternes, fleurs, lac),
  * fichier `public/images/dhikr/fond-dhikr.jpg` fourni par Nadia, AVEC son bandeau « Dhikr / Se souvenir d'Allah… » (27/11 au soir :
- * « je le trouve joli », on le garde) : l'image est posée en haut, en largeur (jamais coupée en hauteur), et la page ne
- * réécrit pas son titre (bloc vide `976/215` à la place du bandeau). Tant que le fichier n'existe pas :
+ * « je le trouve joli », on le garde) : image FIXE sur tout l'écran (voir `FondDhikr`), la page ne réécrit pas son titre.
+ * Tant que le fichier n'existe pas :
  * un dégradé doux ciel rose-doré (PAS de mosquée / lanternes / fleurs dessinées : Nadia ne les aime pas).
  * Le jour où le fichier est posé dans `public/images/dhikr/`, il s'affiche tout seul à la mise en ligne suivante
  * (`__FOND_DHIKR__`, écrit par vite.config.ts : vide si le fichier manque → aucune demande inutile ; sinon sa taille,
@@ -35,31 +35,72 @@ declare const __FOND_DHIKR__: string | undefined;
 /** Version de l'image de fond (vide = pas d'image : le dégradé seul) */
 const VERSION_FOND = typeof __FOND_DHIKR__ === 'string' ? __FOND_DHIKR__ : '';
 export const IMAGE_FOND_DHIKR = VERSION_FOND ? `/images/dhikr/fond-dhikr.jpg?v=${VERSION_FOND}` : null;
-/** Sur téléphone, l'image garde au moins cette largeur (bords coupés) pour que le bandeau « Dhikr » reste lisible */
-const LARGEUR_MIN_FOND = 560;
-/** Dégradé doux ciel rose-doré (aussi sous l'image, le temps qu'elle arrive) */
+/** Taille de l'image de Nadia (px) et bas de son bandeau « Dhikr / Se souvenir d'Allah… » */
+const IMG_L = 976, IMG_H = 1110, BAS_BANDEAU = 222;
+/** Dégradé doux ciel rose-doré (sans image, ou le temps qu'elle arrive) */
 export const DEGRADE_DHIKR = 'linear-gradient(180deg, #fde3d3 0%, #f9cfc4 22%, #f6c7a9 45%, #f8dcae 70%, #fff3df 100%)';
 
-/** Le grand fond de la carte : l'image en haut, en pleine largeur, fondue vers le crème en bas ; sinon le dégradé */
+/** Bas de l'en-tête de l'appli (fixe en haut) : l'image commence juste en dessous */
+function useBasEntete(): number {
+  const [bas, setBas] = useState(56);
+  useEffect(() => {
+    const mesurer = () => {
+      const e = document.querySelector('header');
+      if (e) setBas(Math.max(0, Math.round(e.getBoundingClientRect().bottom)));
+    };
+    mesurer();
+    const e = document.querySelector('header');
+    const ro = typeof ResizeObserver !== 'undefined' && e ? new ResizeObserver(mesurer) : null;
+    if (ro && e) ro.observe(e);
+    window.addEventListener('resize', mesurer);
+    window.addEventListener('scroll', mesurer, { passive: true });
+    return () => { ro?.disconnect(); window.removeEventListener('resize', mesurer); window.removeEventListener('scroll', mesurer); };
+  }, []);
+  return bas;
+}
+
+/**
+ * Le grand fond de la carte (27/11 soir, Nadia : « que l'image englobe toute la page », plus de bleu en haut ni en bas) :
+ * l'image est FIXE sur tout l'écran, sous l'en-tête (`cover`, jamais étirée de travers : elle garde ses proportions, seuls les
+ * bords sont coupés selon l'écran) ; le contenu défile par-dessus. Un bloc vide garde la place de son bandeau dessiné, pour que
+ * les onglets commencent juste en dessous. La page doit utiliser `<AppLayout sansFondEcran>` (sinon le fond bleu de l'appli
+ * recouvre l'image). Sans image : le dégradé, comme avant.
+ */
 export function FondDhikr({ ambiance, children, className }: { ambiance: Couleurs; children: ReactNode; className?: string }) {
-  return (
-    <div className={cn('relative overflow-hidden', className)} style={{ background: IMAGE_FOND_DHIKR ? '#fff3df' : DEGRADE_DHIKR, color: ambiance.texte }}>
-      {IMAGE_FOND_DHIKR && (
-        <div className="absolute inset-0 pointer-events-none" aria-hidden
-          style={{ backgroundImage: `url("${IMAGE_FOND_DHIKR}")`, backgroundSize: `max(100%, ${LARGEUR_MIN_FOND}px) auto`, backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
-      )}
-      {/* Fondu du bas de l'image vers le dégradé (pages plus longues que l'image) */}
-      {IMAGE_FOND_DHIKR && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-none" aria-hidden
-          style={{ width: `max(100%, ${LARGEUR_MIN_FOND}px)`, aspectRatio: '976 / 1110', background: 'linear-gradient(180deg, rgba(255,243,223,0) 82%, #fff3df 100%)' }} />
-      )}
-      {/* Petit halo doré en haut, très doux (comme le soleil couchant de la scène) */}
-      {!IMAGE_FOND_DHIKR && <div className="absolute inset-x-0 top-0 h-48 pointer-events-none" aria-hidden style={{ background: 'radial-gradient(60% 100% at 70% 0%, rgba(255,214,150,.45), rgba(255,214,150,0))' }} />}
-      <div className="relative">
-        {/* L'image a son propre bandeau « Dhikr » (voulu par Nadia, 27/11) : on laisse sa place, la page n'écrit pas de 2ᵉ titre */}
-        {IMAGE_FOND_DHIKR && <div aria-hidden className="relative left-1/2 -translate-x-1/2" style={{ width: `max(100%, ${LARGEUR_MIN_FOND}px)`, aspectRatio: '976 / 215' }} />}
-        {children}
+  const haut = useBasEntete();
+  const bloc = useRef<HTMLDivElement>(null);
+  const [place, setPlace] = useState(0);
+  useEffect(() => {
+    if (!IMAGE_FOND_DHIKR) return;
+    const calculer = () => {
+      const el = bloc.current;
+      if (!el) return;
+      const l = document.documentElement.clientWidth, h = window.innerHeight - haut;
+      const echelle = Math.max(l / IMG_L, h / IMG_H);
+      const basBandeau = haut + BAS_BANDEAU * echelle;              // dans l'écran (l'image ne bouge pas)
+      const hautBloc = el.getBoundingClientRect().top + window.scrollY; // dans la page, défilement remis à zéro
+      setPlace(Math.max(0, Math.round(basBandeau - hautBloc)));
+    };
+    calculer();
+    window.addEventListener('resize', calculer);
+    return () => window.removeEventListener('resize', calculer);
+  }, [haut]);
+
+  if (!IMAGE_FOND_DHIKR) {
+    return (
+      <div className={cn('relative overflow-hidden', className)} style={{ background: DEGRADE_DHIKR, color: ambiance.texte }}>
+        <div className="absolute inset-x-0 top-0 h-48 pointer-events-none" aria-hidden style={{ background: 'radial-gradient(60% 100% at 70% 0%, rgba(255,214,150,.45), rgba(255,214,150,0))' }} />
+        <div className="relative">{children}</div>
       </div>
+    );
+  }
+  return (
+    <div className={cn('relative', className)} style={{ color: ambiance.texte }}>
+      <div aria-hidden className="fixed inset-x-0 bottom-0 -z-10 pointer-events-none"
+        style={{ top: haut, backgroundColor: '#f4cfa9', backgroundImage: `url("${IMAGE_FOND_DHIKR}")`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
+      {/* La place du bandeau dessiné dans l'image (la page ne réécrit pas son titre) */}
+      <div ref={bloc} aria-hidden style={{ height: place }} />
+      {children}
     </div>
   );
 }
@@ -81,8 +122,8 @@ export function StylesDhikr() {
       .dhk-num { font-size: 3rem; font-size: 19cqw; }
       .dhk-num-long { font-size: 2.4rem; font-size: 14.5cqw; }
       .dhk-sur { font-size: 1.5rem; font-size: 9cqw; }
-      .dhk-tour { font-size: .8rem; font-size: 4.6cqw; }
-      .dhk-fois { font-size: .7rem; font-size: 3.8cqw; }
+      .dhk-tour { font-size: .8rem; font-size: max(.65rem, 4.6cqw); }
+      .dhk-fois { font-size: .7rem; font-size: max(.6rem, 3.8cqw); }
       @keyframes dhk-perle { 0%,100% { transform: scale(1) } 50% { transform: scale(1.07) } }
       .dhk-perle-active { animation: dhk-perle 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
       @keyframes dhk-message { from { opacity: 0; transform: translateY(14px) scale(.97) } to { opacity: 1; transform: none } }

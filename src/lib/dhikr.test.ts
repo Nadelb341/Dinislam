@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ajouterAuCarnet, avancer, avanceeDuJour, carnetALHeure, cleSemaine, compteurDepart, creneauDe, dhikrDuMoment, encouragement, etatCercle,
+  ajouterAuCarnet, avancer, avanceeDuJour, carnetALHeure, cleSemaine, compteurDepart, creneauDe, dhikrDuMoment, etatCercle,
   intervalleAuto, joursDeLaSemaine, lundiDe, marquerJournee, momentEnAvant, prochainGeste, reculer, serieDeJours, totalCompte,
   totalSemaine, type EtatCompteur, resumeSemaine, dhikrTries, semainePasseeDe, semaineVide,
 } from './dhikr';
@@ -47,13 +47,6 @@ describe('📿 le compteur du chapelet', () => {
   });
   it('un seul geste (1 fois) se termine au 1er toucher', () => {
     expect(jusqua(1, [{ nombre: 1 }]).evts).toEqual(['fini']);
-  });
-  it('le badge d\'encouragement change en chemin', () => {
-    expect(encouragement(0, 33)).toBe('Fais ton dhikr avec moi 🤍');
-    expect(encouragement(17, 33)).toBe('À mi-chemin, continue ✨');
-    expect(encouragement(22, 33)).toBe('Reste avec moi jusqu\'à 33 🤍');
-    expect(encouragement(31, 33)).toBe('Tu y es presque 🌟');
-    expect(encouragement(33, 33)).toBe('Qu\'Allah accepte ton dhikr 🤲');
   });
   it('mode automatique : ×0,5 deux fois plus lent que ×1', () => {
     expect(intervalleAuto(0.5)).toBe(2 * intervalleAuto(1));
@@ -167,12 +160,16 @@ describe('🕌 contenu de secours (règle n°1)', () => {
       expect(it.nombre).toBeGreaterThan(0);
     }
   });
-  it('seules les sources de Nadia sont visibles (Coran, Boukhari, Mouslim)', () => {
+  it('Coran, Boukhari, Mouslim visibles ; les autres recueils seulement AVEC leur degré (Nadia, 27/11 soir : gestes 3 et 4 du matin)', () => {
     const visibles = [...DHIKR_ITEMS_SECOURS, ...DHIKR_GESTES_SECOURS].filter((x) => x.visible);
-    for (const x of visibles) if (x.source) expect(x.source, x.titre).toMatch(/^(Coran|Boukhari|Mouslim)/);
-    const caches = DHIKR_GESTES_SECOURS.filter((g) => /Dâwoud|Tirmidh/.test(g.source ?? ''));
-    expect(caches.length).toBe(2);
-    expect(caches.every((g) => !g.visible && g.statut === 'a_confirmer')).toBe(true);
+    for (const x of visibles) {
+      if (!x.source || /^(Coran|Boukhari|Mouslim)/.test(x.source)) continue;
+      expect(x.source, x.titre).toMatch(/Dâwoud|Tirmidh/);
+      expect(x.degre, x.titre).toBeTruthy();
+    }
+    const autres = DHIKR_GESTES_SECOURS.filter((g) => /^Abou Dâwoud/.test(g.source ?? ''));
+    expect(autres.map((g) => g.cle).sort()).toEqual(['matin_bismillah_ladhi', 'matin_trois_qoul']);
+    expect(autres.every((g) => g.visible !== false && g.degre_divergence)).toBe(true);
   });
   it('les séries ont 3 à 5 gestes visibles, avec la bonne somme au chapelet', () => {
     const vis = (s: string) => DHIKR_GESTES_SECOURS.filter((g) => g.serie === s && g.genre === 'geste' && g.visible);

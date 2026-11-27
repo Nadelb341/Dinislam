@@ -207,19 +207,19 @@ const GESTES: GesteSansId[] = [
     compteur: [e('Soubhâna-llâhi wa bihamdihi', T.wabihamdihi, 100)],
     merite: 'Celui qui le dit 100 fois le matin et le soir : personne n\'apportera au Jour de la Résurrection mieux que lui, sauf quelqu\'un qui en a dit autant ou plus.',
     source: 'Mouslim 2692' },
-  // ⚠️ Gestes 3 et 4 de Nadia : Abou Dâwoud / At-Tirmidhî (pas dans ses sources) → CACHÉS, « à confirmer par Nadia »
+  // Gestes 3 et 4 de Nadia : Abou Dâwoud / At-Tirmidhî → MONTRÉS avec leur pastille (Nadia, 27/11 soir ; migration 20261127260000)
   { cle: 'matin_trois_qoul', serie: 'matin', genre: 'geste', titre: 'Al-Ikhlâs et les deux sourates de protection, 3 fois', consigne: 'Récite Al-Ikhlâs, Al-Falaq et An-Nâs, 3 fois.',
     arabe: T.troisQoul.ar, phonetique: T.troisQoul.ph, sens: T.troisQoul.fr,
     compteur: [{ titre: 'Les 3 sourates', arabe: T.troisQoul.court.ar, phonetique: T.troisQoul.court.ph, sens: 'Al-Ikhlâs, Al-Falaq, An-Nâs', nombre: 3 }],
-    merite: 'Elles te suffisent contre toute chose.', source: 'Abou Dâwoud 5082 ; At-Tirmidhî 3575', statut: 'a_confirmer', visible: false,
-    degre: 'hasan', degre_divergence: 'At-Tirmidhî l\'a jugé hasan sahîh ; Al-Albânî l\'a jugé hasan (bon).' },
+    merite: 'Elles te suffisent contre toute chose.', source: 'Abou Dâwoud 5082 ; At-Tirmidhî 3575',
+    degre: 'hasan', degre_divergence: 'At-Tirmidhî : hasan sahîh. Al-Albânî : hasan (bon). Chou\'ayb Al-Arna\'ût : hasan sahîh.' },
   { cle: 'matin_bismillah_ladhi', serie: 'matin', genre: 'geste', titre: 'Bismi-llâhi-lladhî lâ yadourrou…, 3 fois', consigne: 'Dis-le 3 fois.',
     arabe: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
     phonetique: 'Bismi-llâhi-lladhî lâ yadourrou ma\'a-smihî chay\'oun fi-l-ardi wa lâ fi-s-samâ\', wa houwa-s-samî\'ou-l-\'alîm',
     sens: 'Au nom d\'Allah, avec le nom de qui rien ne peut nuire, ni sur la terre ni dans le ciel, et Il est Celui qui entend tout, Celui qui sait tout.',
     compteur: [{ titre: 'Bismi-llâhi-lladhî…', arabe: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ…', phonetique: 'Bismi-llâhi-lladhî lâ yadourrou ma\'a-smihî chay\'oun…', sens: 'Au nom d\'Allah, avec le nom de qui rien ne peut nuire…', nombre: 3 }],
-    merite: 'Rien ne lui nuira.', source: 'Abou Dâwoud 5088 ; At-Tirmidhî 3388', statut: 'a_confirmer', visible: false,
-    degre: 'sahih' }, // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
+    merite: 'Rien ne lui nuira.', source: 'Abou Dâwoud 5088 ; At-Tirmidhî 3388',
+    degre: 'sahih', degre_divergence: 'Al-Albânî : sahîh. At-Tirmidhî : hasan sahîh. Zubair \'Alî Zaï : sahîh (Abou Dâwoud), chaîne hasan (At-Tirmidhî).' },
   // 💡 Remplacements proposés (Al-Boukhârî / Mouslim) : cachés tant que Nadia ne les allume pas
   { cle: 'matin_juwayriya', serie: 'matin', genre: 'geste', titre: 'Les 4 paroles de Jouwayriya, 3 fois', consigne: 'Avec le chapelet, après la prière de l\'aube.',
     arabe: T.juwayriya.ar, phonetique: T.juwayriya.ph, sens: T.juwayriya.fr,

@@ -121,7 +121,7 @@ export default function DhikrPage() {
   // 🧸 Les tout-petits : le gros bouton, 10 fois
   if (!isAdmin && petits.aAccueil) {
     return (
-      <AppLayout title={titre}>
+      <AppLayout title={titre} sansFondEcran={!!IMAGE_FOND_DHIKR}>
         <StylesDhikr />
         <FondDhikr ambiance={ambiance} className="min-h-[70dvh] p-4"><DhikrPetits /></FondDhikr>
       </AppLayout>
@@ -129,7 +129,7 @@ export default function DhikrPage() {
   }
 
   return (
-    <AppLayout title={titre}>
+    <AppLayout title={titre} sansFondEcran={!!IMAGE_FOND_DHIKR}>
       <StylesDhikr />
       <FondDhikr ambiance={ambiance} className="min-h-[100dvh] pb-[calc(var(--menu-bas,0px)+5rem)]">
         <div className="p-3 sm:p-5 max-w-5xl mx-auto space-y-3">
@@ -141,18 +141,18 @@ export default function DhikrPage() {
             <p className="text-sm font-semibold" style={{ color: ambiance.doux }}>Se souvenir d'Allah, avec le cœur et la langue.</p>
           </header>
 
-          {/* Les onglets (27/11, 2ᵉ demande) : TOUS visibles, 4 par ligne, pilules crème ; l'onglet choisi en doré. Jamais coupés. */}
-          <nav className="grid grid-cols-4 gap-1.5 sm:gap-2 max-w-3xl" aria-label="Les parties de la carte Dhikr">
+          {/* Les onglets (27/11) : TOUS visibles, 4 par ligne, pilules crème, l'onglet choisi en doré, jamais coupés ; 27/11 soir : plus petits et moins larges (Nadia) */}
+          <nav className="grid grid-cols-4 gap-1.5 max-w-xl mx-auto" aria-label="Les parties de la carte Dhikr">
             {ONGLETS.filter((o) => !o.admin || isAdmin).map((o) => {
               const choisi = onglet === o.cle && !enCours;
               return (
                 <button key={o.cle} type="button" onClick={() => { setEnCours(null); aller(o.cle); }} aria-current={choisi ? 'page' : undefined}
-                  className={cn('min-w-0 rounded-[1.25rem] border px-1 py-1.5 flex flex-col items-center justify-center gap-0.5 min-h-[54px] transition active:scale-95',
+                  className={cn('min-w-0 rounded-2xl border px-1 py-1 flex flex-col items-center justify-center gap-0 min-h-[42px] transition active:scale-95',
                     choisi
                       ? 'bg-gradient-to-b from-[#f7d77e] to-[#dfa83a] border-[#b9831f] text-[#3d2500] shadow-[0_3px_10px_rgba(185,131,31,.45)]'
                       : 'bg-[#fff8ec]/95 border-[#ecd6aa] text-[#4a2c1a] shadow-[0_1px_4px_rgba(120,80,30,.15)]')}>
-                  <span className="text-lg leading-none" aria-hidden>{o.emoji}</span>
-                  <span className="text-[11px] sm:text-xs font-extrabold leading-tight text-center">{o.titre}</span>
+                  <span className="text-sm leading-none" aria-hidden>{o.emoji}</span>
+                  <span className="text-[10px] sm:text-[11px] font-extrabold leading-tight text-center">{o.titre}</span>
                 </button>
               );
             })}

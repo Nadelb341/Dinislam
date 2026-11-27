@@ -266,12 +266,13 @@ const AllahNamesPage = () => {
               openName(names[index], index);
             }} />
 
-          {/* 📚 Authenticité (27/11) : noms tirés du Coran / de la Sunna authentique / statut discuté, mêmes fiches */}
-          <BoutonAuthenticite noms={names} onOuvrirNom={(id) => {
+          {/* 📚 Authenticité (27/11) : noms tirés du Coran / de la Sunna authentique / statut discuté, mêmes fiches.
+              Caché aux tout-petits (version « petit », 3-6 ans) : ces listes ne leur parlent pas (Nadia, 27/11 soir) */}
+          {vue !== 'petit' && <BoutonAuthenticite noms={names} onOuvrirNom={(id) => {
             const index = names.findIndex((n) => n.id === id);
             if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
             openName(names[index], index);
-          }} />
+          }} />}
 
           {/* Grid */}
           {isLoading ? (

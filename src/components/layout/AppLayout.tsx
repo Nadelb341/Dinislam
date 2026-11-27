@@ -50,13 +50,16 @@ interface AppLayoutProps {
   title?: string;
   showBottomNav?: boolean;
   showBack?: boolean;
+  /** 🖼️ 27/11 (carte Dhikr) : la page a SON propre fond fixe sur tout l'écran → pas de fond d'écran de l'appli derrière (sinon le bleu se voit en haut et en bas) */
+  sansFondEcran?: boolean;
 }
 
 const AppLayout = ({
   children,
   title,
   showBottomNav = true,
-  showBack = false
+  showBack = false,
+  sansFondEcran = false,
 }: AppLayoutProps) => {
   usePresenceHeartbeat();
   useCouleursSaison();
@@ -67,9 +70,9 @@ const AppLayout = ({
   const placeZoom = (zoom.etat === 'connexion' || zoom.etat === 'en-cours') && zoom.reduit;
 
   return (
-    <div className="app-racine min-h-screen flex flex-col bg-background">
+    <div className="app-racine min-h-screen flex flex-col bg-background" style={sansFondEcran ? { background: 'transparent' } : undefined}>
       {/* 🖼️ Fond d'écran jour / nuit (2026-11-22), derrière tout */}
-      <SilentBoundary name="Fond d'écran"><FondEcran /></SilentBoundary>
+      {!sansFondEcran && <SilentBoundary name="Fond d'écran"><FondEcran /></SilentBoundary>}
       {/* 👻 Mode fantôme : bandeau « Revenir à mon compte » toujours en haut */}
       <SilentBoundary name="Bandeau fantôme"><BandeauFantome /></SilentBoundary>
       <Header title={title} showBack={showBack} />

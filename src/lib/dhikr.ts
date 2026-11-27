@@ -57,18 +57,6 @@ export function etatCercle(compte: number, nombre: number) {
   return { parTour, tours, tour, position, utiles, fini };
 }
 
-/** Le petit badge qui change en chemin */
-export function encouragement(fait: number, total: number): string {
-  if (total <= 1) return fait >= 1 ? 'Qu\'Allah accepte ton dhikr 🤲' : 'Fais ton dhikr avec moi 🤍';
-  if (fait <= 0) return 'Fais ton dhikr avec moi 🤍';
-  if (fait >= total) return 'Qu\'Allah accepte ton dhikr 🤲';
-  const r = fait / total;
-  if (r < 0.4) return 'Doucement, avec le cœur 🌿';
-  if (r < 0.6) return 'À mi-chemin, continue ✨';
-  if (r < 0.85) return `Reste avec moi jusqu'à ${total} 🤍`;
-  return 'Tu y es presque 🌟';
-}
-
 /** Les chapelets au choix (n° de la page de choix de Nadia ; « Cristal » et « Floral » non retenus) */
 export const CHAPELETS = [
   { cle: 'traditionnel', titre: 'Traditionnel' },

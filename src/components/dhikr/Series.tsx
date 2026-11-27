@@ -9,6 +9,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 import type { DhikrGeste } from '@/data/dhikrContenu';
 import { Chapelet } from './Chapelet';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
+import { BoutonRecitation } from './BoutonRecitation';
 import type { Couleurs } from './Ambiance';
 import { STATUTS } from './EditeurDhikr';
 
@@ -123,6 +124,7 @@ export function SerieGestes({ serie, gestes, userId, isAdmin, ambiance, onEditer
             {isAdmin && <button type="button" onClick={() => onEditer(g)} aria-label="Modifier ce geste" className="h-8 w-8 grid place-items-center rounded-full bg-white text-slate-800 border shadow-sm"><Pencil className="h-4 w-4" /></button>}
           </div>
           {g.consigne && <p className="text-sm font-semibold [overflow-wrap:anywhere]">{g.consigne}</p>}
+          <BoutonRecitation cle={g.cle} />
           {g.compteur?.length ? (
             <>
               {g.arabe && <details className="rounded-2xl border border-amber-300/60 p-2"><summary className="cursor-pointer text-sm font-bold">📖 Le texte en entier</summary><TexteDhikr arabe={g.arabe} phonetique={g.phonetique} sens={g.sens} ambiance={ambiance} /></details>}
@@ -244,6 +246,7 @@ export function ReveilTroisGestes({ gestes, userId, isAdmin, ambiance, onEditer 
                 {isAdmin && <button type="button" onClick={() => onEditer(g)} aria-label="Modifier ce geste" className="h-7 w-7 grid place-items-center rounded-full bg-white text-slate-800 border"><Pencil className="h-3.5 w-3.5" /></button>}
               </div>
               {g.consigne && <p className="text-sm [overflow-wrap:anywhere]">{g.consigne}</p>}
+              <BoutonRecitation cle={g.cle} />
               {(g.arabe || g.phonetique) && <TexteDhikr arabe={g.arabe} phonetique={g.phonetique} sens={g.sens} ambiance={fait ? { ...ambiance, or: '#8a5a00', doux: '#5a3d00' } : ambiance} />}
               {g.merite && <p className="text-xs font-bold">✨ {g.merite}</p>}
               <div className="flex flex-wrap gap-2">

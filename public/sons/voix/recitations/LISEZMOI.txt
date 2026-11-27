@@ -1,0 +1,5 @@
+Récitations du Coran de la carte Dhikr (choix de Nadia du 27/11/2026, page d'écoute) :
+- afasy/ : Mishary Rashid Al-'Afâsî (Ayat al-Koursi 2:255, Al-Baqara 2:285-286, Al-Ikhlâs, Al-Falaq, An-Nâs)
+- abdelbasset/ : 'Abd al-Bâsit 'Abd as-Samad, murattal (Al-Ikhlâs)
+Source : everyayah.com (Alafasy_128kbps, Abdul_Basit_Murattal_64kbps), un fichier par verset (SSSVVV), usage non commercial.
+Allégés le 27/11 avec afconvert (AAC mono 56 kb/s). Lus par src/components/dhikr/BoutonRecitation.tsx.
