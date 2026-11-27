@@ -14,6 +14,7 @@ import DevoirEnCours from '@/components/homework/DevoirEnCours';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
 // 🐿️ L'écureuil qui se cache dans toute l'appli (2026-11-26) : chargé à part, monté UNE fois au-dessus des pages
 const EcureuilPartout = lazy(() => import('@/components/saisons/Ecureuil'));
+const ZoomCours = lazy(() => import('@/components/zoom/ZoomCours'));
 
 // Vérification automatique de version — force le rechargement si nouvelle version disponible
 const checkAppVersion = async () => {
@@ -164,6 +165,8 @@ const App = () => (
             <DevoirEnCours />
             <AppRoutes />
             <SilentBoundary name="Écureuil"><Suspense fallback={null}><EcureuilPartout /></Suspense></SilentBoundary>
+            {/* 🎥 Le cours Zoom dans l'appli (27/11) : une seule fenêtre, gardée quand on change de page */}
+            <SilentBoundary name="Cours Zoom"><Suspense fallback={null}><ZoomCours /></Suspense></SilentBoundary>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
