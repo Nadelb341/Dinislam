@@ -81,9 +81,9 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
   return (
     // 2026-11-26 (Nadia : téléphone tourné) : en paysage peu haut, une seule ligne d'icônes (nom en bulle et pour les lecteurs d'écran)
     <nav ref={brancher} aria-label="Menu des cartes" className="fixed bottom-0 left-0 right-0 z-50 bottom-nav safe-bottom">
-      <ul className={cn('mx-auto grid max-w-3xl grid-cols-5 gap-x-1 px-2 pt-1.5 pb-1 paysage:flex paysage:max-w-none paysage:justify-around paysage:py-0.5', lignes > 2 && 'gap-y-0')}>
+      <ul className={cn('mx-auto grid max-w-3xl grid-cols-5 gap-x-1 gap-y-1 px-2 pt-1.5 pb-1.5 paysage:flex paysage:max-w-none paysage:justify-around paysage:py-0.5', lignes > 2 && 'gap-y-0')}>
         {navItems.map((item) => (
-          <li key={item.path} className="min-w-0 paysage:flex-1">
+          <li key={item.path} className={cn('nav-case min-w-0 paysage:flex-1', location.pathname.startsWith(item.path) && 'actif')}>
             <NavButton item={item} location={location} navigate={navigate} serre={lignes > 2} />
           </li>
         ))}
@@ -91,19 +91,6 @@ const BottomNav = React.forwardRef<HTMLElement>((_, ref) => {
     </nav>
   );
 });
-
-/** 🎨 Tuiles colorées du menu (Nadia, 2026-11-26 : « plus agréable à regarder, avec des couleurs », comme l'agenda) */
-const TEINTES: Record<string, string> = {
-  ramadan: '#fde2c4', alphabet: '#cfe3ff', invocations: '#e2d9ff', priere: '#c9f1f5', grammaire: '#cdf2d8',
-  'allah-names': '#ffeeb8', '99-noms': '#ffeeb8', sourates: '#d6dcff', nourania: '#fff1a8', vocabulaire: '#ffd6ea',
-  'lecture-coran': '#c4f0e6', darija: '#ffdcc2', dictionnaire: '#e4dcff', dhikr: '#d3f2d1', hadiths: '#d4def9',
-  'histoires-prophetes': '#ffe9b3', coran: '#cdeed2', 'cahier-texte': '#d3e5ff', 'registre-presence': '#cfeed8',
-};
-const TEINTES_SECOURS = ['#fde2c4', '#cfe3ff', '#e2d9ff', '#cdf2d8', '#ffd6ea', '#fff1a8'];
-const teinte = (slug: string) => {
-  const cle = slug.replace(/^module\//, '');
-  return TEINTES[cle] ?? TEINTES_SECOURS[[...cle].reduce((h, c) => h + c.charCodeAt(0), 0) % TEINTES_SECOURS.length];
-};
 
 interface NavButtonProps {
   item: { icon: LucideIcon; label: string; path: string; imageUrl?: string | null; slug: string };
@@ -117,6 +104,7 @@ const NavButton = ({ item, location, navigate, serre }: NavButtonProps) => {
   const emoji = MODULE_EMOJI_FALLBACK[item.slug.replace(/^module\//, '')]?.emoji;
   const Icon = item.icon;
 
+  // 2026-11-27 (Nadia, version « a ») : plus de tuiles pastel ; émoji + nom sur le fond beige, la carte ouverte dans une pilule claire
   return (
     <button
       onClick={() => navigate(item.path)}
@@ -124,37 +112,37 @@ const NavButton = ({ item, location, navigate, serre }: NavButtonProps) => {
       aria-current={isActive ? 'page' : undefined}
       title={item.label}
       className={cn(
-        // 🔍 micro zoom (Nadia, 2026-11-26) : la tuile grossit un peu au survol et se « presse » au toucher
-        'group flex w-full flex-col items-center justify-center gap-0.5 rounded-xl transition-transform duration-200 active:scale-90 [-webkit-tap-highlight-color:transparent]',
+        'group flex w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[22px] transition-transform duration-200 active:scale-90 [-webkit-tap-highlight-color:transparent]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b5651d] dark:focus-visible:ring-[#ffd8a3]',
         serre ? 'h-[50px]' : 'h-[58px]',
         'paysage:h-11',
+        isActive && 'nav-pilule',
       )}
     >
-      <span
-        className={cn(
-          'grid place-items-center rounded-[14px] shadow-[0_3px_8px_rgba(120,90,60,.18),inset_0_1px_0_rgba(255,255,255,.7)] transition-transform duration-200 group-hover:scale-110',
-          serre ? 'h-8 w-8' : 'h-9 w-9',
-          'paysage:h-8 paysage:w-8',
-          isActive && 'scale-110 ring-2 ring-primary ring-offset-1 ring-offset-background'
-        )}
-        style={{ background: `linear-gradient(160deg, #ffffffcc, transparent 60%), ${teinte(item.slug)}` }}
-      >
+      <span className={cn('grid place-items-center transition-transform duration-200 group-hover:scale-110', serre ? 'h-6' : 'h-7', 'paysage:h-7')}>
         {item.imageUrl ? (
           <img src={item.imageUrl} alt="" className="h-6 w-6 rounded-lg object-cover" />
         ) : emoji ? (
-          <span aria-hidden className={cn('leading-none', serre ? 'text-lg' : 'text-xl', emoji === 'أ' && 'font-arabic font-bold text-[#2457a5]')}>{emoji}</span>
+          <span aria-hidden className={cn('leading-none', serre ? 'text-lg' : 'text-xl', emoji === 'أ' && 'font-arabic font-bold text-[#2457a5] dark:text-[#a9c8ff]')}>{emoji}</span>
         ) : (
-          <Icon className="h-5 w-5 text-foreground" />
+          <Icon className="h-5 w-5" />
         )}
       </span>
-      <FitText
-        className={cn(
-          'max-w-full px-0.5 text-[10px] leading-tight transition-colors paysage:hidden',
-          isActive ? 'font-extrabold text-primary' : 'font-semibold text-[#7d6e60] dark:text-muted-foreground'
-        )}
-      >
-        {item.label}
-      </FitText>
+      {/* Nom long en plusieurs mots (« Grammaire & Conjugaison ») : sur 2 lignes, mots entiers ; sinon une ligne qui rétrécit */}
+      {item.label.length > 13 && item.label.includes(' ') ? (
+        <span className={cn('block max-w-full px-0.5 text-center text-[9.5px] leading-[1.05] [hyphens:none] paysage:hidden', isActive ? 'font-extrabold' : 'font-bold')}>
+          {item.label}
+        </span>
+      ) : (
+        <FitText
+          className={cn(
+            'max-w-full px-0.5 text-[10px] leading-tight paysage:hidden',
+            isActive ? 'font-extrabold' : 'font-bold',
+          )}
+        >
+          {item.label}
+        </FitText>
+      )}
     </button>
   );
 };

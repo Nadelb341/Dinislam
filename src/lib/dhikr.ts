@@ -83,8 +83,17 @@ export const CHAPELETS = [
 export type CleChapelet = (typeof CHAPELETS)[number]['cle'];
 export const CHAPELET_PAR_DEFAUT: CleChapelet = 'nacre';
 
-/** Mode automatique : temps entre 2 perles (×1 = 1,6 s ; ×0,5 = deux fois plus lent) */
-export const intervalleAuto = (vitesse: 0.5 | 1) => (vitesse === 1 ? 1600 : 3200);
+/** Mode automatique : temps entre 2 perles à la vitesse ×1 (×0,5 = deux fois plus lent) */
+export const INTERVALLE_AUTO_DEFAUT = 1600;
+/**
+ * Dhikr qui ont leur propre temps en automatique (Nadia, 27/11) : « Lâ ilâha illa-llâhou wahdahou lâ charîka lah… · 100 »
+ * = 15 s par perle à ×1 (30 s à ×0,5), le temps de dire la phrase en entier. Les autres dhikr gardent 1,6 s / 3,2 s.
+ */
+export const INTERVALLES_AUTO_PAR_DHIKR: Record<string, number> = { tahlil_100: 15000 };
+export const intervalleAuto = (vitesse: 0.5 | 1, cle?: string | null) => {
+  const base = (cle && INTERVALLES_AUTO_PAR_DHIKR[cle]) || INTERVALLE_AUTO_DEFAUT;
+  return vitesse === 1 ? base : base * 2;
+};
 
 // ─── Le temps (heure de l'appareil) ─────────────────────────────────────────────
 export const cleJour = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -102,7 +111,8 @@ const semaineSuivante = (k: string) => { const d = depuisCle(k); d.setDate(d.get
 
 // ─── G · Le carnet ──────────────────────────────────────────────────────────────
 export type MomentCarnet = 'matin' | 'soir' | 'reveil' | 'apres_priere' | 'libre' | 'defi';
-export interface JourCarnet { total: number; moments: MomentCarnet[] }
+/** parDhikr (27/11, carnet visible de l'enseignante) : clé du dhikr → { titre, nombre } ; absent sur les anciens jours */
+export interface JourCarnet { total: number; moments: MomentCarnet[]; parDhikr?: Record<string, { titre: string; nombre: number }> }
 export interface SemaineCarnet { semaine: string; jours: Record<string, JourCarnet> }
 export interface Carnet { courante: SemaineCarnet; precedente: SemaineCarnet | null }
 
@@ -119,13 +129,64 @@ export function carnetALHeure(c: Carnet | null | undefined, maintenant: Date): C
   return { courante: { semaine: s, jours: {} }, precedente: { semaine: cleSemaine(new Date(lundiDe(maintenant).getTime() - 3 * 86400000)), jours: {} } };
 }
 
-export function ajouterAuCarnet(c: Carnet | null | undefined, maintenant: Date, moment: MomentCarnet, nombre: number): Carnet {
+export function ajouterAuCarnet(
+  c: Carnet | null | undefined, maintenant: Date, moment: MomentCarnet, nombre: number,
+  dhikr?: { cle: string; titre: string } | null,
+): Carnet {
   const a = carnetALHeure(c, maintenant);
   const k = cleJour(maintenant);
   const j = a.courante.jours[k] ?? { total: 0, moments: [] };
+  const n = Math.max(0, Math.round(nombre));
   const moments = j.moments.includes(moment) ? j.moments : [...j.moments, moment];
-  return { ...a, courante: { ...a.courante, jours: { ...a.courante.jours, [k]: { total: j.total + Math.max(0, Math.round(nombre)), moments } } } };
+  const jour: JourCarnet = { ...j, total: j.total + n, moments };
+  if (dhikr?.cle && n > 0) {
+    const avant = j.parDhikr?.[dhikr.cle];
+    jour.parDhikr = { ...(j.parDhikr ?? {}), [dhikr.cle]: { titre: dhikr.titre || avant?.titre || dhikr.cle, nombre: (avant?.nombre ?? 0) + n } };
+  }
+  return { ...a, courante: { ...a.courante, jours: { ...a.courante.jours, [k]: jour } } };
 }
+
+/**
+ * 📒 Résumé d'UNE semaine du carnet, tel qu'il est envoyé en base (table dhikr_carnet_semaines, une ligne par élève et
+ * par semaine) pour que l'enseignante le voie. Séries = nombre de JOURS où la série du matin / du soir / du réveil a été faite.
+ */
+export interface ResumeSemaine {
+  semaine: string; total: number;
+  par_dhikr: Record<string, { titre: string; nombre: number }>;
+  par_jour: Record<string, number>;
+  series_matin: number; series_soir: number; series_reveil: number;
+  moments: MomentCarnet[];
+}
+export function resumeSemaine(s: SemaineCarnet): ResumeSemaine {
+  const par_dhikr: ResumeSemaine['par_dhikr'] = {};
+  const par_jour: Record<string, number> = {};
+  const moments = new Set<MomentCarnet>();
+  let total = 0, series_matin = 0, series_soir = 0, series_reveil = 0;
+  for (const [jour, j] of Object.entries(s.jours).sort(([a], [b]) => a.localeCompare(b))) {
+    const t = Math.max(0, Math.round(j.total || 0));
+    total += t;
+    if (t > 0) par_jour[jour] = t;
+    for (const m of j.moments ?? []) moments.add(m);
+    if (j.moments?.includes('matin')) series_matin++;
+    if (j.moments?.includes('soir')) series_soir++;
+    if (j.moments?.includes('reveil')) series_reveil++;
+    for (const [cle, d] of Object.entries(j.parDhikr ?? {})) {
+      const avant = par_dhikr[cle];
+      par_dhikr[cle] = { titre: d.titre || avant?.titre || cle, nombre: (avant?.nombre ?? 0) + Math.max(0, Math.round(d.nombre || 0)) };
+    }
+  }
+  return { semaine: s.semaine, total, par_dhikr, par_jour, series_matin, series_soir, series_reveil, moments: [...moments] };
+}
+/** Une semaine sans aucun dhikr n'est pas envoyée (pas de ligne vide en base) */
+export const semaineVide = (s: SemaineCarnet | null | undefined) => !s || totalSemaine(s) === 0;
+
+/** Les dhikr d'une semaine, du plus fait au moins fait (vue de l'enseignante) */
+export const dhikrTries = (par: Record<string, { titre: string; nombre: number }> | null | undefined) =>
+  Object.entries(par ?? {}).map(([cle, d]) => ({ cle, titre: d.titre, nombre: d.nombre })).filter((d) => d.nombre > 0)
+    .sort((a, b) => b.nombre - a.nombre || a.titre.localeCompare(b.titre));
+
+/** La semaine (lundi) d'avant celle de d — pour « la semaine passée » de l'enseignante */
+export const semainePasseeDe = (d: Date) => cleSemaine(new Date(lundiDe(d).getTime() - 3 * 86400000));
 
 export const totalSemaine = (s: SemaineCarnet | null) => (s ? Object.values(s.jours).reduce((t, j) => t + j.total, 0) : 0);
 

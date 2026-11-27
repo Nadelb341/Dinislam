@@ -28,7 +28,7 @@ export function DhikrPetits() {
     const suivant = n + 1;
     setN(suivant);
     direAvecSaVoix(null, d.arabe, 'ar', 'jamal');
-    if (suivant === 10) { vibrer([90, 60, 200]); setFete(true); void noterDhikr(user?.id, { moment: 'libre', nombre: 10 }); }
+    if (suivant === 10) { vibrer([90, 60, 200]); setFete(true); void noterDhikr(user?.id, { moment: 'libre', nombre: 10, dhikr: { cle: d.cle, titre: d.phon } }); }
     else vibrer(15);
   };
   return (

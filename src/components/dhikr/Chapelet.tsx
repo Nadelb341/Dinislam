@@ -18,7 +18,9 @@ import type { Couleurs } from './Ambiance';
  * Deux modes : 👆 À mon rythme (toucher le grand bouton ou le chapelet) / ▶️ Automatique (vitesse ×0,5 / ×1, pause).
  * Petite vibration à chaque perle, plus forte à la fin. Tout marche sans réseau ; le choix du chapelet et du mode est gardé sur l'appareil.
  */
-export interface EtapeChapelet { titre: string; arabe: string; phonetique: string; sens: string; nombre: number }
+export interface EtapeChapelet { titre: string; arabe: string; phonetique: string; sens: string; nombre: number;
+  /** Clé du dhikr (dhikr_items.cle) : certains ont leur propre temps en automatique (`intervalleAuto`) */
+  cle?: string | null }
 
 // ─── Le chapelet en CERCLE (Nadia, 27/11, 2ᵉ demande, d'après sa capture) ───
 // 11 perles en cercle autour du compteur ; la perle à compter est DORÉE. 33 = 3 tours de 11 (« Tour : 1, 2, 3 »),
@@ -201,12 +203,14 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   // Le message « ✓ … — maintenant : … » s'efface tout seul
   useEffect(() => { if (!passage) return; const t = setTimeout(() => setPassage(null), 2200); return () => clearTimeout(t); }, [passage]);
 
-  // ▶️ Mode automatique : une perle toutes les 1,6 s (×1) ou 3,2 s (×0,5) ; s'arrête si l'appli passe en arrière-plan
+  // ▶️ Mode automatique : une perle toutes les 1,6 s (×1) ou 3,2 s (×0,5) — 15 s / 30 s pour le tahlil ×100 ;
+  // s'arrête si l'appli passe en arrière-plan
+  const cleEtape = etapes[Math.min(etat.etape, etapes.length - 1)]?.cle ?? null;
   useEffect(() => {
     if (reglages.mode !== 'auto' || !enMarche || etat.fini) return;
-    const t = setInterval(() => { if (document.visibilityState === 'visible') compter(); }, intervalleAuto(reglages.vitesse));
+    const t = setInterval(() => { if (document.visibilityState === 'visible') compter(); }, intervalleAuto(reglages.vitesse, cleEtape));
     return () => clearInterval(t);
-  }, [reglages.mode, reglages.vitesse, enMarche, etat.fini, compter]);
+  }, [reglages.mode, reglages.vitesse, enMarche, etat.fini, compter, cleEtape]);
 
   const etape = etapes[Math.min(etat.etape, etapes.length - 1)] ?? { titre: '', arabe: '', phonetique: '', sens: '', nombre: 1 };
   const badge = etat.fini ? 'Qu\'Allah accepte ton dhikr 🤲' : encouragement(etat.compte, etape.nombre);

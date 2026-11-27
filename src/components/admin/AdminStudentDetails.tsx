@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Version99NomsEleve } from '@/components/allahNames/Version99NomsEleve';
+import { CarnetDhikrEleve } from '@/components/dhikr/CarnetEleveAdmin';
 import { RenameStudentDialog } from '@/components/admin/RenameStudentDialog';
 import { UnconfirmedEmailBadge } from '@/components/admin/UnconfirmedEmailBadge';
 import { StudentCurrentPassword } from '@/components/admin/StudentCurrentPassword';
@@ -669,6 +670,7 @@ const AdminStudentDetails = ({ onBack, initialSearch, initialStudentId }: AdminS
                 {progressBar(studentProgress.invocations.memorized, studentProgress.invocations.total, 'Invocations', <MessageSquare className="h-4 w-4 text-primary" />, 'invocations')}
                 {progressBar(studentProgress.sourates.validated, studentProgress.sourates.total, 'Sourates', <BookMarked className="h-4 w-4 text-gold" />, 'sourates')}
                 {progressBar(studentProgress.prayer.validated, studentProgress.prayer.total, 'Prière', <Hand className="h-4 w-4 text-primary" />, 'priere')}
+                {selectedStudent?.id && <CarnetDhikrEleve userId={selectedStudent.id} />}
                 {pointsMatiere && <AutresPoints points={pointsMatiere} />}
               </div>
 

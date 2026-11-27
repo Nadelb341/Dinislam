@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useLocal, useMaintenant } from '@/hooks/useDhikrLocal';
-export { useLocal, useMaintenant, useJournee, noterDhikr } from '@/hooks/useDhikrLocal';
+export { useLocal, useMaintenant, useJournee, noterDhikr, envoyerCarnetUneFois } from '@/hooks/useDhikrLocal';
 import { useQuery } from '@tanstack/react-query';
 import { untypedDb } from '@/lib/untypedDb';
 import {

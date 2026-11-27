@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ecrireOuGarder } from '@/lib/fileHorsLigne';
 import {
-  ajouterAuCarnet, cleCarnet, cleJour, cleJournee, ecrireLocal, EVT_DHIKR, lireLocal, marquerJournee,
-  type Carnet, type JourneeDhikr, type MomentCarnet,
+  ajouterAuCarnet, carnetALHeure, cleCarnet, cleJour, cleJournee, ecrireLocal, EVT_DHIKR, lireLocal, marquerJournee, resumeSemaine, semaineVide,
+  type Carnet, type JourneeDhikr, type MomentCarnet, type SemaineCarnet,
 } from '@/lib/dhikr';
 
 /**
@@ -44,14 +44,47 @@ export function useJournee(uid: string | null | undefined) {
  * et pour une SÉRIE du matin / du soir terminée : une ligne en base (une par jour) qui donne les points du barème.
  * Sans réseau : la ligne est gardée et envoyée au retour du réseau (`ecrireOuGarder`).
  */
-export async function noterDhikr(uid: string | null | undefined, o: { moment: MomentCarnet; nombre: number; journee?: string; serie?: 'matin' | 'soir' | 'reveil' }) {
+export async function noterDhikr(uid: string | null | undefined, o: {
+  moment: MomentCarnet; nombre: number; journee?: string; serie?: 'matin' | 'soir' | 'reveil';
+  /** Quel dhikr (pour les totaux par dhikr que voit l'enseignante) */
+  dhikr?: { cle: string; titre: string } | null;
+}) {
   if (!uid) return;
   const maintenant = new Date();
-  ecrireLocal(cleCarnet(uid), ajouterAuCarnet(lireLocal<Carnet>(cleCarnet(uid)), maintenant, o.moment, o.nombre));
+  const carnet = ajouterAuCarnet(lireLocal<Carnet>(cleCarnet(uid)), maintenant, o.moment, o.nombre, o.dhikr);
+  ecrireLocal(cleCarnet(uid), carnet);
+  void envoyerSemaine(uid, carnet.courante);
   if (o.journee) ecrireLocal(cleJournee(uid), marquerJournee(lireLocal<JourneeDhikr>(cleJournee(uid)), maintenant, o.journee));
   if (o.serie) {
     try {
       await ecrireOuGarder({ table: 'dhikr_series_faites', op: 'upsert', rows: [{ user_id: uid, serie: o.serie, jour: cleJour(maintenant) }] });
     } catch (e) { console.error('[Dhikr] série non enregistrée', e); }
   }
+}
+
+/**
+ * 📒 Le carnet de la semaine envoyé EN BASE (Nadia, 27/11 : l'enseignante le voit dans la fiche de l'élève).
+ * Une ligne par élève et par semaine (`dhikr_carnet_semaines`), remplacée à chaque dhikr par la photo complète de la semaine.
+ * Sans réseau : gardée sur l'appareil (UNE seule écriture en attente par semaine) et envoyée au retour du réseau.
+ * N'a aucun effet sur les points.
+ */
+export async function envoyerSemaine(uid: string, s: SemaineCarnet | null | undefined) {
+  if (!s || semaineVide(s)) return;
+  const r = resumeSemaine(s);
+  try {
+    await ecrireOuGarder({
+      table: 'dhikr_carnet_semaines', op: 'upsert', cle: `${uid}|${r.semaine}`,
+      rows: [{ user_id: uid, ...r, updated_at: new Date().toISOString() }],
+    });
+  } catch (e) { console.error('[Dhikr] carnet non envoyé', e); }
+}
+
+/** Au 1er affichage de la carte (une fois par visite) : envoie aussi ce qui était déjà dans le carnet de l'appareil (cette semaine + la passée) */
+export function envoyerCarnetUneFois(uid: string | null | undefined) {
+  if (!uid) return;
+  const cle = `dinislam_dhikr_carnet_envoye_${uid}`;
+  try { if (sessionStorage.getItem(cle)) return; sessionStorage.setItem(cle, '1'); } catch { /* stockage indisponible : on envoie quand même */ }
+  const c = carnetALHeure(lireLocal<Carnet>(cleCarnet(uid)), new Date());
+  void envoyerSemaine(uid, c.precedente);
+  void envoyerSemaine(uid, c.courante);
 }
