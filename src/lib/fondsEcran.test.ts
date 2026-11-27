@@ -24,3 +24,11 @@ describe('fonds d\'écran', () => {
     expect(svgFond(f, 'x', true).length).toBeGreaterThan(svgFond(f, 'x', false).length);
   });
 });
+
+describe('🚫 plus aucune étoile à 8 branches dans les fonds (Nadia, 27/11)', () => {
+  it('aucun fond ne dessine deux carrés croisés (rotate 45)', () => {
+    for (const f of FONDS) {
+      for (const v of [false, true]) expect(svgFond(f, 't', v)).not.toMatch(/rotate\(45/);
+    }
+  });
+});
