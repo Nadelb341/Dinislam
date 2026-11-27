@@ -56,7 +56,7 @@ export function DhikrPetits() {
       </button>
       {n >= 10 && (
         <div className="space-y-3">
-          <p className="text-6xl sm:text-7xl font-black tracking-wide text-amber-400 drop-shadow-[0_3px_0_rgba(0,0,0,.25)]">BRAVO !</p>
+          {!fete && <p className="text-6xl sm:text-7xl font-black tracking-wide text-amber-400 drop-shadow-[0_3px_0_rgba(0,0,0,.25)]">BRAVO !</p>}
           <button type="button" onClick={() => setN(0)} className="rounded-full bg-white text-slate-900 px-6 py-3 text-2xl font-black shadow-lg">🔁 Encore !</button>
         </div>
       )}

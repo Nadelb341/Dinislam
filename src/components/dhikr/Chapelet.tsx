@@ -98,13 +98,14 @@ export function Misbaha({ perles, style, separateur = 33, onToucher, petit }: {
           <g key={v.i} transform={`translate(${v.x.toFixed(2)} ${v.y.toFixed(2)})`} opacity={v.o}>
             <ellipse cx="1.5" cy={R * 0.85} rx={R * 0.8} ry={R * 0.28} fill="#000" opacity=".12" />
             <Perle uid={uid} style={style} r={sep ? R + 2.5 : R} n={v.i} />
+            {v.i === perles && <circle r={R + 3.5} fill="none" stroke="#e3b341" strokeWidth="2.2" opacity=".9" />}
           </g>
         );
       })}
       {/* Les 2 bouts du fil se rejoignent en haut : la perle « imam » et le pompon (gland), qui se balance doucement */}
       <path d={`M${P.x0} ${P.y0} L180 14 L${P.x3} ${P.y3}`} stroke={FIL[style]} strokeWidth="2" fill="none" strokeLinecap="round" />
       <g transform={`translate(180 8) rotate(${balance.toFixed(2)})`}>
-        <Pompon uid={uid} style={style} taille={1.05} />
+        <Pompon uid={uid} style={style} taille={1.3} />
       </g>
     </svg>
   );

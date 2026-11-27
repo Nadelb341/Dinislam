@@ -17,7 +17,7 @@ export function TexteDhikr({ arabe, phonetique, sens, ambiance, grand }: { arabe
   return (
     <div className="space-y-2 text-center">
       {arabe && lignes(arabe).map((l, i) => (
-        <p key={i} dir="rtl" lang="ar" className={cn('font-arabic font-bold leading-[2] [overflow-wrap:anywhere]', grand ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl')}
+        <p key={i} dir="rtl" lang="ar" className={cn('font-arabic font-bold leading-[2] [overflow-wrap:anywhere]', grand && arabe.length < 140 ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl')}
           style={{ color: ambiance.or, textShadow: ambiance.nom === 'nuit' ? '0 0 12px rgba(245,210,122,.3)' : '0 1px 0 rgba(255,255,255,.7)' }}>{l}</p>
       ))}
       {phonetique && lignes(phonetique).map((l, i) => <p key={i} className="italic font-semibold [overflow-wrap:anywhere]">{l}</p>)}
