@@ -204,12 +204,43 @@
     background: linear-gradient(135deg, hsl(220 75% 35%) 0%, hsl(220 80% 28%) 100%);
   }
 
-  /* Bottom navigation */
+  /* Barre du bas (Nadia, 27/11 : version « a » de l'aperçu) : fond beige-nude doux, arrondi, ombre légère,
+     petits traits entre les cartes, la carte ouverte dans une pilule claire. Textes foncés (jour) / clairs (nuit). */
   .bottom-nav {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 100%) 100%);
-    backdrop-filter: blur(12px);
-    border-top: 1px solid hsl(45 85% 55% / 0.3);
+    --nav-haut: #f7e9d8; --nav-bas: #f1dcc4; --nav-texte: #5c3d22; --nav-trait: rgba(138, 90, 43, .22);
+    --nav-pilule-haut: #fff5e8; --nav-pilule-bas: #fbe6cb; --nav-actif: #8a4310; --nav-ombre-pilule: rgba(150, 90, 30, .2);
+    background: linear-gradient(180deg, var(--nav-haut), var(--nav-bas));
+    border-radius: 28px 28px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, .7);
+    box-shadow: 0 -4px 16px rgba(120, 70, 20, .16);
+    color: var(--nav-texte);
   }
+  /* Mode nuit : la même barre, en beige sombre et chaud */
+  .dark .bottom-nav {
+    --nav-haut: #3d2f24; --nav-bas: #2f241b; --nav-texte: #f3e2cc; --nav-trait: rgba(243, 226, 204, .2);
+    --nav-pilule-haut: #5c4734; --nav-pilule-bas: #4b3928; --nav-actif: #ffd8a3; --nav-ombre-pilule: rgba(0, 0, 0, .35);
+    border-top-color: rgba(255, 230, 200, .14);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, .45);
+  }
+  .bottom-nav .nav-case { position: relative; }
+  /* Petit trait entre 2 cartes d'une même ligne (pas au début d'une ligne, ni à côté de la pilule) */
+  .bottom-nav .nav-case + .nav-case::before {
+    content: ""; position: absolute; left: -2px; top: 24%; bottom: 24%; width: 1px; background: var(--nav-trait); pointer-events: none;
+  }
+  .bottom-nav .nav-case:nth-child(5n + 1)::before,
+  .bottom-nav .nav-case.actif::before,
+  .bottom-nav .nav-case.actif + .nav-case::before { display: none; }
+  @media (orientation: landscape) and (max-height: 500px) {
+    /* Téléphone couché : une seule ligne → un trait aussi devant la 6ᵉ, la 11ᵉ… */
+    .bottom-nav .nav-case:nth-child(5n + 1):not(:first-child):not(.actif)::before { display: block; }
+    .bottom-nav .nav-case.actif + .nav-case:nth-child(n):not(.actif)::before { display: none; }
+  }
+  .bottom-nav .nav-pilule {
+    background: linear-gradient(180deg, var(--nav-pilule-haut), var(--nav-pilule-bas));
+    color: var(--nav-actif);
+    box-shadow: 0 3px 10px var(--nav-ombre-pilule), inset 0 1px 0 rgba(255, 255, 255, .55);
+  }
+  .dark .bottom-nav .nav-pilule { box-shadow: 0 3px 10px var(--nav-ombre-pilule), inset 0 1px 0 rgba(255, 255, 255, .08); }
 
   /* Module card styles */
   .module-card {
