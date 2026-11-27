@@ -3,10 +3,34 @@
 > 📚 **Historique détaillé de toutes les fonctionnalités** (qui a demandé quoi, choix de Nadia, fichiers, tests) : `HISTORIQUE.md`. Le lire AVANT de toucher à une fonctionnalité existante (chercher son nom dedans).
 
 ## 🕌 RÈGLE ABSOLUE N°1 — Contenu conforme aux convictions de Nadia : sunnite, école malikite (Nadia, 2026-11-26, « très très importante », en tête de liste)
-- Références de Nadia : le Coran, les hadiths de **Sahih al-Boukhari** et **Sahih Mouslim**, les 4 imams (**Malik ibn Anas**, Abou Hanifa, Ach-Chafi'i, Ahmad ibn Hanbal). Pour la pratique (prière, ablutions…) : l'avis **malikite** d'abord.
+- Références de Nadia (précisées le 27/11, voir ci-dessous) : le Coran, **Sahih al-Boukhari**, **Sahih Mouslim**, puis les autres recueils AVEC leur degré ; école **100 % malikite** (imam Malik ibn Anas).
 - **AVANT d'ajouter le moindre contenu religieux** (PDF, livre, vidéo, texte, quiz, invocation, histoire, fiche, son), je le LIS en entier et je cherche : contenu chiite (« أشهد أن عليا ولي الله », imams infaillibles, Ahl al-Bayt à la manière chiite, malédiction des compagnons…), hadiths inventés/faibles présentés comme sûrs, innovations présentées comme obligatoires, erreurs (prophètes, rak'ât, sourates), avis d'une autre école présenté comme LA règle.
 - Au moindre doute : je NE mets PAS en ligne, je préviens Nadia (endroit exact + citation + ce qui ne va pas) et j'attends sa réponse. Les quiz générés par l'IA suivent la même règle.
 - Exemple (26/11) : « Lecture facile du Coran » (éd. Booky) = manuel chiite → introduction, appendice (adhan chiite) ET cours 26 (Sistani, 4 prosternations obligatoires) RETIRÉS, PDF entier retiré. Audit complet de l'appli fait le 26/11 (liste donnée à Nadia : Fajr « quand le soleil se lève », Ramadan « 3e pilier », hadiths du jour faibles, quiz Ramadan isrâ'iliyyât, Ar-Rashîd « Le Bien Guidé », fiche LODO 11 au sens inversé, salam à gauche, gant pour le Coran…) → choix de Nadia du 26/11 : corrigés = Fajr, « 4e pilier », fiche LODO 11 (nouvelle affiche `fiche-11-invocation-fin-v2.jpg`), 12 hadiths du jour → Boukhari/Mouslim, Ar-Rashîd / As-Samad, fiche sourate 83, arabe des catégories (الغسل, الشفع والوتر), carte 8 « PASSER LES MAINS… », doublons du quiz jour 18 (corbeille), PDF Calligraphie (س = sakt, fichiers `-v2.pdf`), fiche LODO 2 (`-v2`, « si tu le dis », « Ça ») ; LAISSÉS = 2 salam, vidéos Rachid El Jay, invocations du repas ; ⏳ vidéos fiables pour les quiz du Ramadan : 73 propositions (30 thèmes) sur https://claude.ai/artifact/6XUQYvvgyHhTEaKnsFBPBy → choix de Nadia, puis remplacer vidéos + refaire les quiz du Ramadan.
+
+### 📚 Sources, degrés d'authenticité et précautions (précisions de Nadia du 2026-11-27, qui COMPLÈTENT la règle n°1)
+- **École : 100 % malikite (imam Malik ibn Anas).** Les 3 autres imams (Abou Hanifa, Ach-Chafi'i, Ahmad ibn Hanbal) ne sont pas ses références : seulement quand les 4 écoles sont unanimes (ou la grande majorité) sur un point, on peut s'appuyer sur cet accord, et Claude **le précise** (« avis unanime des 4 écoles »). Sinon : l'avis malikite.
+- **1. Ordre des sources que Claude privilégie :**
+  1. le Saint Coran ;
+  2. Sahih Al-Boukhârî ;
+  3. Sahih Mouslim ;
+  4. les autres recueils de hadiths authentifiés : Abou Dâwoud, At-Tirmidhî, An-Nasâ'î, Ibn Mâjah, etc. ;
+  5. les ouvrages de référence des savants sunnites, notamment ceux de l'école malikite.
+  Les hadiths des autres recueils (4) sont TOUJOURS accompagnés de leur degré d'authenticité et de leur référence.
+- **2. Claude précise SYSTÉMATIQUEMENT le degré d'authenticité**, partout dans l'appli (pastille visible des élèves) :
+  - **SAHIH** (صحيح) · Authentique : hadith reconnu authentique ;
+  - **HASAN** (حسن) · Bon : hadith fiable, mais de degré inférieur au Sahih ;
+  - **DA'IF** (ضعيف) · Faible : faiblesse dans sa chaîne de transmission ou sa transmission ;
+  - **MAWDOU'** (موضوع) · Inventé : hadith fabriqué et faussement attribué au Prophète ﷺ.
+  En cas de divergence entre les spécialistes du hadith, Claude le précise, au lieu de choisir arbitrairement un avis.
+- **3. Précautions pour l'appli :**
+  - ne jamais attribuer au Prophète ﷺ une parole sans référence vérifiable ;
+  - ne jamais présenter une pratique comme une Sunna authentique si sa preuve est faible ou inexistante ;
+  - ne jamais inventer un nombre de répétitions pour un dhikr ;
+  - ne jamais promettre une récompense particulière sans preuve ;
+  - distinguer les pratiques établies dans la Sunna des habitudes ou pratiques simplement permises ;
+  - respecter les avis de l'école malikite en jurisprudence (fiqh).
+  Un hadith faible n'est pas automatiquement présenté comme faux : certains savants l'ont admis sous conditions dans les mérites des œuvres (Fada'il al-A'mal). Mais Claude ne s'en sert JAMAIS pour présenter une pratique comme une Sunna établie ou une obligation.
 
 ## 🚨🚨 RÈGLE ABSOLUE — L'application doit TOUJOURS pouvoir s'ouvrir (voir CLAUDE.md global)
 Règle née le 2026-09-15 sur Agenda Nadia (un hook mal placé a fait planter toute l'appli pour tout le monde) — s'applique aussi ici. Règle complète (priorité maximale) dans `~/Projets Claude Code/CLAUDE.md`, tout en haut du fichier : `tsc` ET `npx eslint` (règles React des Hooks, si `eslint-plugin-react-hooks` est installé dans ce projet) obligatoires avant chaque push, vigilance renforcée sur tout composant affiché sans condition sur l'écran d'accueil/la mise en page globale.
