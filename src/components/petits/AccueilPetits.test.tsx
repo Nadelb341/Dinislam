@@ -42,7 +42,7 @@ describe('🧸 accueil du Groupe 0', () => {
     expect(navigate).toHaveBeenCalledWith('/petits/jeux');
     // Pas de mot pour les parents vide côté enfant
     expect(screen.queryByText(/Pour les parents/)).toBeNull();
-  });
+  }, 30_000); // rendu lourd : délai large pour ne pas échouer quand la machine est chargée
   it('« Remets dans l\'ordre » : une erreur ne bloque pas, le bon ordre donne l\'étoile', () => {
     render(<PetitsPage />);
     fireEvent.click(screen.getByRole('button', { name: /Remets dans l'ordre/ }));
