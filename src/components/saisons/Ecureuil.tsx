@@ -237,11 +237,31 @@ function EcureuilCache({ graine, niveau, onRepere }: { graine: number; niveau: n
 }
 
 /* ---------- 💡 La bulle des indices (petite, en bas à gauche, à côté de l'étoile) ---------- */
+/** Bord gauche pour se poser au-dessus de la 1ʳᵉ icône du menu du bas (Alphabet) ; recalculé si l'écran change */
+function useAncreAlphabet(): number {
+  const calcul = () => {
+    const li = document.querySelector('nav[aria-label="Menu des cartes"] li');
+    const r = li?.getBoundingClientRect();
+    return r && r.width ? Math.max(6, Math.round(r.left + r.width / 2 - 18)) : 12;
+  };
+  const [x, setX] = useState(12);
+  useEffect(() => {
+    const maj = () => setX(calcul());
+    maj();
+    const t = window.setInterval(maj, 1500); // le menu peut arriver un peu après (changement de page)
+    window.addEventListener('resize', maj);
+    return () => { window.clearInterval(t); window.removeEventListener('resize', maj); };
+  }, []);
+  return x;
+}
+
 function BulleIndice({ texte, allerA, titre = '💡 Indice de l\'écureuil' }: { texte: string; allerA?: () => void; titre?: string }) {
   const [ouvert, setOuvert] = useState(true);
   // Chaque nouvel indice s'ouvre 9 s, puis se replie en un petit écureuil (le toucher le rouvre)
   useEffect(() => { setOuvert(true); const t = setTimeout(() => setOuvert(false), 9000); return () => clearTimeout(t); }, [texte]);
-  const pos = { left: 'calc(env(safe-area-inset-left, 0px) + 64px)', bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 84px)' };
+  // 📌 27/11 (Nadia) : le petit écureuil des indices est FIXE en bas à gauche, juste au-dessus de l'icône « Alphabet » du menu du bas
+  const gauche = useAncreAlphabet();
+  const pos = { left: gauche, bottom: 'calc(var(--menu-bas, env(safe-area-inset-bottom, 0px)) + 6px)' };
   return createPortal(
     ouvert ? (
       <div data-ecureuil role="status" className="jeux-bulle fixed z-[45] flex max-w-[min(15rem,calc(100vw-8rem))] items-start gap-1.5 rounded-2xl rounded-bl-sm border-2 border-amber-300 bg-white/95 dark:bg-card px-2.5 py-1.5 shadow-lg" style={pos}>
