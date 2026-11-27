@@ -31,7 +31,7 @@ describe('Hadith du jour', () => {
 
   it('🕌 chaque hadith a son degré : Al-Boukhârî / Mouslim = SAHIH, degré de la base prioritaire', () => {
     const sansDegre = HADITHS_SECOURS.filter((x) => !x.degre).map((x) => x.source);
-    expect(sansDegre).toEqual(['Ibn Hibbane']); // seul degré à vérifier
+    expect(sansDegre).toEqual([]); // 27/11 : plus aucun hadith sans degré (n° 130 remplacé)
     expect(HADITHS_SECOURS.find((x) => /tabar/i.test(x.source))).toMatchObject({ degre: 'hasan' });
     const jour = new Date(2026, 0, 1);
     expect(choisirHadithDuJour([{ ...ligne(1), source: 'Sahih Boukhari' }], jour).degre).toBe('sahih');

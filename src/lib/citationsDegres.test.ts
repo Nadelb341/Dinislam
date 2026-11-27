@@ -16,8 +16,8 @@ const sansDegre = (l: { source?: string | null; degre?: string | null }[]) =>
   l.filter((x) => (x.source ?? '').trim() && !degreAffiche(x.source, x.degre).degre).map((x) => x.source);
 
 describe('toutes les citations ont un degré', () => {
-  it('hadith du jour (secours) : seul « Ibn Hibbane » reste à vérifier', () => {
-    expect(sansDegre(HADITHS_SECOURS)).toEqual(['Ibn Hibbane']);
+  it('hadith du jour (secours) : aucun hadith sans degré (n° 130 remplacé le 27/11)', () => {
+    expect(sansDegre(HADITHS_SECOURS)).toEqual([]);
   });
   it('trésor de la semaine, coin du feu, cache-cache', () => {
     expect(sansDegre(TREASURES)).toEqual([]);

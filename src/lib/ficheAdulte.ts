@@ -19,6 +19,8 @@ export interface SectionFiche {
   traduction?: string | null;
   ref?: string | null;
   degre?: string | null;
+  /** Avis divergents sur le degré (ex. At-Tirmidhî 3513), affiché « ⚖️ Avis divergents » à côté de la pastille */
+  divergence?: string | null;
   note?: string | null;
   badge?: string | null;
 }

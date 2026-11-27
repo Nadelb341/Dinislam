@@ -50,7 +50,7 @@ function Ref({ s }: { s: SectionFiche }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {s.ref && <p className="text-xs font-semibold [overflow-wrap:anywhere] whitespace-pre-line" style={{ color: DOUX }}>📖 {s.ref}</p>}
-      <DegreAuthenticite degre={degreSection(s.degre)} compact />
+      <DegreAuthenticite degre={degreSection(s.degre)} divergence={s.divergence} compact />
     </div>
   );
 }

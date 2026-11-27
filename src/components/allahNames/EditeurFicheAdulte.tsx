@@ -23,13 +23,13 @@ const CHAMPS_SECTION: Record<SectionFiche['type'], Champ[]> = {
   preuve: [
     { cle: 'titre', libelle: 'Titre', type: 'ligne' }, { cle: 'arabe', libelle: 'Texte arabe', type: 'arabe' },
     { cle: 'traduction', libelle: 'Traduction du sens', type: 'texte' }, { cle: 'ref', libelle: 'Référence', type: 'texte' },
-    { cle: 'degre', libelle: 'Degré', type: 'degre' }, { cle: 'texte', libelle: 'Précisions', type: 'texte' },
+    { cle: 'degre', libelle: 'Degré', type: 'degre' }, { cle: 'divergence', libelle: 'Avis divergents sur le degré (vide = aucun)', type: 'texte' }, { cle: 'texte', libelle: 'Précisions', type: 'texte' },
   ],
   invocation: [{ cle: 'titre', libelle: 'Titre', type: 'ligne' }, { cle: 'texte', libelle: 'Invocation', type: 'texte' }, { cle: 'note', libelle: 'Remarque', type: 'texte' }],
   prophetique: [
     { cle: 'titre', libelle: 'Titre', type: 'ligne' }, { cle: 'texte', libelle: 'Présentation', type: 'texte' }, { cle: 'arabe', libelle: 'Texte arabe', type: 'arabe' },
     { cle: 'phonetique', libelle: 'Phonétique', type: 'ligne' }, { cle: 'traduction', libelle: 'Traduction', type: 'texte' },
-    { cle: 'ref', libelle: 'Référence', type: 'texte' }, { cle: 'degre', libelle: 'Degré', type: 'degre' }, { cle: 'note', libelle: 'Remarque', type: 'texte' },
+    { cle: 'ref', libelle: 'Référence', type: 'texte' }, { cle: 'degre', libelle: 'Degré', type: 'degre' }, { cle: 'divergence', libelle: 'Avis divergents sur le degré (vide = aucun)', type: 'texte' }, { cle: 'note', libelle: 'Remarque', type: 'texte' },
   ],
   authenticite: [{ cle: 'titre', libelle: 'Titre', type: 'ligne' }, { cle: 'badge', libelle: 'Badge', type: 'ligne' }, { cle: 'texte', libelle: 'Texte', type: 'texte' }],
 };
