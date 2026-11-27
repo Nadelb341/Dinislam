@@ -18,7 +18,7 @@ export function personalize(text: string, fullName: string | null | undefined, g
 export const ENCOURAGEMENTS = [
   '💪 {prenom}, chaque petit effort te rapproche du but, continue !',
   '🌱 Petit à petit, tu grandis dans ta lecture, {prenom}, machaAllah !',
-  "⭐ {prenom}, « les actions les plus aimées d'Allah sont les plus régulières, même si elles sont petites. » (Al-Boukhari et Mouslim)",
+  "⭐ {prenom}, « les actions les plus aimées d'Allah sont les plus régulières, même si elles sont petites. » (Al-Boukhârî 6464 et Mouslim 783 · SAHIH, authentique)",
   '📖 Un peu chaque jour, {prenom}, et tu verras la différence !',
   '🚀 Tu es capable de grandes choses, {prenom}, bismillah !',
   '🌟 Ton prof est fier de tes progrès, {prenom}, continue comme ça !',
@@ -31,7 +31,7 @@ export const ENCOURAGEMENTS = [
   '💎 Le savoir est un trésor, {prenom}, tu en gagnes un peu chaque semaine.',
   "🐢 Pas besoin d'aller vite, {prenom}, l'important est d'avancer.",
   '✨ Tu as déjà fait beaucoup de chemin, {prenom}, bravo !',
-  "📚 {prenom}, « le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne. » (Al-Boukhari)",
+  "📚 {prenom}, « le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne. » (Al-Boukhârî 5027 · SAHIH, authentique)",
   "🎉 Encore un effort, {prenom}, la prochaine étape t'attend !",
   "🌈 Les erreurs font partie de l'apprentissage, {prenom}, continue !",
   '🦁 Sois {courageux|courageuse}, {prenom}, tu progresses chaque semaine !',

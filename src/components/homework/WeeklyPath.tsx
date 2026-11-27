@@ -10,6 +10,7 @@ import { dureeMessage } from '@/lib/dureeMessage';
 import { TreasureChest } from './TreasureChest';
 import { matiereOf } from '@/lib/devoirMatieres';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 
 /**
  * 💎 « Mon chemin de la semaine » (choix « 2 » de Nadia, 2026-10-08), en haut du Cahier de texte de l'élève.
@@ -218,7 +219,7 @@ export function WeeklyPath({ program, etoiles = false }: { program: WeeklyProgra
             <div className="rounded-2xl bg-gradient-to-br from-amber-100 to-yellow-50 dark:from-amber-950/50 dark:to-yellow-950/30 border border-amber-300 dark:border-amber-800 px-4 py-3">
               <p className="text-2xl mb-1">{reward.emoji}</p>
               <p className="text-sm font-semibold leading-relaxed">« {reward.text} »</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{reward.source}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{reward.source} <PastilleSource source={reward.source} compact /></p>
             </div>
             <p className="text-xs text-muted-foreground">Ton trésor de la semaine prochaine t'attend {etoiles ? '⭐' : '💎'}</p>
           </div>

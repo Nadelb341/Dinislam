@@ -4,6 +4,7 @@ import type { ReglagesRamadan } from '@/lib/saisons';
 import { LANTERNE_VB, NB_LANTERNES, lanterneSvg } from './dessinsRamadan';
 import { useNavigate } from 'react-router';
 import { useLienInvocationRupture } from '@/hooks/useInvocationRupture';
+import { DegreAuthenticite } from '@/components/shared/DegreAuthenticite';
 
 /**
  * 🏮 Sous le message de bienvenue, pendant le Ramadan (Nadia, 2026-11-15/16) :
@@ -62,7 +63,7 @@ export function LanternesRamadan({ jour, r, maghrib }: { jour: number; r: Reglag
             <p className="text-lg font-extrabold text-[#7a4e10]">🍽️ C'est l'heure de l'iftar !</p>
             <p className="font-arabic text-xl leading-loose text-[#1d7f78]" dir="rtl" lang="ar">ذَهَبَ الظَّمَأُ، وَابْتَلَّتِ الْعُرُوقُ، وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللَّهُ</p>
             <p className="text-sm text-[#5a4a3a]">« La soif est partie, les veines sont humectées, et la récompense est acquise, si Allah le veut. »</p>
-            <p className="text-[11px] text-[#8a7a6a]">Abou Dawoud n° 2357</p>
+            <p className="text-[11px] text-[#8a7a6a]">Abou Dawoud n° 2357 <DegreAuthenticite degre="hasan" compact interactif={false} /></p>
             {/* 🔗 2026-11-26 (Nadia : liens entre cartes, L10) : la fiche de l'invocation dans la carte Invocations */}
             <button type="button" onClick={(e) => { e.stopPropagation(); setAnim(false); navigate(lienInvocation); }}
               className="mt-1 rounded-full bg-[#1d7f78] text-white px-4 py-1.5 text-sm font-bold active:scale-95 transition-transform">

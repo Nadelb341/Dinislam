@@ -9,6 +9,7 @@ import { CacheCache, FeuSemaine } from './FeuEtCacheCache';
 import { MaisonEcureuil } from './Ecureuil';
 import { messagesCompagnon, questionDuJour, type Question } from './jeuxSaisonLogique';
 import { depuisJour } from '@/lib/depuisJour';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 
 /**
  * 🎠 Petits jeux des décors de saison (Nadia, 2026-11-11 : idées 2, 4, 6, 7, 9, 10). RIEN À GAGNER : juste des animations.
@@ -241,7 +242,7 @@ function QuestionFeu({ saison, userId }: { saison: Saison; userId: string }) {
               ))}
             </div>
             {choix && <p className="text-sm font-bold">{choix === q.bonne ? '🎉 Bravo, ma shā\' Allah !' : `Presque ! La bonne réponse : ${q.bonne}`}</p>}
-            {repondu && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source}</p>}
+            {repondu && q.source && <p className="text-[11px] text-muted-foreground">📚 {q.source} <PastilleSource source={q.source} compact interactif={false} /></p>}
             {/* 1ʳᵉ ouverture : le rappel reste EN BAS après la réponse (comme avant) ; réouverture : il est EN HAUT (rouge clair) */}
             {repondu
               ? (!rouverte && <p className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-3 py-2 text-center text-sm font-bold text-amber-800 dark:text-amber-200">{rappel}</p>)

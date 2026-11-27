@@ -167,13 +167,14 @@ export const MOTS_ARABES: MotArabe[] = [
   { arabe: 'عُصْفُور', translit: '\'ousfour', sens: 'oiseau', image: '🐦' },
 ];
 
-/** 💬 Un mot gentil, ou une parole du Prophète ﷺ adaptée aux enfants (hadiths authentiques, source indiquée) */
+/** 💬 Un mot gentil, ou une parole du Prophète ﷺ adaptée aux enfants (hadiths authentiques, source indiquée avec son numéro
+ * depuis le 27/11 ; pastille SAHIH affichée à côté, devinée d'après la source) */
 export const MOTS_GENTILS: { texte: string; source?: string }[] = [
   { texte: 'Tu m\'as trouvé ! Tu as l\'œil d\'un vrai détective 🔎' },
-  { texte: 'Le Prophète ﷺ a dit : « Ne méprise aucune bonne action, même accueillir ton frère avec un visage souriant. »', source: 'Mouslim' },
-  { texte: 'Le Prophète ﷺ a dit : « Les actes les plus aimés d\'Allah sont ceux qu\'on fait régulièrement, même s\'ils sont petits. »', source: 'Al-Bukhârî et Muslim' },
-  { texte: 'Le Prophète ﷺ a dit : « Le meilleur d\'entre vous est celui qui apprend le Coran et l\'enseigne. »', source: 'Al-Bukhârî' },
-  { texte: 'Le Prophète ﷺ a dit : « Facilitez et ne compliquez pas, annoncez de bonnes nouvelles et ne faites pas fuir. »', source: 'Al-Bukhârî' },
+  { texte: 'Le Prophète ﷺ a dit : « Ne méprise aucune bonne action, même accueillir ton frère avec un visage souriant. »', source: 'Mouslim 2626' },
+  { texte: 'Le Prophète ﷺ a dit : « Les actes les plus aimés d\'Allah sont ceux qu\'on fait régulièrement, même s\'ils sont petits. »', source: 'Al-Bukhârî 6464 et Mouslim 783' },
+  { texte: 'Le Prophète ﷺ a dit : « Le meilleur d\'entre vous est celui qui apprend le Coran et l\'enseigne. »', source: 'Al-Bukhârî 5027' },
+  { texte: 'Le Prophète ﷺ a dit : « Facilitez et ne compliquez pas, annoncez de bonnes nouvelles et ne faites pas fuir. »', source: 'Al-Bukhârî 69 et Mouslim 1734' },
   { texte: 'Bravo ! Chaque jour où tu viens apprendre, c\'est un pas de plus 💚' },
   { texte: 'Tu es patient et attentif : ce sont de belles qualités, ma shā\' Allah 🌟' },
 ];

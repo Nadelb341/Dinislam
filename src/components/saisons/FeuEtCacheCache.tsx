@@ -14,6 +14,7 @@ import { EVT_SON_FEU, arreterSonFeu, basculerSonFeu, lireSonFeu, sonFeuEnCours }
 import { FEU_MAX, HABIT, echelleFeu, motArabeDuJour, motGentilDuJour, niveauFeu } from './jeuxSaisonLogique';
 import { dire, fichierVoix } from '@/lib/voixFabriquees';
 import { FENETRE, cheminTraces, choisirCachette, fenetreCachette, gene, pointVisible, type Boite, type Cote } from './cacheCacheLogique';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 
 /**
  * 🔥 Flamme de la cheminée + 🙈 cache-cache (Nadia, 2026-11-11 : cheminée idées 1, 2, 4, 5 ; cache-cache les 5 idées).
@@ -381,7 +382,7 @@ export function CacheCache({ saison, userId, sansEcureuil = false }: { saison: S
             <svg viewBox={animal.vb} className="jeux-pirouette mx-auto h-16 w-16" aria-hidden dangerouslySetInnerHTML={{ __html: animal.svg }} />
             <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">🙈 Trouvé ! {animal.nom} se cachait {trouve.cachette}</p>
             <p className="text-sm font-semibold [overflow-wrap:anywhere]">{gentil.texte}</p>
-            {gentil.source && <p className="text-[11px] text-muted-foreground">Rapporté par {gentil.source}</p>}
+            {gentil.source && <p className="text-[11px] text-muted-foreground">Rapporté par {gentil.source} <PastilleSource source={gentil.source} compact interactif={false} /></p>}
             <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 space-y-1">
               <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300">🔤 Le mot arabe du jour</p>
               <p className="text-4xl">{mot.image}</p>
