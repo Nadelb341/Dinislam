@@ -13,13 +13,14 @@ import { trashThenDelete, type TrashItemType } from '@/lib/trash';
 import { untypedDb } from '@/lib/untypedDb';
 import { errorMessage } from '@/lib/utils';
 import type { EtapeCompteur } from '@/data/dhikrContenu';
+import { ChoixDegre } from '@/components/shared/ChoixDegre';
 
 /**
  * ✏️ Le crayon de la carte Dhikr (règle de Nadia du 21/11) : une seule fenêtre pour modifier un dhikr de la bibliothèque,
  * un geste d'une série ou une question du quiz. Enregistrer = tout de suite en base (sans réseau : gardé puis envoyé) ;
  * 🗑️ = corbeille de Paramètres (copie complète, restaurable). Les textes religieux : Nadia les relit (règle n°1).
  */
-export type TypeChamp = 'texte' | 'long' | 'arabe' | 'nombre' | 'moments' | 'statut' | 'visible' | 'choix' | 'bonne' | 'compteur' | 'serie' | 'genre';
+export type TypeChamp = 'texte' | 'long' | 'arabe' | 'nombre' | 'moments' | 'statut' | 'visible' | 'choix' | 'bonne' | 'compteur' | 'serie' | 'genre' | 'degre';
 export interface Champ { cle: string; label: string; type: TypeChamp; aide?: string }
 
 export const MOMENTS: { cle: string; titre: string; emoji: string }[] = [
@@ -55,6 +56,8 @@ export function EditeurFiche({ ouvert, titre, table, ligne, defaut, champs, onFe
   const enregistrer = async () => {
     const valeurs: Record<string, unknown> = {};
     for (const c of champs) valeurs[c.cle] = v[c.cle] ?? null;
+    // 🕌 27/11 : le degré va avec sa phrase « avis divergents »
+    if (champs.some((c) => c.type === 'degre')) valeurs.degre_divergence = String(v.degre_divergence ?? '').trim() || null;
     if (!String(valeurs.titre ?? valeurs.question ?? '').trim()) { toast.error('Il faut au moins un titre.'); return; }
     setEnvoi(true);
     try {
@@ -89,7 +92,10 @@ export function EditeurFiche({ ouvert, titre, table, ligne, defaut, champs, onFe
           <DialogDescription>Les textes religieux : Coran, Al-Boukhârî et Mouslim seulement, avec leur source exacte.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          {champs.map((c) => <ChampEdite key={c.cle} c={c} valeur={v[c.cle]} onChange={(x) => maj(c.cle, x)} toutes={v} />)}
+          {champs.map((c) => <ChampEdite key={c.cle} c={c} valeur={v[c.cle]} toutes={v}
+            onChange={(x) => (c.type === 'degre'
+              ? setV((o) => ({ ...o, degre: (x as { degre: string | null }).degre, degre_divergence: (x as { divergence: string | null }).divergence }))
+              : maj(c.cle, x))} />)}
         </div>
         <div className="flex flex-wrap justify-between gap-2 pt-2">
           {enBase ? (
@@ -142,6 +148,9 @@ function ChampEdite({ c, valeur, onChange, toutes }: { c: Champ; valeur: unknown
     case 'genre':
       return <label className="block">{label}<select value={String(valeur ?? 'geste')} onChange={(e) => onChange(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2">
         <option value="geste">Un geste</option><option value="final">L'invocation de la fin</option><option value="bonus">Bonus</option><option value="intro">Titre de la série</option></select></label>;
+    case 'degre':
+      return <ChoixDegre degre={(valeur as string | null) ?? null} divergence={(toutes.degre_divergence as string | null) ?? null}
+        source={(toutes.source as string | null) ?? null} onChange={onChange} />;
     case 'visible':
       return <label className="flex items-center justify-between gap-3 rounded-xl border p-3"><span className="font-bold text-sm">{c.label}<span className="block text-xs font-normal text-muted-foreground">{valeur ? '👁️ Les élèves le voient' : '🙈 Caché aux élèves'}</span></span>
         <Switch checked={!!valeur} onCheckedChange={onChange} /></label>;
@@ -199,6 +208,7 @@ export const CHAMPS_ITEM: Champ[] = [
   { cle: 'nombre_texte', label: 'Nombre écrit sur la fiche', type: 'texte', aide: 'Ex. « 100 fois dans la journée »' },
   { cle: 'merite', label: 'Mérite (phrase courte, fidèle au hadith)', type: 'long' },
   { cle: 'source', label: 'Source exacte', type: 'texte', aide: 'Ex. « Boukhari 6405 ; Mouslim 2691 »' },
+  { cle: 'degre', label: "Degré d'authenticité", type: 'degre' },
   { cle: 'moments', label: 'Moments', type: 'moments' },
   { cle: 'statut', label: 'Vérification', type: 'statut' },
   { cle: 'visible', label: 'Montrer aux élèves', type: 'visible' },
@@ -213,6 +223,7 @@ export const CHAMPS_GESTE: Champ[] = [
   { cle: 'compteur', label: 'Au chapelet', type: 'compteur' },
   { cle: 'merite', label: 'Mérite', type: 'long' },
   { cle: 'source', label: 'Source exacte', type: 'texte' },
+  { cle: 'degre', label: "Degré d'authenticité", type: 'degre' },
   { cle: 'lien', label: 'Lien dans l\'appli (facultatif)', type: 'texte', aide: 'Ex. « /coran?item=42 » ou « /priere?carte=LODO »' },
   { cle: 'position', label: 'Place dans la série', type: 'nombre', aide: '10, 20, 30… : le plus petit passe en premier' },
   { cle: 'statut', label: 'Vérification', type: 'statut' },
@@ -224,5 +235,6 @@ export const CHAMPS_QUESTION: Champ[] = [
   { cle: 'bonne', label: 'Numéro de la bonne réponse', type: 'bonne' },
   { cle: 'explication', label: 'Explication (montrée après la réponse)', type: 'long' },
   { cle: 'source', label: 'Source exacte', type: 'texte' },
+  { cle: 'degre', label: "Degré d'authenticité", type: 'degre' },
   { cle: 'visible', label: 'Montrer aux élèves', type: 'visible' },
 ];

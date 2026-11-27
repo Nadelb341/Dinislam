@@ -9,6 +9,7 @@ import { noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, useDhikrQuiz, typ
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { FondDhikr, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
 import { Chapelet, type EtapeChapelet } from '@/components/dhikr/Chapelet';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { ReveilTroisGestes, SerieGestes, TexteDhikr } from '@/components/dhikr/Series';
 import { Bibliotheque } from '@/components/dhikr/Bibliotheque';
 import { CarnetDhikr } from '@/components/dhikr/Carnet';
@@ -38,7 +39,7 @@ const ONGLETS: { cle: Onglet; titre: string; emoji: string; admin?: boolean }[] 
 type SousSerie = 'matin' | 'soir' | 'reveil';
 const serieParDefaut = (): SousSerie => { const h = new Date().getHours(); return h >= 4 && h < 7 ? 'reveil' : h < 16 ? 'matin' : 'soir'; };
 
-interface EnCours { titre: string; etapes: EtapeChapelet[]; merite: string | null; source: string | null; moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }
+interface EnCours { titre: string; etapes: EtapeChapelet[]; merite: string | null; source: string | null; degre?: string | null; divergence?: string | null; moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }
 type Edition = { titre: string; table: string; ligne: Record<string, unknown> | null; defaut: Record<string, unknown>; champs: Champ[]; corbeille: TrashItemType };
 
 /** Dans le choix du chapelet : les dhikr qu'on répète le plus d'abord, puis les autres dans l'ordre de la bibliothèque */
@@ -72,7 +73,7 @@ export default function DhikrPage() {
 
   const faire = (it: DhikrItem) => {
     if (it.cle === 'apres_priere') { setEnCours(null); aller('apres'); return; }
-    setEnCours({ titre: it.titre, etapes: etapesDe(it), merite: it.merite, source: it.source, moment: 'libre', cle: it.cle });
+    setEnCours({ titre: it.titre, etapes: etapesDe(it), merite: it.merite, source: it.source, degre: it.degre, divergence: it.degre_divergence, moment: 'libre', cle: it.cle });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const fini = async (e: { moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }, nombre: number) => {
@@ -144,7 +145,7 @@ export default function DhikrPage() {
                 <button type="button" onClick={() => setEnCours(null)} className={cn('rounded-full border px-3 py-1.5 text-sm font-bold', pastille)}>‹ Retour</button>
                 <h2 className="flex-1 min-w-0 text-lg font-black [overflow-wrap:anywhere]">{enCours.defi ? `🤝 ${enCours.defi.titre}` : enCours.titre}</h2>
               </div>
-              <Chapelet key={`${enCours.cle}-${enCours.defi?.id ?? ''}`} etapes={enCours.etapes} merite={enCours.merite} source={enCours.source} ambiance={ambiance}
+              <Chapelet key={`${enCours.cle}-${enCours.defi?.id ?? ''}`} etapes={enCours.etapes} merite={enCours.merite} source={enCours.source} degre={enCours.degre} divergence={enCours.divergence} ambiance={ambiance}
                 onFini={(n) => void fini(enCours, n)} onTerminer={() => setEnCours(null)} />
             </section>
           ) : (
@@ -162,7 +163,7 @@ export default function DhikrPage() {
                   </div>
                   {itemChapelet && (
                     <div className={cn('rounded-3xl border p-3 sm:p-4', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
-                      <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} ambiance={ambiance}
+                      <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} degre={itemChapelet.degre} divergence={itemChapelet.degre_divergence} ambiance={ambiance}
                         onFini={(n) => void fini({ moment: 'libre', cle: itemChapelet.cle }, n)} />
                     </div>
                   )}
@@ -187,14 +188,14 @@ export default function DhikrPage() {
                 <div className={cn('rounded-3xl border p-3 sm:p-4 space-y-2', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
                   <h2 className="text-lg sm:text-xl font-black">{apresIntro?.titre ?? 'Après la prière'}{apresIntro?.consigne && <span className="font-semibold"> · {apresIntro.consigne}</span>}</h2>
                   {apres ? (
-                    <Chapelet key={apres.id} etapes={apres.compteur!} merite={apres.merite} source={apres.source} ambiance={ambiance}
+                    <Chapelet key={apres.id} etapes={apres.compteur!} merite={apres.merite} source={apres.source} degre={apres.degre} divergence={apres.degre_divergence} ambiance={ambiance}
                       onFini={(n) => void fini({ moment: 'apres_priere', cle: 'apres_priere' }, n)} />
                   ) : <p className="font-bold">🛠️ En cours de mise à jour</p>}
                   {isAdmin && apres && <button type="button" onClick={() => editerGeste(apres)} className="text-sm font-bold underline">✏️ Modifier les étapes</button>}
                   {(() => { const it = items.find((i) => i.cle === 'istighfar_apres_priere' && i.visible); return it ? (
                     <details className={cn('rounded-2xl border p-2', pastille)}><summary className="cursor-pointer text-sm font-bold">🤲 Juste après le salâm</summary>
                       <TexteDhikr arabe={it.arabe} phonetique={it.phonetique} sens={it.sens} ambiance={nuit ? ambiance : { ...ambiance, texte: '#13254a' }} />
-                      <p className="text-xs text-center mt-1">{it.merite} — <b>{it.source}</b></p></details>) : null; })()}
+                      <p className="text-xs text-center mt-1">{it.merite} — <b>{it.source}</b> <PastilleSource source={it.source} degre={it.degre} divergence={it.degre_divergence} compact /></p></details>) : null; })()}
                 </div>
               )}
 
@@ -204,7 +205,7 @@ export default function DhikrPage() {
                 <DefiGroupe isAdmin={isAdmin} userId={user?.id ?? null} items={itemsVus} ambiance={ambiance}
                   onFaireDefi={(d, it) => setEnCours({
                     titre: d.titre, etapes: it ? etapesDe(it) : [{ titre: d.dhikr_titre ?? 'Dhikr', arabe: '', phonetique: d.dhikr_titre ?? '', sens: '', nombre: 33 }],
-                    merite: it?.merite ?? null, source: it?.source ?? null, moment: 'defi', cle: it?.cle ?? null, defi: d,
+                    merite: it?.merite ?? null, source: it?.source ?? null, degre: it?.degre ?? null, divergence: it?.degre_divergence ?? null, moment: 'defi', cle: it?.cle ?? null, defi: d,
                   })} />
               )}
               {onglet === 'quiz' && <QuizMerite questions={questions} isAdmin={isAdmin} ambiance={ambiance} onEditer={(q) => editerQuestion(q)} onNouveau={() => editerQuestion(null)} />}

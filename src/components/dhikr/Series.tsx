@@ -8,6 +8,7 @@ import { noterDhikr, useAvancee } from '@/hooks/useDhikr';
 import { useConfetti } from '@/hooks/useConfetti';
 import type { DhikrGeste } from '@/data/dhikrContenu';
 import { Chapelet } from './Chapelet';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import type { Couleurs } from './Ambiance';
 import { STATUTS } from './EditeurDhikr';
 
@@ -108,7 +109,7 @@ export function SerieGestes({ serie, gestes, userId, isAdmin, ambiance, onEditer
           <h2 className="text-lg sm:text-xl font-black [overflow-wrap:anywhere]">{intro?.titre ?? (serie === 'matin' ? 'La série du matin' : 'La série du soir')}{sousTitre && <span className="font-semibold"> · {sousTitre}</span>}</h2>
           {g ? <p className="text-sm font-bold mt-1 [overflow-wrap:anywhere]" style={{ color: ambiance.or }}>Geste {courant + 1}/{liste.length} · {g.titre}</p>
             : <p className="text-sm font-bold mt-1" style={{ color: ambiance.or }}>{avancee.finie ? '✅ Série faite aujourd\'hui, ma shâ\' Allah' : 'Tous les gestes sont faits ✨'}</p>}
-          {g?.source && <p className="text-xs mt-0.5" style={{ color: ambiance.doux }}>📚 {g.source}</p>}
+          {g?.source && <p className="text-xs mt-0.5" style={{ color: ambiance.doux }}>📚 {g.source} <PastilleSource source={g.source} degre={g.degre} divergence={g.degre_divergence} compact className="ml-1" /></p>}
           {isAdmin && intro && <button type="button" onClick={() => onEditer(intro)} className="mt-1 inline-flex items-center gap-1 text-xs font-bold underline"><Pencil className="h-3 w-3" /> Titre de la série</button>}
         </div>
       </div>
@@ -125,13 +126,13 @@ export function SerieGestes({ serie, gestes, userId, isAdmin, ambiance, onEditer
           {g.compteur?.length ? (
             <>
               {g.arabe && <details className="rounded-2xl border border-amber-300/60 p-2"><summary className="cursor-pointer text-sm font-bold">📖 Le texte en entier</summary><TexteDhikr arabe={g.arabe} phonetique={g.phonetique} sens={g.sens} ambiance={ambiance} /></details>}
-              <Chapelet key={g.id} etapes={g.compteur} merite={g.merite} source={g.source} ambiance={ambiance}
+              <Chapelet key={g.id} etapes={g.compteur} merite={g.merite} source={g.source} degre={g.degre} divergence={g.degre_divergence} ambiance={ambiance}
                 onTerminer={() => faire(g)} libelleTerminer={courant + 1 < liste.length ? 'Geste suivant ›' : 'Terminer la série ›'} />
             </>
           ) : (
             <>
               <TexteDhikr arabe={g.arabe} phonetique={g.phonetique} sens={g.sens} ambiance={ambiance} grand />
-              {g.merite && <p className="text-sm text-center [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {g.merite}{g.source && <b className="whitespace-nowrap"> — {g.source}</b>}</p>}
+              {g.merite && <p className="text-sm text-center [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {g.merite}{g.source && <b className="whitespace-nowrap"> — {g.source}</b>}{g.source && <PastilleSource source={g.source} degre={g.degre} divergence={g.degre_divergence} compact className="ml-1" />}</p>}
               <div className="flex flex-wrap justify-center gap-2">
                 {g.lien && <button type="button" onClick={() => navigate(g.lien!)} className="rounded-full border-2 border-amber-400 bg-white text-slate-900 px-4 py-2 text-sm font-bold">📖 Ouvrir dans l'appli</button>}
                 {avancee.faits.includes(g.id)
@@ -151,7 +152,7 @@ export function SerieGestes({ serie, gestes, userId, isAdmin, ambiance, onEditer
                 {isAdmin && <button type="button" onClick={() => onEditer(final)} aria-label="Modifier l'invocation de la fin" className="ml-2 inline-grid h-7 w-7 place-items-center rounded-full bg-white text-slate-800 border align-middle"><Pencil className="h-3.5 w-3.5" /></button>}
               </h3>
               <TexteDhikr arabe={final.arabe} phonetique={final.phonetique} sens={final.sens} ambiance={ambiance} grand />
-              {final.merite && <p className="text-sm [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {final.merite}{final.source && <b className="whitespace-nowrap"> — {final.source}</b>}</p>}
+              {final.merite && <p className="text-sm [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {final.merite}{final.source && <b className="whitespace-nowrap"> — {final.source}</b>}{final.source && <PastilleSource source={final.source} degre={final.degre} divergence={final.degre_divergence} compact className="ml-1" />}</p>}
             </>
           )}
           {avancee.finie
@@ -230,7 +231,7 @@ export function ReveilTroisGestes({ gestes, userId, isAdmin, ambiance, onEditer 
           {isAdmin && intro && <button type="button" onClick={() => onEditer(intro)} aria-label="Modifier le texte" className="h-8 w-8 grid place-items-center rounded-full bg-white text-slate-800 border"><Pencil className="h-4 w-4" /></button>}
         </div>
         <SoleilQuiSeLeve n={faits} />
-        {intro?.consigne && <p className="text-sm [overflow-wrap:anywhere]">{intro.consigne}{intro.source && <b className="whitespace-nowrap"> — {intro.source}</b>}</p>}
+        {intro?.consigne && <p className="text-sm [overflow-wrap:anywhere]">{intro.consigne}{intro.source && <b className="whitespace-nowrap"> — {intro.source}</b>}{intro.source && <PastilleSource source={intro.source} degre={intro.degre} divergence={intro.degre_divergence} compact className="ml-1" />}</p>}
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         {liste.map((g, i) => {
@@ -264,7 +265,7 @@ export function ReveilTroisGestes({ gestes, userId, isAdmin, ambiance, onEditer 
           </div>
           {bonus.consigne && <p className="text-sm [overflow-wrap:anywhere]">{bonus.consigne}</p>}
           <TexteDhikr arabe={bonus.arabe} phonetique={bonus.phonetique} sens={bonus.sens} ambiance={ambiance} />
-          {bonus.merite && <p className="text-xs [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {bonus.merite}{bonus.source && <b className="whitespace-nowrap"> — {bonus.source}</b>}</p>}
+          {bonus.merite && <p className="text-xs [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>✨ {bonus.merite}{bonus.source && <b className="whitespace-nowrap"> — {bonus.source}</b>}{bonus.source && <PastilleSource source={bonus.source} degre={bonus.degre} divergence={bonus.degre_divergence} compact className="ml-1" />}</p>}
           {bonus.lien && <button type="button" onClick={() => navigate(bonus.lien!)} className="rounded-full border-2 border-amber-400 bg-white text-slate-900 px-4 py-2 text-sm font-bold">📖 Lire dans le Coran</button>}
         </div>
       )}

@@ -1,4 +1,5 @@
 import { Pencil, Plus } from 'lucide-react';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { Switch } from '@/components/ui/switch';
 import { useReglage } from '@/hooks/usePetits';
 import { cn } from '@/lib/utils';
@@ -60,7 +61,7 @@ export function ReglagesDhikr({ gestes, ambiance, onEditer, onNouveau }: {
               <div key={g.id} className={cn('flex items-start gap-2 rounded-xl border p-2 text-slate-900', g.visible ? 'bg-white/80' : 'bg-slate-200/80')}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold [overflow-wrap:anywhere]"><span className="text-[10px] uppercase tracking-wide text-slate-500 mr-1">{GENRES[g.genre]}</span>{g.titre}</p>
-                  {g.source && <p className="text-xs text-slate-600">📚 {g.source}</p>}
+                  {g.source && <p className="text-xs text-slate-600">📚 {g.source} <PastilleSource source={g.source} degre={g.degre} divergence={g.degre_divergence} aVerifier interactif={false} /></p>}
                   <div className="flex flex-wrap gap-1 mt-0.5"><BadgeStatut g={g} /></div>
                 </div>
                 <button type="button" onClick={() => onEditer(g)} aria-label={`Modifier ${g.titre}`} className="h-8 w-8 shrink-0 grid place-items-center rounded-full bg-white border"><Pencil className="h-4 w-4" /></button>

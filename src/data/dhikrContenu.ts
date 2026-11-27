@@ -20,6 +20,8 @@ export interface DhikrItem {
   arabe: string | null; phonetique: string | null; sens: string | null;
   nombre: number; nombre_texte: string | null;
   merite: string | null; source: string | null;
+  /** 🕌 27/11 : degré d'authenticité (vide = deviné d'après la source) + phrase « avis divergents » */
+  degre?: string | null; degre_divergence?: string | null;
   moments: string[]; statut: StatutContenu; visible: boolean; position: number;
 }
 
@@ -33,6 +35,7 @@ export interface DhikrGeste {
   /** null = un geste qu'on coche (« C'est fait ») ; sinon le chapelet compte chaque étape */
   compteur: EtapeCompteur[] | null;
   merite: string | null; source: string | null;
+  degre?: string | null; degre_divergence?: string | null;
   /** Lien interne (ex. « /coran?item=42 ») */
   lien: string | null;
   statut: StatutContenu; visible: boolean; position: number;
@@ -41,6 +44,7 @@ export interface DhikrGeste {
 export interface DhikrQuestion {
   id: string; question: string; choix: string[]; bonne: number;
   explication: string | null; source: string | null; visible: boolean; position: number;
+  degre?: string | null; degre_divergence?: string | null;
 }
 
 // ─── Textes communs ────────────────────────────────────────────────────────────
@@ -207,13 +211,15 @@ const GESTES: GesteSansId[] = [
   { cle: 'matin_trois_qoul', serie: 'matin', genre: 'geste', titre: 'Al-Ikhlâs et les deux sourates de protection, 3 fois', consigne: 'Récite Al-Ikhlâs, Al-Falaq et An-Nâs, 3 fois.',
     arabe: T.troisQoul.ar, phonetique: T.troisQoul.ph, sens: T.troisQoul.fr,
     compteur: [{ titre: 'Les 3 sourates', arabe: T.troisQoul.court.ar, phonetique: T.troisQoul.court.ph, sens: 'Al-Ikhlâs, Al-Falaq, An-Nâs', nombre: 3 }],
-    merite: 'Elles te suffisent contre toute chose.', source: 'Abou Dâwoud 5082 ; At-Tirmidhî 3575', statut: 'a_confirmer', visible: false },
+    merite: 'Elles te suffisent contre toute chose.', source: 'Abou Dâwoud 5082 ; At-Tirmidhî 3575', statut: 'a_confirmer', visible: false,
+    degre: 'hasan', degre_divergence: 'At-Tirmidhî l\'a jugé hasan sahîh ; Al-Albânî l\'a jugé hasan (bon).' },
   { cle: 'matin_bismillah_ladhi', serie: 'matin', genre: 'geste', titre: 'Bismi-llâhi-lladhî lâ yadourrou…, 3 fois', consigne: 'Dis-le 3 fois.',
     arabe: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ',
     phonetique: 'Bismi-llâhi-lladhî lâ yadourrou ma\'a-smihî chay\'oun fi-l-ardi wa lâ fi-s-samâ\', wa houwa-s-samî\'ou-l-\'alîm',
     sens: 'Au nom d\'Allah, avec le nom de qui rien ne peut nuire, ni sur la terre ni dans le ciel, et Il est Celui qui entend tout, Celui qui sait tout.',
     compteur: [{ titre: 'Bismi-llâhi-lladhî…', arabe: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ…', phonetique: 'Bismi-llâhi-lladhî lâ yadourrou ma\'a-smihî chay\'oun…', sens: 'Au nom d\'Allah, avec le nom de qui rien ne peut nuire…', nombre: 3 }],
-    merite: 'Rien ne lui nuira.', source: 'Abou Dâwoud 5088 ; At-Tirmidhî 3388', statut: 'a_confirmer', visible: false },
+    merite: 'Rien ne lui nuira.', source: 'Abou Dâwoud 5088 ; At-Tirmidhî 3388', statut: 'a_confirmer', visible: false,
+    degre: 'sahih' }, // At-Tirmidhî : hasan sahîh ; Al-Albânî : sahîh
   // 💡 Remplacements proposés (Al-Boukhârî / Mouslim) : cachés tant que Nadia ne les allume pas
   { cle: 'matin_juwayriya', serie: 'matin', genre: 'geste', titre: 'Les 4 paroles de Jouwayriya, 3 fois', consigne: 'Avec le chapelet, après la prière de l\'aube.',
     arabe: T.juwayriya.ar, phonetique: T.juwayriya.ph, sens: T.juwayriya.fr,

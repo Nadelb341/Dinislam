@@ -4,6 +4,8 @@ import { useDeuxChances } from '@/hooks/useDeuxChances';
 import { MessageReponse } from '@/components/shared/MessageReponse';
 import { useConfetti } from '@/hooks/useConfetti';
 import { cn } from '@/lib/utils';
+import { degreAffiche, texteDegre } from '@/lib/degreAuthenticite';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import type { DhikrQuestion } from '@/data/dhikrContenu';
 import type { Couleurs } from './Ambiance';
 import { BadgeStatut } from './Series';
@@ -31,7 +33,11 @@ export function QuizMerite({ questions, isAdmin, ambiance, onEditer, onNouveau }
     nb: ordre.length,
     estBonne: (e, i) => !!ordre[e]?.choix[i]?.bon,
     texteBonne: (e) => ordre[e]?.choix.find((c) => c.bon)?.t ?? '',
-    explication: (e) => { const q = ordre[e]?.q; return q ? [q.explication, q.source ? `📚 ${q.source}` : null].filter(Boolean).join(' ') : null; },
+    explication: (e) => {
+      const q = ordre[e]?.q; if (!q) return null;
+      const d = degreAffiche(q.source, q.degre).degre; // 🕌 27/11 : le degré avec la source
+      return [q.explication, q.source ? `📚 ${q.source}${d ? ` · ${texteDegre(d)}` : ''}` : null].filter(Boolean).join(' ');
+    },
   });
   const { fireConfetti } = useConfetti();
   useEffect(() => { if (j.fini && ordre.length) fireConfetti(); }, [j.fini, ordre.length, fireConfetti]);
@@ -74,7 +80,7 @@ export function QuizMerite({ questions, isAdmin, ambiance, onEditer, onNouveau }
           <div className="mt-2 space-y-1.5">
             {questions.map((q) => (
               <div key={q.id} className="flex items-start gap-2 rounded-xl border p-2 bg-white/70 text-slate-900">
-                <div className="flex-1 min-w-0"><p className="text-sm font-bold [overflow-wrap:anywhere]">{q.question}</p><p className="text-xs">✅ {q.choix[q.bonne]} · {q.source}</p>
+                <div className="flex-1 min-w-0"><p className="text-sm font-bold [overflow-wrap:anywhere]">{q.question}</p><p className="text-xs">✅ {q.choix[q.bonne]} · {q.source} <PastilleSource source={q.source} degre={q.degre} divergence={q.degre_divergence} aVerifier interactif={false} /></p>
                   <div className="flex gap-1 mt-0.5"><BadgeStatut g={{ statut: 'ok', visible: q.visible }} /></div></div>
                 <button type="button" onClick={() => onEditer(q)} aria-label="Modifier la question" className="h-8 w-8 shrink-0 grid place-items-center rounded-full bg-white border"><Pencil className="h-4 w-4" /></button>
               </div>

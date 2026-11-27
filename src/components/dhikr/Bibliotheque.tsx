@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { Pencil, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SortableCardList, rectSortingStrategy } from '@/components/shared/SortableCardList';
@@ -102,7 +103,7 @@ export function Bibliotheque({ items, isAdmin, ambiance, onFaire, onEditer, onNo
                 <TexteDhikr arabe={fiche.arabe} phonetique={fiche.phonetique} sens={fiche.sens} ambiance={{ nom: 'jour', texte: '#13254a', doux: '#3b5277', or: '#9a6700', voile: '', bord: '' }} grand />
               </div>
               {fiche.merite && <p className="text-sm [overflow-wrap:anywhere]">✨ <b>Son mérite :</b> {fiche.merite}</p>}
-              {fiche.source && <p className="text-sm font-bold">📚 Source : {fiche.source}</p>}
+              {fiche.source && <p className="text-sm font-bold">📚 Source : {fiche.source} <PastilleSource source={fiche.source} degre={fiche.degre} divergence={fiche.degre_divergence} /></p>}
               <ZonesContenu cible={`dhikr:${fiche.id}`} isAdmin={isAdmin && !fiche.id.startsWith('secours-')} libelle={`Dhikr « ${fiche.titre} »`} />
               <button type="button" onClick={() => { const f = fiche; setFiche(null); onFaire(f); }}
                 className="w-full rounded-full bg-amber-500 hover:bg-amber-600 text-amber-950 py-3 font-extrabold shadow">📿 Faire avec le chapelet</button>

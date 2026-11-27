@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Pause, Play, RotateCcw, Undo2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import {
   avancer, CHAPELETS, CLE_REGLAGES, compteurDepart, ecrireLocal, encouragement, intervalleAuto, lireReglages, reculer,
   type EtatCompteur, type ReglagesChapelet,
@@ -146,8 +147,10 @@ export function ChoixChapelet({ ouvert, onFermer, valeur, onChoisir }: { ouvert:
   );
 }
 
-export function Chapelet({ etapes, merite, source, onFini, ambiance, onTerminer, libelleTerminer = '✅ Terminer' }: {
+export function Chapelet({ etapes, merite, source, degre, divergence, onFini, ambiance, onTerminer, libelleTerminer = '✅ Terminer' }: {
   etapes: EtapeChapelet[]; merite?: string | null; source?: string | null;
+  /** 🕌 27/11 : degré d'authenticité de la source (vide = deviné d'après la source) */
+  degre?: string | null; divergence?: string | null;
   /** Appelé à CHAQUE tour terminé, avec le nombre de dhikr du tour */
   onFini?: (nombre: number) => void;
   ambiance: Couleurs;
@@ -238,6 +241,7 @@ export function Chapelet({ etapes, merite, source, onFini, ambiance, onTerminer,
           {merite && (
             <p className="text-xs sm:text-sm leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>
               ✨ {merite}{source && <span className="whitespace-nowrap font-bold"> — {source}</span>}
+              {source && <PastilleSource source={source} degre={degre} divergence={divergence} compact className="ml-1" />}
             </p>
           )}
           <p dir="rtl" lang="ar" className="font-arabic text-2xl sm:text-3xl leading-[1.9] font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.or, textShadow: nuit ? '0 0 12px rgba(245,210,122,.35)' : '0 1px 0 rgba(255,255,255,.7)' }}>
