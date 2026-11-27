@@ -13,7 +13,8 @@ export type TrashItemType =
   | "sourate_verset_audio" | "attendance_day" | "registration" | "draft" | "sourate_recitation" | "alphabet_letter_audio" | "admin_task" | "alphabet_line_model" | "admin_task_template" | "school_holiday" | "sourate_admin_unlock" | "coran_progress" | "sourate_story" | "admin_task_attachment" | "coran_note" | "convocation_modele" | "convocation_programmation" | "carnet_message" | "carnet_modele" | "fiche_attente" | "parent_code" | "parent_link" | "absence_justification" | "app_logs" | "connexion_logs" | "notification_history"
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
   | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video"
-  | "coran_vocabulaire" | "coran_vocabulaire_pdf" | "devoir_libre_piece";
+  | "coran_vocabulaire" | "coran_vocabulaire_pdf" | "devoir_libre_piece"
+  | "dhikr_item" | "dhikr_geste" | "dhikr_question" | "dhikr_defi";
 
 export interface TrashItem {
   id: string;
@@ -51,6 +52,11 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   quiz_video: "quiz_videos",
   // 📖 Coran › Vocabulaire du Coran (2026-11-26) : sous-carte ou partie (+ ses parties et zones gardées avec elle)
   coran_vocabulaire: "coran_vocabulaire",
+  // 📿 Carte Dhikr (2026-11-27) : un dhikr, un geste d'une série, une question du quiz, un défi (avec tous ses ajouts)
+  dhikr_item: "dhikr_items",
+  dhikr_geste: "dhikr_gestes",
+  dhikr_question: "dhikr_quiz",
+  dhikr_defi: "dhikr_defis",
   // 🕊️ Hadith du jour de l'accueil (2026-11-21)
   hadith_du_jour: "hadiths_du_jour",
   allah_name: "allah_names",

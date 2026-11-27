@@ -16,6 +16,7 @@ import { EditionFichePetit, GererFichesPetits } from '@/components/petits/Fiches
 import { confettiLettres } from '@/lib/confettiLettres';
 import { sonHarpeEtoiles, sonPlop } from '@/lib/sonSaison';
 import { sonErreur } from '@/lib/sonsErreur';
+import { DhikrPetits } from '@/components/dhikr/DhikrPetits';
 import { cleJour, ecouterFiche, jourRamadan, luneDuJour, refEtoileDuJour, RUBRIQUES, type CleRubrique } from '@/lib/petits';
 
 /**
@@ -70,6 +71,7 @@ export default function PetitsPage() {
         </div>
 
         {jeux ? <PageJeux toutes={toutes} gagnerEtoile={gagnerEtoile} />
+          : rubrique === 'dhikr' ? <DhikrPetits />
           : r!.mode === 'coran' ? <ModeCoran fiches={fiches} ouvrir={setOuverte} />
           : r!.mode === 'doigts' ? <ModeDoigts fiches={fiches} ouvrir={setOuverte} />
           : r!.mode === 'etapes' ? <ModeEtapes fiches={fiches} ouvrir={setOuverte} gagner={() => gagnerEtoile('etapes', `${rubrique}:${cleJour()}`)} />
@@ -79,7 +81,7 @@ export default function PetitsPage() {
 
         {/* 🎬 Vidéos de toute la carte « Ramadan et l'Aïd » (22/11), à part de la carte Ramadan des grands */}
         {rubrique === 'ramadan' && <VideosHistoire rubrique="ramadan" titreFiche="Ramadan et l'Aïd (tout-petits)" isAdmin={isAdmin} petits entete="🎬 Les vidéos du Ramadan et de l'Aïd" />}
-        {isAdmin && !jeux && rubrique !== 'douas' && <GererFichesPetits rubrique={rubrique as CleRubrique} fiches={fiches} userId={user?.id ?? null} />}
+        {isAdmin && !jeux && rubrique !== 'douas' && rubrique !== 'dhikr' && <GererFichesPetits rubrique={rubrique as CleRubrique} fiches={fiches} userId={user?.id ?? null} />}
         {isAdmin && rubrique === 'ramadan' && <GererFichesPetits rubrique="aid" fiches={toutes.filter((f) => f.rubrique === 'aid')} userId={user?.id ?? null} />}
       </div>
 

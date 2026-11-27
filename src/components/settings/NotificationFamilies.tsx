@@ -1,7 +1,7 @@
 import { AVANCES_RAPPEL, champsVillePriere, villePriereDeLAppareil } from '@/lib/rappelsPriere';
 import { useEffect, useState } from 'react';
 import { useRealtimeVersion } from '@/hooks/useRealtimeRefresh';
-import { Users, Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield } from 'lucide-react';
+import { Users, Bell, BookOpen, GraduationCap, MessageCircle, Megaphone, Moon, Shield, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +21,8 @@ type PrefKey =
   | 'notif_msg' | 'notif_coran' | 'notif_prog_eve' | 'notif_cours_prep' | 'notif_adm_bilan' | 'notif_hw_new' | 'notif_hw_rem' | 'notif_hw_res' | 'notif_rec' | 'notif_lesson'
   | 'notif_par_bilan' | 'notif_par_abs' | 'notif_par_dev' | 'notif_par_rap' | 'notif_adm_abs' | 'notif_adm_par'
   | 'notif_act' | 'notif_sched' | 'notif_adm_msg' | 'notif_adm_hw' | 'notif_adm_valid' | 'notif_adm_reg' | 'notif_adm_task' | 'notif_prog_week' | 'notif_adm_recap' | 'notif_adm_crash'
-  | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities';
+  | 'fajr_reminder' | 'dhuhr_reminder' | 'asr_reminder' | 'maghrib_reminder' | 'isha_reminder' | 'ramadan_activities'
+  | 'notif_dhikr_matin' | 'notif_dhikr_soir' | 'notif_dhikr_nuit';
 
 interface Family {
   id: string;
@@ -88,6 +89,17 @@ const FAMILIES: Family[] = [
       { key: 'maghrib_reminder', label: 'Rappel Maghrib' },
       { key: 'isha_reminder', label: 'Rappel Icha' },
       { key: 'ramadan_activities', label: 'Activités du Ramadan', hint: 'Pendant le mois de Ramadan' },
+    ],
+  },
+  {
+    // 📿 Carte Dhikr (2026-11-27, idée 1) : rappels doux. L'enseignante les allume pour tous dans la carte Dhikr › ⚙️ Réglages ;
+    // ici, chacun peut les couper pour lui seul (catégories dhikr_matin / dhikr_soir / dhikr_nuit de send-push-notification).
+    id: 'dhikr', title: 'Dhikr', icon: Sparkles,
+    soft: 'bg-amber-50', border: 'border-amber-200', ink: 'text-amber-900', chip: 'bg-amber-600',
+    items: [
+      { key: 'notif_dhikr_matin', label: 'Rappel du matin 📿', hint: 'La série du matin, si elle n\'est pas faite' },
+      { key: 'notif_dhikr_soir', label: 'Rappel du soir 🌇', hint: 'Un petit dhikr avant la nuit' },
+      { key: 'notif_dhikr_nuit', label: 'Avant de dormir 🌙', hint: 'La série du soir, si elle n\'est pas faite' },
     ],
   },
   {

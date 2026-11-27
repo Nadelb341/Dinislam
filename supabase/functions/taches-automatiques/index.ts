@@ -13,6 +13,8 @@ import { datesRetenues } from "../_shared/ramadanDates.ts";
  *  - les tâches « À faire » cochées depuis plus de 30 jours → corbeille de Paramètres (règle « coché en bas 1 mois ») ;
  *  Une seule fois par semaine : table taches_auto_journal.
  * 🔄 Le 2 janvier et le 2 juin (dès 9 h) : rappel à l'enseignante « Mise à jour de janvier / juin » (2026-11-26).
+ * 📿 Rappels doux de la carte Dhikr (2026-11-27) : matin / soir / avant de dormir, à l'heure de Paris choisie par l'enseignante
+ *    (réglage `dhikr_rappels`, ÉTEINT au départ), une fois par jour ; la série déjà faite (dhikr_series_faites) = pas de rappel.
  */
 serve(async () => {
   try {
@@ -132,6 +134,29 @@ serve(async () => {
         body: 'C\'est le moment de relire la liste « À revoir chaque semestre » : vacances, dates du Ramadan, horaires, vidéos, forfaits gratuits…',
         data: { url: '/admin?section=revue-semestre' } }).catch((e) => console.error('revue-semestre', e));
       bilan.revue_semestre = saison;
+    }
+    // 📿 Rappels doux du Dhikr (Nadia, 27/11, idée 1). Chaque élève peut couper le sien (Paramètres › Notifications).
+    {
+      const { data: rg } = await supabase.from('reglages_appli').select('valeur').eq('cle', 'dhikr_rappels').maybeSingle();
+      const r = (rg?.valeur ?? {}) as { matin?: boolean; soir?: boolean; nuit?: boolean; heure_matin?: number; heure_soir?: number; heure_nuit?: number };
+      const rappels = [
+        { cle: 'matin', on: r.matin, h: r.heure_matin ?? 8, serie: 'matin', titre: '📿 La série du matin t\'attend', corps: 'Quelques minutes pour bien commencer la journée, in shâ\' Allah 🤍', url: '/module/dhikr?onglet=series&serie=matin' },
+        { cle: 'soir', on: r.soir, h: r.heure_soir ?? 18, serie: null, titre: '🌇 Un petit dhikr avant la nuit ?', corps: '33 Soubhâna-llâh, 33 Al-hamdou lillâh, 33 Allâhou akbar : ton chapelet t\'attend.', url: '/module/dhikr?onglet=apres' },
+        { cle: 'nuit', on: r.nuit, h: r.heure_nuit ?? 21, serie: 'soir', titre: '🌙 Avant de dormir', corps: 'La série du soir : 5 gestes, et tu dors protégé, in shâ\' Allah.', url: '/module/dhikr?onglet=series&serie=soir' },
+      ];
+      for (const x of rappels) {
+        if (!x.on || p.hour < x.h || p.hour > x.h + 1 || !(await uneFois(`dhikr-${x.cle}-${p.day}`))) continue;
+        const { data: ok } = await supabase.from('profiles').select('user_id').eq('is_approved', true);
+        const approuves = new Set((ok || []).map((y) => y.user_id));
+        let cibles = eleves.filter((id) => approuves.has(id));
+        if (x.serie) {
+          const { data: faites } = await supabase.from('dhikr_series_faites').select('user_id').eq('serie', x.serie).eq('jour', p.day);
+          const deja = new Set((faites || []).map((y) => y.user_id));
+          cibles = cibles.filter((id) => !deja.has(id));
+        }
+        if (cibles.length) await sendPushInternal({ userIds: cibles, category: `dhikr_${x.cle}`, title: x.titre, body: x.corps, data: { url: x.url } }).catch((e) => console.error('dhikr', e));
+        bilan[`dhikr_${x.cle}`] = cibles.length;
+      }
     }
     return Response.json({ success: true, bilan });
   } catch (e) {

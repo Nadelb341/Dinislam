@@ -29,6 +29,12 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   sourate_stories: ['sourate-stories'],
   // 🕊️ Hadith du jour de l'accueil (2026-11-21) : un changement de l'enseignante arrive tout de suite chez tous
   hadiths_du_jour: ['hadiths-du-jour'],
+  // 📿 Carte Dhikr (2026-11-27) : contenu modifié par l'enseignante + compteur du défi du groupe EN DIRECT
+  dhikr_items: ['dhikr-items'],
+  dhikr_gestes: ['dhikr-gestes'],
+  dhikr_quiz: ['dhikr-quiz'],
+  dhikr_defis: ['dhikr-defis'],
+  dhikr_defi_participations: ['dhikr-participations', 'dhikr-defis'],
   // ✅ Corrections (2026-11-15) : les invocations envoyées comptent dans le bouclier
   invocation_validation_requests: ['admin-invocation-validations', 'admin-pending-breakdown', ...PROGRESS_VIEWS],
   // 💎 (2026-11-18) Un devoir relié à une carte s'allume avec le travail fait dans la carte : demandes, récitations, validations

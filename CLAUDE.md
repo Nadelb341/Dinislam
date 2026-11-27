@@ -227,6 +227,9 @@ Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très long
 | 📝 Devoirs libres : donner / ✏️ modifier (Nadia) ; répondre par écrit (élève) | ✅ | `donnerDevoirs` (file `dinislam_devoirs_en_attente`) / `ecrireOuGarder` ; brouillons gardés sur l'appareil |
 | 📝 Devoirs libres : déposer un audio / un fichier (Nadia), envoyer photo ou audio (élève), vidéo YouTube, 🗑️ corbeille | ❌ 📡 | envoi de fichier / YouTube / corbeille en base : message « 📡 Nécessite Internet » |
 | 🎥 Cours Zoom dans l'appli + bouton 🎤 | ❌ 📡 | cours en direct : message « 📡 Nécessite Internet » ; le kit Zoom (≈ 3,3 Mo) n'est jamais pré-chargé (exclu du pré-cache) |
+| 📿 Dhikr : chapelet, choix du chapelet, séries matin/soir/réveil, après la prière, bibliothèque, carnet, quiz, tout-petits | ✅ | contenu = dernière copie (sinon copie de secours `src/data/dhikrContenu.ts`) ; compteur, carnet, avancée des séries gardés sur l'appareil ; série terminée (points) : `ecrireOuGarder` |
+| 📿 Dhikr : ajouter au défi du groupe / ✏️ modifier le contenu (Nadia) | ✅ | `ecrireOuGarder` (envoyé au retour du réseau) |
+| 📿 Dhikr : compteur du défi EN DIRECT, 🗑️ corbeille, fichiers des zones, rappels (notifications) | ❌ 📡 | « 📡 Nécessite Internet » |
 
 ## 📨 Convocations (2026-11-11, page de choix https://claude.ai/artifact/PWeJ2MVPR8R4sgtPGkgQe3 : organisation A, envoi A, 9 idées)
 - GRATUIT (règle des applis libres) : envoi tout seul DANS L'APPLI (notification élève + parents reliés, catégorie `sched`, carte « 📨 Convocation » ✅ Je viens / ❌ Absent sur l'accueil élève, `ConvocationEleve`) ; WhatsApp / SMS = 1 appui de Nadia (lien `wa.me` / `sms:` avec le message écrit). SMS/WhatsApp vraiment automatiques = service payant → refusé.
@@ -255,7 +258,16 @@ Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très long
 
 ## 🚫 Plus jamais d'étoiles à 8 branches dans les fonds (Nadia, 2026-11-27 : « je n'aime pas du tout !! je ne veux pas qu'ils réapparaissent »)
 - Le motif « deux carrés croisés » (fond « Aube dorée » `jg1`, fonction `motif` de `src/lib/fondsEcran.ts`) est SUPPRIMÉ ; test `fondsEcran.test.ts` qui échoue si un fond redessine `rotate(45`. Ne jamais remettre ce motif dans un fond, un décor ou un cadre. (Les médaillons des leçons du parcours Nourania ont aussi une forme d'étoile à 8 branches : demandé à Nadia le 27/11 s'il faut les changer.)
-- ⏳ Carte Dhikr + « Besoin d'Allah » (99 noms) : 10 + 3 présentations et 6 idées proposées le 27/11 sur https://claude.ai/artifact/RvvRCNEa1erUKYRLg7Uc2g (inspirations : page Facebook « Dhikr Chaque Jour », Hisnul Muslim, Muslim Pro, Pillars, Athan) — attendre ses choix.
+- ⏳ Carte Dhikr + « Besoin d'Allah » (99 noms) : 10 + 3 présentations et 6 idées proposées le 27/11 sur https://claude.ai/artifact/RvvRCNEa1erUKYRLg7Uc2g (inspirations : page Facebook « Dhikr Chaque Jour », Hisnul Muslim, Muslim Pro, Pillars, Athan) — choix reçus (A, C, D, E, F, G, H, I, J + idées 1, 2, 3, 5, 6) → carte Dhikr CONSTRUITE le 27/11 (voir section « 📿 Carte Dhikr »).
+
+## 📿 Carte Dhikr (2026-11-27, choix de Nadia sur https://claude.ai/artifact/RvvRCNEa1erUKYRLg7Uc2g)
+- Route `/module/dhikr` → `src/pages/DhikrPage.tsx` (plus `GenericTimelinePage` ; l'ancien « Gérer le contenu » `dhikr-manage` vide est retiré, le ⋮ de l'accueil ouvre `?onglet=reglages`). Onglets : 📿 Chapelet · 🌅 Séries (Matin / Soir / Réveil) · 🕌 Après la prière · 📚 Bibliothèque · 📒 Mon carnet · 🤝 Défi du groupe · ❓ Quiz · ⚙️ Réglages (enseignante). Liens : `?onglet=series&serie=soir`, `?onglet=chapelet&dhikr=<clé>`, `?onglet=apres`.
+- Composants `src/components/dhikr/` : `Chapelet.tsx` (misbaha SVG, perles qui glissent, modes 👆 À mon rythme / ▶️ Automatique ×0,5 ×1 + pause, vibration, fin « Qu'Allah accepte ton dhikr 🤲 » + étoiles), `Perles.tsx` (8 chapelets dessinés : Traditionnel, Nacré par défaut, Émeraude, Doré, Turquoise, Bois, Minimaliste, Céleste ; choix gardé sur l'appareil `dinislam_dhikr_reglages`), `Ambiance.tsx` (jour bleu ciel + mosquée bleue / couchant orange→violet + mosquée violette / nuit bleu marine étoilée), `Series.tsx` (cercle doré des gestes, reprise du jour, soleil du réveil en 3 temps), `Bibliotheque.tsx`, `Carnet.tsx`, `DefiGroupe.tsx`, `QuizMerite.tsx`, `ReglagesDhikr.tsx`, `EditeurDhikr.tsx` (✏️ commun), `DhikrDuMoment.tsx` (petite carte de l'accueil), `DhikrPetits.tsx` (10 fois + feu d'artifice doré « BRAVO ! », carte « 📿 Mon dhikr » des tout-petits, FERMÉE au départ comme les autres). Logique testée : `src/lib/dhikr.ts` (+ `dhikr.test.ts`).
+- Base (migration `20261127120000_carte_dhikr.sql`) : `dhikr_items`, `dhikr_gestes`, `dhikr_quiz` (élèves : seulement `visible`), `dhikr_series_faites` (une ligne par élève/série/jour → points `dhikr_matin` / `dhikr_soir`, 5 pts, dans `_points_detail`), `dhikr_defis` (+ `total` tenu par un déclencheur) et `dhikr_defi_participations` (l'élève ne lit que les siennes), colonnes `notification_preferences.notif_dhikr_matin/soir/nuit`, réglage `dhikr_rappels` (ÉTEINT au départ). Contenu de départ GÉNÉRÉ depuis `src/data/dhikrContenu.ts` (même texte). Corbeille : `dhikr_item`, `dhikr_geste`, `dhikr_question`, `dhikr_defi`.
+- 🕌 Règle n°1 : gestes 3 et 4 du matin (Abou Dâwoud / At-Tirmidhî) CACHÉS « à confirmer » ; 2 remplacements proposés (Jouwayriya ×3 Mouslim 2726, tahlil ×10 Boukhari 6404 / Mouslim 2693) cachés (statut « proposition ») → Nadia allume ce qu'elle veut dans ⚙️ Réglages.
+- Carnet : sur l'appareil, remis à zéro le dimanche soir à minuit (heure de l'appareil), SEULE la semaine passée est gardée. Petite carte de l'accueil : jusqu'à midi série du matin, de midi à 19 h 3 dhikr du quotidien (disparaissent une fois faits ENTRE midi et 19 h), après 19 h série du soir ; visible seulement si la carte Dhikr est ouverte à la personne.
+- Page Prière : après avoir coché une prière (5 étoiles), « 📿 … le tasbih d'après la prière ? Faire › » (5 min, si la carte Dhikr est ouverte).
+- ⚠️ À FAIRE (pas fait dans la branche) : appliquer la migration, puis redéployer `taches-automatiques` (rappels) et `send-push-notification` (catégories `dhikr_matin/soir/nuit`).
 
 ## 🎥 Cours Zoom DANS Dinislam (2026-11-27, choix A + D de Nadia)
 - Kit officiel Zoom « Meeting SDK » (vue composant, `@zoom/meetingsdk` 6.10.0 épinglé), appli Marketplace « Cours en ligne » (General App, compte Zoom Pro de Nadia, gérée par l'utilisateur, Meeting SDK activé, option bot/IA éteinte). Salle = salle personnelle 408 036 1371 (même compte → pas besoin de jeton OBF, règle Zoom du 02/03/2026).
@@ -445,7 +457,7 @@ DELETE FROM auth.users WHERE id = 'UUID_ICI';
 | `/module/lecture-coran` | `GenericTimelinePage.tsx` | Lecture Coran |
 | `/module/darija` | `GenericTimelinePage.tsx` | Darija |
 | `/module/dictionnaire` | `GenericTimelinePage.tsx` | Dictionnaire |
-| `/module/dhikr` | `GenericTimelinePage.tsx` | Dhikr |
+| `/module/dhikr` | `DhikrPage.tsx` (page à part depuis le 27/11) | Dhikr |
 | `/module/hadiths` | `GenericTimelinePage.tsx` | Hadiths |
 | `/module/histoires-prophetes` | `GenericTimelinePage.tsx` | Histoires des Prophètes |
 | `/module/:moduleId` | `GenericModulePage.tsx` | Tous les autres modules dynamiques |

@@ -374,6 +374,8 @@ serve(async (req) => {
       par_bilan: 'notif_par_bilan', par_abs: 'notif_par_abs', adm_abs: 'notif_adm_abs', adm_par: 'notif_adm_par',
       // 👪 Devoirs des enfants (2026-11-18) : à part des devoirs du parent lui-même
       par_dev: 'notif_par_dev', par_rap: 'notif_par_rap',
+      // 📿 Rappels doux de la carte Dhikr (2026-11-27)
+      dhikr_matin: 'notif_dhikr_matin', dhikr_soir: 'notif_dhikr_soir', dhikr_nuit: 'notif_dhikr_nuit',
     };
     const prefColumn = typeof category === 'string' ? CATEGORY_COLUMNS[category] : undefined;
     if (prefColumn && targetIds.length > 0) {

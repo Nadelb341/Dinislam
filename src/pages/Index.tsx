@@ -64,6 +64,8 @@ const AnniversairesCamarades = lazy(() => import('@/components/anniversaire/Anni
 const VilleAVerifier = lazy(() => import('@/components/ville/VilleAVerifier').then((m) => ({ default: m.VilleAVerifier })));
 const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').then((m) => ({ default: m.CarnetLiaison })));
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
+// 📿 Petite carte « Dhikr du moment » (2026-11-27, idée 5) : chargée à part, jamais bloquante
+const DhikrDuMoment = lazy(() => import('@/components/dhikr/DhikrDuMoment'));
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -85,7 +87,8 @@ const ADMIN_SCREENS: Record<string, { manage: string; progress?: string; extra?:
   '/module/lecture-coran': { manage: 'lecture-coran-manage' },
   '/module/darija': { manage: 'darija-manage' },
   '/module/dictionnaire': { manage: 'dictionnaire-manage' },
-  '/module/dhikr': { manage: 'dhikr-manage' },
+  // 📿 Dhikr (27/11) : la carte gère son contenu elle-même (✏️ partout + onglet ⚙️ Réglages)
+  '/module/dhikr': { manage: '/module/dhikr?onglet=reglages' },
   '/module/hadiths': { manage: 'hadiths-manage' },
 };
 /** 📝 Brouillons pas terminés à l'intérieur de « Gérer le contenu » d'une carte (idée B, 2026-10-27) */
@@ -539,6 +542,14 @@ const handleModuleClick = (mod) => {
           <SilentBoundary name="Hadith du jour"><HadithDuJourCarte isAdmin={isAdmin} userId={user?.id ?? null} /></SilentBoundary>
           </Encadre>
           </div>
+
+          {/* 📿 Dhikr du moment (2026-11-27, idée 5) : seulement si la carte Dhikr est ouverte à cette personne
+              (élève : mêmes règles que la grille ; enseignante : carte pas réglée « Personne »). Calcul sans hook (ordre des hooks inchangé). */}
+          {(isAdmin
+            ? (modules || []).some((m) => m.builtin_path === '/module/dhikr' && accesDe(m, visibilityMap[m.id]).mode !== 'personne')
+            : visibleModules.some((m) => m.builtin_path === '/module/dhikr')) && (
+            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment /></Suspense></SilentBoundary>
+          )}
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
           <Encadre carte="sourateJour"><SourateDuJour /></Encadre>

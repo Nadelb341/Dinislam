@@ -1,6 +1,6 @@
 /**
  * GenericTimelinePage — Page élève générique avec design timeline vertical
- * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Dhikr, Hadiths (Histoires des Prophètes : page à part depuis le 22/11)
+ * Utilisé par: Vocabulaire, Lecture Coran, Darija, Dictionnaire, Hadiths (Dhikr : page à part DhikrPage depuis le 27/11) (Histoires des Prophètes : page à part depuis le 22/11)
  */
 import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,11 +48,6 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
     gradientFrom: '#3730a3', gradientTo: '#6366f1',
     dotColor: '#6366f1', lineColor: '#a5b4fc',
     badgeColor: '#3730a3', title: 'Dictionnaire', titleArabic: 'القاموس',
-  },
-  dhikr: {
-    gradientFrom: '#be185d', gradientTo: '#ec4899',
-    dotColor: '#ec4899', lineColor: '#f9a8d4',
-    badgeColor: '#be185d', title: 'Dhikr', titleArabic: 'الذكر',
   },
   hadiths: {
     gradientFrom: '#b45309', gradientTo: '#f59e0b',
