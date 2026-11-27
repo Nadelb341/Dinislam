@@ -14,7 +14,7 @@ export type TrashItemType =
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
   | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video"
   | "coran_vocabulaire" | "coran_vocabulaire_pdf" | "devoir_libre_piece"
-  | "besoin_allah" | "besoin_allah_nom"
+  | "besoin_allah" | "besoin_allah_nom" | "allah_name_partie"
   | "dhikr_item" | "dhikr_geste" | "dhikr_question" | "dhikr_defi";
 
 export interface TrashItem {
@@ -27,7 +27,7 @@ export interface TrashItem {
   deleted_at: string;
 }
 
-const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image" | "coran_vocabulaire_pdf" | "devoir_libre_piece">, string> = {
+const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_audio" | "alphabet_line_model" | "admin_task_attachment" | "coran_note" | "devoir_piece_jointe" | "devoir_ligne" | "cahier_carte" | "nourania_lignes" | "invocation_texte" | "carte_image" | "coran_vocabulaire_pdf" | "devoir_libre_piece" | "allah_name_partie">, string> = {
   convocation_modele: "convocation_modeles",
   convocation_programmation: "convocation_programmations",
   carnet_message: "carnet_messages",
@@ -283,6 +283,17 @@ export async function restoreTrashItem(item: TrashItem): Promise<boolean> {
       ? { content_arabic: v.arabe ?? null, content_prononciation: v.prononciation ?? null, content_french: v.traduction ?? null, content_source: v.source ?? null, texte_principal_masque: false }
       : { autre_arabe: v.arabe ?? null, autre_prononciation: v.prononciation ?? null, autre_traduction: v.traduction ?? null, autre_source: v.source ?? null };
     const { error } = await supabase.from("invocations").update(maj).eq("id", d.invocation_id);
+    if (error) return false;
+    await supabase.from("trash_items").delete().eq("id", item.id);
+    return true;
+  }
+  // 🌟 Partie vidée d'une fiche des 99 noms (2026-11-27) : l'ancienne version revient telle quelle dans la fiche
+  if (item.item_type === "allah_name_partie") {
+    const d = item.item_data as { name_id?: number; valeurs?: Record<string, string | boolean | null> } | null;
+    if (!d?.name_id || !d.valeurs) return false;
+    const permis = Object.fromEntries(Object.entries(d.valeurs).filter(([k]) => /^(fiche_[a-z_]+|name_arabic|name_french|transliteration)$/.test(k)));
+    if (!Object.keys(permis).length) return false;
+    const { error } = await untypedDb.from("allah_names").update(permis).eq("id", d.name_id);
     if (error) return false;
     await supabase.from("trash_items").delete().eq("id", item.id);
     return true;

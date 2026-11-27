@@ -635,6 +635,28 @@ export type Database = {
           created_at: string | null
           display_order: number | null
           explanation: string | null
+          fiche_a_relire: boolean
+          fiche_autres_references: string | null
+          fiche_divergences: string | null
+          fiche_explication: string | null
+          fiche_invocation_arabe: string | null
+          fiche_invocation_degre: string | null
+          fiche_invocation_degre_note: string | null
+          fiche_invocation_francais: string | null
+          fiche_invocation_personnelle: boolean
+          fiche_invocation_phonetique: string | null
+          fiche_invocation_reference: string | null
+          fiche_moment: string | null
+          fiche_note_relecture: string | null
+          fiche_preuve_arabe: string | null
+          fiche_preuve_degre: string | null
+          fiche_preuve_degre_note: string | null
+          fiche_preuve_francais: string | null
+          fiche_preuve_reference: string | null
+          fiche_preuve_type: string | null
+          fiche_relue_le: string | null
+          fiche_signification: string | null
+          fiche_statut_nom: string | null
           id: number
           image_cadrage: Json | null
           image_url: string | null
@@ -647,6 +669,28 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           explanation?: string | null
+          fiche_a_relire?: boolean
+          fiche_autres_references?: string | null
+          fiche_divergences?: string | null
+          fiche_explication?: string | null
+          fiche_invocation_arabe?: string | null
+          fiche_invocation_degre?: string | null
+          fiche_invocation_degre_note?: string | null
+          fiche_invocation_francais?: string | null
+          fiche_invocation_personnelle?: boolean
+          fiche_invocation_phonetique?: string | null
+          fiche_invocation_reference?: string | null
+          fiche_moment?: string | null
+          fiche_note_relecture?: string | null
+          fiche_preuve_arabe?: string | null
+          fiche_preuve_degre?: string | null
+          fiche_preuve_degre_note?: string | null
+          fiche_preuve_francais?: string | null
+          fiche_preuve_reference?: string | null
+          fiche_preuve_type?: string | null
+          fiche_relue_le?: string | null
+          fiche_signification?: string | null
+          fiche_statut_nom?: string | null
           id?: number
           image_cadrage?: Json | null
           image_url?: string | null
@@ -659,6 +703,28 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           explanation?: string | null
+          fiche_a_relire?: boolean
+          fiche_autres_references?: string | null
+          fiche_divergences?: string | null
+          fiche_explication?: string | null
+          fiche_invocation_arabe?: string | null
+          fiche_invocation_degre?: string | null
+          fiche_invocation_degre_note?: string | null
+          fiche_invocation_francais?: string | null
+          fiche_invocation_personnelle?: boolean
+          fiche_invocation_phonetique?: string | null
+          fiche_invocation_reference?: string | null
+          fiche_moment?: string | null
+          fiche_note_relecture?: string | null
+          fiche_preuve_arabe?: string | null
+          fiche_preuve_degre?: string | null
+          fiche_preuve_degre_note?: string | null
+          fiche_preuve_francais?: string | null
+          fiche_preuve_reference?: string | null
+          fiche_preuve_type?: string | null
+          fiche_relue_le?: string | null
+          fiche_signification?: string | null
+          fiche_statut_nom?: string | null
           id?: number
           image_cadrage?: Json | null
           image_url?: string | null
