@@ -4,7 +4,9 @@ import { cn } from '@/lib/utils';
 /**
  * 🌅 Les couleurs de la carte Dhikr.
  * 27/11 (2ᵉ demande de Nadia) : UN SEUL fond, une scène « réelle » (ciel rose-doré, mosquée blanche, lanternes, fleurs, lac),
- * fichier `public/images/dhikr/fond-dhikr.jpg` fourni par Nadia (image propre, SANS texte). Tant que le fichier n'existe pas :
+ * fichier `public/images/dhikr/fond-dhikr.jpg` fourni par Nadia, AVEC son bandeau « Dhikr / Se souvenir d'Allah… » (27/11 au soir :
+ * « je le trouve joli », on le garde) : l'image est posée en haut, en largeur (jamais coupée en hauteur), et la page ne
+ * réécrit pas son titre (bloc vide `976/215` à la place du bandeau). Tant que le fichier n'existe pas :
  * un dégradé doux ciel rose-doré (PAS de mosquée / lanternes / fleurs dessinées : Nadia ne les aime pas).
  * Le jour où le fichier est posé dans `public/images/dhikr/`, il s'affiche tout seul à la mise en ligne suivante
  * (`__FOND_DHIKR__`, écrit par vite.config.ts : vide si le fichier manque → aucune demande inutile ; sinon sa taille,
@@ -33,20 +35,31 @@ declare const __FOND_DHIKR__: string | undefined;
 /** Version de l'image de fond (vide = pas d'image : le dégradé seul) */
 const VERSION_FOND = typeof __FOND_DHIKR__ === 'string' ? __FOND_DHIKR__ : '';
 export const IMAGE_FOND_DHIKR = VERSION_FOND ? `/images/dhikr/fond-dhikr.jpg?v=${VERSION_FOND}` : null;
+/** Sur téléphone, l'image garde au moins cette largeur (bords coupés) pour que le bandeau « Dhikr » reste lisible */
+const LARGEUR_MIN_FOND = 560;
 /** Dégradé doux ciel rose-doré (aussi sous l'image, le temps qu'elle arrive) */
 export const DEGRADE_DHIKR = 'linear-gradient(180deg, #fde3d3 0%, #f9cfc4 22%, #f6c7a9 45%, #f8dcae 70%, #fff3df 100%)';
 
-/** Le grand fond de la carte : l'image (cover) + un voile très léger pour la lisibilité ; sinon le dégradé */
+/** Le grand fond de la carte : l'image en haut, en pleine largeur, fondue vers le crème en bas ; sinon le dégradé */
 export function FondDhikr({ ambiance, children, className }: { ambiance: Couleurs; children: ReactNode; className?: string }) {
   return (
-    <div className={cn('relative overflow-hidden', className)} style={{ background: DEGRADE_DHIKR, color: ambiance.texte }}>
+    <div className={cn('relative overflow-hidden', className)} style={{ background: IMAGE_FOND_DHIKR ? '#fff3df' : DEGRADE_DHIKR, color: ambiance.texte }}>
       {IMAGE_FOND_DHIKR && (
         <div className="absolute inset-0 pointer-events-none" aria-hidden
-          style={{ backgroundImage: `linear-gradient(180deg, rgba(255,248,240,.18) 0%, rgba(255,248,240,.30) 100%), url("${IMAGE_FOND_DHIKR}")`, backgroundSize: 'cover', backgroundPosition: 'center top' }} />
+          style={{ backgroundImage: `url("${IMAGE_FOND_DHIKR}")`, backgroundSize: `max(100%, ${LARGEUR_MIN_FOND}px) auto`, backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
+      )}
+      {/* Fondu du bas de l'image vers le dégradé (pages plus longues que l'image) */}
+      {IMAGE_FOND_DHIKR && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-none" aria-hidden
+          style={{ width: `max(100%, ${LARGEUR_MIN_FOND}px)`, aspectRatio: '976 / 1110', background: 'linear-gradient(180deg, rgba(255,243,223,0) 82%, #fff3df 100%)' }} />
       )}
       {/* Petit halo doré en haut, très doux (comme le soleil couchant de la scène) */}
-      <div className="absolute inset-x-0 top-0 h-48 pointer-events-none" aria-hidden style={{ background: 'radial-gradient(60% 100% at 70% 0%, rgba(255,214,150,.45), rgba(255,214,150,0))' }} />
-      <div className="relative">{children}</div>
+      {!IMAGE_FOND_DHIKR && <div className="absolute inset-x-0 top-0 h-48 pointer-events-none" aria-hidden style={{ background: 'radial-gradient(60% 100% at 70% 0%, rgba(255,214,150,.45), rgba(255,214,150,0))' }} />}
+      <div className="relative">
+        {/* L'image a son propre bandeau « Dhikr » (voulu par Nadia, 27/11) : on laisse sa place, la page n'écrit pas de 2ᵉ titre */}
+        {IMAGE_FOND_DHIKR && <div aria-hidden className="relative left-1/2 -translate-x-1/2" style={{ width: `max(100%, ${LARGEUR_MIN_FOND}px)`, aspectRatio: '976 / 215' }} />}
+        {children}
+      </div>
     </div>
   );
 }

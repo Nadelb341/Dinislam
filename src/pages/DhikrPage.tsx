@@ -7,7 +7,7 @@ import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useAccesPetits } from '@/hooks/usePetits';
 import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, useDhikrQuiz, type DefiDhikr } from '@/hooks/useDhikr';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
-import { FondDhikr, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
+import { FondDhikr, IMAGE_FOND_DHIKR, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
 import { Chapelet, type EtapeChapelet } from '@/components/dhikr/Chapelet';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { ReveilTroisGestes, SerieGestes, TexteDhikr } from '@/components/dhikr/Series';
@@ -134,7 +134,8 @@ export default function DhikrPage() {
       <FondDhikr ambiance={ambiance} className="min-h-[100dvh] pb-[calc(var(--menu-bas,0px)+5rem)]">
         <div className="p-3 sm:p-5 max-w-5xl mx-auto space-y-3">
           {/* Le bandeau */}
-          <header className="pt-1 pr-24 sm:pr-40">
+          {/* Avec l'image de fond, son bandeau dessiné sert de titre (Nadia, 27/11) : le titre écrit reste pour les lecteurs d'écran seulement */}
+          <header className={IMAGE_FOND_DHIKR ? 'sr-only' : 'pt-1 pr-24 sm:pr-40'}>
             <p dir="rtl" lang="ar" className="font-arabic text-2xl font-bold" style={{ color: ambiance.or }}>الذِّكْر</p>
             <h1 className="text-2xl sm:text-3xl font-black [overflow-wrap:anywhere]">📿 {titre}</h1>
             <p className="text-sm font-semibold" style={{ color: ambiance.doux }}>Se souvenir d'Allah, avec le cœur et la langue.</p>
