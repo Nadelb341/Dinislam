@@ -81,7 +81,7 @@ export async function rejoindreCours(racine: HTMLElement, nom: string) {
 export async function basculerMicro(): Promise<string | null> {
   const u = client?.getCurrentUser();
   if (!client || !u) return 'Le cours n\'est pas ouvert.';
-  if (!u.audio) { changer({ reduit: false }); return 'Touche d\'abord « Rejoindre l\'audio » dans la fenêtre Zoom.'; }
+  if (!u.audio) { changer({ reduit: false }); return '🎧 Touche d\'abord le casque (en bas à gauche de la fenêtre du cours) pour rejoindre l\'audio.'; }
   try { await client.mute(!u.muted); } catch (e) { return messageErreurZoom(e); }
   setTimeout(lireMicro, 300);
   return null;

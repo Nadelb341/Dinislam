@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import { DraftDot } from '@/components/shared/DraftDot';
 import { OPEN_ADMIN_EVENT, GROUP_MESSAGE_EVENT, type OpenAdminDetail, type GroupMessageDetail } from '@/lib/adminBridge';
-import { Check, Mic, MicOff } from 'lucide-react';
+import { Check, Headphones, Mic, MicOff } from 'lucide-react';
 import { ZOOM_RACINE_ID, ZOOM_URL, basculerMicro, rejoindreCours, useZoomCours } from '@/lib/zoomCours';
 import { supabase } from '@/integrations/supabase/client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -150,11 +150,12 @@ const Header = ({
             )}
             {/* 🎤 Le micro, à côté du logo Zoom, dès que la salle est ouverte : vert = ouvert, rouge = coupé */}
             {zoom.etat === 'en-cours' && (
+              // 🎧 orange = l'audio n'est pas encore rejoint (toucher le casque dans la fenêtre du cours) ; 🎤 vert / rouge ensuite
               <button type="button" onClick={() => void basculerMicro().then((m) => { if (m) toast(m); })}
-                aria-label={zoom.micro === 'ouvert' ? 'Micro ouvert : touche pour le couper' : 'Micro coupé : touche pour l\'ouvrir'}
-                title={zoom.micro === 'ouvert' ? 'Micro ouvert' : 'Micro coupé'}
-                className={`grid h-8 w-8 place-items-center rounded-full text-white shadow ring-2 ring-white/70 transition-transform active:scale-90 ${zoom.micro === 'ouvert' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-                {zoom.micro === 'ouvert' ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                aria-label={zoom.micro === 'ouvert' ? 'Micro ouvert : touche pour le couper' : zoom.micro === 'coupe' ? 'Micro coupé : touche pour l\'ouvrir' : 'Son pas encore activé : touche le casque dans la fenêtre du cours'}
+                title={zoom.micro === 'ouvert' ? 'Micro ouvert' : zoom.micro === 'coupe' ? 'Micro coupé' : 'Rejoins d\'abord l\'audio (🎧)'}
+                className={`grid h-8 w-8 place-items-center rounded-full text-white shadow ring-2 ring-white/70 transition-transform active:scale-90 ${zoom.micro === 'ouvert' ? 'bg-emerald-500' : zoom.micro === 'coupe' ? 'bg-red-500' : 'bg-orange-500 animate-pulse'}`}>
+                {zoom.micro === 'ouvert' ? <Mic className="h-4 w-4" /> : zoom.micro === 'coupe' ? <MicOff className="h-4 w-4" /> : <Headphones className="h-4 w-4" />}
               </button>
             )}
             <BoutonEntete nom="classement" onClick={() => navigate('/classement')} aria-label="Classement" title="Classement" />
