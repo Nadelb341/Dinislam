@@ -250,6 +250,9 @@ Mise au propre le 2026-11-09 (idée 27 de l'audit). L'ancienne liste (très long
 - « ⚙️ Lignes et maximum du groupe » (Q4-B) : déplacé dans la fiche du groupe (carte « Après le cours », vue `reglages`). Le maximum se compte maintenant PAR ÉLÈVE et par semaine.
 - « En faire un devoir » (cahier de texte) : texte sur la ligne ✏️ Autre du 1er élève, les autres dans « Donner aussi à… », sa carte s'ouvre. « 📋 Copier vers un groupe » : retrouve aussi les devoirs donnés élève par élève et les recopie à chaque élève du groupe visé.
 
+## 🌗 Boutons visibles de jour comme de nuit + aucun élément fixe sur « Retour » (Nadia, 2026-11-27, règle commune)
+- Fonds jour/nuit/couchant + décors de saison : tout bouton ou pastille flottante a une couleur pleine + liseré clair/ombre. Un élément fixe en haut (ex. pastille Zoom) reçoit une place réservée dans `AppLayout` pour ne jamais cacher « ← Retour ». Détail : CLAUDE.md commun.
+
 ## 🚫 Plus jamais d'étoiles à 8 branches dans les fonds (Nadia, 2026-11-27 : « je n'aime pas du tout !! je ne veux pas qu'ils réapparaissent »)
 - Le motif « deux carrés croisés » (fond « Aube dorée » `jg1`, fonction `motif` de `src/lib/fondsEcran.ts`) est SUPPRIMÉ ; test `fondsEcran.test.ts` qui échoue si un fond redessine `rotate(45`. Ne jamais remettre ce motif dans un fond, un décor ou un cadre. (Les médaillons des leçons du parcours Nourania ont aussi une forme d'étoile à 8 branches : demandé à Nadia le 27/11 s'il faut les changer.)
 - ⏳ Carte Dhikr + « Besoin d'Allah » (99 noms) : 10 + 3 présentations et 6 idées proposées le 27/11 sur https://claude.ai/artifact/RvvRCNEa1erUKYRLg7Uc2g (inspirations : page Facebook « Dhikr Chaque Jour », Hisnul Muslim, Muslim Pro, Pillars, Athan) — attendre ses choix.
