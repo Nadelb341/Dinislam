@@ -97,7 +97,7 @@ export function SerieGestes({ serie, gestes, userId, isAdmin, ambiance, onEditer
     ecrire({ ...avancee, finie: true });
     fireConfetti();
     toast.success(`🤲 Qu'Allah accepte ta série ${serie === 'matin' ? 'du matin' : 'du soir'} ! ✨`);
-    await noterDhikr(userId, { moment: serie, nombre, journee: `serie:${serie}`, serie });
+    await noterDhikr(userId, { moment: serie, nombre, journee: `serie:${serie}`, serie, dhikr: { cle: `serie:${serie}`, titre: serie === 'matin' ? 'Série du matin' : 'Série du soir' } });
   };
 
   const g = liste[courant];
@@ -219,7 +219,7 @@ export function ReveilTroisGestes({ gestes, userId, isAdmin, ambiance, onEditer 
     if (!deja && tous && !avancee.finie) {
       fireConfetti();
       toast.success('☀️ Tous les nœuds sont défaits : belle journée, in shâ\' Allah !');
-      await noterDhikr(userId, { moment: 'reveil', nombre: liste.length, journee: 'serie:reveil', serie: 'reveil' });
+      await noterDhikr(userId, { moment: 'reveil', nombre: liste.length, journee: 'serie:reveil', serie: 'reveil', dhikr: { cle: 'serie:reveil', titre: 'Série du réveil' } });
     }
   };
 

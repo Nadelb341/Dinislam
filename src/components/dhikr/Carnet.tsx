@@ -5,7 +5,7 @@ import type { Couleurs } from './Ambiance';
 /**
  * 📒 G · Mon carnet de dhikr (Nadia, 27/11) : série de jours, total de la semaine, moments faits.
  * Remis à zéro chaque semaine le dimanche soir à minuit (heure de l'appareil) ; on garde UNIQUEMENT la semaine passée pour comparer.
- * Gardé sur l'appareil (marche sans réseau).
+ * Gardé sur l'appareil (marche sans réseau) ; les totaux de la semaine partent aussi en base pour l'enseignante (`envoyerSemaine`).
  */
 const NOMS_MOMENTS: Record<MomentCarnet, string> = {
   matin: '☀️ Matin', soir: '🌙 Soir', reveil: '🌅 Réveil', apres_priere: '🕌 Après la prière', libre: '📿 Chapelet', defi: '🤝 Défi',
@@ -66,7 +66,7 @@ export function CarnetDhikr({ carnet, ambiance }: { carnet: Carnet; ambiance: Co
           })}
         </div>
       </div>
-      <p className="text-xs text-center" style={{ color: ambiance.doux }}>🔄 Le carnet repart à zéro chaque dimanche soir à minuit. Il est gardé sur cet appareil.</p>
+      <p className="text-xs text-center" style={{ color: ambiance.doux }}>🔄 Le carnet repart à zéro chaque dimanche soir à minuit. Il est gardé sur cet appareil, et ton professeur voit tes totaux de la semaine.</p>
     </div>
   );
 }

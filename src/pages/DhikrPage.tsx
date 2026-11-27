@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useAccesPetits } from '@/hooks/usePetits';
-import { noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, useDhikrQuiz, type DefiDhikr } from '@/hooks/useDhikr';
+import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, useDhikrQuiz, type DefiDhikr } from '@/hooks/useDhikr';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { FondDhikr, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
 import { Chapelet, type EtapeChapelet } from '@/components/dhikr/Chapelet';
@@ -63,6 +63,8 @@ export default function DhikrPage() {
   const { gestes } = useDhikrGestes();
   const { questions } = useDhikrQuiz();
   const carnet = useCarnet(user?.id);
+  // 📒 Le carnet déjà sur l'appareil part aussi en base (une fois par visite) : l'enseignante le voit dans la fiche de l'élève
+  useEffect(() => { envoyerCarnetUneFois(user?.id); }, [user?.id]);
   const itemsVus = useMemo(() => (isAdmin ? items : items.filter((i) => i.visible)), [items, isAdmin]);
   const [enCours, setEnCours] = useState<EnCours | null>(null);
   const [edition, setEdition] = useState<Edition | null>(null);
@@ -88,7 +90,8 @@ export default function DhikrPage() {
   };
   const fini = async (e: { moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }, nombre: number) => {
     const quotidien = e.cle && (QUOTIDIENS as readonly string[]).includes(e.cle) ? `quotidien:${e.cle}` : undefined;
-    await noterDhikr(user?.id, { moment: e.defi ? 'defi' : e.moment, nombre, journee: quotidien });
+    await noterDhikr(user?.id, { moment: e.defi ? 'defi' : e.moment, nombre, journee: quotidien,
+      dhikr: { cle: e.cle ?? (e.defi ? `defi:${e.defi.id}` : 'chapelet'), titre: (e.cle && items.find((i) => i.cle === e.cle)?.titre) || e.defi?.dhikr_titre || e.defi?.titre || (e.cle === 'apres_priere' ? 'Après la prière' : 'Chapelet') } });
     if (e.defi && user) {
       try { const r = await ajouterAuDefi(e.defi.id, user.id, nombre); toast.success(r === 'en_attente' ? '📡 Gardé, ajouté au défi au retour du réseau' : `🤝 +${nombre} pour le groupe !`); }
       catch { toast.error('Ajout au défi impossible'); }

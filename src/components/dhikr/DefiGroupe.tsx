@@ -72,7 +72,7 @@ export function DefiGroupe({ isAdmin, userId, items, ambiance, onFaireDefi }: {
     if (!userId || !(nombre > 0)) return;
     try {
       const r = await ecrireOuGarder({ table: 'dhikr_defi_participations', op: 'insert', rows: [{ id: crypto.randomUUID(), defi_id: d.id, user_id: userId, nombre: Math.round(nombre) }] });
-      await noterDhikr(userId, { moment: 'defi', nombre });
+      await noterDhikr(userId, { moment: 'defi', nombre, dhikr: { cle: d.dhikr_cle ?? `defi:${d.id}`, titre: d.dhikr_titre ?? d.titre } });
       toast.success(r === 'en_attente' ? MSG_ATTENTE : `🤝 +${nombre} pour le groupe, qu'Allah l'accepte !`);
       setSaisie((s) => ({ ...s, [d.id]: '' }));
       void queryClient.invalidateQueries({ queryKey: ['dhikr-defis'] });

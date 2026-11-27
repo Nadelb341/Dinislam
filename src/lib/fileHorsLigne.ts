@@ -8,7 +8,9 @@ import { sendPushNotification } from '@/lib/pushHelper';
  */
 type Op =
   | { table: string; op: 'insert'; rows: Record<string, unknown>[]; push?: Parameters<typeof sendPushNotification>[0][] }
-  | { table: string; op: 'upsert'; rows: Record<string, unknown>[]; push?: Parameters<typeof sendPushNotification>[0][] }
+  | { table: string; op: 'upsert'; rows: Record<string, unknown>[]; push?: Parameters<typeof sendPushNotification>[0][];
+      /** Facultatif : une écriture en attente avec la même table + clé est REMPLACÉE (ex. le carnet de dhikr d'une semaine : seule la dernière photo compte) */
+      cle?: string }
   | { table: string; op: 'update'; id: string; values: Record<string, unknown>; col?: string; push?: Parameters<typeof sendPushNotification>[0][] }
   | { table: string; op: 'delete'; id: string; col?: string };
 
@@ -43,7 +45,8 @@ async function jouer(o: Op) {
 export async function ecrireOuGarder(o: Op): Promise<'ok' | 'en_attente'> {
   try { await jouer(o); return 'ok'; } catch (e) {
     if (!horsLigne((e as Error).message || '')) throw e;
-    ecrire([...lire(), o]);
+    const cle = o.op === 'upsert' ? o.cle : undefined;
+    ecrire([...lire().filter((x) => !(cle && x.op === 'upsert' && x.table === o.table && x.cle === cle)), o]);
     return 'en_attente';
   }
 }

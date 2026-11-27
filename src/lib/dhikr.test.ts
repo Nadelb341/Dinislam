@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ajouterAuCarnet, avancer, avanceeDuJour, carnetALHeure, cleSemaine, compteurDepart, creneauDe, dhikrDuMoment, encouragement, etatCercle,
   intervalleAuto, joursDeLaSemaine, lundiDe, marquerJournee, momentEnAvant, prochainGeste, reculer, serieDeJours, totalCompte,
-  totalSemaine, type EtatCompteur,
+  totalSemaine, type EtatCompteur, resumeSemaine, dhikrTries, semainePasseeDe, semaineVide,
 } from './dhikr';
 import { DHIKR_GESTES_SECOURS, DHIKR_ITEMS_SECOURS, DHIKR_QUIZ_SECOURS } from '@/data/dhikrContenu';
 
@@ -209,5 +209,35 @@ describe('📿 chapelet en cercle de 11 perles (27/11)', () => {
     expect(etatCercle(1, 3)).toMatchObject({ parTour: 3, tours: 1, tour: 1, position: 1 });
     expect(etatCercle(0, 1)).toMatchObject({ parTour: 1, tours: 1, position: 0 });
     expect(etatCercle(0, 0)).toMatchObject({ parTour: 1, tours: 1 });
+  });
+});
+
+describe('📒 carnet envoyé en base (vu par l\'enseignante)', () => {
+  it('totaux par dhikr, par jour, séries matin / soir / réveil', () => {
+    const tahlil = { cle: 'tahlil_100', titre: 'Lâ ilâha illa-llâh wahdahou… (100 fois)' };
+    let c = ajouterAuCarnet(null, new Date(2026, 10, 23, 8), 'matin', 120, { cle: 'serie:matin', titre: 'Série du matin' }); // lundi
+    c = ajouterAuCarnet(c, new Date(2026, 10, 23, 12), 'libre', 100, tahlil);
+    c = ajouterAuCarnet(c, new Date(2026, 10, 24, 20), 'soir', 50, { cle: 'serie:soir', titre: 'Série du soir' }); // mardi
+    c = ajouterAuCarnet(c, new Date(2026, 10, 25, 13), 'libre', 100, tahlil);
+    c = ajouterAuCarnet(c, new Date(2026, 10, 25, 14), 'libre', 33); // sans clé : compte dans le total seulement
+    const r = resumeSemaine(c.courante);
+    expect(r.semaine).toBe('2026-11-23');
+    expect(r.total).toBe(403);
+    expect(r.par_dhikr.tahlil_100).toEqual({ titre: tahlil.titre, nombre: 200 });
+    expect(r.par_dhikr['serie:matin'].nombre).toBe(120);
+    expect(r.par_jour).toEqual({ '2026-11-23': 220, '2026-11-24': 50, '2026-11-25': 133 });
+    expect([r.series_matin, r.series_soir, r.series_reveil]).toEqual([1, 1, 0]);
+    expect(dhikrTries(r.par_dhikr).map((d) => d.cle)).toEqual(['tahlil_100', 'serie:matin', 'serie:soir']);
+  });
+  it('anciens jours sans détail par dhikr : seulement le total', () => {
+    const r = resumeSemaine({ semaine: '2026-11-23', jours: { '2026-11-24': { total: 33, moments: ['libre'] } } });
+    expect(r.total).toBe(33);
+    expect(r.par_dhikr).toEqual({});
+  });
+  it('la semaine passée = le lundi d\'avant ; une semaine vide n\'est pas envoyée', () => {
+    expect(semainePasseeDe(new Date(2026, 10, 29, 23, 59))).toBe('2026-11-16');
+    expect(semainePasseeDe(new Date(2026, 10, 30, 0, 0))).toBe('2026-11-23');
+    expect(semaineVide({ semaine: '2026-11-23', jours: {} })).toBe(true);
+    expect(semaineVide(null)).toBe(true);
   });
 });
