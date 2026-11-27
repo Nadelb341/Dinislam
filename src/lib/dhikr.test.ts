@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ajouterAuCarnet, avancer, avanceeDuJour, carnetALHeure, cleSemaine, compteurDepart, creneauDe, dhikrDuMoment, encouragement,
+  ajouterAuCarnet, avancer, avanceeDuJour, carnetALHeure, cleSemaine, compteurDepart, creneauDe, dhikrDuMoment, encouragement, etatCercle,
   intervalleAuto, joursDeLaSemaine, lundiDe, marquerJournee, momentEnAvant, prochainGeste, reculer, serieDeJours, totalCompte,
   totalSemaine, type EtatCompteur,
 } from './dhikr';
@@ -174,5 +174,25 @@ describe('🕌 contenu de secours (règle n°1)', () => {
       expect(q.choix[q.bonne]).toBeTruthy();
       expect(q.source).toMatch(/Boukhari|Mouslim/);
     }
+  });
+});
+
+describe('📿 chapelet en cercle de 11 perles (27/11)', () => {
+  it('33 = 3 tours de 11, la perle à compter avance', () => {
+    expect(etatCercle(0, 33)).toMatchObject({ parTour: 11, tours: 3, tour: 1, position: 0, utiles: 11, fini: false });
+    expect(etatCercle(10, 33)).toMatchObject({ tour: 1, position: 10 });
+    expect(etatCercle(11, 33)).toMatchObject({ tour: 2, position: 0 });
+    expect(etatCercle(32, 33)).toMatchObject({ tour: 3, position: 10 });
+    expect(etatCercle(33, 33)).toMatchObject({ tour: 3, position: 11, fini: true });
+  });
+  it('100 = 10 tours, le dernier n\'a qu\'une perle ; 34 = 4 tours', () => {
+    expect(etatCercle(0, 100)).toMatchObject({ tours: 10, tour: 1 });
+    expect(etatCercle(99, 100)).toMatchObject({ tour: 10, position: 0, utiles: 1 });
+    expect(etatCercle(33, 34)).toMatchObject({ tours: 4, tour: 4, utiles: 1 });
+  });
+  it('moins de 11 : autant de perles que de fois (3 fois, 1 fois)', () => {
+    expect(etatCercle(1, 3)).toMatchObject({ parTour: 3, tours: 1, tour: 1, position: 1 });
+    expect(etatCercle(0, 1)).toMatchObject({ parTour: 1, tours: 1, position: 0 });
+    expect(etatCercle(0, 0)).toMatchObject({ parTour: 1, tours: 1 });
   });
 });

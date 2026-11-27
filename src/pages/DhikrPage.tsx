@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
@@ -17,6 +17,7 @@ import { ajouterAuDefi, DefiGroupe } from '@/components/dhikr/DefiGroupe';
 import { QuizMerite } from '@/components/dhikr/QuizMerite';
 import { ReglagesDhikr } from '@/components/dhikr/ReglagesDhikr';
 import { DhikrPetits } from '@/components/dhikr/DhikrPetits';
+import { MessageApresPriere, messageApresAMontrer } from '@/components/dhikr/MessageApresPriere';
 import { CHAMPS_GESTE, CHAMPS_ITEM, CHAMPS_QUESTION, EditeurFiche, type Champ } from '@/components/dhikr/EditeurDhikr';
 import { QUOTIDIENS, type MomentCarnet } from '@/lib/dhikr';
 import type { TrashItemType } from '@/lib/trash';
@@ -65,6 +66,15 @@ export default function DhikrPage() {
   const itemsVus = useMemo(() => (isAdmin ? items : items.filter((i) => i.visible)), [items, isAdmin]);
   const [enCours, setEnCours] = useState<EnCours | null>(null);
   const [edition, setEdition] = useState<Edition | null>(null);
+  // 🕌 Message éphémère « Après la prière » : les 2 premières fois sur l'appareil, puis plus jamais
+  const [messageApres, setMessageApres] = useState(false);
+  const messageApresVu = useRef(false);
+  useEffect(() => {
+    if (onglet !== 'apres' || enCours || messageApresVu.current) return;
+    messageApresVu.current = true;
+    if (messageApresAMontrer()) setMessageApres(true);
+  }, [onglet, enCours]);
+  const fermerMessageApres = useCallback(() => setMessageApres(false), []);
 
   const cleChapelet = params.get('dhikr') ?? 'subhanallah';
   const itemChapelet = itemsVus.find((i) => i.cle === cleChapelet) ?? itemsVus.find((i) => i.cle === 'subhanallah') ?? itemsVus[0];
@@ -103,7 +113,7 @@ export default function DhikrPage() {
   });
 
   const nuit = ambiance.nom === 'nuit';
-  const pastille = nuit ? 'bg-white/10 border-white/25 text-white' : 'bg-white/80 border-white text-slate-800';
+  const pastille = nuit ? 'bg-white/10 border-white/25 text-white' : 'bg-[#fff8ec]/90 border-[#ecd6aa] text-[#4a2c1a]';
 
   // 🧸 Les tout-petits : le gros bouton, 10 fois
   if (!isAdmin && petits.aAccueil) {
@@ -127,16 +137,21 @@ export default function DhikrPage() {
             <p className="text-sm font-semibold" style={{ color: ambiance.doux }}>Se souvenir d'Allah, avec le cœur et la langue.</p>
           </header>
 
-          {/* Les onglets : jamais coupés, ils passent à la ligne */}
-          <nav className="grid grid-cols-4 sm:grid-cols-8 gap-1.5" aria-label="Les parties de la carte Dhikr">
-            {ONGLETS.filter((o) => !o.admin || isAdmin).map((o) => (
-              <button key={o.cle} type="button" onClick={() => { setEnCours(null); aller(o.cle); }} aria-current={onglet === o.cle && !enCours ? 'page' : undefined}
-                className={cn('rounded-2xl border-2 px-1 py-1.5 flex flex-col items-center gap-0.5 min-h-[58px] transition active:scale-95',
-                  onglet === o.cle && !enCours ? 'bg-amber-400 border-amber-500 text-amber-950 shadow' : pastille)}>
-                <span className="text-xl leading-none">{o.emoji}</span>
-                <span className="text-[10px] sm:text-xs font-extrabold leading-tight text-center [overflow-wrap:anywhere]">{o.titre}</span>
-              </button>
-            ))}
+          {/* Les onglets (27/11, 2ᵉ demande) : TOUS visibles, 4 par ligne, pilules crème ; l'onglet choisi en doré. Jamais coupés. */}
+          <nav className="grid grid-cols-4 gap-1.5 sm:gap-2 max-w-3xl" aria-label="Les parties de la carte Dhikr">
+            {ONGLETS.filter((o) => !o.admin || isAdmin).map((o) => {
+              const choisi = onglet === o.cle && !enCours;
+              return (
+                <button key={o.cle} type="button" onClick={() => { setEnCours(null); aller(o.cle); }} aria-current={choisi ? 'page' : undefined}
+                  className={cn('min-w-0 rounded-[1.25rem] border px-1 py-1.5 flex flex-col items-center justify-center gap-0.5 min-h-[54px] transition active:scale-95',
+                    choisi
+                      ? 'bg-gradient-to-b from-[#f7d77e] to-[#dfa83a] border-[#b9831f] text-[#3d2500] shadow-[0_3px_10px_rgba(185,131,31,.45)]'
+                      : 'bg-[#fff8ec]/95 border-[#ecd6aa] text-[#4a2c1a] shadow-[0_1px_4px_rgba(120,80,30,.15)]')}>
+                  <span className="text-lg leading-none" aria-hidden>{o.emoji}</span>
+                  <span className="text-[11px] sm:text-xs font-extrabold leading-tight text-center">{o.titre}</span>
+                </button>
+              );
+            })}
           </nav>
 
           {enCours ? (
@@ -219,6 +234,7 @@ export default function DhikrPage() {
           </div>
         </div>
       </FondDhikr>
+      {messageApres && <MessageApresPriere onFermer={fermerMessageApres} />}
       {edition && (
         <EditeurFiche ouvert titre={edition.titre} table={edition.table} ligne={edition.ligne} defaut={edition.defaut} champs={edition.champs}
           corbeille={edition.corbeille} userId={user?.id ?? null} onFermer={() => setEdition(null)}

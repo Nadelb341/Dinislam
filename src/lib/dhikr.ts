@@ -39,6 +39,24 @@ export function reculer(e: EtatCompteur, etapes: EtapeCompte[]): EtatCompteur {
 export const totalCompte = (e: EtatCompteur, etapes: EtapeCompte[]) =>
   etapes.slice(0, e.etape).reduce((s, x) => s + x.nombre, 0) + e.compte;
 
+/**
+ * 📿 Le chapelet en CERCLE (Nadia, 27/11, 2ᵉ demande) : 11 perles autour du compteur, la perle à compter en doré.
+ * 33 = 3 tours de 11 ; 100 = 10 tours (le dernier n'a qu'1 perle) ; 34 = 4 tours ; moins de 11 = autant de perles que de fois.
+ */
+export const PERLES_PAR_TOUR = 11;
+
+/** Où en est le cercle : nombre de perles du cercle, tour en cours, perle à compter, perles utiles dans ce tour */
+export function etatCercle(compte: number, nombre: number) {
+  const n = Math.max(1, nombre);
+  const parTour = Math.min(PERLES_PAR_TOUR, n);
+  const tours = Math.ceil(n / parTour);
+  const fini = compte >= n;
+  const tour = fini ? tours : Math.floor(compte / parTour) + 1;
+  const position = fini ? parTour : compte % parTour;
+  const utiles = tour === tours ? n - (tours - 1) * parTour : parTour;
+  return { parTour, tours, tour, position, utiles, fini };
+}
+
 /** Le petit badge qui change en chemin */
 export function encouragement(fait: number, total: number): string {
   if (total <= 1) return fait >= 1 ? 'Qu\'Allah accepte ton dhikr 🤲' : 'Fais ton dhikr avec moi 🤍';
