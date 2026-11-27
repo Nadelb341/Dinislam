@@ -5,6 +5,7 @@ import { HADITHS_SECOURS, versAffiche, type HadithAffiche } from '@/lib/hadithsD
 import { DEGRES, LISTE_DEGRES, type Degre } from '@/lib/degreAuthenticite';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { NiveauxAuthenticite } from './NiveauxAuthenticite';
+import { VersetDhikr } from './VersetDhikr';
 import { cn } from '@/lib/utils';
 
 /**
@@ -55,6 +56,8 @@ function ListeHadiths({ hadiths, isAdmin }: { hadiths: HadithAffiche[]; isAdmin:
   const liste = filtre === 'tous' ? hadiths : hadiths.filter((h) => h.degre === filtre);
   return (
     <div className="space-y-3">
+      {/* 📖 Le verset de l'ancienne carte Dhikr (Ghâfir 40:14), gardé ici à la demande de Nadia (28/11) */}
+      <VersetDhikr />
       <p className="text-sm font-semibold text-foreground">Chaque hadith porte la pastille de son degré : touche-la pour savoir ce qu'elle veut dire.</p>
       {presents.length > 1 && (
         <div className="flex flex-wrap gap-1.5">

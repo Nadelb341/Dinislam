@@ -75,15 +75,18 @@ export function FondDhikr({ ambiance, children, className }: { ambiance: Couleur
     const calculer = () => {
       const el = bloc.current;
       if (!el) return;
-      const l = document.documentElement.clientWidth, h = window.innerHeight - haut;
+      const menuBas = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--menu-bas')) || 0;
+      const l = document.documentElement.clientWidth, h = window.innerHeight - haut - menuBas;
       const echelle = Math.max(l / IMG_L, h / IMG_H);
       const basBandeau = haut + BAS_BANDEAU * echelle;              // dans l'écran (l'image ne bouge pas)
       const hautBloc = el.getBoundingClientRect().top + window.scrollY; // dans la page, défilement remis à zéro
       setPlace(Math.max(0, Math.round(basBandeau - hautBloc)));
     };
     calculer();
+    // le menu du bas mesure sa hauteur juste après l'affichage : on recalcule un peu plus tard
+    const t = window.setTimeout(calculer, 400);
     window.addEventListener('resize', calculer);
-    return () => window.removeEventListener('resize', calculer);
+    return () => { window.clearTimeout(t); window.removeEventListener('resize', calculer); };
   }, [haut]);
 
   if (!IMAGE_FOND_DHIKR) {
@@ -96,8 +99,9 @@ export function FondDhikr({ ambiance, children, className }: { ambiance: Couleur
   }
   return (
     <div className={cn('relative', className)} style={{ color: ambiance.texte }}>
-      <div aria-hidden className="fixed inset-x-0 bottom-0 -z-10 pointer-events-none"
-        style={{ top: haut, backgroundColor: '#f4cfa9', backgroundImage: `url("${IMAGE_FOND_DHIKR}")`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
+      {/* 28/11 (Nadia) : le bas de l'image s'arrête juste au-dessus de la barre des matières (--menu-bas) */}
+      <div aria-hidden className="fixed inset-x-0 -z-10 pointer-events-none"
+        style={{ top: haut, bottom: 'var(--menu-bas, 0px)', backgroundColor: '#f4cfa9', backgroundImage: `url("${IMAGE_FOND_DHIKR}")`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
       {/* La place du bandeau dessiné dans l'image (la page ne réécrit pas son titre) */}
       <div ref={bloc} aria-hidden style={{ height: place }} />
       {children}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pause, Play, RotateCcw, Undo2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,7 @@ import type { Couleurs } from './Ambiance';
 /**
  * 📿 LE CHAPELET (Nadia, 27/11, présentation A) — utilisé PARTOUT où l'on compte (chapelet libre, séries, après la prière…).
  * En haut l'arabe doré, la phonétique, le sens, puis le mérite + sa source (27/11 soir : sous le sens ; plus de bulle d'encouragement) ;
- * en dessous, 2 colonnes : à gauche les boutons + le verset, à droite le chapelet ; le grand compteur « 18/33 » +
+ * en dessous, 2 colonnes : à gauche le choix du dhikr + les boutons, à droite le chapelet (le verset 40:14 est parti dans la carte Hadiths, 28/11) ; le grand compteur « 18/33 » +
  * « Tour : 1 » au CENTRE d'un cercle de 11 perles (27/11, 2ᵉ demande : la perle à compter en doré, 33 = 3 tours de 11) ;
  * dessous le gros bouton doré « 👆 Touchez pour compter » et le verset (Ghâfir 40:14) avec « En savoir plus ».
  * Deux modes : 👆 À mon rythme (toucher le grand bouton ou le chapelet) / ▶️ Automatique (vitesse ×0,5 / ×1, pause).
@@ -126,32 +126,8 @@ export function ChoixChapelet({ ouvert, onFermer, valeur, onChoisir }: { ouvert:
   );
 }
 
-/** Le verset en bas du chapelet (Coran 40:14, texte et traduction Hamidullah relus sur api.alquran.cloud) + « En savoir plus » */
-export function VersetDhikr() {
-  const [ouvert, setOuvert] = useState(false);
-  return (
-    <div className="mx-auto max-w-xl rounded-2xl border border-[#ecd6aa] bg-[#fff8ec]/90 px-3 py-2.5 text-center text-[#4a2c1a] shadow-sm">
-      <p dir="rtl" lang="ar" className="font-arabic text-lg sm:text-xl leading-[1.9] text-[#8a5300] [overflow-wrap:anywhere]">فَادْعُوا اللَّهَ مُخْلِصِينَ لَهُ الدِّينَ</p>
-      <p className="text-sm italic font-semibold [overflow-wrap:anywhere]">« Et invoquez Allah, en Lui vouant un culte exclusif… »</p>
-      <p className="mt-0.5 flex flex-wrap items-center justify-center gap-1.5 text-xs font-bold text-[#5b3a52]">
-        Sourate Ghâfir, verset 14 (40:14) <PastilleSource source="Coran 40:14" compact />
-      </p>
-      <button type="button" onClick={() => setOuvert((o) => !o)} aria-expanded={ouvert}
-        className="mt-1.5 rounded-full border border-[#d8b46a] bg-white/90 px-3 py-1 text-xs font-extrabold text-[#6b4200] active:scale-95">
-        {ouvert ? '▲ Fermer' : '📖 En savoir plus'}
-      </button>
-      {ouvert && (
-        <div className="dhk-apparait mt-2 space-y-1.5 text-left text-sm leading-snug [overflow-wrap:anywhere]">
-          <p><b>Le verset en entier :</b> « Invoquez Allah donc, en Lui vouant un culte exclusif, quelque répulsion qu'en aient les mécréants. » (traduction Hamidullah)</p>
-          <p>Allah nous demande de L'invoquer, Lui seul, avec un cœur sincère.</p>
-          <p>Allah dit aussi : « Souvenez-vous de Moi donc. Je vous récompenserai. » <span className="whitespace-nowrap font-bold">(Al-Baqara 2:152)</span> <PastilleSource source="Coran 2:152" compact /></p>
-        </div>
-      )}
-    </div>
-  );
-}
 
-export function Chapelet({ etapes, merite, source, degre, divergence, onFini, ambiance, onTerminer, libelleTerminer = '✅ Terminer' }: {
+export function Chapelet({ etapes, merite, source, degre, divergence, onFini, ambiance, onTerminer, libelleTerminer = '✅ Terminer', choixDhikr }: {
   etapes: EtapeChapelet[]; merite?: string | null; source?: string | null;
   /** 🕌 27/11 : degré d'authenticité de la source (vide = deviné d'après la source) */
   degre?: string | null; divergence?: string | null;
@@ -161,6 +137,8 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   /** Bouton de fin (ex. « Geste suivant ») ; absent = seulement « Encore un tour » */
   onTerminer?: () => void;
   libelleTerminer?: string;
+  /** 28/11 (Nadia) : le choix du dhikr (Soubhâna-llâh · 33…), en haut de la colonne de gauche */
+  choixDhikr?: ReactNode;
 }) {
   const [reglages, setReglages] = useState<ReglagesChapelet>(() => lireReglages());
   const changer = (r: Partial<ReglagesChapelet>) => setReglages((v) => { const n = { ...v, ...r }; ecrireLocal(CLE_REGLAGES, n); return n; });
@@ -252,9 +230,10 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
       </div>
       {passage && <p className="dhk-apparait mx-auto w-fit rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
 
-      {/* 2 colonnes (Nadia, 27/11 soir) : à gauche les boutons et le verset, à droite le chapelet */}
+      {/* 2 colonnes (Nadia, 27/11 soir puis 28/11) : à gauche le choix du dhikr puis les boutons, à droite le chapelet */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4 items-center">
         <div className="space-y-2 min-w-0">
+          {choixDhikr}
           {etat.fini ? (
             <div className={cn('dhk-apparait relative overflow-hidden rounded-3xl border-2 p-3 sm:p-4 text-center space-y-2 sm:space-y-3', pastille)} style={{ borderColor: '#e3b341' }}>
               <EtoilesDorees />
@@ -312,7 +291,6 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
               </button>
             )}
           </div>
-          <VersetDhikr />
         </div>
         <div className="relative min-w-0 flex justify-center">
           <CercleChapelet compte={etat.compte} nombre={etape.nombre} style={reglages.chapelet} tourComplet={etat.tour}

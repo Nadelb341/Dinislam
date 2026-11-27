@@ -5,37 +5,37 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useAccesPetits } from '@/hooks/usePetits';
-import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, useDhikrQuiz, type DefiDhikr } from '@/hooks/useDhikr';
+import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, type DefiDhikr } from '@/hooks/useDhikr';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { FondDhikr, IMAGE_FOND_DHIKR, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
 import { Chapelet, type EtapeChapelet } from '@/components/dhikr/Chapelet';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { ReveilTroisGestes, SerieGestes, TexteDhikr } from '@/components/dhikr/Series';
 import { Bibliotheque } from '@/components/dhikr/Bibliotheque';
-import { CarnetDhikr } from '@/components/dhikr/Carnet';
-import { ajouterAuDefi, DefiGroupe } from '@/components/dhikr/DefiGroupe';
-import { QuizMerite } from '@/components/dhikr/QuizMerite';
+import { ajouterAuDefi } from '@/components/dhikr/DefiGroupe';
 import { ReglagesDhikr } from '@/components/dhikr/ReglagesDhikr';
 import { DhikrPetits } from '@/components/dhikr/DhikrPetits';
 import { MessageApresPriere, messageApresAMontrer } from '@/components/dhikr/MessageApresPriere';
-import { CHAMPS_GESTE, CHAMPS_ITEM, CHAMPS_QUESTION, EditeurFiche, type Champ } from '@/components/dhikr/EditeurDhikr';
+import { CHAMPS_GESTE, CHAMPS_ITEM, EditeurFiche, type Champ } from '@/components/dhikr/EditeurDhikr';
 import { QUOTIDIENS, type MomentCarnet } from '@/lib/dhikr';
 import type { TrashItemType } from '@/lib/trash';
 import { cn } from '@/lib/utils';
-import type { DhikrGeste, DhikrItem, DhikrQuestion, SerieDhikr } from '@/data/dhikrContenu';
+import type { DhikrGeste, DhikrItem, SerieDhikr } from '@/data/dhikrContenu';
 
 /**
  * 📿 La carte « Dhikr » (Nadia, 2026-11-27) — remplace l'ancien contenu (vide) de /module/dhikr.
- * Onglets : Chapelet · Séries (Matin, Soir, Réveil) · Après la prière · Bibliothèque · Mon carnet · Défi du groupe · Quiz (+ ⚙️ enseignante).
+ * Onglets : Chapelet (tout en haut, avant les onglets) · Séries (Matin, Soir, Réveil) · Après la prière · Bibliothèque (+ ⚙️ enseignante).
+ * 28/11 : « Mon carnet », « Défi du groupe » et « Quiz » retirés du menu (Nadia).
  * Liens directs : ?onglet=series&serie=soir · ?onglet=chapelet&dhikr=astaghfirullah · ?onglet=apres
  * Hors ligne : tout marche (contenu = dernière copie, sinon la copie de secours du code ; compteur, carnet, séries gardés sur l'appareil),
  * sauf le compteur EN DIRECT du défi et l'envoi de fichiers (📡 Nécessite Internet).
  */
-type Onglet = 'chapelet' | 'series' | 'apres' | 'biblio' | 'carnet' | 'defi' | 'quiz' | 'reglages';
+type Onglet = 'chapelet' | 'series' | 'apres' | 'biblio' | 'reglages';
 const ONGLETS: { cle: Onglet; titre: string; emoji: string; admin?: boolean }[] = [
   { cle: 'chapelet', titre: 'Chapelet', emoji: '📿' }, { cle: 'series', titre: 'Séries', emoji: '🌅' }, { cle: 'apres', titre: 'Après la prière', emoji: '🕌' },
-  { cle: 'biblio', titre: 'Bibliothèque', emoji: '📚' }, { cle: 'carnet', titre: 'Mon carnet', emoji: '📒' }, { cle: 'defi', titre: 'Défi du groupe', emoji: '🤝' },
-  { cle: 'quiz', titre: 'Quiz', emoji: '❓' }, { cle: 'reglages', titre: 'Réglages', emoji: '⚙️', admin: true },
+  { cle: 'biblio', titre: 'Bibliothèque', emoji: '📚' }, { cle: 'reglages', titre: 'Réglages', emoji: '⚙️', admin: true },
+  // 28/11 (Nadia : « ça prend de la place pour rien ») : onglets « Mon carnet », « Défi du groupe » et « Quiz » retirés du menu.
+  // Le carnet continue de compter (ligne « 📿 Dhikr » de la fiche élève) ; Défi et Quiz : en attente de sa décision (garder ou corbeille).
 ];
 type SousSerie = 'matin' | 'soir' | 'reveil';
 const serieParDefaut = (): SousSerie => { const h = new Date().getHours(); return h >= 4 && h < 7 ? 'reveil' : h < 16 ? 'matin' : 'soir'; };
@@ -61,7 +61,6 @@ export default function DhikrPage() {
 
   const { items } = useDhikrItems();
   const { gestes } = useDhikrGestes();
-  const { questions } = useDhikrQuiz();
   const carnet = useCarnet(user?.id);
   // 📒 Le carnet déjà sur l'appareil part aussi en base (une fois par visite) : l'enseignante le voit dans la fiche de l'élève
   useEffect(() => { envoyerCarnetUneFois(user?.id); }, [user?.id]);
@@ -109,11 +108,6 @@ export default function DhikrPage() {
     defaut: { serie: s ?? 'matin', genre: 'geste', titre: '', consigne: '', arabe: '', phonetique: '', sens: '', compteur: null, merite: '', source: '', lien: '', statut: 'a_verifier', visible: false, position: (gestes.filter((x) => x.serie === s).length + 1) * 10 },
     champs: g ? CHAMPS_GESTE : [{ cle: 'serie', label: 'Série', type: 'serie' }, ...CHAMPS_GESTE], corbeille: 'dhikr_geste',
   });
-  const editerQuestion = (q: DhikrQuestion | null) => setEdition({
-    titre: q ? 'Modifier la question' : 'Nouvelle question', table: 'dhikr_quiz', ligne: q as unknown as Record<string, unknown> | null,
-    defaut: { question: '', choix: ['', '', ''], bonne: 0, explication: '', source: '', visible: false, position: (questions.length + 1) * 10 },
-    champs: CHAMPS_QUESTION, corbeille: 'dhikr_question',
-  });
 
   const nuit = ambiance.nom === 'nuit';
   const pastille = nuit ? 'bg-white/10 border-white/25 text-white' : 'bg-[#fff8ec]/90 border-[#ecd6aa] text-[#4a2c1a]';
@@ -131,7 +125,7 @@ export default function DhikrPage() {
   return (
     <AppLayout title={titre} sansFondEcran={!!IMAGE_FOND_DHIKR}>
       <StylesDhikr />
-      <FondDhikr ambiance={ambiance} className="min-h-[100dvh] pb-[calc(var(--menu-bas,0px)+5rem)]">
+      <FondDhikr ambiance={ambiance}>
         <div className="p-3 sm:p-5 max-w-5xl mx-auto space-y-3">
           {/* Le bandeau */}
           {/* Avec l'image de fond, son bandeau dessiné sert de titre (Nadia, 27/11) : le titre écrit reste pour les lecteurs d'écran seulement */}
@@ -141,8 +135,27 @@ export default function DhikrPage() {
             <p className="text-sm font-semibold" style={{ color: ambiance.doux }}>Se souvenir d'Allah, avec le cœur et la langue.</p>
           </header>
 
+          {/* 📿 28/11 (Nadia) : le chapelet tout en haut, AVANT les onglets, pour s'en servir dès l'entrée sans défiler */}
+          {onglet === 'chapelet' && !enCours && itemChapelet && (
+            <div className={cn('rounded-3xl border p-3 sm:p-4', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
+              <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} degre={itemChapelet.degre} divergence={itemChapelet.degre_divergence} ambiance={ambiance}
+                onFini={(n) => void fini({ moment: 'libre', cle: itemChapelet.cle }, n)}
+                choixDhikr={
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 [mask-image:linear-gradient(90deg,#000_85%,transparent)]" aria-label="Choisir le dhikr">
+                    {itemsVus.filter((i) => i.cle !== 'apres_priere' && i.visible)
+                      .sort((a, b) => ordreChapelet(a) - ordreChapelet(b)).map((i) => (
+                      <button key={i.id} type="button" onClick={() => aller('chapelet', { dhikr: i.cle ?? '' })} aria-pressed={i.id === itemChapelet?.id}
+                        className={cn('shrink-0 rounded-full border-2 px-2.5 py-1 text-xs sm:text-sm font-bold whitespace-nowrap', i.id === itemChapelet?.id ? 'bg-amber-400 border-amber-500 text-amber-950' : pastille)}>
+                        {i.titre.length > 34 ? i.phonetique?.split(',')[0] ?? i.titre : i.titre} · {i.nombre}
+                      </button>
+                    ))}
+                  </div>
+                } />
+            </div>
+          )}
+
           {/* Les onglets (27/11) : TOUS visibles, 4 par ligne, pilules crème, l'onglet choisi en doré, jamais coupés ; 27/11 soir : plus petits et moins larges (Nadia) */}
-          <nav className="grid grid-cols-4 gap-1.5 max-w-xl mx-auto" aria-label="Les parties de la carte Dhikr">
+          <nav className={cn('grid gap-1.5 mx-auto', isAdmin ? 'grid-cols-5 max-w-2xl' : 'grid-cols-4 max-w-xl')} aria-label="Les parties de la carte Dhikr">
             {ONGLETS.filter((o) => !o.admin || isAdmin).map((o) => {
               const choisi = onglet === o.cle && !enCours;
               return (
@@ -169,26 +182,6 @@ export default function DhikrPage() {
             </section>
           ) : (
             <section>
-              {onglet === 'chapelet' && (
-                <div className="space-y-3">
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Choisir le dhikr">
-                    {itemsVus.filter((i) => i.cle !== 'apres_priere' && i.visible)
-                      .sort((a, b) => ordreChapelet(a) - ordreChapelet(b)).map((i) => (
-                      <button key={i.id} type="button" onClick={() => aller('chapelet', { dhikr: i.cle ?? '' })} aria-pressed={i.id === itemChapelet?.id}
-                        className={cn('shrink-0 rounded-full border-2 px-3 py-1.5 text-sm font-bold whitespace-nowrap', i.id === itemChapelet?.id ? 'bg-amber-400 border-amber-500 text-amber-950' : pastille)}>
-                        {i.titre.length > 34 ? i.phonetique?.split(',')[0] ?? i.titre : i.titre} · {i.nombre}
-                      </button>
-                    ))}
-                  </div>
-                  {itemChapelet && (
-                    <div className={cn('rounded-3xl border p-3 sm:p-4', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
-                      <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} degre={itemChapelet.degre} divergence={itemChapelet.degre_divergence} ambiance={ambiance}
-                        onFini={(n) => void fini({ moment: 'libre', cle: itemChapelet.cle }, n)} />
-                    </div>
-                  )}
-                </div>
-              )}
-
               {onglet === 'series' && (
                 <div className="space-y-3">
                   <div role="tablist" className={cn('grid grid-cols-3 rounded-full border p-1 max-w-md', pastille)}>
@@ -219,15 +212,6 @@ export default function DhikrPage() {
               )}
 
               {onglet === 'biblio' && <Bibliotheque items={itemsVus} isAdmin={isAdmin} ambiance={ambiance} onFaire={faire} onEditer={(i) => editerItem(i)} onNouveau={(m) => editerItem(null, m)} />}
-              {onglet === 'carnet' && <CarnetDhikr carnet={carnet} ambiance={ambiance} />}
-              {onglet === 'defi' && (
-                <DefiGroupe isAdmin={isAdmin} userId={user?.id ?? null} items={itemsVus} ambiance={ambiance}
-                  onFaireDefi={(d, it) => setEnCours({
-                    titre: d.titre, etapes: it ? etapesDe(it) : [{ titre: d.dhikr_titre ?? 'Dhikr', arabe: '', phonetique: d.dhikr_titre ?? '', sens: '', nombre: 33 }],
-                    merite: it?.merite ?? null, source: it?.source ?? null, degre: it?.degre ?? null, divergence: it?.degre_divergence ?? null, moment: 'defi', cle: it?.cle ?? null, defi: d,
-                  })} />
-              )}
-              {onglet === 'quiz' && <QuizMerite questions={questions} isAdmin={isAdmin} ambiance={ambiance} onEditer={(q) => editerQuestion(q)} onNouveau={() => editerQuestion(null)} />}
               {onglet === 'reglages' && isAdmin && <ReglagesDhikr gestes={gestes} ambiance={ambiance} onEditer={(g) => editerGeste(g)} onNouveau={(s) => editerGeste(null, s)} />}
             </section>
           )}
