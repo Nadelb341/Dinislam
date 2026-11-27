@@ -47,7 +47,7 @@ type Edition = { titre: string; table: string; ligne: Record<string, unknown> | 
 const PREMIERS = ['subhanallah', 'alhamdulillah', 'allahuakbar', 'astaghfirullah', 'subhanallah_wabihamdihi', 'deux_paroles', 'hawqala', 'tahlil_100', 'tahlil_10'];
 const ordreChapelet = (i: DhikrItem) => { const k = PREMIERS.indexOf(i.cle ?? ''); return k === -1 ? 100 + i.position / 1000 : k; };
 
-const etapesDe =(it: DhikrItem): EtapeChapelet[] => [{ titre: it.titre, arabe: it.arabe ?? '', phonetique: it.phonetique ?? '', sens: it.sens ?? '', nombre: Math.max(1, it.nombre) }];
+const etapesDe =(it: DhikrItem): EtapeChapelet[] => [{ titre: it.titre, arabe: it.arabe ?? '', phonetique: it.phonetique ?? '', sens: it.sens ?? '', nombre: Math.max(1, it.nombre), cle: it.cle }];
 
 export default function DhikrPage() {
   const { user, isAdmin } = useAuth();

@@ -58,6 +58,21 @@ describe('📿 le compteur du chapelet', () => {
   it('mode automatique : ×0,5 deux fois plus lent que ×1', () => {
     expect(intervalleAuto(0.5)).toBe(2 * intervalleAuto(1));
   });
+  it('« Lâ ilâha illa-llâhou wahdahou… · 100 » : 15 s à ×1, 30 s à ×0,5 ; les autres dhikr ne changent pas', () => {
+    expect(intervalleAuto(1, 'tahlil_100')).toBe(15000);
+    expect(intervalleAuto(0.5, 'tahlil_100')).toBe(30000);
+    for (const cle of ['tahlil_10', 'subhanallah_wabihamdihi', null, undefined, 'inconnu']) {
+      expect(intervalleAuto(1, cle)).toBe(1600);
+      expect(intervalleAuto(0.5, cle)).toBe(3200);
+    }
+    // Le dhikr existe bien avec cette clé et 100 fois
+    const it100 = DHIKR_ITEMS_SECOURS.find((d) => d.cle === 'tahlil_100');
+    expect(it100?.nombre).toBe(100);
+    // Une voix lente (2 mots par seconde) a le temps de dire la phrase entière avant la perle suivante
+    const mots = (it100?.phonetique ?? '').split(/\s+/).filter(Boolean).length;
+    expect(mots).toBeGreaterThan(10);
+    expect((mots / 2) * 1000).toBeLessThan(intervalleAuto(1, 'tahlil_100'));
+  });
 });
 
 describe('🗓️ remise à zéro du dimanche soir à minuit', () => {

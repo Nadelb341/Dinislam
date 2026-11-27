@@ -83,8 +83,17 @@ export const CHAPELETS = [
 export type CleChapelet = (typeof CHAPELETS)[number]['cle'];
 export const CHAPELET_PAR_DEFAUT: CleChapelet = 'nacre';
 
-/** Mode automatique : temps entre 2 perles (×1 = 1,6 s ; ×0,5 = deux fois plus lent) */
-export const intervalleAuto = (vitesse: 0.5 | 1) => (vitesse === 1 ? 1600 : 3200);
+/** Mode automatique : temps entre 2 perles à la vitesse ×1 (×0,5 = deux fois plus lent) */
+export const INTERVALLE_AUTO_DEFAUT = 1600;
+/**
+ * Dhikr qui ont leur propre temps en automatique (Nadia, 27/11) : « Lâ ilâha illa-llâhou wahdahou lâ charîka lah… · 100 »
+ * = 15 s par perle à ×1 (30 s à ×0,5), le temps de dire la phrase en entier. Les autres dhikr gardent 1,6 s / 3,2 s.
+ */
+export const INTERVALLES_AUTO_PAR_DHIKR: Record<string, number> = { tahlil_100: 15000 };
+export const intervalleAuto = (vitesse: 0.5 | 1, cle?: string | null) => {
+  const base = (cle && INTERVALLES_AUTO_PAR_DHIKR[cle]) || INTERVALLE_AUTO_DEFAUT;
+  return vitesse === 1 ? base : base * 2;
+};
 
 // ─── Le temps (heure de l'appareil) ─────────────────────────────────────────────
 export const cleJour = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
