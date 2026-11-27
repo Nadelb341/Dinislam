@@ -7,6 +7,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { RechercheNoms } from '@/components/allahNames/RechercheNoms';
 import { FicheNom } from '@/components/allahNames/FicheNom';
 import { TuileNom } from '@/components/allahNames/TuileNom';
+import { FicheAdulte } from '@/components/allahNames/FicheAdulte';
+import { BoutonAuthenticite } from '@/components/allahNames/BoutonAuthenticite';
+import { lireFicheAdulte } from '@/lib/ficheAdulte';
 import { rechercherNoms } from '@/lib/nomsAllahRecherche';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
 import { useConfetti } from '@/hooks/useConfetti';
@@ -168,6 +171,8 @@ const AllahNamesPage = () => {
   // La fiche ouverte suit les changements (✏️ de l'enseignante, direct) : on relit la dernière version dans la liste
   const ficheSelection = selected ? names.find((n) => n.id === selected.id) : undefined;
   const isSelectedValidated = selected ? validatedIds.has(selected.id) : false;
+  // 🌟 27/11 : la fiche ADULTE de Nadia (si elle existe) remplace l'ancienne fiche en 9 parties, gardée pour l'enseignante en bas
+  const ficheAdulte = lireFicheAdulte((ficheSelection ?? selected)?.fiche_adulte);
 
   const openName = (name, index) => {
     if (!isNameAccessible(index)) {
@@ -251,6 +256,13 @@ const AllahNamesPage = () => {
               openName(names[index], index);
             }} />
 
+          {/* 📚 Authenticité (27/11) : noms tirés du Coran / de la Sunna authentique / statut discuté, mêmes fiches */}
+          <BoutonAuthenticite noms={names} onOuvrirNom={(id) => {
+            const index = names.findIndex((n) => n.id === id);
+            if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
+            openName(names[index], index);
+          }} />
+
           {/* Grid */}
           {isLoading ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -262,7 +274,7 @@ const AllahNamesPage = () => {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {nomsAffiches.map(({ nom: name, index }) => (
                 <TuileNom key={name.id} name={name} accessible={isNameAccessible(index)} validated={validatedIds.has(name.id)}
-                  pending={pendingIds.has(name.id)} onOpen={() => openName(name, index)} />
+                  pending={pendingIds.has(name.id)} statut={lireFicheAdulte(name.fiche_adulte)?.statut ?? null} onOpen={() => openName(name, index)} />
               ))}
             </div>
           )}
@@ -304,7 +316,9 @@ const AllahNamesPage = () => {
               </div>
 
               {/* 🌟 Fiche en 9 parties (Nadia, 27/11) : 1. arabe, 2. translittération, 3. signification… */}
-              <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={3} />
+              {ficheAdulte
+                ? <FicheAdulte fiche={ficheAdulte} numero={selected.display_order} nameId={selected.id} isAdmin={isAdmin} partie="entete" />
+                : <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={3} />}
 
               {/* 🎙️ Enregistrement en HAUT, juste sous le nom : même place que dans les sourates (Nadia, 2026-11-19) */}
               {/* Enseignante : à cet endroit, l'élève voit le bouton pour lui envoyer son audio (2026-10-23) */}
@@ -357,7 +371,18 @@ const AllahNamesPage = () => {
               )}
 
               {/* … 4. explication détaillée, 5. preuve, 6. moment, 7. invocation, 8. référence et degré, 9. divergences */}
-              <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={4} fin={9} />
+              {ficheAdulte ? (
+                <>
+                  <FicheAdulte fiche={ficheAdulte} numero={selected.display_order} nameId={selected.id} isAdmin={isAdmin} partie="corps" />
+                  {/* L'ancienne fiche (27/11) reste en base : l'enseignante peut la relire, les élèves ne la voient plus */}
+                  {isAdmin && (
+                    <details className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(217,119,6,0.35)' }}>
+                      <summary className="cursor-pointer text-sm font-bold" style={{ color: 'hsl(38 92% 62%)' }}>📜 Ancienne fiche (27/11) — visible seulement de l'enseignante</summary>
+                      <div className="mt-3"><FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={1} fin={9} /></div>
+                    </details>
+                  )}
+                </>
+              ) : <FicheNom fiche={ficheSelection ?? selected} isAdmin={isAdmin} debut={4} fin={9} />}
 
               {/* ✏️ Zones de contenu (texte, images, vidéos, PDF) — 2026-11-21 */}
               <ZonesContenu cible={`nom-allah:${selected.id}`} isAdmin={isAdmin} libelle={selected.name_french} />

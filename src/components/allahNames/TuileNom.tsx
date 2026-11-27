@@ -3,11 +3,15 @@ import { CheckCircle2, Lock } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { tailleArabeTuile } from '@/lib/ficheNomAllah';
 import { TexteAjuste } from './TexteAjuste';
+import { BadgeStatut } from './FicheAdulte';
+import type { StatutNom } from '@/lib/ficheAdulte';
 
 /** Tuile d'un nom dans la grille des 99 noms (sortie de AllahNamesPage le 27/11 pour être testée en image). */
-export function TuileNom({ name, accessible, validated, pending, onOpen }: {
+export function TuileNom({ name, accessible, validated, pending, statut = null, onOpen }: {
   name: Pick<Tables<'allah_names'>, 'id' | 'display_order' | 'name_arabic' | 'transliteration' | 'name_french' | 'image_url' | 'image_cadrage'>;
   accessible: boolean; validated: boolean; pending: boolean; onOpen: () => void;
+  /** 🟢 Établi / 🟠 Divergence / 🔴 Non établi (fiche adulte de Nadia, 27/11) */
+  statut?: StatutNom | null;
 }) {
   return (
     <button
@@ -90,6 +94,8 @@ export function TuileNom({ name, accessible, validated, pending, onOpen }: {
       <TexteAjuste taille={22} min={12} className="mt-1 leading-tight" style={{ color: accessible ? 'hsl(222 20% 78%)' : 'hsl(38 60% 66%)' }}>
         {accessible ? name.name_french : '🔒 Verrouillé'}
       </TexteAjuste>
+
+      {statut && accessible && <span className="mt-2"><BadgeStatut statut={statut} petit /></span>}
 
       <div
         className="absolute bottom-0 left-0 right-0 h-0.5"

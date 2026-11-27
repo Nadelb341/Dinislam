@@ -636,6 +636,8 @@ export type Database = {
           display_order: number | null
           explanation: string | null
           fiche_a_relire: boolean
+          fiche_adulte: Json | null
+          fiche_enfant: Json | null
           fiche_autres_references: string | null
           fiche_divergences: string | null
           fiche_explication: string | null
@@ -670,6 +672,8 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           fiche_a_relire?: boolean
+          fiche_adulte?: Json | null
+          fiche_enfant?: Json | null
           fiche_autres_references?: string | null
           fiche_divergences?: string | null
           fiche_explication?: string | null
@@ -704,6 +708,8 @@ export type Database = {
           display_order?: number | null
           explanation?: string | null
           fiche_a_relire?: boolean
+          fiche_adulte?: Json | null
+          fiche_enfant?: Json | null
           fiche_autres_references?: string | null
           fiche_divergences?: string | null
           fiche_explication?: string | null
