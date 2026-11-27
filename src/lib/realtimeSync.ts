@@ -29,6 +29,9 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   sourate_stories: ['sourate-stories'],
   // 🕊️ Hadith du jour de l'accueil (2026-11-21) : un changement de l'enseignante arrive tout de suite chez tous
   hadiths_du_jour: ['hadiths-du-jour'],
+  // 🤲 Besoin d'Allah (2026-11-27) : émotions et leurs noms, modifiés par l'enseignante
+  besoins_allah: ['besoins-allah'],
+  besoins_allah_noms: ['besoins-allah'],
   // ✅ Corrections (2026-11-15) : les invocations envoyées comptent dans le bouclier
   invocation_validation_requests: ['admin-invocation-validations', 'admin-pending-breakdown', ...PROGRESS_VIEWS],
   // 💎 (2026-11-18) Un devoir relié à une carte s'allume avec le travail fait dans la carte : demandes, récitations, validations

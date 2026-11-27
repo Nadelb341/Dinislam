@@ -2,6 +2,7 @@ import { LecteurVideo } from '@/components/video/LecteurVideo';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { ImageCadree } from '@/components/shared/ImageCadree';
+import { BoutonBesoinAllah } from '@/components/besoinAllah/BesoinAllah';
 import { useState, useEffect } from 'react';
 import SourateRecitationPanel from '@/components/sourates/SourateRecitationPanel';
 import { useConfetti } from '@/hooks/useConfetti';
@@ -224,6 +225,14 @@ const AllahNamesPage = () => {
               <div className="h-px w-16" style={{ background: 'linear-gradient(90deg, hsl(38 92% 50%), transparent)' }} />
             </div>
           </div>
+
+          {/* 🤲 Besoin d'Allah (choix K-L-M de Nadia, 27/11) : émotions → noms à invoquer → histoire animée */}
+          <BoutonBesoinAllah isAdmin={isAdmin} userId={user?.id ?? null} nomsBase={names}
+            onOuvrirNom={(id) => {
+              const index = names.findIndex((n) => n.id === id);
+              if (index < 0) { toast.info(MISSING_ITEM_MESSAGE); return; }
+              openName(names[index], index);
+            }} />
 
           {/* Grid */}
           {isLoading ? (

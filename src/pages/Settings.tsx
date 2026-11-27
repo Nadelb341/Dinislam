@@ -137,6 +137,8 @@ const TRASH_TYPE_LABELS: Record<string, string> = {
   sourate_content: 'Contenu sourate',
   alphabet_content: 'Contenu alphabet',
   hadith_du_jour: 'Hadith du jour',
+  besoin_allah: 'Besoin d\'Allah (émotion)',
+  besoin_allah_nom: 'Besoin d\'Allah (nom)',
   alphabet_particularite: 'Particularité (Alphabet)',
   alphabet_particularite_bloc: 'Contenu d\'une particularité',
   alphabet_petits_video: 'Vidéo des tout-petits',

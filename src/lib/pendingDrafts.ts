@@ -39,6 +39,11 @@ export const DRAFT_DEFS: Record<string, DraftDef> = {
       return un(v ?? undefined);
     },
   },
+  // 🤲 Nouvelle émotion « Besoin d'Allah » commencée (2026-11-27)
+  dinislam_besoin_allah: {
+    place: '99 noms d\'Allah › 🤲 Besoin d\'Allah', noun: 'nouvelle émotion', route: '/allah-names?besoin=nouveau', adminOnly: true,
+    labelOf: (d) => { const v = d as { titre?: string; accroche?: string } | null; return text(v?.titre) || text(v?.accroche); },
+  },
   // 📝 Devoir libre commencé (clé : préfixe + groupe, ou « general »), 2026-11-26
   dinislam_devoir_libre_: {
     place: 'Accueil › Cahier de texte › Devoirs › 📝 Devoirs libres', noun: 'devoir libre pas encore donné', route: '/?open=todo&cahier=1', adminOnly: true,
