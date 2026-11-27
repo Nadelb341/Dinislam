@@ -39,7 +39,7 @@ import AdminCartesAcces from '@/components/admin/AdminCartesAcces';
  * « ⚙️ Gérer le contenu » et « 📖 Voir la progression » qui ouvrent ces mêmes écrans (/admin?section=…).
  * « ← Retour » revient d'où l'on vient (l'accueil le plus souvent). /admin sans écran → accueil.
  */
-type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'dhikr-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces' | 'reglages-devoirs' | 'revue-semestre';
+type ViewType = 'users' | 'students' | 'ramadan' | 'ramadan-manage' | 'ramadan-quiz-tracking' | 'nourania' | 'nourania-manage' | 'nourania-validations' | 'alphabet' | 'alphabet-manage' | 'invocations' | 'invocations-manage' | 'invocations-validations' | 'sourates' | 'sourates-manage' | 'sourates-validations' | 'registration-validations' | 'prayer' | 'prayer-manage' | 'messages' | 'homework' | 'attendance' | 'generic-module-manage' | 'grammaire-manage' | 'allah-names-manage' | 'vocabulaire-manage' | 'lecture-coran-manage' | 'darija-manage' | 'dictionnaire-manage' | 'hadiths-manage' | 'global-stats' | 'notifications' | 'recitations' | 'coran-manage' | 'bilan-trimestriel' | 'apparence' | 'cartes-acces' | 'reglages-devoirs' | 'revue-semestre';
 
 const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'grammaire-manage': { slug: '/grammaire', title: 'Grammaire & Conjugaison' },
@@ -47,7 +47,6 @@ const SLUG_VIEWS: Record<string, { slug: string; title: string }> = {
   'lecture-coran-manage': { slug: '/module/lecture-coran', title: 'Lecture du Coran' },
   'darija-manage': { slug: '/module/darija', title: 'Darija (Marocain)' },
   'dictionnaire-manage': { slug: '/module/dictionnaire', title: 'Dictionnaire' },
-  'dhikr-manage': { slug: '/module/dhikr', title: 'Dhikr' },
   'hadiths-manage': { slug: '/module/hadiths', title: 'Hadiths' },
 };
 

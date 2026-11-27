@@ -4,7 +4,7 @@
  */
 import { direAvecSaVoix } from '@/lib/voixFabriquees';
 
-export type CleRubrique = 'douas' | 'coran' | 'histoires' | 'cree' | 'piliers' | 'ablutions' | 'priere' | 'manieres' | 'ramadan' | 'aid' | 'phrases' | 'prieres5' | 'prophetes';
+export type CleRubrique = 'douas' | 'coran' | 'histoires' | 'cree' | 'piliers' | 'ablutions' | 'priere' | 'manieres' | 'ramadan' | 'aid' | 'phrases' | 'prieres5' | 'prophetes' | 'dhikr';
 export type ModeRubrique = 'imagier' | 'coran' | 'doigts' | 'etapes' | 'autocollants' | 'calendrier';
 
 export interface Rubrique {
@@ -29,6 +29,8 @@ export const RUBRIQUES: Record<CleRubrique, Rubrique> = {
   // 📚 Carte « Histoires des Prophètes » des grands (22/11) : mêmes outils que les histoires des petits (vidéos, quiz)
   prophetes: { cle: 'prophetes', titre: 'Histoires des Prophètes', emoji: '📚', fond: 'from-violet-400 to-purple-700', mode: 'imagier' },
   prieres5: { cle: 'prieres5', titre: 'Le soleil et les 5 prières', emoji: '☀️', fond: 'from-sky-300 to-amber-300', mode: 'imagier' },
+  // 📿 Carte Dhikr (27/11, J) : un gros bouton, 10 fois, une étoile par compte, puis le feu d'artifice doré « BRAVO ! »
+  dhikr: { cle: 'dhikr', titre: 'Mon dhikr', emoji: '📿', fond: 'from-amber-300 to-sky-500', mode: 'imagier' },
 };
 
 /** Les 4 grosses tuiles (idée 4), puis les autres cartes des petits */
@@ -38,7 +40,7 @@ export const TUILES_GRANDES: { cle: string; titre: string; emoji: string; fond: 
   { cle: 'histoires', titre: 'Histoires', emoji: '📚', fond: RUBRIQUES.histoires.fond, lien: '/petits/histoires' },
   { cle: 'jeux', titre: 'Jeux', emoji: '🎮', fond: 'from-fuchsia-300 to-purple-600', lien: '/petits/jeux' },
 ];
-export const TUILES_AUTRES: CleRubrique[] = ['coran', 'cree', 'piliers', 'ablutions', 'priere', 'manieres', 'ramadan'];
+export const TUILES_AUTRES: CleRubrique[] = ['coran', 'cree', 'piliers', 'ablutions', 'priere', 'manieres', 'ramadan', 'dhikr'];
 
 /** « 2026-11-22 » en heure locale (une étoile par jour) */
 export function cleJour(d = new Date()) {

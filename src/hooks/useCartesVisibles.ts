@@ -44,4 +44,5 @@ export const CARTES_DU_BAREME: Record<string, string[]> = {
   priere_validee: ['priere'], jeune_marque: ['ramadan'], quiz_reussi: ['ramadan'], ramadan_jour_complete: ['ramadan'],
   vocabulaire_appris: ['module/vocabulaire', 'grammaire'],
   allah_nom_valide: ['allah-names'],
+  dhikr_matin: ['module/dhikr'], dhikr_soir: ['module/dhikr'],
 };

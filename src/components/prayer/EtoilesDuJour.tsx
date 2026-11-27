@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { useCartesVisibles } from '@/hooks/useCartesVisibles';
 import { CINQ_PRIERES, type Horaires } from '@/lib/momentPriere';
 import { useConfetti } from '@/hooks/useConfetti';
 import { cn } from '@/lib/utils';
@@ -22,7 +24,22 @@ export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false
   semaine?: Record<string, number>;
 }) {
   const { fireConfetti } = useConfetti();
+  const navigate = useNavigate();
+  const cartes = useCartesVisibles();
   const nb = CINQ_PRIERES.filter((p) => cochees.includes(p.cle)).length;
+  // 📿 Idée 2 de la carte Dhikr (Nadia, 27/11) : une prière qu'on vient de cocher → proposer le tasbih d'après la prière d'un toucher
+  // (seulement si la carte Dhikr est ouverte à cette personne). Disparaît tout seul au bout de 5 min.
+  const [apres, setApres] = useState<string | null>(null);
+  const vues = useRef<string[] | null>(null);
+  useEffect(() => {
+    const avant = vues.current;
+    vues.current = cochees;
+    if (!avant) return;
+    const nouvelle = CINQ_PRIERES.find((p) => cochees.includes(p.cle) && !avant.includes(p.cle));
+    if (nouvelle) setApres(nouvelle.nom);
+  }, [cochees]);
+  useEffect(() => { if (!apres) return; const t = setTimeout(() => setApres(null), 5 * 60_000); return () => clearTimeout(t); }, [apres]);
+  const dhikrOuvert = !!cartes?.has('module/dhikr');
   const avant = useRef<number | null>(null);
   useEffect(() => {
     // Fête seulement quand on PASSE à 5 (pas à l'ouverture d'une journée déjà complète)
@@ -58,6 +75,14 @@ export function EtoilesDuJour({ horaires, cochees, onToggle, texte, nuit = false
           );
         })}
       </div>
+      {apres && dhikrOuvert && (
+        <div className="mt-2 flex items-center gap-2 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-sky-50 px-3 py-2 text-slate-900 animate-fade-in">
+          <span className="text-2xl" aria-hidden>📿</span>
+          <p className="flex-1 min-w-0 text-sm font-bold [overflow-wrap:anywhere]">{apres} : le tasbih d'après la prière ?</p>
+          <button type="button" onClick={() => navigate('/module/dhikr?onglet=apres')} className="shrink-0 rounded-full bg-amber-400 text-amber-950 px-3 py-1.5 text-sm font-extrabold shadow">Faire ›</button>
+          <button type="button" onClick={() => setApres(null)} aria-label="Fermer" className="shrink-0 text-destructive font-black px-1">✕</button>
+        </div>
+      )}
       {semaine && <SemaineAnneaux dates={semaine} texte={texte} nuit={nuit} />}
     </section>
   );

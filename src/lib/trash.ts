@@ -14,7 +14,8 @@ export type TrashItemType =
   | "devoir_piece_jointe" | "devoir_ligne" | "devoir_modele" | "allah_name_progress" | "cahier_carte" | "nourania_lignes" | "invocation_texte"
   | "alphabet_particularite" | "alphabet_particularite_bloc" | "alphabet_petits_video" | "carte_image" | "zone_contenu" | "hadith_du_jour" | "prayer_card" | "alphabet_mot" | "alphabet_quiz_question" | "alphabet_commentaire" | "petits_fiche" | "petits_quiz" | "histoire_video" | "quiz_video"
   | "coran_vocabulaire" | "coran_vocabulaire_pdf" | "devoir_libre_piece"
-  | "besoin_allah" | "besoin_allah_nom";
+  | "besoin_allah" | "besoin_allah_nom"
+  | "dhikr_item" | "dhikr_geste" | "dhikr_question" | "dhikr_defi";
 
 export interface TrashItem {
   id: string;
@@ -52,6 +53,11 @@ const TABLE_BY_TYPE: Record<Exclude<TrashItemType, "draft" | "alphabet_letter_au
   quiz_video: "quiz_videos",
   // 📖 Coran › Vocabulaire du Coran (2026-11-26) : sous-carte ou partie (+ ses parties et zones gardées avec elle)
   coran_vocabulaire: "coran_vocabulaire",
+  // 📿 Carte Dhikr (2026-11-27) : un dhikr, un geste d'une série, une question du quiz, un défi (avec tous ses ajouts)
+  dhikr_item: "dhikr_items",
+  dhikr_geste: "dhikr_gestes",
+  dhikr_question: "dhikr_quiz",
+  dhikr_defi: "dhikr_defis",
   // 🕊️ Hadith du jour de l'accueil (2026-11-21)
   hadith_du_jour: "hadiths_du_jour",
   allah_name: "allah_names",

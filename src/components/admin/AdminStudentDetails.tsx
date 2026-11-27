@@ -884,9 +884,11 @@ const MATIERE_DES_POINTS: Record<string, string> = {
   jeune_marque: 'ramadan', quiz_reussi: 'ramadan', ramadan_jour_complete: 'ramadan',
   allah_nom_valide: 'noms', vocabulaire_appris: 'vocabulaire',
   devoir_rendu: 'devoirs', devoir_corrige: 'devoirs', presence_marquee: 'presence',
+  // 📿 2026-11-27 (idée 3) : séries du matin / du soir terminées
+  dhikr_matin: 'dhikr', dhikr_soir: 'dhikr',
 };
 const AUTRES_MATIERES: { cle: string; nom: string }[] = [
-  { cle: 'noms', nom: '🌟 99 Noms' }, { cle: 'vocabulaire', nom: '💬 Vocabulaire' }, { cle: 'devoirs', nom: '📚 Devoirs' },
+  { cle: 'noms', nom: '🌟 99 Noms' }, { cle: 'dhikr', nom: '📿 Dhikr' }, { cle: 'vocabulaire', nom: '💬 Vocabulaire' }, { cle: 'devoirs', nom: '📚 Devoirs' },
   { cle: 'presence', nom: '📋 Présence' }, { cle: 'autres', nom: '🎁 Bonus' },
 ];
 

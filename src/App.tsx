@@ -70,6 +70,8 @@ const GenericModulePage = lazy(() => import("./pages/GenericModulePage"));
 const GrammaireConjugaisonPage = lazy(() => import("./pages/GrammaireConjugaisonPage"));
 const GenericTimelinePage = lazy(() => import("./pages/GenericTimelinePage"));
 const HistoiresProphetesPage = lazy(() => import("./pages/HistoiresProphetesPage"));
+// 📿 Nouvelle carte Dhikr (2026-11-27) : page à part (chapelet, séries, bibliothèque, carnet, défi, quiz)
+const DhikrPage = lazy(() => import("./pages/DhikrPage"));
 const Monitoring = lazy(() => import("./pages/Monitoring"));
 const CoranPage = lazy(() => import("./pages/CoranPage"));
 
@@ -136,7 +138,7 @@ const AppRoutes = () => {
         <Route path="/module/lecture-coran" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
         <Route path="/module/darija" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
         <Route path="/module/dictionnaire" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
-        <Route path="/module/dhikr" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
+        <Route path="/module/dhikr" element={<ProtectedRoute><DhikrPage /></ProtectedRoute>} />
         <Route path="/module/hadiths" element={<ProtectedRoute><GenericTimelinePage /></ProtectedRoute>} />
         <Route path="/module/histoires-prophetes" element={<ProtectedRoute><HistoiresProphetesPage /></ProtectedRoute>} />
         <Route path="/coran" element={<ProtectedRoute><CoranPage /></ProtectedRoute>} />
