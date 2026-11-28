@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import AppLayout from '@/components/layout/AppLayout';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useAccesPetits } from '@/hooks/usePetits';
@@ -136,15 +138,25 @@ export default function DhikrPage() {
               <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} degre={itemChapelet.degre} divergence={itemChapelet.degre_divergence} ambiance={ambiance}
                 onFini={(n) => void fini({ moment: 'libre', cle: itemChapelet.cle }, n)}
                 choixDhikr={
-                  <div className="flex flex-wrap justify-center gap-1.5" aria-label="Choisir le dhikr">
-                    {itemsVus.filter((i) => i.cle !== 'apres_priere' && i.visible)
-                      .sort((a, b) => ordreChapelet(a) - ordreChapelet(b)).map((i) => (
-                      <button key={i.id} type="button" onClick={() => aller('chapelet', { dhikr: i.cle ?? '' })} aria-pressed={i.id === itemChapelet?.id}
-                        className={cn('rounded-full border-2 px-2.5 lg:px-2 py-0.5 text-xs sm:text-sm lg:text-xs font-bold whitespace-nowrap', i.id === itemChapelet?.id ? 'bg-amber-400 border-amber-500 text-amber-950' : pastille)}>
-                        {i.titre.length > 34 ? i.phonetique?.split(',')[0] ?? i.titre : i.titre} · {i.nombre}
+                  // 28/11 (Nadia) : un bouton « Tous les dhikrs » qui ouvre un menu déroulant (plus la grande liste de pastilles)
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" className="mx-auto flex w-full max-w-sm items-center justify-center gap-1.5 rounded-full border-2 border-[#d8b46a] bg-[#fffaf1] px-3 py-2 text-sm font-extrabold text-[#4a2c1a] shadow-sm active:scale-[0.98]">
+                        <span>📿 Tous les dhikrs</span>
+                        <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
                       </button>
-                    ))}
-                  </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="max-h-[60vh] w-[min(92vw,24rem)] overflow-y-auto rounded-2xl border-[#ecd6aa] bg-[#fffaf1] p-1">
+                      {itemsVus.filter((i) => i.cle !== 'apres_priere' && i.visible)
+                        .sort((a, b) => ordreChapelet(a) - ordreChapelet(b)).map((i) => (
+                        <DropdownMenuItem key={i.id} onSelect={() => aller('chapelet', { dhikr: i.cle ?? '' })}
+                          className={cn('flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-bold text-[#4a2c1a] [overflow-wrap:anywhere]', i.id === itemChapelet.id && 'bg-amber-300 text-amber-950')}>
+                          <span className="min-w-0">{i.titre}</span>
+                          <span className="shrink-0 text-xs opacity-80">· {i.nombre}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 } />
             </div>
           )}
