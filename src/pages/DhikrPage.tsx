@@ -5,14 +5,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTitreCarte } from '@/hooks/useTitreCarte';
 import { useAccesPetits } from '@/hooks/usePetits';
-import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems, type DefiDhikr } from '@/hooks/useDhikr';
+import { envoyerCarnetUneFois, noterDhikr, useCarnet, useDhikrGestes, useDhikrItems } from '@/hooks/useDhikr';
 import { ZonesContenu } from '@/components/shared/ZonesContenu';
 import { FondDhikr, IMAGE_FOND_DHIKR, StylesDhikr, useAmbiance } from '@/components/dhikr/Ambiance';
 import { Chapelet, type EtapeChapelet } from '@/components/dhikr/Chapelet';
 import { PastilleSource } from '@/components/shared/DegreAuthenticite';
 import { ReveilTroisGestes, SerieGestes, TexteDhikr } from '@/components/dhikr/Series';
 import { Bibliotheque } from '@/components/dhikr/Bibliotheque';
-import { ajouterAuDefi } from '@/components/dhikr/DefiGroupe';
 import { ReglagesDhikr } from '@/components/dhikr/ReglagesDhikr';
 import { DhikrPetits } from '@/components/dhikr/DhikrPetits';
 import { MessageApresPriere, messageApresAMontrer } from '@/components/dhikr/MessageApresPriere';
@@ -40,7 +39,7 @@ const ONGLETS: { cle: Onglet; titre: string; emoji: string; admin?: boolean }[] 
 type SousSerie = 'matin' | 'soir' | 'reveil';
 const serieParDefaut = (): SousSerie => { const h = new Date().getHours(); return h >= 4 && h < 7 ? 'reveil' : h < 16 ? 'matin' : 'soir'; };
 
-interface EnCours { titre: string; etapes: EtapeChapelet[]; merite: string | null; source: string | null; degre?: string | null; divergence?: string | null; moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }
+interface EnCours { titre: string; etapes: EtapeChapelet[]; merite: string | null; source: string | null; degre?: string | null; divergence?: string | null; moment: MomentCarnet; cle: string | null }
 type Edition = { titre: string; table: string; ligne: Record<string, unknown> | null; defaut: Record<string, unknown>; champs: Champ[]; corbeille: TrashItemType };
 
 /** Dans le choix du chapelet : les dhikr qu'on répète le plus d'abord, puis les autres dans l'ordre de la bibliothèque */
@@ -87,14 +86,10 @@ export default function DhikrPage() {
     setEnCours({ titre: it.titre, etapes: etapesDe(it), merite: it.merite, source: it.source, degre: it.degre, divergence: it.degre_divergence, moment: 'libre', cle: it.cle });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const fini = async (e: { moment: MomentCarnet; cle: string | null; defi?: DefiDhikr }, nombre: number) => {
+  const fini = async (e: { moment: MomentCarnet; cle: string | null }, nombre: number) => {
     const quotidien = e.cle && (QUOTIDIENS as readonly string[]).includes(e.cle) ? `quotidien:${e.cle}` : undefined;
-    await noterDhikr(user?.id, { moment: e.defi ? 'defi' : e.moment, nombre, journee: quotidien,
-      dhikr: { cle: e.cle ?? (e.defi ? `defi:${e.defi.id}` : 'chapelet'), titre: (e.cle && items.find((i) => i.cle === e.cle)?.titre) || e.defi?.dhikr_titre || e.defi?.titre || (e.cle === 'apres_priere' ? 'Après la prière' : 'Chapelet') } });
-    if (e.defi && user) {
-      try { const r = await ajouterAuDefi(e.defi.id, user.id, nombre); toast.success(r === 'en_attente' ? '📡 Gardé, ajouté au défi au retour du réseau' : `🤝 +${nombre} pour le groupe !`); }
-      catch { toast.error('Ajout au défi impossible'); }
-    }
+    await noterDhikr(user?.id, { moment: e.moment, nombre, journee: quotidien,
+      dhikr: { cle: e.cle ?? 'chapelet', titre: (e.cle && items.find((i) => i.cle === e.cle)?.titre) || (e.cle === 'apres_priere' ? 'Après la prière' : 'Chapelet') } });
   };
 
   // ✏️ Fenêtres de modification (enseignante)
@@ -135,17 +130,17 @@ export default function DhikrPage() {
             <p className="text-sm font-semibold" style={{ color: ambiance.doux }}>Se souvenir d'Allah, avec le cœur et la langue.</p>
           </header>
 
-          {/* 📿 28/11 (Nadia) : le chapelet tout en haut, AVANT les onglets, pour s'en servir dès l'entrée sans défiler */}
+          {/* 📿 28/11 (Nadia) : le chapelet tout en haut, AVANT les onglets, sans cadre, pour s'en servir dès l'entrée sans défiler */}
           {onglet === 'chapelet' && !enCours && itemChapelet && (
-            <div className={cn('rounded-3xl border p-3 sm:p-4', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
+            <div>
               <Chapelet key={itemChapelet.id} etapes={etapesDe(itemChapelet)} merite={itemChapelet.merite} source={itemChapelet.source} degre={itemChapelet.degre} divergence={itemChapelet.degre_divergence} ambiance={ambiance}
                 onFini={(n) => void fini({ moment: 'libre', cle: itemChapelet.cle }, n)}
                 choixDhikr={
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 [mask-image:linear-gradient(90deg,#000_85%,transparent)]" aria-label="Choisir le dhikr">
+                  <div className="flex flex-wrap justify-center gap-1.5" aria-label="Choisir le dhikr">
                     {itemsVus.filter((i) => i.cle !== 'apres_priere' && i.visible)
                       .sort((a, b) => ordreChapelet(a) - ordreChapelet(b)).map((i) => (
                       <button key={i.id} type="button" onClick={() => aller('chapelet', { dhikr: i.cle ?? '' })} aria-pressed={i.id === itemChapelet?.id}
-                        className={cn('shrink-0 rounded-full border-2 px-2.5 py-1 text-xs sm:text-sm font-bold whitespace-nowrap', i.id === itemChapelet?.id ? 'bg-amber-400 border-amber-500 text-amber-950' : pastille)}>
+                        className={cn('rounded-full border-2 px-2.5 lg:px-2 py-0.5 text-xs sm:text-sm lg:text-xs font-bold whitespace-nowrap', i.id === itemChapelet?.id ? 'bg-amber-400 border-amber-500 text-amber-950' : pastille)}>
                         {i.titre.length > 34 ? i.phonetique?.split(',')[0] ?? i.titre : i.titre} · {i.nombre}
                       </button>
                     ))}
@@ -175,9 +170,9 @@ export default function DhikrPage() {
             <section className={cn('rounded-3xl border p-3 sm:p-4 space-y-2', nuit ? 'bg-white/5 border-white/15' : 'bg-white/45 border-white')}>
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={() => setEnCours(null)} className={cn('rounded-full border px-3 py-1.5 text-sm font-bold', pastille)}>‹ Retour</button>
-                <h2 className="flex-1 min-w-0 text-lg font-black [overflow-wrap:anywhere]">{enCours.defi ? `🤝 ${enCours.defi.titre}` : enCours.titre}</h2>
+                <h2 className="flex-1 min-w-0 text-lg font-black [overflow-wrap:anywhere]">{enCours.titre}</h2>
               </div>
-              <Chapelet key={`${enCours.cle}-${enCours.defi?.id ?? ''}`} etapes={enCours.etapes} merite={enCours.merite} source={enCours.source} degre={enCours.degre} divergence={enCours.divergence} ambiance={ambiance}
+              <Chapelet key={enCours.cle ?? enCours.titre} etapes={enCours.etapes} merite={enCours.merite} source={enCours.source} degre={enCours.degre} divergence={enCours.divergence} ambiance={ambiance}
                 onFini={(n) => void fini(enCours, n)} onTerminer={() => setEnCours(null)} />
             </section>
           ) : (

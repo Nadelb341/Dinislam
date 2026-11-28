@@ -71,9 +71,10 @@ function PetitChapelet({ nombre }: { nombre: number }) {
  * « Dhikr du jour » dessinée vide) : la vraie carte (chapelet, dhikr du jour, bouton) recouvre exactement la carte dessinée
  * (mesures en % de la largeur de l'image, `cqw`), on voit le ciel, la mosquée et les feuilles autour.
  */
-export const FOND_DHIKR_AUTOMNE = '/images/accueil/automne-dhikr.jpg';
+export interface FondCarteDhikr { url: string; haut: number; hauteur: number }
+/** `haut` / `hauteur` en % de la largeur de l'image (cqw) : jour = carte dessinée de 39,6 % à 66,2 %, nuit = de 43,8 % à 72,6 % (valeurs dans Index.tsx) */
 
-export default function DhikrDuMoment({ fond = null }: { fond?: string | null }) {
+export default function DhikrDuMoment({ fond = null }: { fond?: FondCarteDhikr | null }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const maintenant = useMaintenant();
@@ -91,7 +92,7 @@ export default function DhikrDuMoment({ fond = null }: { fond?: string | null })
   };
 
   const carteJsx = (
-    <section aria-label="Dhikr du moment" style={fond ? { minHeight: '30cqw' } : undefined}
+    <section aria-label="Dhikr du moment" style={fond ? { minHeight: `${fond.hauteur}cqw` } : undefined}
       className={cn('relative border-2 border-[#e3b341] bg-[#fffaf1] text-[#2b1630] shadow-[0_4px_16px_rgba(150,100,30,.18)] px-3 pb-3 pt-4 mt-3 animate-fade-in',
         fond ? 'rounded-[2rem] outline outline-1 outline-offset-[-6px] outline-[#ecd6aa] flex flex-col justify-center' : 'rounded-3xl')}>
       {/* L'étiquette en haut, posée sur le liseré doré (au milieu sur l'image d'automne, comme la carte dessinée) */}
@@ -132,9 +133,9 @@ export default function DhikrDuMoment({ fond = null }: { fond?: string | null })
   if (!fond) return carteJsx;
   return (
     <div className="relative overflow-hidden rounded-3xl [container-type:inline-size]"
-      style={{ backgroundColor: '#f3cfa8', backgroundImage: `url("${fond}")`, backgroundSize: '100% auto', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }}>
+      style={{ backgroundColor: '#f3cfa8', backgroundImage: `url("${fond.url}")`, backgroundSize: '100% auto', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }}>
       {/* La carte dessinée commence à 36,8 % de la largeur (son bord du haut) et occupe 13 % → 87 % : la vraie carte la recouvre */}
-      <div style={{ paddingTop: 'calc(36.8cqw - 0.75rem)', paddingBottom: '7cqw', paddingLeft: 'clamp(10px, 13cqw - 40px, 13cqw)', paddingRight: 'clamp(10px, 13cqw - 40px, 13cqw)' }}>
+      <div style={{ paddingTop: `calc(${fond.haut}cqw - 0.75rem)`, paddingBottom: '7cqw', paddingLeft: 'clamp(10px, 13cqw - 40px, 13cqw)', paddingRight: 'clamp(10px, 13cqw - 40px, 13cqw)' }}>
         {carteJsx}
       </div>
     </div>

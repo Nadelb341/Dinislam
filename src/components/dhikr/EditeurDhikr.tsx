@@ -229,12 +229,3 @@ export const CHAMPS_GESTE: Champ[] = [
   { cle: 'statut', label: 'Vérification', type: 'statut' },
   { cle: 'visible', label: 'Montrer aux élèves', type: 'visible' },
 ];
-export const CHAMPS_QUESTION: Champ[] = [
-  { cle: 'question', label: 'Question', type: 'long' },
-  { cle: 'choix', label: 'Réponses', type: 'choix' },
-  { cle: 'bonne', label: 'Numéro de la bonne réponse', type: 'bonne' },
-  { cle: 'explication', label: 'Explication (montrée après la réponse)', type: 'long' },
-  { cle: 'source', label: 'Source exacte', type: 'texte' },
-  { cle: 'degre', label: "Degré d'authenticité", type: 'degre' },
-  { cle: 'visible', label: 'Montrer aux élèves', type: 'visible' },
-];

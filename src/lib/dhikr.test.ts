@@ -4,7 +4,7 @@ import {
   intervalleAuto, joursDeLaSemaine, lundiDe, marquerJournee, momentEnAvant, prochainGeste, reculer, serieDeJours, totalCompte,
   totalSemaine, type EtatCompteur, resumeSemaine, dhikrTries, semainePasseeDe, semaineVide,
 } from './dhikr';
-import { DHIKR_GESTES_SECOURS, DHIKR_ITEMS_SECOURS, DHIKR_QUIZ_SECOURS } from '@/data/dhikrContenu';
+import { DHIKR_GESTES_SECOURS, DHIKR_ITEMS_SECOURS } from '@/data/dhikrContenu';
 
 const jusqua = (n: number, etapes: { nombre: number }[], depart: EtatCompteur = compteurDepart()) => {
   let e = depart; const evts: string[] = [];
@@ -180,12 +180,6 @@ describe('🕌 contenu de secours (règle n°1)', () => {
     expect(soir.compteur!.map((c) => c.nombre)).toEqual([33, 33, 34]);
     const apres = DHIKR_GESTES_SECOURS.find((g) => g.cle === 'apres_tasbih')!;
     expect(apres.compteur!.reduce((s, c) => s + c.nombre, 0)).toBe(100);
-  });
-  it('quiz : une bonne réponse qui existe et une source', () => {
-    for (const q of DHIKR_QUIZ_SECOURS) {
-      expect(q.choix[q.bonne]).toBeTruthy();
-      expect(q.source).toMatch(/Boukhari|Mouslim/);
-    }
   });
 });
 

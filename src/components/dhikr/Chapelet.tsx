@@ -13,7 +13,7 @@ import type { Couleurs } from './Ambiance';
 /**
  * 📿 LE CHAPELET (Nadia, 27/11, présentation A) — utilisé PARTOUT où l'on compte (chapelet libre, séries, après la prière…).
  * En haut l'arabe doré, la phonétique, le sens, puis le mérite + sa source (27/11 soir : sous le sens ; plus de bulle d'encouragement) ;
- * en dessous, 2 colonnes : à gauche le choix du dhikr + les boutons, à droite le chapelet (le verset 40:14 est parti dans la carte Hadiths, 28/11) ; le grand compteur « 18/33 » +
+ * puis le choix du dhikr (tous côte à côte), puis 2 colonnes : à gauche les boutons, à droite le chapelet (le verset 40:14 est parti dans la carte Hadiths, 28/11) ; le grand compteur « 18/33 » +
  * « Tour : 1 » au CENTRE d'un cercle de 11 perles (27/11, 2ᵉ demande : la perle à compter en doré, 33 = 3 tours de 11) ;
  * dessous le gros bouton doré « 👆 Touchez pour compter » et le verset (Ghâfir 40:14) avec « En savoir plus ».
  * Deux modes : 👆 À mon rythme (toucher le grand bouton ou le chapelet) / ▶️ Automatique (vitesse ×0,5 / ×1, pause).
@@ -45,7 +45,7 @@ export function CercleChapelet({ compte, nombre, style, onToucher, tourComplet =
     return { i, x: 150 + R * Math.cos(a), y: (c.parTour === 1 ? 46 : 150) + R * Math.sin(a) };
   });
   return (
-    <div className="dhk-cercle relative w-full max-w-[310px] paysage:max-w-[250px] mx-auto aspect-square select-none">
+    <div className="dhk-cercle relative w-full max-w-[min(300px,30dvh)] lg:max-w-[min(340px,45dvh)] paysage:max-w-[min(250px,45dvh)] mx-auto aspect-square select-none">
       <svg viewBox="0 0 300 300" className={cn('absolute inset-0 w-full h-full touch-manipulation', onToucher && 'cursor-pointer')}
         role={onToucher ? 'button' : 'img'} tabIndex={onToucher ? 0 : undefined}
         aria-label={onToucher ? 'Toucher le chapelet pour compter une perle' : 'Chapelet'}
@@ -137,7 +137,7 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   /** Bouton de fin (ex. « Geste suivant ») ; absent = seulement « Encore un tour » */
   onTerminer?: () => void;
   libelleTerminer?: string;
-  /** 28/11 (Nadia) : le choix du dhikr (Soubhâna-llâh · 33…), en haut de la colonne de gauche */
+  /** 28/11 (Nadia) : le choix du dhikr (Soubhâna-llâh · 33…), tous côte à côte entre le texte et le chapelet */
   choixDhikr?: ReactNode;
 }) {
   const [reglages, setReglages] = useState<ReglagesChapelet>(() => lireReglages());
@@ -197,7 +197,7 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
   const nomChapelet = CHAPELETS.find((c) => c.cle === reglages.chapelet)?.titre ?? '';
 
   return (
-    <div className="space-y-3" style={{ color: ambiance.texte }}>
+    <div className="space-y-2" style={{ color: ambiance.texte }}>
       {/* Barre des étapes (après la prière : 4 étapes ; soir : 3) */}
       {etapes.length > 1 && (
         <ol className="grid gap-1" style={{ gridTemplateColumns: `repeat(${etapes.length}, minmax(0, 1fr))` }} aria-label="Les étapes">
@@ -215,25 +215,30 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
       )}
 
       {/* Le dhikr : arabe, phonétique, sens, puis le mérite et sa source (sous le sens, choix de Nadia du 27/11) */}
-      <div className="space-y-1 text-center min-w-0">
-        <p dir="rtl" lang="ar" className="font-arabic text-2xl sm:text-3xl leading-[1.8] font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.or, textShadow: nuit ? '0 0 12px rgba(245,210,122,.35)' : '0 1px 0 rgba(255,255,255,.7)' }}>
+      {/* 28/11 (Nadia : « je ne veux plus avoir à scroller ») : zones placées par une grille.
+          Téléphone / tablette : texte, puis choix du dhikr, puis boutons | chapelet.
+          Grand écran (lg) : texte + choix + boutons à gauche, chapelet à droite (le bandeau de l'image y est très haut). */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-2 sm:gap-x-4 items-center [grid-template-areas:'t_t''c_c''b_p'] lg:[grid-template-areas:'t_p''c_p''b_p'] lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
+      {/* 28/11 (Nadia) : texte serré et en gras, lisible sur l'image (léger halo clair) */}
+      <div className="[grid-area:t] text-center min-w-0 leading-tight [text-shadow:0_0_6px_rgba(255,250,240,.95),0_0_2px_rgba(255,250,240,.95)]">
+        <p dir="rtl" lang="ar" className="font-arabic text-2xl sm:text-3xl leading-[1.5] font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.or }}>
           {etape.arabe}
         </p>
-        <p className="italic text-base sm:text-lg font-semibold [overflow-wrap:anywhere]">{etape.phonetique}</p>
-        <p className="text-sm [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>{etape.sens}</p>
+        <p className="italic text-base sm:text-lg font-black [overflow-wrap:anywhere]">{etape.phonetique}</p>
+        <p className="text-sm font-bold [overflow-wrap:anywhere]" style={{ color: ambiance.texte }}>{etape.sens}</p>
         {merite && (
-          <p className="text-xs sm:text-sm leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.doux }}>
+          <p className="mt-0.5 text-xs sm:text-sm font-bold leading-snug [overflow-wrap:anywhere]" style={{ color: ambiance.texte }}>
             ✨ {merite}{source && <span className="whitespace-nowrap font-bold"> — {source}</span>}
             {source && <PastilleSource source={source} degre={degre} divergence={divergence} compact className="ml-1" />}
           </p>
         )}
       </div>
-      {passage && <p className="dhk-apparait mx-auto w-fit rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
+      <div className="[grid-area:c] min-w-0 space-y-2 lg:self-start">
+        {choixDhikr}
+        {passage && <p className="dhk-apparait mx-auto w-fit rounded-full bg-amber-400 text-amber-950 px-3 py-1 text-xs sm:text-sm font-extrabold text-center [overflow-wrap:anywhere]">{passage}</p>}
+      </div>
 
-      {/* 2 colonnes (Nadia, 27/11 soir puis 28/11) : à gauche le choix du dhikr puis les boutons, à droite le chapelet */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 items-center">
-        <div className="space-y-2 min-w-0">
-          {choixDhikr}
+        <div className="[grid-area:b] space-y-2 min-w-0 lg:self-start">
           {etat.fini ? (
             <div className={cn('dhk-apparait relative overflow-hidden rounded-3xl border-2 p-3 sm:p-4 text-center space-y-2 sm:space-y-3', pastille)} style={{ borderColor: '#e3b341' }}>
               <EtoilesDorees />
@@ -292,7 +297,7 @@ export function Chapelet({ etapes, merite, source, degre, divergence, onFini, am
             )}
           </div>
         </div>
-        <div className="relative min-w-0 flex justify-center">
+        <div className="[grid-area:p] relative min-w-0 flex justify-center">
           <CercleChapelet compte={etat.compte} nombre={etape.nombre} style={reglages.chapelet} tourComplet={etat.tour}
             onToucher={!etat.fini && reglages.mode === 'rythme' ? compter : undefined} />
           {etat.fini && <EtoilesDorees />}

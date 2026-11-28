@@ -5,7 +5,7 @@ import { HADITHS_SECOURS } from './hadithsDuJour';
 import { TREASURES } from './weeklyProgram';
 import { QUESTIONS_FEU, MOTS_GENTILS } from '@/components/saisons/jeuxSaisonLogique';
 import { INVOCATIONS_ENRICHMENT } from '@/data/invocationsData';
-import { DHIKR_GESTES_SECOURS, DHIKR_ITEMS_SECOURS, DHIKR_QUIZ_SECOURS } from '@/data/dhikrContenu';
+import { DHIKR_GESTES_SECOURS, DHIKR_ITEMS_SECOURS } from '@/data/dhikrContenu';
 import { NIVEAUX_DEPART, contenuNiveaux, quizNiveaux } from '@/data/niveauxAuthenticite';
 
 /**
@@ -30,7 +30,6 @@ describe('toutes les citations ont un degré', () => {
   it('dhikr (copie de secours)', () => {
     expect(sansDegre(DHIKR_ITEMS_SECOURS)).toEqual([]);
     expect(sansDegre(DHIKR_GESTES_SECOURS)).toEqual([]);
-    expect(sansDegre(DHIKR_QUIZ_SECOURS)).toEqual([]);
   });
   it('chaque parole « Le Prophète ﷺ a dit » du cache-cache a une source avec un numéro', () => {
     for (const m of MOTS_GENTILS.filter((x) => x.texte.includes('Prophète'))) expect(m.source).toMatch(/\d/);

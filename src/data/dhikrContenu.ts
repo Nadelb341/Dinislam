@@ -1,6 +1,6 @@
 /**
  * 📿 Contenu de la carte « Dhikr » (Nadia, 2026-11-27) — COPIE DE SECOURS hors ligne.
- * Le vrai contenu vit EN BASE (tables dhikr_items, dhikr_gestes, dhikr_quiz) et se modifie avec le ✏️.
+ * Le vrai contenu vit EN BASE (tables dhikr_items, dhikr_gestes ; le quiz est parti à la corbeille le 28/11) et se modifie avec le ✏️.
  * Ce fichier sert seulement : (1) à remplir la base la 1re fois (migration 20261127120000, générée depuis ce fichier),
  * (2) à afficher quelque chose si la base n'a jamais pu être lue sur l'appareil.
  *
@@ -41,11 +41,6 @@ export interface DhikrGeste {
   statut: StatutContenu; visible: boolean; position: number;
 }
 
-export interface DhikrQuestion {
-  id: string; question: string; choix: string[]; bonne: number;
-  explication: string | null; source: string | null; visible: boolean; position: number;
-  degre?: string | null; degre_divergence?: string | null;
-}
 
 // ─── Textes communs ────────────────────────────────────────────────────────────
 const T = {
@@ -271,33 +266,3 @@ export const DHIKR_GESTES_SECOURS: DhikrGeste[] = GESTES.map((g, i) => ({
   ...g, id: `secours-${g.cle}`, statut: g.statut ?? 'ok', visible: g.visible ?? true, position: (i + 1) * 10,
 }));
 
-// ─── IDÉE 6 · Le quiz du mérite ───────────────────────────────────────────────
-type QuestionSansId = Omit<DhikrQuestion, 'id' | 'position' | 'visible'>;
-const QUESTIONS: QuestionSansId[] = [
-  { question: 'Quel dhikr est « un trésor parmi les trésors du Paradis » ?', choix: ['Lâ hawla wa lâ qouwwata illâ billâh', 'Astaghfirou-llâh', 'Allâhou akbar'], bonne: 0,
-    explication: 'Le Prophète ﷺ l\'a appelé « un trésor parmi les trésors du Paradis ».', source: 'Boukhari 6384 ; Mouslim 2704' },
-  { question: 'Quelles sont « les deux paroles légères sur la langue, lourdes dans la balance » ?', choix: ['Bismi-llâh et Al-hamdou lillâh', 'Soubhâna-llâhi wa bihamdihi, Soubhâna-llâhi-l-\'adhîm', 'Allâhou akbar et Lâ ilâha illa-llâh'], bonne: 1,
-    explication: 'Elles sont aussi aimées du Tout Miséricordieux.', source: 'Boukhari 6406 ; Mouslim 2694' },
-  { question: 'Combien de fois par jour le Prophète ﷺ se repentait-il à Allah ?', choix: ['10 fois', '33 fois', '100 fois'], bonne: 2,
-    explication: '« Repentez-vous à Allah, car moi je me repens à Lui cent fois par jour. »', source: 'Mouslim 2702' },
-  { question: 'Après la prière, que dit-on pour parfaire la centaine, après 33 + 33 + 33 ?', choix: ['Lâ ilâha illa-llâh wahdahou lâ charîka lah…', 'Astaghfirou-llâh', 'Bismi-llâh'], bonne: 0,
-    explication: 'Ses péchés sont alors pardonnés, même s\'ils étaient comme l\'écume de la mer.', source: 'Mouslim 597' },
-  { question: 'Avant de dormir, combien de fois dit-on « Allâhou akbar » dans le tasbih appris à \'Alî et Fâtima ?', choix: ['33 fois', '34 fois', '10 fois'], bonne: 1,
-    explication: '33 Soubhâna-llâh, 33 Al-hamdou lillâh et 34 Allâhou akbar : « c\'est mieux pour vous qu\'un serviteur ».', source: 'Boukhari 3113 ; Mouslim 2727' },
-  { question: 'Quel verset, lu en se couchant, protège du Diable jusqu\'au matin ?', choix: ['La sourate Al-Fâtiha', 'Ayat al-Kursi', 'Le dernier verset d\'An-Nâs'], bonne: 1,
-    explication: 'Un gardien envoyé par Allah reste avec lui jusqu\'au matin.', source: 'Boukhari 2311' },
-  { question: 'Celui qui dit 100 fois « Soubhâna-llâhi wa bihamdihi » dans la journée…', choix: ['…gagne une maison au Paradis', '…a ses péchés effacés, même comme l\'écume de la mer', '…n\'a plus besoin de prier'], bonne: 1,
-    explication: 'Ses péchés sont effacés, même s\'ils sont aussi nombreux que l\'écume de la mer.', source: 'Boukhari 6405 ; Mouslim 2691' },
-  { question: 'Comment appelle-t-on « Allâhoumma anta rabbî, lâ ilâha illâ ant… » ?', choix: ['Sayyid al-istighfâr', 'Ayat al-Kursi', 'Le tasbih'], bonne: 0,
-    explication: 'Le maître de la demande de pardon : dit avec conviction, le jour ou la nuit, il mène au Paradis.', source: 'Boukhari 6306' },
-  { question: 'Que se passe-t-il quand on mentionne Allah en se réveillant ?', choix: ['Un des 3 nœuds du Diable se défait', 'On gagne 10 points', 'Rien de spécial'], bonne: 0,
-    explication: 'Puis les ablutions défont le 2e nœud, et la prière les défait tous.', source: 'Boukhari 1142 ; Mouslim 776' },
-  { question: 'Quelles sont les quatre paroles les plus aimées d\'Allah ?', choix: ['Bismi-llâh, Âmîn, In châ\' Allah, Mâ châ\' Allah', 'Soubhâna-llâh, Al-hamdou lillâh, Lâ ilâha illa-llâh, Allâhou akbar', 'Astaghfirou-llâh, Bismi-llâh, Al-hamdou lillâh, Âmîn'], bonne: 1,
-    explication: 'Peu importe par laquelle tu commences.', source: 'Mouslim 2137' },
-  { question: '« Lâ ilâha illa-llâh wahdahou lâ charîka lah… » dit 100 fois dans la journée, c\'est comme…', choix: ['…affranchir 10 esclaves', '…jeûner un mois', '…lire tout le Coran'], bonne: 0,
-    explication: 'En plus, 100 bonnes actions écrites, 100 péchés effacés, et une protection contre le Diable jusqu\'au soir.', source: 'Boukhari 3293 ; Mouslim 2691' },
-  { question: 'Que disait le Prophète ﷺ en se couchant ?', choix: ['Bismika-llâhoumma amoûtou wa ahyâ', 'Allâhou akbar', 'As-salâmou \'alaykoum'], bonne: 0,
-    explication: '« C\'est en Ton nom, ô Allah, que je meurs et que je vis. »', source: 'Boukhari 6324' },
-];
-
-export const DHIKR_QUIZ_SECOURS: DhikrQuestion[] = QUESTIONS.map((q, i) => ({ ...q, id: `secours-q${i + 1}`, visible: true, position: (i + 1) * 10 }));

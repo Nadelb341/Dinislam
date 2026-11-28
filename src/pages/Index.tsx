@@ -66,6 +66,11 @@ const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').the
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 // 📿 Petite carte « Dhikr du moment » (2026-11-27, idée 5) : chargée à part, jamais bloquante
 const DhikrDuMoment = lazy(() => import('@/components/dhikr/DhikrDuMoment'));
+// 🍂 Images d'automne de Nadia derrière la carte « Dhikr du jour » (jour / nuit du Maghrib au Fajr), 28/11
+const FONDS_DHIKR_AUTOMNE = {
+  jour: { url: '/images/accueil/automne-dhikr.jpg', haut: 36.8, hauteur: 30 },
+  nuit: { url: '/images/accueil/automne-dhikr-nuit.jpg', haut: 41, hauteur: 33 },
+} as const;
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -548,7 +553,7 @@ const handleModuleClick = (mod) => {
           {(isAdmin
             ? (modules || []).some((m) => m.builtin_path === '/module/dhikr' && accesDe(m, visibilityMap[m.id]).mode !== 'personne')
             : visibleModules.some((m) => m.builtin_path === '/module/dhikr')) && (
-            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment fond={automne ? '/images/accueil/automne-dhikr.jpg' : null} /></Suspense></SilentBoundary>
+            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment fond={automne ? FONDS_DHIKR_AUTOMNE[soir ? 'nuit' : 'jour'] : null} /></Suspense></SilentBoundary>
           )}
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}

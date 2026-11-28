@@ -36,9 +36,6 @@ export const REALTIME_TABLE_QUERY_KEYS: Record<string, string[]> = {
   // 📿 Carte Dhikr (2026-11-27) : contenu modifié par l'enseignante + compteur du défi du groupe EN DIRECT
   dhikr_items: ['dhikr-items'],
   dhikr_gestes: ['dhikr-gestes'],
-  dhikr_quiz: ['dhikr-quiz'],
-  dhikr_defis: ['dhikr-defis'],
-  dhikr_defi_participations: ['dhikr-participations', 'dhikr-defis'],
   dhikr_carnet_semaines: ['dhikr-carnet-eleve'],
   // ✅ Corrections (2026-11-15) : les invocations envoyées comptent dans le bouclier
   invocation_validation_requests: ['admin-invocation-validations', 'admin-pending-breakdown', ...PROGRESS_VIEWS],
