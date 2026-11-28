@@ -10,7 +10,7 @@ import { carteOuverte } from '@/hooks/useCartesVisibles';
 import { accesDe, fermerATous, ouvrirATous, textePeriode } from '@/lib/cartesAcces';
 import { enregistrerAcces } from '@/lib/cartesAccesEnregistrer';
 import { useCartesAcces, useAccesEnAttente, rafraichirCartes } from '@/hooks/useCartesAcces';
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { AdminTodoCard } from '@/components/home/AdminTodoCard';
 import { SourateDuJour } from '@/components/home/SourateDuJour';
 import { HadithDuJourCarte } from '@/components/home/HadithDuJour';
@@ -42,6 +42,7 @@ import { editDraftKey } from '@/lib/pendingDrafts';
 import { SilentBoundary } from '@/components/shared/SilentBoundary';
 import { BoutonSignalerAbsence } from '@/components/parents/SignalerAbsence';
 import { TitreAccueil } from '@/components/home/TitreAppli';
+import { FondAccueil, FONDS_ACCUEIL_AUTOMNE } from '@/components/home/FondAccueil';
 import { AnnonceBilan } from '@/components/home/AnnonceBilan';
 import { AbsencesSignalees } from '@/components/attendance/AbsencesSignalees';
 import { ConvocationsDialog } from '@/components/convocations/ConvocationsDialog';
@@ -66,11 +67,6 @@ const CarnetLiaison = lazy(() => import('@/components/carnet/CarnetLiaison').the
 const JeuxSaison = lazy(() => import('@/components/saisons/JeuxSaison').then((m) => ({ default: m.JeuxSaison })));
 // 📿 Petite carte « Dhikr du moment » (2026-11-27, idée 5) : chargée à part, jamais bloquante
 const DhikrDuMoment = lazy(() => import('@/components/dhikr/DhikrDuMoment'));
-// 🍂 Images d'automne de Nadia derrière la carte « Dhikr du jour » (jour / nuit du Maghrib au Fajr), 28/11
-const FONDS_DHIKR_AUTOMNE = {
-  jour: { url: '/images/accueil/automne-dhikr.jpg', haut: 36.8, hauteur: 30 },
-  nuit: { url: '/images/accueil/automne-dhikr-nuit.jpg', haut: 41, hauteur: 33 },
-} as const;
 
 /**
  * ⚙️ Gestion de chaque carte depuis son menu ⋮ de l'accueil (2026-10-27, demande de Nadia) : remplace les cartes du Tableau de bord.
@@ -227,6 +223,11 @@ const Index = () => {
   // l'enseignante le gère dans l'onglet « 🧸 Tout-petits » au-dessus des cartes (par défaut : ses cartes habituelles)
   const accesPetits = useAccesPetits(user?.id, isAdmin);
   const modePetits = accesPetits.aAccueil;
+  // 🍂 Automne (Nadia, 28/11, choix A) : son image en fond de TOUT l'accueil (nuit du Maghrib au Fajr), la carte « Dhikr du jour »
+  // tout en haut, posée sur la carte dessinée de l'image ; titre plus petit au-dessus. Pas pour l'accueil des tout-petits.
+  const fondAccueil = automne && !modePetits ? FONDS_ACCUEIL_AUTOMNE[soir ? 'nuit' : 'jour'] : null;
+  const carteDhikrRef = useRef<HTMLDivElement>(null);
+  const [margeDhikr, setMargeDhikr] = useState(0);
   const [ongletAccueil, setOngletAccueil] = useState<'cartes' | 'petits'>('cartes');
   const [paramsConv, setParamsConv] = useSearchParams();
   useEffect(() => {
@@ -357,10 +358,15 @@ const handleModuleClick = (mod) => {
     }
   };
 
+  // 📿 La carte « Dhikr du jour » : élève = mêmes règles que la grille ; enseignante = carte pas réglée « Personne »
+  const carteDhikrVisible = (isAdmin
+    ? (modules || []).some((m) => m.builtin_path === '/module/dhikr' && accesDe(m, visibilityMap[m.id]).mode !== 'personne')
+    : visibleModules.some((m) => m.builtin_path === '/module/dhikr'));
   return (
     <>
 {/* 2026-11-26 (Nadia) : le menu du bas aussi sur l'accueil ; le décor du bas se pose au-dessus (--menu-bas) */}
-<AppLayout>
+<AppLayout sansFondEcran={!!fondAccueil}>
+        {fondAccueil && <FondAccueil fond={fondAccueil} carte={carteDhikrRef} marge={margeDhikr} setMarge={setMargeDhikr} />}
         <div className={cn('p-4 space-y-6', (automne || hiver || clair || ramadan) && 'relative isolate pb-32')}>
           {automne && (
             <SilentBoundary name="Décor de saison">
@@ -395,6 +401,23 @@ const handleModuleClick = (mod) => {
             </SilentBoundary>
           )}
           {/* ✨ Titre de l'accueil, réglable dans le bouclier › 🔧 Apparence appli › Le titre (2026-10-29) */}
+          {fondAccueil ? (
+            <>
+              {/* 🍂 Titre court, dans le ciel de l'image (choix A de Nadia, 28/11) */}
+              <div className={cn('text-center leading-tight', fondAccueil.nuit ? 'text-white [text-shadow:0_1px_4px_rgba(10,15,50,.9)]' : 'text-[#3b1d2e] [text-shadow:0_0_6px_rgba(255,248,240,.95)]')}>
+                <p className="text-sm font-bold">Assalamou Alaykoum</p>
+                <h1 className="text-xl sm:text-2xl font-black [overflow-wrap:anywhere]">Bienvenue{(profile?.full_name || '').trim() ? `, ${(profile?.full_name || '').trim().split(/\s+/)[0]}` : ''} !</h1>
+                <p className="font-arabic text-xl sm:text-2xl text-[#b8860b]" style={fondAccueil.nuit ? { color: '#f5d77a' } : undefined}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                {!isAdmin && <div className="flex justify-end"><SilentBoundary name="Signaler une absence"><BoutonSignalerAbsence /></SilentBoundary></div>}
+              </div>
+              {/* La carte « Dhikr du jour », posée sur la carte dessinée de l'image */}
+              {carteDhikrVisible && <div ref={carteDhikrRef} style={{ marginTop: margeDhikr, marginInline: 'auto', width: 'min(100%, 80vw)' }}>
+                <SilentBoundary name="Dhikr du moment"><Suspense fallback={<div style={{ minHeight: `${fondAccueil.hauteur}vw` }} />}>
+                  <DhikrDuMoment surFond={fondAccueil.hauteur} />
+                </Suspense></SilentBoundary>
+              </div>}
+            </>
+          ) : (
           <SilentBoundary name="Titre de l'accueil">
             <TitreAccueil nom={profile?.full_name ?? null}>
               {/* 🙋 Parents : signaler une absence (compte d'un enfant, ou d'un parent élève adulte) */}
@@ -405,6 +428,7 @@ const handleModuleClick = (mod) => {
               )}
             </TitreAccueil>
           </SilentBoundary>
+          )}
 
           {/* 🙈 Bulle « Essaie de me trouver ! » du cache-cache : entre l'arbre / le message de bienvenue et le carnet (Nadia, 2026-11-12).
               🏡 À droite (2026-11-26) : la maisonnette de l'écureuil qui se cache dans toute l'appli (à la place de l'ancienne cachette
@@ -550,10 +574,8 @@ const handleModuleClick = (mod) => {
 
           {/* 📿 Dhikr du moment (2026-11-27, idée 5) : seulement si la carte Dhikr est ouverte à cette personne
               (élève : mêmes règles que la grille ; enseignante : carte pas réglée « Personne »). Calcul sans hook (ordre des hooks inchangé). */}
-          {(isAdmin
-            ? (modules || []).some((m) => m.builtin_path === '/module/dhikr' && accesDe(m, visibilityMap[m.id]).mode !== 'personne')
-            : visibleModules.some((m) => m.builtin_path === '/module/dhikr')) && (
-            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment fond={automne ? FONDS_DHIKR_AUTOMNE[soir ? 'nuit' : 'jour'] : null} /></Suspense></SilentBoundary>
+          {carteDhikrVisible && !fondAccueil && (
+            <SilentBoundary name="Dhikr du moment"><Suspense fallback={null}><DhikrDuMoment /></Suspense></SilentBoundary>
           )}
 
           {/* Sourate du jour (carte Coran, fiches validées par l'enseignante) */}
